@@ -68,10 +68,9 @@ function showVisitorPopup() {
 }
 
 // Show the popup when the page loads
-// Comment out or remove this line to disable the popup
-// window.onload = function() {
-//     showVisitorPopup();
-// };
+window.onload = function() {
+     showVisitorPopup();
+ };
 
 document.addEventListener('DOMContentLoaded', function() {
     const tabButtons = document.querySelectorAll('.tab-btn');

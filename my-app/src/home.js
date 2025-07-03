@@ -1,8 +1,32 @@
 import './main.css';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 const Home = ({ setPage }) => {
   const [showAllNews, setShowAllNews] = useState(false);
+  const titles = [
+    'sophomore',
+    'machine learning researcher',
+    'soccer fan',
+    'developer',
+    'tutor',
+    'startup enthusiast'
+  ];
+  const colors = [
+    '#ffadad',
+    '#ffd6a5',
+    '#caffbf',
+    '#9bf6ff',
+    '#a0c4ff',
+    '#bdb2ff'
+  ];
+  const [titleIndex, setTitleIndex] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTitleIndex((prev) => (prev + 1) % titles.length);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, []);
 
   const newsItems = [
     {
@@ -39,7 +63,17 @@ const Home = ({ setPage }) => {
       <div className="hero-section">
         <div className="hero">
           <h1 className="subhead">Haoming Chen</h1>
-          <p className="header"> I am a sophomore at UC Berkeley studying Computer Science and Mathematics.</p>
+          <p className="header">
+            I am a{' '}
+            <span
+              key={titleIndex}
+              className="animated-word"
+              style={{ backgroundColor: colors[titleIndex] }}
+            >
+              {titles[titleIndex]}
+            </span>{' '}
+            at UC Berkeley studying Computer Science and Mathematics.
+          </p>
         </div>
         <div className="hero-image">
           <img src="/hero.jpg" alt="Haoming" />

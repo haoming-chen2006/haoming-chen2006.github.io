@@ -1,10 +1,11 @@
-const { useState } = React;
-import Navbar from './navbar.js';
-import Home from './home.js';
-import Research from './research.js';
-import Experiences from './experience.js';
-import Fun from './fun.js';
 
+import React from 'react';
+import Navbar from './navbar';
+import Home from './home';
+import Research from './resarch';
+import Experiences from './experience';
+import Fun from './fun';
+const { useState } = React;
 function App() {
   const [page, setPage] = useState('about');
   let content;
@@ -21,4 +22,5 @@ function App() {
   );
 }
 
-ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+
+export default App;

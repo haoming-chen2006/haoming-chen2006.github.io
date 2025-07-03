@@ -1,308 +1,43 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Haoming Chen</title>
-  <link rel="stylesheet" href="style.css">
-  <link rel="stylesheet" href="my-app/src/navbar.css">
-  <link rel="stylesheet" href="my-app/src/main.css">
-</head>
-<body>
-  <div id="root"></div>
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#000000" />
+    <meta
+      name="description"
+      content="Web site created using create-react-app"
+    />
+    <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
+    <!--
+      manifest.json provides metadata used when your web app is installed on a
+      user's mobile device or desktop. See https://developers.google.com/web/fundamentals/web-app-manifest/
+    -->
+    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+    <!--
+      Notice the use of %PUBLIC_URL% in the tags above.
+      It will be replaced with the URL of the `public` folder during the build.
+      Only files inside the `public` folder can be referenced from the HTML.
 
-  <!-- React and Babel from CDN -->
-  <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
-  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-  <script crossorigin src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+      Unlike "/favicon.ico" or "favicon.ico", "%PUBLIC_URL%/favicon.ico" will
+      work correctly both with client-side routing and a non-root public URL.
+      Learn how to configure a non-root public URL by running `npm run build`.
+    -->
+    <title>React App</title>
+  </head>
+  <body>
+    <noscript>You need to enable JavaScript to run this app.</noscript>
+    <div id="root"></div>
+    <!--
+      This HTML file is a template.
+      If you open it directly in the browser, you will see an empty page.
 
-  <script type="text/babel">
-// Navbar component
-const Navbar = ({ setPage }) => (
-  <nav className="navbar">
-    <div className="nav-section">
-      <a href="mailto:haoming_chen@berkeley.edu" className="link-styles icon-link">
-        <img src="/email_light.jpeg" alt="Email" className="nav-icon" />
-      </a>
-      <a href="https://github.com/haoming-chen2006" className="link-styles icon-link">
-        <img src="/github.svg" alt="GitHub" className="nav-icon" />
-      </a>
-      <a href="https://linkedin.com/in/haoming-chen-7421b230b" className="link-styles icon-link">
-        <img src="/linkedin.png" alt="LinkedIn" className="nav-icon" />
-      </a>
-    </div>
-    <div className="nav-section">
-      <button className="link-styles" onClick={() => setPage('about')}>about</button>
-      <button className="link-styles" onClick={() => setPage('research')}>research</button>
-      <button className="link-styles" onClick={() => setPage('experiences')}>experiences</button>
-      <button className="link-styles-small" onClick={() => setPage('fun')}>fun</button>
-    </div>
-  </nav>
-);
+      You can add webfonts, meta tags, or analytics to this file.
+      The build step will place the bundled scripts into the <body> tag.
 
-// Home component
-const Home = ({ setPage }) => {
-  const [showAllNews, setShowAllNews] = React.useState(false);
-  const newsItems = [
-    {date: "June 2025", title: "Started Summer Intern at Weleap.ai", content: "I will be working at the Berkeley Skydeck Startup WeLeap.ai, mainly focusing on the backend and LLM Integration"},
-    {date: "May 2025", title: "Started Summer Research at LBNL", content: "Thrilled to continue my fall research intern at Lawrence Berkeley National Laboratory into the summer! I start assembling the language model for particle physics and used some novel approaches in vision models"},
-    {date: "May 2025", title: "Position at C88C course staff", content: "I have confirmed my participation in the upcoming CS C88C course in the summer as an undergraduate course staff."},
-    {date: "April 2025", title: "Finished Second Semester of URAP Research", content: "I finished my second semester working at Berkeley's Education and Organization lab."},
-    {date: "March 2025", title: "Founded AI Study Group", content: "Organized a weekly study group for students interested in AI and machine learning, fostering collaborative learning and peer support."}
-  ];
-  const displayedNews = showAllNews ? newsItems : newsItems.slice(0,3);
-  return (
-    <div className="main-content">
-      <div className="hero-section">
-        <div className="hero">
-          <h1 className="subhead">Haoming Chen</h1>
-          <p className="header"> I am a sophomore at UC Berkeley studying Computer Science and Mathematics.</p>
-        </div>
-        <div className="hero-image">
-          <img src="/hero.jpg" alt="Haoming" />
-        </div>
-      </div>
-      <div className="section bio">
-        <h2>Bio</h2>
-        <p className='main-text'>
-          Academically, I'm interested in  <b><span style={{ color: 'purple' }}>computer vision models </span></b>
-            and application of <b><span style={{ color: 'purple' }}>machine learning in science</span></b>, especially physics.
-          I am also passionate about <b><span style={{ color: 'purple' }}>creative use of LLM agents</span></b> in gamified settings.
-        </p>
-        <p className='main-text'>
-          I'm also intested in <b><span style={{ color: 'purple' }}>education inequality research</span></b> and <b><span style={{ color: 'purple' }}>STEM outreach</span></b>.
-        </p>
-        <p className='main-text'>
-          Checkout my{' '}
-          <span style={{ color: 'purple', fontWeight: 'bold', cursor: 'pointer' }} onClick={() => setPage('research')}>
-            research projects
-          </span>,{' '}
-          <span style={{ color: 'purple', fontWeight: 'bold', cursor: 'pointer' }} onClick={() => setPage('experiences')}>
-            experiences
-          </span>{' and '}
-          <span style={{ color: 'purple', fontWeight: 'bold', cursor: 'pointer' }} onClick={() => setPage('fun')}>
-            fun stuff
-          </span>
-          !
-        </p>
-      </div>
-      <div className="section news">
-        <h2>News</h2>
-        <div className="news-content-wrapper">
-          <div className="timeline-progress">
-            {displayedNews.map((item, index) => (
-              <div key={index} className="timeline-item">
-                <div className="timeline-dot"></div>
-                <div className="timeline-date">{item.date}</div>
-                {index < displayedNews.length - 1 && <div className="timeline-line"></div>}
-              </div>
-            ))}
-          </div>
-          <div className="news-container">
-            {displayedNews.map((item, index) => (
-              <div key={index} className="news-item">
-                <h3 className="news-title">{item.title}</h3>
-                <p className="news-content">{item.content}</p>
-              </div>
-            ))}
-            {!showAllNews && (
-              <button className="expand-news-btn" onClick={() => setShowAllNews(true)}>Show All News</button>
-            )}
-            {showAllNews && (
-              <button className="expand-news-btn" onClick={() => setShowAllNews(false)}>Hide News</button>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// Research components
-const ResearchCard = ({ title, content, image, website, duration, role }) => {
-  const [show, setShow] = React.useState(false);
-  const handleCardClick = () => {
-    if(show){ window.open(website, '_blank'); } else { setShow(true); }
-  };
-  if(!show){
-    return (
-      <div className="research-image-only" onClick={handleCardClick}>
-        <img src={image} alt={title} />
-        <div className="research-overlay">
-          <h3>{title}</h3>
-          <p>Click to see details</p>
-        </div>
-      </div>
-    );
-  }
-  return (
-    <div className="research-card">
-      <div className="research-background-image">
-        <img src={image} alt={title} />
-      </div>
-      <div className="research-content">
-        <h3 className="research-title">{title}</h3>
-        <p className="research-role">{role}</p>
-        <p className="research-duration">{duration}</p>
-        <div className="research-description">{content}</div>
-        <div className="research-actions">
-          <button className="research-link-btn" onClick={handleCardClick}>Visit Website →</button>
-          <button className="research-close-btn" onClick={() => setShow(false)}>Close</button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const Research = () => {
-  const researchData = [
-    {
-      title: "Language Model for High Energy Physics",
-      role: "Research Intern under Lawrence Berkeley National Laboratory, ATLAS group",
-      content: (
-        <div>
-          <p>The ambition of this project is to build a <strong>GPT-3 for particle physics data</strong> with zero-shot generalization capabilities. This revolutionary approach means we won't need to train separate models for each particle physics task.</p>
-          <p>An example was to tokenize, reconstruct, and possibly understand the semantic meaning of complex particle traces, like the traces of Higgs Boson experiments showed below</p>
-          <img src={"plot.png"} alt={"plot"} />
-          <h4>What I built:</h4>
-          <ul>
-            <li>Custom dataloader for particle physics data</li>
-            <li>Conditional Vectorized Quantized Autoencoders as tokenizers</li>
-            <li>Integration into innovative language models</li>
-            <li>Experiments using newest vision/language model techniques</li>
-          </ul>
-          <p>Learn more about the tokenizers I made public:<a href="https://github.com/haoming-chen2006/LLM4Tracking" style={{color: '#667eea', marginLeft: '5px'}}>LLM for Jet and Particle Tokenization</a></p>
-          <p>Read relevant papers:<a href="https://www.researchgate.net/publication/377919900_Generative_machine_learning_for_detector_response_modeling_with_a_conditional_normalizing_flow" style={{color: '#667eea', marginLeft: '5px'}}>Generative Machinee Learning</a><br/><a href="https://arxiv.org/abs/2403.05618">Omnijet Experiment</a></p>
-        </div>
-      ),
-      duration: "June 2025 - Present",
-      image: "htobb.webp",
-      website: "https://github.com/haoming-chen2006/LLM4Tracking"
-    },
-    {
-      title: "Education and Organization Lab",
-      role: "Research Apprentice, advised by professor Eos Trinidad",
-      content: (
-        <div>
-          <p>Conducting research on trends about <strong>networks of nonprofits</strong> that focus on education.</p>
-          <p>This URAP supported research program.</p>
-          <h4>What I made:</h4>
-          <ul>
-            <li>250,000+ nonprofit dataset augmented with rich info added using webscraping </li>
-            <li>Exploratory data analysis, machine learning, and outlier detection applied on the dataset</li>
-            <li>Extensive literature review</li>
-            <li>Production of interactive plots</li>
-          </ul>
-          <img src="web.jpg" alt="WeLeap AI Demo" style={{width: '100%', maxWidth: '400px', borderRadius: '8px', margin: '1rem 0'}} />
-          <p>Read the book about the research:</p>
-          <a href="https://www.amazon.com/Subtle-Webs-Local-Organizations-Education/dp/0197786081">Subtle webs</a>
-        </div>
-      ),
-      duration: "May 2025 - Present",
-      image: "network.jpg",
-      website: "https://sites.google.com/view/eostrinidad/research"
-    },
-    {
-      title: "Computer Vision for Particle Detection",
-      role: "Research Intern",
-      content: (
-        <div>
-          <p>Developing <strong>deep learning algorithms</strong> for real-time particle detection with 95% accuracy in classification tasks.</p>
-          <p>This project focuses on implementing advanced CNN architectures for particle tracking in high-energy physics experiments.</p>
-          <h4>Research Highlights:</h4>
-          <ul>
-            <li>Real-time particle detection and tracking</li>
-            <li>95% accuracy in particle classification</li>
-            <li>Integration with particle accelerator data streams</li>
-            <li>Novel CNN architecture optimizations</li>
-          </ul>
-          <blockquote style={{borderLeft: '4px solid #667eea', paddingLeft: '1rem', fontStyle: 'italic', color: '#555'}}>
-            "This work has the potential to significantly impact future physics research by enabling more precise and efficient particle detection in experimental setups."
-          </blockquote>
-          <p><strong>Collaboration:</strong> Working with graduate students and postdocs at UC Berkeley Physics Department.</p>
-        </div>
-      ),
-      duration: "April 2025 - Present",
-      image: "/urap.jpeg",
-      website: "https://example.com"
-    }
-  ];
-
-  return (
-    <div className="main-content">
-      <h2>Research Projects</h2>
-      <div className="research-container">
-        {researchData.map((research, index) => (
-          <ResearchCard key={index} title={research.title} role={research.role} duration={research.duration} content={research.content} image={research.image} website={research.website} />
-        ))}
-      </div>
-    </div>
-  );
-};
-
-// Experiences components
-const ExperienceCard = ({ title, description, image, website, duration, role }) => {
-  const handleCardClick = () => { window.open(website, '_blank'); };
-  return (
-    <div className="experience-card" onClick={handleCardClick}>
-      <div className="experience-image"><img src={image} alt={title} /></div>
-      <div className="experience-content">
-        <h3 className="experience-title">{title}</h3>
-        <p className="experience-role">{role}</p>
-        <p className="experience-duration">{duration}</p>
-        <p className="experience-description">{description}</p>
-        <div className="experience-link"><span>Click to visit →</span></div>
-      </div>
-    </div>
-  );
-};
-
-const Experiences = () => {
-  const experienceData = [
-    { title: "WeLeap. AI", role: "Software Engineer Intern", duration: "June 2025 - Present", description: "Supported by Berkeley Skydeck startup incubator program. Orchestrated a multi-agent system to deliver personalized financial guidance using multimodal inputs such as documents, photos, and forms.", image: "/leap.jpg", website: "https://www.f6s.com/weleap" },
-    { title: "CAL HACKS", role: "Participant", duration: "Julne 2023", description: "Had fun in the AI Hackathon, we built Kola coach, a wellness coach APP that gives phone calls, browse the web, and sends Email to users. Built at Cal Hack.", image: "/calhack.jpeg", website: "https://devpost.com/software/koacoach" },
-    { title: "YC AI Startup School", role: "Participant", duration: "July 2025 ", description: "Joined the amazing YCombinator startup school event, listened to inspring talks from many of my heros, and had fun in after parties.", image: "/Y_comb.png", website: "https://events.ycombinator.com/ai-susm" },
-    { title: "Berkeley CS C88C", role: "Course Staff", duration: "May 2025 - August 2026 ", description: "Helped organize Data C88C as UCS1 at Berkeley, organized teaching materials, instructed weekly sections, and hosted office hours for 400+ students.", image: "88.png", website: "https://c88c.org/su25/staff/" }
-  ];
-  return (
-    <div className="main-content">
-      <h2>Experiences</h2>
-      <div className="experiences-container">
-        {experienceData.map((experience, index) => (
-          <ExperienceCard key={index} title={experience.title} role={experience.role} duration={experience.duration} description={experience.description} image={experience.image} website={experience.website} />
-        ))}
-      </div>
-    </div>
-  );
-};
-
-const Fun = () => (
-  <div className="main_content">
-    <p>Games I am making were coming soon!</p>
-  </div>
-);
-
-function App(){
-  const [page,setPage] = React.useState('about');
-  let content;
-  if(page==='about') content = <Home setPage={setPage}/>;
-  else if(page==='research') content = <Research/>;
-  else if(page==='experiences') content = <Experiences/>;
-  else if(page==='fun') content = <Fun/>;
-  return (
-    <div>
-      <Navbar setPage={setPage}/>
-      {content}
-    </div>
-  );
-}
-
-const root = ReactDOM.createRoot(document.getElementById('root'));
-root.render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>
-);
-  </script>
-</body>
+      To begin the development, run `npm start` or `yarn start`.
+      To create a production bundle, use `npm run build` or `yarn build`.
+    -->
+  </body>
 </html>

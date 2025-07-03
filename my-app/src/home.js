@@ -24,7 +24,7 @@ const Home = ({ setPage }) => {
   useEffect(() => {
     const interval = setInterval(() => {
       setTitleIndex((prev) => (prev + 1) % titles.length);
-    }, 3000);
+    }, 2000); // rotate every 2 seconds
     return () => clearInterval(interval);
   }, []);
 

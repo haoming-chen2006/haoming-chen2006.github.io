@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Imposter Demo</title>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; text-align: center; }
+    #arena { position: relative; width: 400px; height: 400px; margin: 0 auto; border-radius: 50%; border: 1px solid #ccc; }
+    .player { position: absolute; width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; font-size: 12px; }
+    .circle { border-radius: 50%; background: #eee; }
+    .square { background: #fee; }
+    .triangle { width: 0; height: 0; border-left: 30px solid transparent; border-right: 30px solid transparent; border-bottom: 60px solid #eef; background: none; }
+    .active { box-shadow: 0 0 10px 5px yellow; }
+    .bubble { position: absolute; background: #fff; padding: 5px 10px; border: 1px solid #ccc; border-radius: 5px; top: -40px; white-space: nowrap; }
+    #votes { margin-top: 20px; }
+    .vote { transition: opacity 0.5s ease; }
+  </style>
+</head>
+<body>
+  <h1>Imposter Game</h1>
+  <div id="root"></div>
+  <script src="app.js"></script>
+</body>
+</html>

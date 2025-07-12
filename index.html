@@ -202,30 +202,6 @@ const Research = () => {
       image: "network.jpg",
       website: "https://sites.google.com/view/eostrinidad/research"
     },
-    {
-      title: "Computer Vision for Particle Detection",
-      role: "Research Intern",
-      content: (
-        <div>
-          <p>Developing <strong>deep learning algorithms</strong> for real-time particle detection with 95% accuracy in classification tasks.</p>
-          <p>This project focuses on implementing advanced CNN architectures for particle tracking in high-energy physics experiments.</p>
-          <h4>Research Highlights:</h4>
-          <ul>
-            <li>Real-time particle detection and tracking</li>
-            <li>95% accuracy in particle classification</li>
-            <li>Integration with particle accelerator data streams</li>
-            <li>Novel CNN architecture optimizations</li>
-          </ul>
-          <blockquote style={{borderLeft: '4px solid #667eea', paddingLeft: '1rem', fontStyle: 'italic', color: '#555'}}>
-            "This work has the potential to significantly impact future physics research by enabling more precise and efficient particle detection in experimental setups."
-          </blockquote>
-          <p><strong>Collaboration:</strong> Working with graduate students and postdocs at UC Berkeley Physics Department.</p>
-        </div>
-      ),
-      duration: "April 2025 - Present",
-      image: "/urap.jpeg",
-      website: "https://example.com"
-    }
   ];
 
   return (
@@ -276,11 +252,13 @@ const Experiences = () => {
   );
 };
 
-const Fun = () => (
-  <div className="main_content">
-    <p>Games I am making were coming soon!</p>
-  </div>
-);
+const Fun = () => {
+  return (
+    <div className="main-content">
+      <p>Games I am making were coming soon!</p>
+    </div>
+  );
+};
 
 function App(){
   const [page,setPage] = React.useState('about');

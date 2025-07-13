@@ -275,3 +275,36 @@ body {
 .discussion-header { padding: 16px; font-size: 1.2rem; font-weight: bold; background: #4b5bdc; border-radius: 10px 0 0 0; }
 .discussion-content { padding: 16px; font-size: 1rem; max-height: 70vh; overflow-y: auto; }
 .expand-arrow { display: block; text-align: center; font-size: 2rem; padding: 10px 0; }
+
+/* Additional styles */
+.phase-banner, .announcement-banner {
+  text-align: center;
+  padding: 10px;
+  font-weight: bold;
+}
+.phase-banner.day { background: #f1f1f1; color: #222; }
+.phase-banner.night { background: #222; color: #fff; }
+.announcement-banner { background: #ffeb3b; }
+
+.votes-panel {
+  position: fixed;
+  left: 40px;
+  top: 40px;
+  width: 300px;
+  background: #fff;
+  border-radius: 10px;
+  padding: 16px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.15);
+  max-height: 70vh;
+  overflow-y: auto;
+  display: none;
+}
+
+.avatar-img.dead {
+  filter: grayscale(100%) brightness(50%);
+}
+
+body.night {
+  background: #222;
+  color: #eee;
+}

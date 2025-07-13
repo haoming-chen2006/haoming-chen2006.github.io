@@ -120,9 +120,29 @@ agents = [
 ]
 
 live_players = agents[:5]  # Players only, excluding referee
+# Current phase and announcement for frontend
+current_phase = "night"
+current_announcement = None
+
+def save_state(bubbles=None, individual_votes=None):
+    """Write a simplified game state for the frontend."""
+    state = {
+        "phase": current_phase,
+        "announcement": current_announcement,
+        "bubbles": bubbles or ["" for _ in range(5)],
+        "individualVotes": individual_votes or [],
+        "alivePlayers": [a.name for a in live_players],
+        "day": round_counter["day"],
+        "night": round_counter["night"],
+    }
+    with open("game_state.json", "w") as f:
+        json.dump(state, f)
 
 async def run_night_phase():
-    global live_players
+    global live_players, current_phase, current_announcement
+    current_phase = "night"
+    current_announcement = None
+    save_state()
     killer = agents[0]
     detective = agents[1]
     referee = agents[5]
@@ -181,6 +201,7 @@ async def run_night_phase():
     if killed_player:
         live_players = [a for a in live_players if a.name != killed_player]
         announcement = f"The referee announces: {killed_player} was found dead this morning."
+        current_announcement = announcement
         for agent in live_players:
             agent_memories[agent.name] += f"\n{announcement}\n"
         transcript.append(f"\n>>> {announcement}\n")
@@ -192,6 +213,7 @@ async def run_night_phase():
     with open("all.txt", "a") as f:
         f.write("".join(transcript))
     print({"killed": killed_player, "investigated": investigated_player})
+    save_state()
     with open("memory.txt", "a") as f:
         f.write(f"\n===== NIGHT {round_counter['night']} - PLAYER MEMORIES =====\n")
         for agent in live_players:
@@ -200,7 +222,9 @@ async def run_night_phase():
 
     return {"killed": killed_player, "investigated": investigated_player}
 async def run_day_phase():
-    global live_players
+    global live_players, current_phase, current_announcement
+    current_phase = "day"
+    save_state()
     discussion_lines = []
     discussion_context = ""
     full_transcript = []
@@ -273,6 +297,7 @@ async def run_day_phase():
         referee_memory["rounds"][-1]["eliminated"] = eliminated_player
         for agent in live_players:
             agent_memories[agent.name] += f"Eliminated player from voting: {eliminated_player}\n"
+    current_announcement = referee_text
 
     with open("game_play.txt", "a") as f:
         f.write("===== FORMATTED DISCUSSION =====\n" + formatted_discussion + "\n")
@@ -293,6 +318,19 @@ async def run_day_phase():
             if "**public speech**" in agent_text:
                 internal = agent_text.split("**public speech**")[0]
                 f.write(internal + "\n")
+
+    # Prepare bubbles for frontend in the order of players 1-5
+    player_order = [f"Player_{i}" for i in range(1,6)]
+    bubbles_list = []
+    for name in player_order:
+        for entry in discussion_lines:
+            if entry.startswith(name + ":"):
+                bubbles_list.append(entry.split(":",1)[1].strip())
+                break
+        else:
+            bubbles_list.append("")
+
+    save_state(bubbles_list, individual_votes)
 async def run_round():
     print("\n🌙 NIGHT PHASE")
     night_results = await run_night_phase()
@@ -347,43 +385,7 @@ async def run_game():
 
             agent_memories[agent.name] = identity_line + agent_memories[agent.name]
 
-        # Write game state for frontend
-        try:
-            # Only show public speech in bubbles
-            bubbles = []
-            currentSpeaker = None
-            formattedDiscussion = ""
-            with open("game_play.txt", "r") as f:
-                lines = f.readlines()
-            # Find last day phase speeches
-            for i, agent in enumerate(live_players):
-                # Find last speech for each agent
-                for line in reversed(lines):
-                    if f"{agent.name}:" in line and "public speech" in line.lower():
-                        speech = line.split("public speech",1)[-1].strip()
-                        bubbles.append(speech)
-                        break
-                else:
-                    bubbles.append("")
-            # Set current speaker as the last one who spoke
-            for idx, b in enumerate(bubbles):
-                if b:
-                    currentSpeaker = idx
-            # Formatted discussion
-            formattedDiscussion = "\n".join([l.strip() for l in lines if any(a.name in l for a in live_players)])
-            # Full discussion (all)
-            with open("all.txt", "r") as f:
-                fullDiscussion = f.read()
-            state = {
-                "bubbles": bubbles,
-                "currentSpeaker": currentSpeaker,
-                "formattedDiscussion": formattedDiscussion,
-                "fullDiscussion": fullDiscussion
-            }
-            with open("game_state.json", "w") as f:
-                json.dump(state, f)
-        except Exception as e:
-            pass
+        # game state is updated inside each phase
 
         # Check if game ends
         remaining_roles = [referee_memory["roles"][a.name] for a in live_players]
@@ -402,6 +404,8 @@ async def run_game():
         f.write(game_end_msg + "\n")
     with open("memory.txt", "a") as f:
         f.write("\n=== FINAL RESULT ===\n" + game_end_msg + "\n")
+    current_announcement = game_end_msg
+    save_state()
     print(game_end_msg)
 if __name__ == "__main__":
     asyncio.run(run_game())

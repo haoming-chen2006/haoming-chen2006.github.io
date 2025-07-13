@@ -8,19 +8,16 @@
 </head>
 <body>
   <h1 class="mafia-title">Mafia Game (AI Agents)</h1>
+  <div id="phase-banner" class="phase-banner"></div>
+  <div id="announcement-banner" class="announcement-banner"></div>
   <div class="top-buttons">
     <button class="table-btn" id="show-discussion-btn">Show Discussion</button>
     <button class="table-btn" id="show-memory-btn">Show Memory</button>
+    <button class="table-btn" id="show-all-btn">Show Everything</button>
   </div>
   <div class="avatar-row" id="avatar-row"></div>
-  <div class="main-bubble-row">
-    <div class="main-bubble" id="main-bubble"></div>
-    <div class="main-bubble-label" id="main-bubble-label"></div>
-  </div>
-  <div class="discussion-panel" id="discussion-panel">
-    <div class="discussion-header">Discussion</div>
-    <div class="discussion-content" id="discussion-content"></div>
-  </div>
+
+  <div class="votes-panel" id="votes-panel"></div>
   <script>
     // Avatar image paths (update if needed)
     const avatars = [
@@ -32,10 +29,11 @@
     ];
     const playerNames = ['Player_1', 'Player_2', 'Player_3', 'Player_4', 'Player_5'];
     // State
-    let currentSpeaker = null;
+    let phase = 'night';
+    let announcement = '';
     let bubbles = ['', '', '', '', ''];
-    let formattedDiscussion = '';
-    let fullDiscussion = '';
+    let alivePlayers = [...playerNames];
+    let individualVotes = [];
     // Render avatars as individual components in a horizontal row
     function renderAvatars() {
       const row = document.getElementById('avatar-row');
@@ -43,35 +41,35 @@
       for (let i = 0; i < 5; i++) {
         const card = document.createElement('div');
         card.className = 'agent-card';
-        // Avatar image
         const img = document.createElement('img');
         img.src = avatars[i];
-        img.className = 'avatar-img' + (currentSpeaker === i ? ' active' : '');
         img.alt = playerNames[i];
+        img.className = 'avatar-img' + (alivePlayers.includes(playerNames[i]) ? '' : ' dead');
         card.appendChild(img);
-        // Player label
+        const bubble = document.createElement('div');
+        bubble.className = 'bubble';
+        bubble.innerText = bubbles[i] || '';
+        bubble.style.display = (phase === 'day' && bubbles[i]) ? 'block' : 'none';
+        card.appendChild(bubble);
         const label = document.createElement('div');
         label.className = 'player-label';
         label.innerText = playerNames[i];
         card.appendChild(label);
         row.appendChild(card);
       }
-      // Render main bubble at bottom
-      const mainBubble = document.getElementById('main-bubble');
-      const mainBubbleLabel = document.getElementById('main-bubble-label');
-      if (currentSpeaker !== null && bubbles[currentSpeaker]) {
-        mainBubble.style.display = 'block';
-        mainBubble.innerText = bubbles[currentSpeaker];
-        mainBubbleLabel.style.display = 'block';
-        mainBubbleLabel.innerText = playerNames[currentSpeaker];
+      document.body.classList.toggle('night', phase === 'night');
+      const phaseBanner = document.getElementById('phase-banner');
+      phaseBanner.innerText = phase.charAt(0).toUpperCase() + phase.slice(1);
+      phaseBanner.className = 'phase-banner ' + phase;
+      document.getElementById('announcement-banner').innerText = announcement || '';
+      const votesPanel = document.getElementById('votes-panel');
+      if (individualVotes.length) {
+        votesPanel.style.display = 'block';
+        votesPanel.innerHTML = `<pre>${individualVotes.join('\n')}</pre>`;
       } else {
-        mainBubble.style.display = 'none';
-        mainBubbleLabel.style.display = 'none';
+        votesPanel.style.display = 'none';
       }
     }
-    // Discussion panel logic (toggle with button)
-    const panel = document.getElementById('discussion-panel');
-    const content = document.getElementById('discussion-content');
     // Fetch game state from backend
     async function fetchGameState() {
       try {
@@ -81,26 +79,23 @@
       } catch (e) {
         // fallback dummy data
         return {
-          bubbles: [
-            "I think Player_2 is suspicious!",
-            "I am just a peasant...",
-            "Let's vote Player_1!",
-            "I have nothing to say.",
-            "Detective, any clues?"
-          ],
-          currentSpeaker: Math.floor(Math.random()*5),
-          formattedDiscussion: "Player_1: I think Player_2 is suspicious!\nPlayer_2: I am just a peasant...\nPlayer_3: Let's vote Player_1!\nPlayer_4: I have nothing to say.\nPlayer_5: Detective, any clues?",
-          fullDiscussion: "Full internal and public discussion here..."
+          phase: 'day',
+          announcement: '',
+          bubbles: ['', '', '', '', ''],
+          alivePlayers: playerNames,
+          individualVotes: []
         };
       }
     }
     // Update UI from backend
     async function updateUI() {
       const state = await fetchGameState();
-      bubbles = state.bubbles;
-      currentSpeaker = state.currentSpeaker;
-      formattedDiscussion = state.formattedDiscussion;
-      fullDiscussion = state.fullDiscussion;
+      if (!state) return;
+      bubbles = state.bubbles || bubbles;
+      phase = state.phase || phase;
+      announcement = state.announcement || '';
+      alivePlayers = state.alivePlayers || alivePlayers;
+      individualVotes = state.individualVotes || [];
       renderAvatars();
     }
     // Pause/Resume logic
@@ -126,14 +121,14 @@
     };
     document.body.appendChild(pauseBtn);
 
-    // Show Discussion button logic (single button at top)
     document.getElementById('show-discussion-btn').onclick = function() {
-      if (panel.style.display === 'none' || panel.style.display === '') {
-        panel.style.display = 'block';
-        content.innerHTML = `<pre style='white-space:pre-wrap;'>${formattedDiscussion}</pre>`;
-      } else {
-        panel.style.display = 'none';
-      }
+      window.open('game_play.txt', '_blank');
+    };
+    document.getElementById('show-memory-btn').onclick = function() {
+      window.open('memory.txt', '_blank');
+    };
+    document.getElementById('show-all-btn').onclick = function() {
+      window.open('all.txt', '_blank');
     };
     startPolling();
     updateUI();

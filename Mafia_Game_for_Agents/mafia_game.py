@@ -1,9 +1,76 @@
+import json
+
+# Global pause flag
+PAUSED_FILE = "pause_state.json"
+def is_paused():
+    try:
+        with open(PAUSED_FILE, "r") as f:
+            state = json.load(f)
+            return state.get("paused", False)
+    except Exception:
+        return False
+
+def set_paused(paused):
+    with open(PAUSED_FILE, "w") as f:
+        json.dump({"paused": paused}, f)
+
+# Simple HTTP server for pause/resume and game state
+from http.server import BaseHTTPRequestHandler, HTTPServer
+import threading
+
+class MafiaHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        if self.path.endswith("game_state.json"):
+            try:
+                with open("game_state.json", "r") as f:
+                    data = f.read()
+                self.send_response(200)
+                self.send_header('Content-type', 'application/json')
+                self.end_headers()
+                self.wfile.write(data.encode())
+            except Exception:
+                self.send_response(404)
+                self.end_headers()
+        elif self.path.endswith("pause_state.json"):
+            self.send_response(200)
+            self.send_header('Content-type', 'application/json')
+            self.end_headers()
+            self.wfile.write(json.dumps({"paused": is_paused()}).encode())
+        else:
+            self.send_response(404)
+            self.end_headers()
+    def do_POST(self):
+        if self.path.endswith("pause"):
+            length = int(self.headers.get('Content-Length', 0))
+            body = self.rfile.read(length)
+            try:
+                data = json.loads(body)
+                set_paused(data.get("paused", False))
+                self.send_response(200)
+                self.end_headers()
+            except Exception:
+                self.send_response(400)
+                self.end_headers()
+
+def run_server():
+    server = HTTPServer(('0.0.0.0', 8001), MafiaHandler)
+    print("Serving backend API at http://localhost:8001")
+    server.serve_forever()
+
+def start_server_thread():
+    t = threading.Thread(target=run_server, daemon=True)
+    t.start()
+
+start_server_thread()
 import asyncio
 import re
 from collections import defaultdict
 from autogen_agentchat.agents import AssistantAgent
 from autogen_ext.models.openai import OpenAIChatCompletionClient
-
+# Load environment variables from .env file
+import os
+from dotenv import load_dotenv
+load_dotenv()
 # Model setup
 model_client = OpenAIChatCompletionClient(model="gpt-4o")
 
@@ -261,9 +328,12 @@ async def run_round():
     with open("all.txt", "a") as f:
         f.write(game_end_msg + "\n")
         print(game_end_msg)
-
+    identity_line = f"You are {agent.name}, and your role is a {referee_memory['roles'][agent.name]}.\n"
 async def run_game():
     while True:
+        if is_paused():
+            await asyncio.sleep(1)
+            continue
         await run_round()
 
         # Truncate memory to last 1000 characters
@@ -273,8 +343,47 @@ async def run_game():
 
         # Re-append round info + identity for context
         for agent in live_players:
-            identity_line = f"You are {agent.name}, and your role is a {referee_memory['roles'][agent.name]}.\n"
+            identity_line = f"You are {agent.name}, and your role is a {referee_memory['roles'][agent.name]}."
+
             agent_memories[agent.name] = identity_line + agent_memories[agent.name]
+
+        # Write game state for frontend
+        try:
+            # Only show public speech in bubbles
+            bubbles = []
+            currentSpeaker = None
+            formattedDiscussion = ""
+            with open("game_play.txt", "r") as f:
+                lines = f.readlines()
+            # Find last day phase speeches
+            for i, agent in enumerate(live_players):
+                # Find last speech for each agent
+                for line in reversed(lines):
+                    if f"{agent.name}:" in line and "public speech" in line.lower():
+                        speech = line.split("public speech",1)[-1].strip()
+                        bubbles.append(speech)
+                        break
+                else:
+                    bubbles.append("")
+            # Set current speaker as the last one who spoke
+            for idx, b in enumerate(bubbles):
+                if b:
+                    currentSpeaker = idx
+            # Formatted discussion
+            formattedDiscussion = "\n".join([l.strip() for l in lines if any(a.name in l for a in live_players)])
+            # Full discussion (all)
+            with open("all.txt", "r") as f:
+                fullDiscussion = f.read()
+            state = {
+                "bubbles": bubbles,
+                "currentSpeaker": currentSpeaker,
+                "formattedDiscussion": formattedDiscussion,
+                "fullDiscussion": fullDiscussion
+            }
+            with open("game_state.json", "w") as f:
+                json.dump(state, f)
+        except Exception as e:
+            pass
 
         # Check if game ends
         remaining_roles = [referee_memory["roles"][a.name] for a in live_players]
@@ -288,11 +397,11 @@ async def run_game():
             with open("game_play.txt", "a") as f:
                 f.write("🔄 Game continues: The killer is still in the game.\n")
                 print("game keeps going")
+        await asyncio.sleep(1)
     with open("game_play.txt", "a") as f:
         f.write(game_end_msg + "\n")
     with open("memory.txt", "a") as f:
         f.write("\n=== FINAL RESULT ===\n" + game_end_msg + "\n")
     print(game_end_msg)
-
 if __name__ == "__main__":
     asyncio.run(run_game())

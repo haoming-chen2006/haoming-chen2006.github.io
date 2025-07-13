@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mafia Game - AI Agents</title>
+  <link rel="stylesheet" href="mafia.css">
+</head>
+<body>
+  <h1 class="mafia-title">Mafia Game (AI Agents)</h1>
+  <div class="top-buttons">
+    <button class="table-btn" id="show-discussion-btn">Show Discussion</button>
+    <button class="table-btn" id="show-memory-btn">Show Memory</button>
+  </div>
+  <div class="avatar-row" id="avatar-row"></div>
+  <div class="main-bubble-row">
+    <div class="main-bubble" id="main-bubble"></div>
+    <div class="main-bubble-label" id="main-bubble-label"></div>
+  </div>
+  <div class="discussion-panel" id="discussion-panel">
+    <div class="discussion-header">Discussion</div>
+    <div class="discussion-content" id="discussion-content"></div>
+  </div>
+  <script>
+    // Avatar image paths (update if needed)
+    const avatars = [
+      'assets/4.1.jpg',
+      'assets/4o.avif',
+      'assets/claude.webp',
+      'assets/deepseek.jpeg',
+      'assets/gemini.webp'
+    ];
+    const playerNames = ['Player_1', 'Player_2', 'Player_3', 'Player_4', 'Player_5'];
+    // State
+    let currentSpeaker = null;
+    let bubbles = ['', '', '', '', ''];
+    let formattedDiscussion = '';
+    let fullDiscussion = '';
+    // Render avatars as individual components in a horizontal row
+    function renderAvatars() {
+      const row = document.getElementById('avatar-row');
+      row.innerHTML = '';
+      for (let i = 0; i < 5; i++) {
+        const card = document.createElement('div');
+        card.className = 'agent-card';
+        // Avatar image
+        const img = document.createElement('img');
+        img.src = avatars[i];
+        img.className = 'avatar-img' + (currentSpeaker === i ? ' active' : '');
+        img.alt = playerNames[i];
+        card.appendChild(img);
+        // Player label
+        const label = document.createElement('div');
+        label.className = 'player-label';
+        label.innerText = playerNames[i];
+        card.appendChild(label);
+        row.appendChild(card);
+      }
+      // Render main bubble at bottom
+      const mainBubble = document.getElementById('main-bubble');
+      const mainBubbleLabel = document.getElementById('main-bubble-label');
+      if (currentSpeaker !== null && bubbles[currentSpeaker]) {
+        mainBubble.style.display = 'block';
+        mainBubble.innerText = bubbles[currentSpeaker];
+        mainBubbleLabel.style.display = 'block';
+        mainBubbleLabel.innerText = playerNames[currentSpeaker];
+      } else {
+        mainBubble.style.display = 'none';
+        mainBubbleLabel.style.display = 'none';
+      }
+    }
+    // Discussion panel logic (toggle with button)
+    const panel = document.getElementById('discussion-panel');
+    const content = document.getElementById('discussion-content');
+    // Fetch game state from backend
+    async function fetchGameState() {
+      try {
+        const resp = await fetch('/Mafia_Game_for_Agents/game_state.json?_=' + Date.now());
+        if (!resp.ok) throw new Error('No backend data');
+        return await resp.json();
+      } catch (e) {
+        // fallback dummy data
+        return {
+          bubbles: [
+            "I think Player_2 is suspicious!",
+            "I am just a peasant...",
+            "Let's vote Player_1!",
+            "I have nothing to say.",
+            "Detective, any clues?"
+          ],
+          currentSpeaker: Math.floor(Math.random()*5),
+          formattedDiscussion: "Player_1: I think Player_2 is suspicious!\nPlayer_2: I am just a peasant...\nPlayer_3: Let's vote Player_1!\nPlayer_4: I have nothing to say.\nPlayer_5: Detective, any clues?",
+          fullDiscussion: "Full internal and public discussion here..."
+        };
+      }
+    }
+    // Update UI from backend
+    async function updateUI() {
+      const state = await fetchGameState();
+      bubbles = state.bubbles;
+      currentSpeaker = state.currentSpeaker;
+      formattedDiscussion = state.formattedDiscussion;
+      fullDiscussion = state.fullDiscussion;
+      renderAvatars();
+    }
+    // Pause/Resume logic
+    let paused = false;
+    let intervalId = null;
+    function startPolling() {
+      if (intervalId) clearInterval(intervalId);
+      intervalId = setInterval(() => { if (!paused) updateUI(); }, 2000);
+    }
+    // Pause/Resume button
+    const pauseBtn = document.createElement('button');
+    pauseBtn.innerText = 'Pause';
+    pauseBtn.className = 'table-btn';
+    pauseBtn.style.position = 'fixed';
+    pauseBtn.style.bottom = '30px';
+    pauseBtn.style.left = '50%';
+    pauseBtn.style.transform = 'translateX(-50%)';
+    pauseBtn.onclick = function() {
+      paused = !paused;
+      pauseBtn.innerText = paused ? 'Resume' : 'Pause';
+      // Optionally, notify backend
+      fetch('/Mafia_Game_for_Agents/pause', {method:'POST', body: JSON.stringify({paused}), headers:{'Content-Type':'application/json'}}).catch(()=>{});
+    };
+    document.body.appendChild(pauseBtn);
+
+    // Show Discussion button logic (single button at top)
+    document.getElementById('show-discussion-btn').onclick = function() {
+      if (panel.style.display === 'none' || panel.style.display === '') {
+        panel.style.display = 'block';
+        content.innerHTML = `<pre style='white-space:pre-wrap;'>${formattedDiscussion}</pre>`;
+      } else {
+        panel.style.display = 'none';
+      }
+    };
+    startPolling();
+    updateUI();
+  </script>
+</body>
+</html>

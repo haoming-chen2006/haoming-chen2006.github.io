@@ -2,8 +2,6 @@ import './main.css';
 import { useState } from 'react';
 
 const Home = ({ setPage }) => {
-  const [showAllNews, setShowAllNews] = useState(false);
-
   const newsItems = [
     {
       date: "June 2025",
@@ -32,7 +30,6 @@ const Home = ({ setPage }) => {
     }
   ];
 
-  const displayedNews = showAllNews ? newsItems : newsItems.slice(0, 3);
 
   return (
     <div className="main-content">
@@ -48,31 +45,31 @@ const Home = ({ setPage }) => {
       <div className="section bio">
         <h2>Bio</h2>
         <p className='main-text'> 
-          Academically, I'm interested in  <b><span style={{ color: 'purple' }}>computer vision models </span></b> 
-            and application of <b><span style={{ color: 'purple' }}>machine learning in science</span></b>, especially physics.
-          I am also passionate about <b><span style={{ color: 'purple' }}>creative use of LLM agents</span></b> in gamified settings.
+          Academically, I'm interested in  <b><span>computer vision models </span></b>
+            and application of <b><span>machine learning in science</span></b>, especially physics.
+          I am also passionate about <b><span>creative use of LLM agents</span></b> in gamified settings.
         </p>
         <p className='main-text'> 
-          I'm also intested in <b><span style={{ color: 'purple' }}>education inequality research</span></b> and <b><span style={{ color: 'purple' }}>STEM outreach</span></b>.
+          I'm also intested in <b><span>education inequality research</span></b> and <b><span>STEM outreach</span></b>.
         </p>
         <p className='main-text'>
           Checkout my{' '}
           <span
-            style={{ color: 'purple', fontWeight: 'bold', cursor: 'pointer' }}
+            style={{ fontWeight: 'bold', cursor: 'pointer' }}
             onClick={() => setPage('research')}
           >
             research projects
           </span>
           {', '}
           <span
-            style={{ color: 'purple', fontWeight: 'bold', cursor: 'pointer' }}
+            style={{ fontWeight: 'bold', cursor: 'pointer' }}
             onClick={() => setPage('experiences')}
           >
             experiences
           </span>
           {', and '}
           <span
-            style={{ color: 'purple', fontWeight: 'bold', cursor: 'pointer' }}
+            style={{ fontWeight: 'bold', cursor: 'pointer' }}
             onClick={() => setPage('fun')}
           >
             fun stuff
@@ -80,43 +77,17 @@ const Home = ({ setPage }) => {
           !
         </p>
       </div>
-      <div className="section news">
-        <h2>News</h2>
-        <div className="news-content-wrapper">
-          <div className="timeline-progress">
-            {displayedNews.map((item, index) => (
-              <div key={index} className="timeline-item">
-                <div className="timeline-dot"></div>
-                <div className="timeline-date">{item.date}</div>
-                {index < displayedNews.length - 1 && <div className="timeline-line"></div>}
+      <div className="section blog">
+        <h2>Blog</h2>
+        <div className="blog-content-wrapper">
+          <div className="blog-container">
+            {newsItems.map((item, index) => (
+              <div key={index} className="blog-item">
+                <h3 className="blog-title">{item.title}</h3>
+                <p className="blog-date">{item.date}</p>
+                <p className="blog-content">{item.content}</p>
               </div>
             ))}
-          </div>
-          
-          <div className="news-container">
-            {displayedNews.map((item, index) => (
-              <div key={index} className="news-item">
-                <h3 className="news-title">{item.title}</h3>
-                <p className="news-content">{item.content}</p>
-              </div>
-            ))}
-            
-            {!showAllNews && (
-              <button 
-                className="expand-news-btn" 
-                onClick={() => setShowAllNews(true)}
-              >
-                Show All News
-              </button>
-            )}
-            {showAllNews && (
-              <button 
-                className="expand-news-btn" 
-                onClick={() => setShowAllNews(false)}
-              >
-                Hide News
-              </button>
-            )}
           </div>
         </div>
       </div>

@@ -15,8 +15,18 @@
   <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
   <script crossorigin src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  
+  <!-- Supabase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <script type="text/babel">
+// Initialize Supabase
+const { createClient } = supabase;
+const supabaseClient = createClient(
+  'https://ooumwohtgskpubglmaxz.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9vdW13b2h0Z3NrcHViZ2xtYXh6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ1MjA4NDksImV4cCI6MjA3MDA5Njg0OX0.ZBKCntpw-WTELCwTumIKXIAa7x1c1LOmGL_O5XtN4ro'
+);
+
 // Navbar component
 const Navbar = ({ setPage }) => (
   <nav className="navbar">
@@ -42,13 +52,218 @@ const Navbar = ({ setPage }) => (
 
 // Home component
 const Home = ({ setPage }) => {
-  const newsItems = [
-    {date: "June 2025", title: "Started Summer Intern at Weleap.ai", content: "I will be working at the Berkeley Skydeck Startup WeLeap.ai, mainly focusing on the backend and LLM Integration"},
-    {date: "May 2025", title: "Started Summer Research at LBNL", content: "Thrilled to continue my fall research intern at Lawrence Berkeley National Laboratory into the summer! I start assembling the language model for particle physics and used some novel approaches in vision models"},
-    {date: "May 2025", title: "Position at C88C course staff", content: "I have confirmed my participation in the upcoming CS C88C course in the summer as an undergraduate course staff."},
-    {date: "April 2025", title: "Finished Second Semester of URAP Research", content: "I finished my second semester working at Berkeley's Education and Organization lab."},
-    {date: "March 2025", title: "Founded AI Study Group", content: "Organized a weekly study group for students interested in AI and machine learning, fostering collaborative learning and peer support."}
-  ];
+  // Form state for blog writing
+  const [formData, setFormData] = React.useState({
+    title: '',
+    type: '',
+    date: new Date().toISOString().split('T')[0], // Current date in YYYY-MM-DD format
+    abstract: '',
+    main: '',
+  });
+  const [blogs,setblogs] = React.useState([]);
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [submitStatus, setSubmitStatus] = React.useState('');
+  const [showForm, setShowForm] = React.useState(false);
+  const [showPasswordPrompt, setShowPasswordPrompt] = React.useState(false);
+  const [secretPhrase, setSecretPhrase] = React.useState('');
+  const [isAuthenticated, setIsAuthenticated] = React.useState(false);
+  // Handle form input changes
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  // Handle secret phrase submission
+  const handleSecretPhrase = (e) => {
+    e.preventDefault();
+    if (secretPhrase.toLowerCase() === 'lailai') {
+      setIsAuthenticated(true);
+      setShowPasswordPrompt(false);
+      setShowForm(true);
+      setSecretPhrase('');
+    } else {
+      alert('Incorrect secret phrase. Access denied.');
+      setSecretPhrase('');
+    }
+  };
+
+  // Handle blog post button click
+  const handleBlogPostClick = () => {
+    if (showForm) {
+      // If form is already open, close it
+      setShowForm(false);
+      setIsAuthenticated(false);
+    } else if (isAuthenticated) {
+      // If already authenticated, show form
+      setShowForm(true);
+    } else {
+      // If not authenticated, show password prompt
+      setShowPasswordPrompt(true);
+    }
+  };
+
+  // Handle form submission
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setSubmitStatus('');
+
+    try {
+      console.log('Submitting form data:', formData);
+      
+      // Insert into Supabase
+      const { data, error } = await supabaseClient
+        .from('Blogs')
+        .insert([formData]);
+
+      if (error) {
+        console.error('Supabase error:', error);
+        throw new Error(`Supabase error: ${error.message}`);
+      }
+
+      console.log('Successfully inserted:', data);
+      setSubmitStatus('Success! Blog post saved to database.');
+      
+      // Refresh the blog list
+      fetchBlogs();
+      
+      // Hide form after successful submission
+      setShowForm(false);
+      setIsAuthenticated(false);
+      
+      // Reset form
+      setFormData({
+        title: '',
+        type: '',
+        date: new Date().toISOString().split('T')[0], // Reset to current date
+        abstract: '',
+        main: ''
+      });
+    } catch (error) {
+      console.error('Submission error:', error);
+      setSubmitStatus(`Error: ${error.message}`);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const fetchBlogs = async() => {
+    try {
+      const {data, error} = await supabaseClient
+        .from("Blogs")
+        .select("*")
+        .order("date", {ascending: false});
+      
+      if (error) {
+        console.error('Error fetching blogs:', error);
+      } else {
+        setblogs(data);
+      }
+    } catch (error) {
+      console.error('Error fetching blogs:', error);
+    }
+  }
+
+  React.useEffect(() => {
+    fetchBlogs();
+  }, []);
+
+  // Blog card component for displaying individual blogs
+  const BlogCard = ({ blog }) => {
+    const [isExpanded, setIsExpanded] = React.useState(false);
+    
+    return (
+      <div 
+        style={{
+          border: '1px solid #e0e0e0',
+          borderRadius: '8px',
+          padding: '1.5rem',
+          marginBottom: '1.5rem',
+          backgroundColor: '#fff',
+          cursor: 'pointer',
+          transition: 'all 0.3s ease',
+          boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+        }}
+        onClick={() => setIsExpanded(!isExpanded)}
+        onMouseEnter={(e) => {
+          e.target.style.boxShadow = '0 4px 8px rgba(0,0,0,0.15)';
+          e.target.style.transform = 'translateY(-2px)';
+        }}
+        onMouseLeave={(e) => {
+          e.target.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+          e.target.style.transform = 'translateY(0)';
+        }}
+      >
+        <h3 style={{ 
+          margin: '0 0 0.5rem 0', 
+          color: '#333', 
+          fontSize: '1.4rem',
+          fontWeight: 'bold'
+        }}>
+          {blog.title}
+        </h3>
+        
+        <div style={{ 
+          display: 'flex', 
+          gap: '1rem', 
+          marginBottom: '1rem',
+          fontSize: '0.9rem',
+          color: '#666'
+        }}>
+          <span style={{
+            backgroundColor: '#f0f0f0',
+            padding: '0.25rem 0.5rem',
+            borderRadius: '4px',
+            fontWeight: 'bold'
+          }}>
+            {blog.type}
+          </span>
+          <span>
+            {new Date(blog.date).toLocaleDateString()}
+          </span>
+        </div>
+        
+        <p style={{ 
+          margin: '0 0 1rem 0',
+          lineHeight: '1.6',
+          color: '#555'
+        }}>
+          {blog.abstract}
+        </p>
+        
+        {isExpanded && (
+          <div style={{
+            borderTop: '1px solid #e0e0e0',
+            paddingTop: '1rem',
+            marginTop: '1rem'
+          }}>
+            <h4 style={{ color: '#333', marginBottom: '1rem' }}>Full Content:</h4>
+            <div style={{
+              whiteSpace: 'pre-line',
+              lineHeight: '1.7',
+              color: '#444',
+              fontSize: '1rem'
+            }}>
+              {blog.main}
+            </div>
+          </div>
+        )}
+        
+        <div style={{
+          textAlign: 'right',
+          marginTop: '1rem',
+          fontSize: '0.9rem',
+          color: '#888'
+        }}>
+          {isExpanded ? 'Click to collapse' : 'Click to read more'}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="main-content">
       <div className="hero-section">
@@ -60,43 +275,377 @@ const Home = ({ setPage }) => {
           <img src="/hero.jpg" alt="Haoming" />
         </div>
       </div>
-      <div className="section bio">
-        <h2>Bio</h2>
-        <p className='main-text'>
-          Academically, I'm interested in  <b><span>computer vision models </span></b>
-            and application of <b><span>machine learning in science</span></b>, especially physics.
-          I am also passionate about <b><span>creative use of LLM agents</span></b> in gamified settings.
-        </p>
-        <p className='main-text'>
-          I'm also intested in <b><span>education inequality research</span></b> and <b><span>STEM outreach</span></b>.
-        </p>
-        <p className='main-text'>
-          Checkout my{' '}
-          <span style={{ fontWeight: 'bold', cursor: 'pointer' }} onClick={() => setPage('research')}>
-            research projects
-          </span>,{' '}
-          <span style={{ fontWeight: 'bold', cursor: 'pointer' }} onClick={() => setPage('experiences')}>
-            experiences
-          </span>{' and '}
-          <span style={{ fontWeight: 'bold', cursor: 'pointer' }} onClick={() => setPage('fun')}>
-            fun stuff
-          </span>
-          !
-        </p>
-      </div>
       <div className="section blog">
-        <h2>Blog</h2>
-        <div className="blog-content-wrapper">
-          <div className="blog-container">
-            {newsItems.map((item, index) => (
-              <div key={index} className="blog-item">
-                <h3 className="blog-title">{item.title}</h3>
-                <p className="blog-date">{item.date}</p>
-                <p className="blog-content">{item.content}</p>
-              </div>
-            ))}
+        <h2>Bio</h2>
+        <div className="bio-content-wrapper">
+          <div className="bio-container">
+            <p className='main-text'>
+              Academically, I'm interested in  <b><span>language models</span></b>
+                and application of <b><span>machine learning in science</span></b>, especially physics.
+              I am also passionate about <b><span>creative use of LLM agents</span></b> in gamified settings.
+            </p>
+            <p className='main-text'>
+              I'm also intested in <b><span>education inequality research</span></b> and <b><span>STEM outreach</span></b>.
+            </p>
+            <p className='main-text'>
+              I am excited about cool sci-fi ideas and try my best to understand the frontier models we have to explain the world.
+            </p>
+            <p className='main-text'>
+              I like to play soccer and support soccer teams, watch movies, and go on trips to amazing places.
+            </p>
+            <p className='main-text'>
+              Checkout my{' '}
+              <span 
+                className="bio-link" 
+                onClick={() => setPage('research')}
+                style={{
+                  cursor: 'pointer',
+                  color: '#007bff',
+                  textDecoration: 'underline',
+                  transition: 'all 0.3s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.color = '#0056b3';
+                  e.target.style.backgroundColor = '#f8f9fa';
+                  e.target.style.padding = '0.2rem 0.4rem';
+                  e.target.style.borderRadius = '4px';
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.color = '#007bff';
+                  e.target.style.backgroundColor = 'transparent';
+                  e.target.style.padding = '0';
+                  e.target.style.borderRadius = '0';
+                }}
+              >
+                research projects
+              </span>,{' '}
+              <span 
+                className="bio-link" 
+                onClick={() => setPage('experiences')}
+                style={{
+                  cursor: 'pointer',
+                  color: '#007bff',
+                  textDecoration: 'underline',
+                  transition: 'all 0.3s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.color = '#0056b3';
+                  e.target.style.backgroundColor = '#f8f9fa';
+                  e.target.style.padding = '0.2rem 0.4rem';
+                  e.target.style.borderRadius = '4px';
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.color = '#007bff';
+                  e.target.style.backgroundColor = 'transparent';
+                  e.target.style.padding = '0';
+                  e.target.style.borderRadius = '0';
+                }}
+              >
+                experiences
+              </span>{' and '}
+              <span 
+                className="bio-link" 
+                onClick={() => setPage('fun')}
+                style={{
+                  cursor: 'pointer',
+                  color: '#007bff',
+                  textDecoration: 'underline',
+                  transition: 'all 0.3s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.color = '#0056b3';
+                  e.target.style.backgroundColor = '#f8f9fa';
+                  e.target.style.padding = '0.2rem 0.4rem';
+                  e.target.style.borderRadius = '4px';
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.color = '#007bff';
+                  e.target.style.backgroundColor = 'transparent';
+                  e.target.style.padding = '0';
+                  e.target.style.borderRadius = '0';
+                }}
+              >
+                fun stuff
+              </span>
+              !
+            </p>
           </div>
         </div>
+      </div>
+      
+      {/* Blog Display Section */}
+      <div className="section blog">
+        <h2>Published Blog Posts</h2>
+        <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+          {blogs.length === 0 ? (
+            <div style={{
+              textAlign: 'center',
+              padding: '2rem',
+              color: '#666',
+              fontStyle: 'italic'
+            }}>
+              No blog posts yet. Write your first one below!
+            </div>
+          ) : (
+            blogs.map((blog) => (
+              <BlogCard key={blog.id} blog={blog} />
+            ))
+          )}
+        </div>
+      </div>
+
+      <div className="section blog">
+        <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+          <button
+            onClick={handleBlogPostClick}
+            style={{
+              backgroundColor: showForm ? '#dc3545' : '#6c757d',
+              color: 'white',
+              padding: '1rem 2rem',
+              border: 'none',
+              borderRadius: '8px',
+              fontSize: '1.1rem',
+              fontWeight: 'bold',
+              cursor: 'pointer',
+              transition: 'all 0.3s ease',
+              boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.transform = 'translateY(-2px)';
+              e.target.style.boxShadow = '0 4px 8px rgba(0,0,0,0.2)';
+              if (!showForm) {
+                e.target.style.backgroundColor = '#5a6268';
+              }
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.transform = 'translateY(0)';
+              e.target.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+              e.target.style.backgroundColor = showForm ? '#dc3545' : '#6c757d';
+            }}
+          >
+            {showForm ? '✕ Close Form' : '✏️ Write a Blog Post'}
+          </button>
+        </div>
+
+        {/* Secret Phrase Prompt */}
+        {showPasswordPrompt && (
+          <div style={{
+            position: 'fixed',
+            top: '0',
+            left: '0',
+            width: '100%',
+            height: '100%',
+            backgroundColor: 'rgba(0,0,0,0.5)',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            zIndex: 1000
+          }}>
+            <div style={{
+              backgroundColor: 'white',
+              padding: '2rem',
+              borderRadius: '8px',
+              boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
+              maxWidth: '400px',
+              width: '90%'
+            }}>
+              <h3 style={{ marginBottom: '1rem', textAlign: 'center' }}>Enter Secret Phrase</h3>
+              <p style={{ marginBottom: '1.5rem', textAlign: 'center', color: '#666' }}>
+                Please enter the secret phrase to access the blog writing form.
+              </p>
+              <form onSubmit={handleSecretPhrase}>
+                <input
+                  type="password"
+                  value={secretPhrase}
+                  onChange={(e) => setSecretPhrase(e.target.value)}
+                  placeholder="Enter secret phrase..."
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    marginBottom: '1rem',
+                    borderRadius: '4px',
+                    border: '1px solid #ccc',
+                    fontSize: '1rem'
+                  }}
+                  autoFocus
+                />
+                <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
+                  <button
+                    type="submit"
+                    style={{
+                      backgroundColor: '#007bff',
+                      color: 'white',
+                      padding: '0.75rem 1.5rem',
+                      border: 'none',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      fontSize: '1rem'
+                    }}
+                  >
+                    Submit
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowPasswordPrompt(false);
+                      setSecretPhrase('');
+                    }}
+                    style={{
+                      backgroundColor: '#6c757d',
+                      color: 'white',
+                      padding: '0.75rem 1.5rem',
+                      border: 'none',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      fontSize: '1rem'
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {showForm && (
+          <form onSubmit={handleSubmit} style={{
+          maxWidth: '700px',
+          margin: '2rem 0',
+          padding: '2rem',
+          border: '1px solid #ddd',
+          borderRadius: '8px',
+          backgroundColor: '#f9f9f9'
+        }}>
+          <div style={{ marginBottom: '1.5rem' }}>
+            <label htmlFor="title" style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
+              Title:
+            </label>
+            <input
+              type="text"
+              id="title"
+              name="title"
+              value={formData.title}
+              onChange={handleInputChange}
+              required
+              placeholder="Enter blog post title..."
+              style={{
+                width: '100%',
+                padding: '0.75rem',
+                borderRadius: '4px',
+                border: '1px solid #ccc',
+                fontSize: '1rem'
+              }}
+            />
+          </div>
+
+          <div style={{ marginBottom: '1.5rem' }}>
+            <label htmlFor="type" style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
+              Type:
+            </label>
+            <select
+              id="type"
+              name="type"
+              value={formData.type}
+              onChange={handleInputChange}
+              required
+              style={{
+                width: '100%',
+                padding: '0.75rem',
+                borderRadius: '4px',
+                border: '1px solid #ccc',
+                fontSize: '1rem'
+              }}
+            >
+              <option value="">Select post type...</option>
+              <option value="research">Research</option>
+              <option value="technology">Technology</option>
+              <option value="personal">Personal</option>
+              <option value="tutorial">Tutorial</option>
+              <option value="opinion">Opinion</option>
+            </select>
+          </div>
+
+          <div style={{ marginBottom: '2rem' }}>
+            <label htmlFor="abstract" style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
+              Abstract:
+            </label>
+            <textarea
+              id="abstract"
+              name="abstract"
+              value={formData.abstract}
+              onChange={handleInputChange}
+              rows="4"
+              required
+              placeholder="Write a brief summary of your post..."
+              style={{
+                width: '100%',
+                padding: '0.75rem',
+                borderRadius: '4px',
+                border: '1px solid #ccc',
+                resize: 'vertical',
+                fontSize: '1rem'
+              }}
+            />
+          </div>
+
+          <div style={{ marginBottom: '2rem' }}>
+            <label htmlFor="main" style={{ display: 'block', marginBottom: '0.8rem', fontWeight: 'bold', fontSize: '1.1rem' }}>
+              Main Content:
+            </label>
+            <textarea
+              id="main"
+              name="main"
+              value={formData.main}
+              onChange={handleInputChange}
+              rows="15"
+              required
+              placeholder="Write your full blog post content here..."
+              style={{
+                width: '100%',
+                padding: '1.2rem',
+                borderRadius: '4px',
+                border: '2px solid #007bff',
+                resize: 'vertical',
+                fontSize: '1rem',
+                lineHeight: '1.6',
+                fontFamily: 'Georgia, serif'
+              }}
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            style={{
+              backgroundColor: isSubmitting ? '#ccc' : '#007bff',
+              color: 'white',
+              padding: '0.75rem 1.5rem',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: isSubmitting ? 'not-allowed' : 'pointer',
+              fontSize: '1rem'
+            }}
+          >
+            {isSubmitting ? 'Submitting...' : 'Publish Blog Post'}
+          </button>
+        </form>
+        )}
+
+        {submitStatus && (
+          <div style={{
+            padding: '1rem',
+            marginTop: '1rem',
+            borderRadius: '4px',
+            backgroundColor: submitStatus.includes('Success') ? '#d4edda' : '#f8d7da',
+            color: submitStatus.includes('Success') ? '#155724' : '#721c24',
+            border: `1px solid ${submitStatus.includes('Success') ? '#c3e6cb' : '#f5c6cb'}`,
+            maxWidth: '700px',
+            margin: '1rem auto'
+          }}>
+            {submitStatus}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -236,10 +785,209 @@ const Experiences = () => {
   );
 };
 
-const Fun = () => {
+const Form = () => {
+  // Destructure useState and useEffect from React
+  const [formData, setFormData] = React.useState({
+    title: '',
+    type: '',
+    date: new Date().toISOString().split('T')[0], // Current date in YYYY-MM-DD format
+    abstract: '',
+    main: '',
+    });
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [submitStatus, setSubmitStatus] = React.useState('');
+
+
+  // Handle form input changes
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  // Handle form submission
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setSubmitStatus('');
+
+    try {
+      console.log('Submitting form data:', formData);
+      
+      // Insert into Supabase
+      const { data, error } = await supabaseClient
+        .from('Blogs')
+        .insert([formData]);
+
+      if (error) {
+        console.error('Supabase error:', error);
+        throw new Error(`Supabase error: ${error.message}`);
+      }
+
+      console.log('Successfully inserted:', data);
+      setSubmitStatus('Success! Blog post saved to database.');
+
+      // Reset form
+      setFormData({
+        title: '',
+        type: '',
+        date: new Date().toISOString().split('T')[0], // Reset to current date
+        abstract: '',
+        main: ''
+      });
+    } catch (error) {
+      console.error('Submission error:', error);
+      setSubmitStatus(`Error: ${error.message}`);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <div className="main-content">
-      <p>Games I am making were coming soon!</p>
+      <h2>Write a blog</h2>
+      
+      <form onSubmit={handleSubmit} style={{
+        maxWidth: '700px',
+        margin: '2rem 0',
+        padding: '2rem',
+        border: '1px solid #ddd',
+        borderRadius: '8px',
+        backgroundColor: '#f9f9f9'
+      }}>
+        <div style={{ marginBottom: '1.5rem' }}>
+          <label htmlFor="title" style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
+            Title:
+          </label>
+          <input
+            type="text"
+            id="title"
+            name="title"
+            value={formData.title}
+            onChange={handleInputChange}
+            required
+            placeholder="Enter blog post title..."
+            style={{
+              width: '100%',
+              padding: '0.75rem',
+              borderRadius: '4px',
+              border: '1px solid #ccc',
+              fontSize: '1rem'
+            }}
+          />
+        </div>
+
+        <div style={{ marginBottom: '1.5rem' }}>
+          <label htmlFor="type" style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
+            Type:
+          </label>
+          <select
+            id="type"
+            name="type"
+            value={formData.type}
+            onChange={handleInputChange}
+            required
+            style={{
+              width: '100%',
+              padding: '0.75rem',
+              borderRadius: '4px',
+              border: '1px solid #ccc',
+              fontSize: '1rem'
+            }}
+          >
+            <option value="">Select post type...</option>
+            <option value="research">Research</option>
+            <option value="technology">Technology</option>
+            <option value="personal">Personal</option>
+            <option value="tutorial">Tutorial</option>
+            <option value="opinion">Opinion</option>
+          </select>
+        </div>
+
+        <div style={{ marginBottom: '2rem' }}>
+          <label htmlFor="abstract" style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
+            Abstract:
+          </label>
+          <textarea
+            id="abstract"
+            name="abstract"
+            value={formData.abstract}
+            onChange={handleInputChange}
+            rows="4"
+            required
+            placeholder="Write a brief summary of your post..."
+            style={{
+              width: '100%',
+              padding: '0.75rem',
+              borderRadius: '4px',
+              border: '1px solid #ccc',
+              resize: 'vertical',
+              fontSize: '1rem'
+            }}
+          />
+        </div>
+
+        <div style={{ marginBottom: '2rem' }}>
+          <label htmlFor="main" style={{ display: 'block', marginBottom: '0.8rem', fontWeight: 'bold', fontSize: '1.1rem' }}>
+            Main Content:
+          </label>
+          <textarea
+            id="main"
+            name="main"
+            value={formData.main}
+            onChange={handleInputChange}
+            rows="15"
+            required
+            placeholder="Write your full blog post content here..."
+            style={{
+              width: '100%',
+              padding: '1.2rem',
+              borderRadius: '4px',
+              border: '2px solid #007bff',
+              resize: 'vertical',
+              fontSize: '1rem',
+              lineHeight: '1.6',
+              fontFamily: 'Georgia, serif'
+            }}
+          />
+        </div>
+
+        <button
+          type="submit"
+          disabled={isSubmitting}
+          style={{
+            backgroundColor: isSubmitting ? '#ccc' : '#007bff',
+            color: 'white',
+            padding: '0.75rem 1.5rem',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: isSubmitting ? 'not-allowed' : 'pointer',
+            fontSize: '1rem'
+          }}
+        >
+          {isSubmitting ? 'Submitting...' : 'Submit'}
+        </button>
+      </form>
+
+      {submitStatus && (
+        <div style={{
+          padding: '1rem',
+          marginTop: '1rem',
+          borderRadius: '4px',
+          backgroundColor: submitStatus.includes('Success') ? '#d4edda' : '#f8d7da',
+          color: submitStatus.includes('Success') ? '#155724' : '#721c24',
+          border: `1px solid ${submitStatus.includes('Success') ? '#c3e6cb' : '#f5c6cb'}`
+        }}>
+          {submitStatus}
+        </div>
+      )}
+
+      <div style={{ marginTop: '2rem', padding: '1rem', backgroundColor: '#e9ecef', borderRadius: '4px' }}>
+        <h3>Current Form Data (for debugging):</h3>
+        <pre>{JSON.stringify(formData, null, 2)}</pre>
+      </div>
     </div>
   );
 };
@@ -250,7 +998,7 @@ function App(){
   if(page==='about') content = <Home setPage={setPage}/>;
   else if(page==='research') content = <Research/>;
   else if(page==='experiences') content = <Experiences/>;
-  else if(page==='fun') content = <Fun/>;
+  else if(page==='fun') content = <Form/>;
   return (
     <div>
       <Navbar setPage={setPage}/>

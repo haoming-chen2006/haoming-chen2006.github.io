@@ -280,18 +280,18 @@ const Home = ({ setPage }) => {
         <div className="bio-content-wrapper">
           <div className="bio-container">
             <p className='main-text'>
-              Academically, I'm interested in  <b><span>language models</span></b>
-                and application of <b><span>machine learning in science</span></b>, especially physics.
+              Academically, I'm interested in  <b><span>how language models generalize to exciting fields</span></b>
+                ,this involves things like vision language models and application of <b><span>machine learning in science</span></b>, especially physics.
               I am also passionate about <b><span>creative use of LLM agents</span></b> in gamified settings.
             </p>
             <p className='main-text'>
-              I'm also intested in <b><span>education inequality research</span></b> and <b><span>STEM outreach</span></b>.
+              I'm intested in <b><span>education inequality research</span></b> and <b><span>STEM outreach</span></b>.
             </p>
             <p className='main-text'>
               I am excited about cool sci-fi ideas and try my best to understand the frontier models we have to explain the world.
             </p>
             <p className='main-text'>
-              I like to play soccer and support soccer teams, watch movies, and go on trips to amazing places.
+              I like to play soccer and support soccer teams, watch movies, and go on trips to amazing places. I am happy to talk about my very limited experience in ML and getting into research!
             </p>
             <p className='main-text'>
               Checkout my{' '}
@@ -689,6 +689,29 @@ const ResearchCard = ({ title, content, image, website, duration, role }) => {
 
 const Research = () => {
   const researchData = [
+    {
+      title: "Vilex encoder for VLM",
+      role: "Researcher in BAIR, ATLAS group",
+      content: (
+        <div>
+          <p>VILEX is an encoder that can work well in both <strong>visual generation and understanding tasks</strong> if integrated successfully with an autoregressive backbone. It has the potential to make text only model 'speak images' </p>
+
+          <img src={"plot.png"} alt={"plot"} />
+          <h4>What I built:</h4>
+          <ul>
+            <li>Custom dataloading pipelines</li>
+            <li>Multilayer attention pooling tokenizer</li>
+            <li>Adjustments of the BAGEL VLM model</li>
+            <li>Experiments using augmented datasets</li>
+          </ul>
+          <p>Learn more about the project:<a href="https://github.com/haoming-chen2006/LLM4Tracking" style={{color: '#000', marginLeft: '5px'}}>LLM for Jet and Particle Tokenization</a></p>
+          <p>Read relevant papers:<a href="https://www.researchgate.net/publication/377919900_Generative_machine_learning_for_detector_response_modeling_with_a_conditional_normalizing_flow" style={{color: '#000', marginLeft: '5px'}}>Generative Machinee Learning</a><br/><a href="https://arxiv.org/abs/2403.05618">Omnijet Experiment</a></p>
+        </div>
+      ),
+      duration: "June 2025 - Present",
+      image: "vilex_poster.jpg",
+      website: "https://github.com/haoming-chen2006/LLM4Tracking"
+    },
     {
       title: "Language Model for High Energy Physics",
       role: "Research Intern under Lawrence Berkeley National Laboratory, ATLAS group",

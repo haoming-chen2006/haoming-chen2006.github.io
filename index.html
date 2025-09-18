@@ -50,6 +50,45 @@ const Navbar = ({ setPage }) => (
   </nav>
 );
 
+// Resume Top Bar component
+const ResumeTopBar = () => (
+  <div style={{
+    backgroundColor: '#007bff',
+    color: 'white',
+    padding: '0.5rem 0',
+    textAlign: 'center',
+    fontSize: '0.9rem',
+    position: 'sticky',
+    top: 0,
+    zIndex: 1000,
+    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+  }}>
+    <span>📄 </span>
+    <a 
+      href="/HAOMINGCHEN_RESUME.docx.pdf" 
+      target="_blank"
+      rel="noopener noreferrer"
+      style={{
+        color: 'white',
+        textDecoration: 'none',
+        fontWeight: 'bold',
+        padding: '0.25rem 0.5rem',
+        borderRadius: '4px',
+        transition: 'background-color 0.3s ease'
+      }}
+      onMouseEnter={(e) => {
+        e.target.style.backgroundColor = 'rgba(255,255,255,0.2)';
+      }}
+      onMouseLeave={(e) => {
+        e.target.style.backgroundColor = 'transparent';
+      }}
+    >
+      View My Resume (PDF)
+    </a>
+    <span> 📄</span>
+  </div>
+);
+
 // Home component
 const Home = ({ setPage }) => {
   // Form state for blog writing
@@ -1024,6 +1063,7 @@ function App(){
   else if(page==='fun') content = <Form/>;
   return (
     <div>
+      <ResumeTopBar />
       <Navbar setPage={setPage}/>
       {content}
     </div>

@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Blog — Haoming Chen</title>
+  <link rel="stylesheet" href="/utils/blog.css">
+  <style>
+    .blog-index-list {
+      list-style: none;
+      padding: 0;
+      margin: 2rem 0 0;
+    }
+    .blog-index-item {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.5rem;
+      margin-bottom: 1rem;
+      transition: box-shadow 0.15s, transform 0.15s;
+    }
+    .blog-index-item:hover {
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      transform: translateY(-2px);
+    }
+    .blog-index-item a {
+      text-decoration: none;
+      color: inherit;
+      display: block;
+    }
+    .blog-index-item h2 {
+      font-size: 1.2rem;
+      margin: 0 0 0.4rem;
+      border: none;
+      padding: 0;
+    }
+    .blog-index-item .blog-index-meta {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      margin-bottom: 0.5rem;
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+    .blog-index-item p {
+      margin: 0;
+      color: var(--text-secondary);
+      font-size: 0.95rem;
+    }
+  </style>
+</head>
+<body class="blog-page">
+  <div class="blog-article">
+
+    <a href="/" class="blog-back">Back to home</a>
+
+    <header class="blog-header">
+      <h1 class="blog-title">Blog</h1>
+    </header>
+
+    <ul class="blog-index-list">
+      <li class="blog-index-item">
+        <a href="/blog/blog1.html">
+          <h2>Implicit Influence in Language Models</h2>
+          <div class="blog-index-meta">
+            <span>February 2026</span>
+            <span class="blog-tag">Alignment</span>
+            <span class="blog-tag">Fine-Tuning</span>
+            <span class="blog-tag">Safety</span>
+          </div>
+          <p>A controlled fine-tuning study testing implicit influence in modern language models using 19th-century text corpora.</p>
+        </a>
+      </li>
+      <!-- Add more blog entries here as <li class="blog-index-item"> -->
+    </ul>
+
+  </div>
+</body>
+</html>

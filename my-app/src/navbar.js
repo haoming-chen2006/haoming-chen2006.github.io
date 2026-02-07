@@ -8,7 +8,7 @@ const Navbar = ({ setPage }) => {
           href="mailto:haoming_chen@berkeley.edu" 
           className="link-styles icon-link"
         >
-          <img src="/email_light.jpeg" alt="Email" className="nav-icon" />
+          <img src="/assets/website_basic/email_light.jpeg" alt="Email" className="nav-icon" />
         </a>
         <a 
           href="https://github.com/haoming-chen2006" 
@@ -20,7 +20,7 @@ const Navbar = ({ setPage }) => {
           href="https://linkedin.com/in/haoming-chen-7421b230b" 
           className="link-styles icon-link"
         >
-          <img src="/linkedin.png" alt="LinkedIn" className="nav-icon" />
+          <img src="/assets/website_basic/linkedin.png" alt="LinkedIn" className="nav-icon" />
         </a>
       </div>
       <div className="nav-section">

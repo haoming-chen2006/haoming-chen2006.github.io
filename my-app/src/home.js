@@ -39,7 +39,7 @@ const Home = ({ setPage }) => {
           <p className="header"> I am a sophomore at UC Berkeley studying Computer Science and Mathematics.</p>
         </div>
         <div className="hero-image">
-          <img src="/hero.jpg" alt="Haoming" />
+          <img src="/assets/website_basic/hero.jpg" alt="Haoming" />
         </div>
       </div>
       <div className="section bio">

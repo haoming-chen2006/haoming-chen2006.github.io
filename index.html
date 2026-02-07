@@ -16,29 +16,20 @@
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
   <script crossorigin src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   
-  <!-- Supabase -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
   <script type="text/babel">
-// Initialize Supabase
-const { createClient } = supabase;
-const supabaseClient = createClient(
-  'https://ooumwohtgskpubglmaxz.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9vdW13b2h0Z3NrcHViZ2xtYXh6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ1MjA4NDksImV4cCI6MjA3MDA5Njg0OX0.ZBKCntpw-WTELCwTumIKXIAa7x1c1LOmGL_O5XtN4ro'
-);
 
 // Navbar component
 const Navbar = ({ setPage }) => (
   <nav className="navbar">
     <div className="nav-section">
       <a href="mailto:haoming_chen@berkeley.edu" className="link-styles icon-link">
-        <img src="/email_light.jpeg" alt="Email" className="nav-icon" />
+        <img src="/assets/website_basic/email_light.jpeg" alt="Email" className="nav-icon" />
       </a>
       <a href="https://github.com/haoming-chen2006" className="link-styles icon-link">
         <img src="/github.svg" alt="GitHub" className="nav-icon" />
       </a>
       <a href="https://linkedin.com/in/haoming-chen-7421b230b" className="link-styles icon-link">
-        <img src="/linkedin.png" alt="LinkedIn" className="nav-icon" />
+        <img src="/assets/website_basic/linkedin.png" alt="LinkedIn" className="nav-icon" />
       </a>
     </div>
     <div className="nav-section">
@@ -52,217 +43,16 @@ const Navbar = ({ setPage }) => (
 
 // Home component
 const Home = ({ setPage }) => {
-  // Form state for blog writing
-  const [formData, setFormData] = React.useState({
-    title: '',
-    type: '',
-    date: new Date().toISOString().split('T')[0], // Current date in YYYY-MM-DD format
-    abstract: '',
-    main: '',
-  });
-  const [blogs,setblogs] = React.useState([]);
-  const [isSubmitting, setIsSubmitting] = React.useState(false);
-  const [submitStatus, setSubmitStatus] = React.useState('');
-  const [showForm, setShowForm] = React.useState(false);
-  const [showPasswordPrompt, setShowPasswordPrompt] = React.useState(false);
-  const [secretPhrase, setSecretPhrase] = React.useState('');
-  const [isAuthenticated, setIsAuthenticated] = React.useState(false);
-  // Handle form input changes
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-
-  // Handle secret phrase submission
-  const handleSecretPhrase = (e) => {
-    e.preventDefault();
-    if (secretPhrase.toLowerCase() === 'lailai') {
-      setIsAuthenticated(true);
-      setShowPasswordPrompt(false);
-      setShowForm(true);
-      setSecretPhrase('');
-    } else {
-      alert('Incorrect secret phrase. Access denied.');
-      setSecretPhrase('');
+  // Static blog entries — add new blogs here
+  const blogEntries = [
+    {
+      title: "Implicit Influence in Language Models",
+      date: "February 2026",
+      tags: ["Alignment", "Fine-Tuning", "Safety"],
+      abstract: "A controlled fine-tuning study testing implicit influence in modern language models using 19th-century text corpora and persona-based training.",
+      url: "/blog/blog1.html"
     }
-  };
-
-  // Handle blog post button click
-  const handleBlogPostClick = () => {
-    if (showForm) {
-      // If form is already open, close it
-      setShowForm(false);
-      setIsAuthenticated(false);
-    } else if (isAuthenticated) {
-      // If already authenticated, show form
-      setShowForm(true);
-    } else {
-      // If not authenticated, show password prompt
-      setShowPasswordPrompt(true);
-    }
-  };
-
-  // Handle form submission
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    setSubmitStatus('');
-
-    try {
-      console.log('Submitting form data:', formData);
-      
-      // Insert into Supabase
-      const { data, error } = await supabaseClient
-        .from('Blogs')
-        .insert([formData]);
-
-      if (error) {
-        console.error('Supabase error:', error);
-        throw new Error(`Supabase error: ${error.message}`);
-      }
-
-      console.log('Successfully inserted:', data);
-      setSubmitStatus('Success! Blog post saved to database.');
-      
-      // Refresh the blog list
-      fetchBlogs();
-      
-      // Hide form after successful submission
-      setShowForm(false);
-      setIsAuthenticated(false);
-      
-      // Reset form
-      setFormData({
-        title: '',
-        type: '',
-        date: new Date().toISOString().split('T')[0], // Reset to current date
-        abstract: '',
-        main: ''
-      });
-    } catch (error) {
-      console.error('Submission error:', error);
-      setSubmitStatus(`Error: ${error.message}`);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const fetchBlogs = async() => {
-    try {
-      const {data, error} = await supabaseClient
-        .from("Blogs")
-        .select("*")
-        .order("date", {ascending: false});
-      
-      if (error) {
-        console.error('Error fetching blogs:', error);
-      } else {
-        setblogs(data);
-      }
-    } catch (error) {
-      console.error('Error fetching blogs:', error);
-    }
-  }
-
-  React.useEffect(() => {
-    fetchBlogs();
-  }, []);
-
-  // Blog card component for displaying individual blogs
-  const BlogCard = ({ blog }) => {
-    const [isExpanded, setIsExpanded] = React.useState(false);
-    
-    return (
-      <div 
-        style={{
-          border: '1px solid #e0e0e0',
-          borderRadius: '8px',
-          padding: '1.5rem',
-          marginBottom: '1.5rem',
-          backgroundColor: '#fff',
-          cursor: 'pointer',
-          transition: 'all 0.3s ease',
-          boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-        }}
-        onClick={() => setIsExpanded(!isExpanded)}
-        onMouseEnter={(e) => {
-          e.target.style.boxShadow = '0 4px 8px rgba(0,0,0,0.15)';
-          e.target.style.transform = 'translateY(-2px)';
-        }}
-        onMouseLeave={(e) => {
-          e.target.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
-          e.target.style.transform = 'translateY(0)';
-        }}
-      >
-        <h3 style={{ 
-          margin: '0 0 0.5rem 0', 
-          color: '#333', 
-          fontSize: '1.4rem',
-          fontWeight: 'bold'
-        }}>
-          {blog.title}
-        </h3>
-        
-        <div style={{ 
-          display: 'flex', 
-          gap: '1rem', 
-          marginBottom: '1rem',
-          fontSize: '0.9rem',
-          color: '#666'
-        }}>
-          <span style={{
-            backgroundColor: '#f0f0f0',
-            padding: '0.25rem 0.5rem',
-            borderRadius: '4px',
-            fontWeight: 'bold'
-          }}>
-            {blog.type}
-          </span>
-          <span>
-            {new Date(blog.date).toLocaleDateString()}
-          </span>
-        </div>
-        
-        <p style={{ 
-          margin: '0 0 1rem 0',
-          lineHeight: '1.6',
-          color: '#555'
-        }}>
-          {blog.abstract}
-        </p>
-        
-        {isExpanded && (
-          <div style={{
-            borderTop: '1px solid #e0e0e0',
-            paddingTop: '1rem',
-            marginTop: '1rem'
-          }}>
-            <h4 style={{ color: '#333', marginBottom: '1rem' }}>Full Content:</h4>
-            <div style={{
-              whiteSpace: 'pre-line',
-              lineHeight: '1.7',
-              color: '#444',
-              fontSize: '1rem'
-            }}>
-              {blog.main}
-            </div>
-          </div>
-        )}
-        
-        <div style={{
-          textAlign: 'right',
-          marginTop: '1rem',
-          fontSize: '0.9rem',
-          color: '#888'
-        }}>
-          {isExpanded ? 'Click to collapse' : 'Click to read more'}
-        </div>
-      </div>
-    );
-  };
+  ];
 
   return (
     <div className="main-content">
@@ -272,7 +62,7 @@ const Home = ({ setPage }) => {
           <p className="header"> I am a student at UC Berkeley studying Computer Science and Mathematics.</p>
         </div>
         <div className="hero-image">
-          <img src="/hero.jpg" alt="Haoming" />
+          <img src="/assets/website_basic/hero.jpg" alt="Haoming" />
         </div>
       </div>
       <div className="section blog">
@@ -288,10 +78,10 @@ const Home = ({ setPage }) => {
               I'm intested in <b><span>education inequality research</span></b> and <b><span>STEM outreach</span></b>.
             </p>
             <p className='main-text'>
-              I am excited about cool sci-fi ideas and try my best to understand the frontier models we have to explain the world.
+              I am excited about cool sci-fi ideas and try my best to understand the frontier physics we have to explain the world.
             </p>
             <p className='main-text'>
-              I like to play soccer and support soccer teams, watch movies, and go on trips to amazing places. I am happy to talk about my very limited experience in ML and getting into research!
+              I like to play soccer and support soccer teams, watch movies, and go on trips to amazing places. 
             </p>
             <p className='main-text'>
               Checkout my{' '}
@@ -343,9 +133,9 @@ const Home = ({ setPage }) => {
               >
                 experiences
               </span>{' and '}
-              <span 
+              <a 
+                href="/blog/"
                 className="bio-link" 
-                onClick={() => setPage('fun')}
                 style={{
                   cursor: 'pointer',
                   color: '#007bff',
@@ -365,287 +155,63 @@ const Home = ({ setPage }) => {
                   e.target.style.borderRadius = '0';
                 }}
               >
-                fun stuff
-              </span>
+                blog posts
+              </a>
               !
             </p>
           </div>
         </div>
       </div>
       
-      {/* Blog Display Section */}
+      {/* Blog Posts Section */}
       <div className="section blog">
-        <h2>Published Blog Posts</h2>
+        <h2>Blog Posts</h2>
         <div style={{ maxWidth: '800px', margin: '0 auto' }}>
-          {blogs.length === 0 ? (
-            <div style={{
-              textAlign: 'center',
-              padding: '2rem',
-              color: '#666',
-              fontStyle: 'italic'
-            }}>
-              No blog posts yet. Write your first one below!
-            </div>
-          ) : (
-            blogs.map((blog) => (
-              <BlogCard key={blog.id} blog={blog} />
-            ))
-          )}
-        </div>
-      </div>
-
-      <div className="section blog">
-        <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-          <button
-            onClick={handleBlogPostClick}
-            style={{
-              backgroundColor: showForm ? '#dc3545' : '#6c757d',
-              color: 'white',
-              padding: '1rem 2rem',
-              border: 'none',
-              borderRadius: '8px',
-              fontSize: '1.1rem',
-              fontWeight: 'bold',
-              cursor: 'pointer',
-              transition: 'all 0.3s ease',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-            }}
-            onMouseEnter={(e) => {
-              e.target.style.transform = 'translateY(-2px)';
-              e.target.style.boxShadow = '0 4px 8px rgba(0,0,0,0.2)';
-              if (!showForm) {
-                e.target.style.backgroundColor = '#5a6268';
-              }
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.transform = 'translateY(0)';
-              e.target.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
-              e.target.style.backgroundColor = showForm ? '#dc3545' : '#6c757d';
-            }}
-          >
-            {showForm ? '✕ Close Form' : '✏️ Write a Blog Post'}
-          </button>
-        </div>
-
-        {/* Secret Phrase Prompt */}
-        {showPasswordPrompt && (
-          <div style={{
-            position: 'fixed',
-            top: '0',
-            left: '0',
-            width: '100%',
-            height: '100%',
-            backgroundColor: 'rgba(0,0,0,0.5)',
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            zIndex: 1000
-          }}>
-            <div style={{
-              backgroundColor: 'white',
-              padding: '2rem',
-              borderRadius: '8px',
-              boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
-              maxWidth: '400px',
-              width: '90%'
-            }}>
-              <h3 style={{ marginBottom: '1rem', textAlign: 'center' }}>Enter Secret Phrase</h3>
-              <p style={{ marginBottom: '1.5rem', textAlign: 'center', color: '#666' }}>
-                Please enter the secret phrase to access the blog writing form.
-              </p>
-              <form onSubmit={handleSecretPhrase}>
-                <input
-                  type="password"
-                  value={secretPhrase}
-                  onChange={(e) => setSecretPhrase(e.target.value)}
-                  placeholder="Enter secret phrase..."
-                  style={{
-                    width: '100%',
-                    padding: '0.75rem',
-                    marginBottom: '1rem',
-                    borderRadius: '4px',
-                    border: '1px solid #ccc',
-                    fontSize: '1rem'
-                  }}
-                  autoFocus
-                />
-                <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
-                  <button
-                    type="submit"
-                    style={{
-                      backgroundColor: '#007bff',
-                      color: 'white',
-                      padding: '0.75rem 1.5rem',
-                      border: 'none',
-                      borderRadius: '4px',
-                      cursor: 'pointer',
-                      fontSize: '1rem'
-                    }}
-                  >
-                    Submit
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowPasswordPrompt(false);
-                      setSecretPhrase('');
-                    }}
-                    style={{
-                      backgroundColor: '#6c757d',
-                      color: 'white',
-                      padding: '0.75rem 1.5rem',
-                      border: 'none',
-                      borderRadius: '4px',
-                      cursor: 'pointer',
-                      fontSize: '1rem'
-                    }}
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
-
-        {showForm && (
-          <form onSubmit={handleSubmit} style={{
-          maxWidth: '700px',
-          margin: '2rem 0',
-          padding: '2rem',
-          border: '1px solid #ddd',
-          borderRadius: '8px',
-          backgroundColor: '#f9f9f9'
-        }}>
-          <div style={{ marginBottom: '1.5rem' }}>
-            <label htmlFor="title" style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
-              Title:
-            </label>
-            <input
-              type="text"
-              id="title"
-              name="title"
-              value={formData.title}
-              onChange={handleInputChange}
-              required
-              placeholder="Enter blog post title..."
+          {blogEntries.map((entry, index) => (
+            <a
+              key={index}
+              href={entry.url}
               style={{
-                width: '100%',
-                padding: '0.75rem',
-                borderRadius: '4px',
-                border: '1px solid #ccc',
-                fontSize: '1rem'
+                display: 'block',
+                textDecoration: 'none',
+                color: 'inherit',
+                border: '1px solid #e0e0e0',
+                borderRadius: '8px',
+                padding: '1.5rem',
+                marginBottom: '1.5rem',
+                backgroundColor: '#fff',
+                cursor: 'pointer',
+                transition: 'all 0.3s ease',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
               }}
-            />
-          </div>
-
-          <div style={{ marginBottom: '1.5rem' }}>
-            <label htmlFor="type" style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
-              Type:
-            </label>
-            <select
-              id="type"
-              name="type"
-              value={formData.type}
-              onChange={handleInputChange}
-              required
-              style={{
-                width: '100%',
-                padding: '0.75rem',
-                borderRadius: '4px',
-                border: '1px solid #ccc',
-                fontSize: '1rem'
+              onMouseEnter={(e) => {
+                e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+                e.currentTarget.style.transform = 'translateY(-2px)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+                e.currentTarget.style.transform = 'translateY(0)';
               }}
             >
-              <option value="">Select post type...</option>
-              <option value="research">Research</option>
-              <option value="technology">Technology</option>
-              <option value="personal">Personal</option>
-              <option value="tutorial">Tutorial</option>
-              <option value="opinion">Opinion</option>
-            </select>
+              <h3 style={{ margin: '0 0 0.5rem 0', color: '#333', fontSize: '1.4rem', fontWeight: 'bold' }}>
+                {entry.title}
+              </h3>
+              <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.8rem', fontSize: '0.85rem', flexWrap: 'wrap' }}>
+                <span style={{ color: '#888' }}>{entry.date}</span>
+                {entry.tags.map((tag, i) => (
+                  <span key={i} style={{ backgroundColor: '#f0f0f0', padding: '0.15rem 0.5rem', borderRadius: '4px', fontWeight: '600', color: '#555' }}>{tag}</span>
+                ))}
+              </div>
+              <p style={{ margin: 0, lineHeight: '1.6', color: '#555' }}>{entry.abstract}</p>
+              <div style={{ textAlign: 'right', marginTop: '0.8rem', fontSize: '0.9rem', color: '#007bff', fontWeight: '500' }}>
+                Read more →
+              </div>
+            </a>
+          ))}
+          <div style={{ textAlign: 'center', marginTop: '1rem' }}>
+            <a href="/blog/" style={{ color: '#007bff', textDecoration: 'none', fontWeight: '500' }}>View all blog posts →</a>
           </div>
-
-          <div style={{ marginBottom: '2rem' }}>
-            <label htmlFor="abstract" style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
-              Abstract:
-            </label>
-            <textarea
-              id="abstract"
-              name="abstract"
-              value={formData.abstract}
-              onChange={handleInputChange}
-              rows="4"
-              required
-              placeholder="Write a brief summary of your post..."
-              style={{
-                width: '100%',
-                padding: '0.75rem',
-                borderRadius: '4px',
-                border: '1px solid #ccc',
-                resize: 'vertical',
-                fontSize: '1rem'
-              }}
-            />
-          </div>
-
-          <div style={{ marginBottom: '2rem' }}>
-            <label htmlFor="main" style={{ display: 'block', marginBottom: '0.8rem', fontWeight: 'bold', fontSize: '1.1rem' }}>
-              Main Content:
-            </label>
-            <textarea
-              id="main"
-              name="main"
-              value={formData.main}
-              onChange={handleInputChange}
-              rows="15"
-              required
-              placeholder="Write your full blog post content here..."
-              style={{
-                width: '100%',
-                padding: '1.2rem',
-                borderRadius: '4px',
-                border: '2px solid #007bff',
-                resize: 'vertical',
-                fontSize: '1rem',
-                lineHeight: '1.6',
-                fontFamily: 'Georgia, serif'
-              }}
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            style={{
-              backgroundColor: isSubmitting ? '#ccc' : '#007bff',
-              color: 'white',
-              padding: '0.75rem 1.5rem',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: isSubmitting ? 'not-allowed' : 'pointer',
-              fontSize: '1rem'
-            }}
-          >
-            {isSubmitting ? 'Submitting...' : 'Publish Blog Post'}
-          </button>
-        </form>
-        )}
-
-        {submitStatus && (
-          <div style={{
-            padding: '1rem',
-            marginTop: '1rem',
-            borderRadius: '4px',
-            backgroundColor: submitStatus.includes('Success') ? '#d4edda' : '#f8d7da',
-            color: submitStatus.includes('Success') ? '#155724' : '#721c24',
-            border: `1px solid ${submitStatus.includes('Success') ? '#c3e6cb' : '#f5c6cb'}`,
-            maxWidth: '700px',
-            margin: '1rem auto'
-          }}>
-            {submitStatus}
-          </div>
-        )}
+        </div>
       </div>
     </div>
   );
@@ -696,7 +262,7 @@ const Research = () => {
         <div>
           <p>VILEX is an encoder that can work well in both <strong>visual generation and understanding tasks</strong> if integrated successfully with an autoregressive backbone. It has the potential to make text only model 'speak images' </p>
 
-          <img src={"/Users/haoming/Desktop/haoming-chen2006.github.io/Screenshot 2025-09-07 at 14.54.35.png"} alt={"plot"} />
+          <img src={"/assets/website_basic/Screenshot 2025-09-07 at 14.54.35.png"} alt={"plot"} />
           <h4>What I built:</h4>
           <ul>
             <li>Custom dataloading pipelines</li>
@@ -709,7 +275,7 @@ const Research = () => {
         </div>
       ),
       duration: "June 2025 - Present",
-      image: "vilex_poster.jpg",
+      image: "/assets/website_basic/vilex_poster.jpg",
       website: "https://github.com/haoming-chen2006/LLM4Tracking"
     },
     {
@@ -719,7 +285,7 @@ const Research = () => {
         <div>
           <p>The ambition of this project is to build a <strong>GPT-3 for particle physics data</strong> with zero-shot generalization capabilities. This revolutionary approach means we won't need to train separate models for each particle physics task.</p>
           <p>An example was to tokenize, reconstruct, and possibly understand the semantic meaning of complex particle traces, like the traces of Higgs Boson experiments showed below</p>
-          <img src={"plot.png"} alt={"plot"} />
+          <img src={"/assets/website_basic/plot.png"} alt={"plot"} />
           <h4>What I built:</h4>
           <ul>
             <li>Custom dataloader for particle physics data</li>
@@ -732,7 +298,7 @@ const Research = () => {
         </div>
       ),
       duration: "June 2025 - Present",
-      image: "htobb.webp",
+      image: "/assets/website_basic/htobb.webp",
       website: "https://github.com/haoming-chen2006/LLM4Tracking"
     },
     {
@@ -749,13 +315,13 @@ const Research = () => {
             <li>Extensive literature review</li>
             <li>Production of interactive plots</li>
           </ul>
-          <img src="web.jpg" alt="WeLeap AI Demo" style={{width: '100%', maxWidth: '400px', borderRadius: '8px', margin: '1rem 0'}} />
+          <img src="/assets/website_basic/web.jpg" alt="WeLeap AI Demo" style={{width: '100%', maxWidth: '400px', borderRadius: '8px', margin: '1rem 0'}} />
           <p>Read the book about the research:</p>
           <a href="https://www.amazon.com/Subtle-Webs-Local-Organizations-Education/dp/0197786081">Subtle webs</a>
         </div>
       ),
       duration: "May 2025 - Present",
-      image: "network.jpg",
+      image: "/assets/website_basic/network.jpg",
       website: "https://sites.google.com/view/eostrinidad/research"
     },
   ];
@@ -791,10 +357,10 @@ const ExperienceCard = ({ title, description, image, website, duration, role }) 
 
 const Experiences = () => {
   const experienceData = [
-    { title: "WeLeap. AI", role: "Software Engineer Intern", duration: "June 2025 - Present", description: "Supported by Berkeley Skydeck startup incubator program. Orchestrated a multi-agent system to deliver personalized financial guidance using multimodal inputs such as documents, photos, and forms.", image: "/leap.jpg", website: "https://www.f6s.com/weleap" },
-    { title: "CAL HACKS", role: "Participant", duration: "Julne 2023", description: "Had fun in the AI Hackathon, we built Kola coach, a wellness coach APP that gives phone calls, browse the web, and sends Email to users. Built at Cal Hack.", image: "/calhack.jpeg", website: "https://devpost.com/software/koacoach" },
-    { title: "YC AI Startup School", role: "Participant", duration: "July 2025 ", description: "Joined the amazing YCombinator startup school event, listened to inspring talks from many of my heros, and had fun in after parties.", image: "/Y_comb.png", website: "https://events.ycombinator.com/ai-susm" },
-    { title: "Berkeley CS C88C", role: "Course Staff", duration: "May 2025 - August 2026 ", description: "Helped organize Data C88C as UCS1 at Berkeley, organized teaching materials, instructed weekly sections, and hosted office hours for 400+ students.", image: "88.png", website: "https://c88c.org/su25/staff/" }
+    { title: "WeLeap. AI", role: "Software Engineer Intern", duration: "June 2025 - Present", description: "Supported by Berkeley Skydeck startup incubator program. Orchestrated a multi-agent system to deliver personalized financial guidance using multimodal inputs such as documents, photos, and forms.", image: "/assets/website_basic/leap.jpg", website: "https://www.f6s.com/weleap" },
+    { title: "CAL HACKS", role: "Participant", duration: "Julne 2023", description: "Had fun in the AI Hackathon, we built Kola coach, a wellness coach APP that gives phone calls, browse the web, and sends Email to users. Built at Cal Hack.", image: "/assets/website_basic/calhack.jpeg", website: "https://devpost.com/software/koacoach" },
+    { title: "YC AI Startup School", role: "Participant", duration: "July 2025 ", description: "Joined the amazing YCombinator startup school event, listened to inspring talks from many of my heros, and had fun in after parties.", image: "/assets/website_basic/Y_comb.png", website: "https://events.ycombinator.com/ai-susm" },
+    { title: "Berkeley CS C88C", role: "Course Staff", duration: "May 2025 - August 2026 ", description: "Helped organize Data C88C as UCS1 at Berkeley, organized teaching materials, instructed weekly sections, and hosted office hours for 400+ students.", image: "/assets/website_basic/88.png", website: "https://c88c.org/su25/staff/" }
   ];
   return (
     <div className="main-content">

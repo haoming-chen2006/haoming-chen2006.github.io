@@ -69,7 +69,7 @@ const Research = () => {
           <p>
             An example was to tokenize, reconstruct, and possibly understand the semantic meaning of complex particle traces, like the traces of Higgs Boson experiments showed below
           </p>
-          <img src={"plot.png"} alt={"plot"} />
+          <img src={"/assets/website_basic/plot.png"} alt={"plot"} />
           <h4>What I built:</h4>
           <ul>
             <li>Custom dataloader for particle physics data</li>
@@ -96,7 +96,7 @@ const Research = () => {
         </div>
       ),
       duration: "June 2025 - Present",
-      image: "htobb.webp",
+      image: "/assets/website_basic/htobb.webp",
       website: "https://github.com/haoming-chen2006/LLM4Tracking"
     },
     {
@@ -118,7 +118,7 @@ const Research = () => {
             <li>Production of interactive plots</li>
           </ul>
           <img 
-            src="web.jpg" 
+            src="/assets/website_basic/web.jpg" 
             alt="WeLeap AI Demo" 
             style={{width: '100%', maxWidth: '400px', borderRadius: '8px', margin: '1rem 0'}}
           />
@@ -129,7 +129,7 @@ const Research = () => {
         </div>
       ),
       duration: "May 2025 - Present", 
-      image: "network.jpg",
+      image: "/assets/website_basic/network.jpg",
       website: "https://sites.google.com/view/eostrinidad/research"
     },
     {
@@ -159,7 +159,7 @@ const Research = () => {
         </div>
       ),
       duration: "April 2025 - Present",
-      image: "/urap.jpeg", 
+      image: "/assets/website_basic/urap.jpeg", 
       website: "https://example.com"
     }
   ];

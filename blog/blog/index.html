@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The Nationality Axis: Cultural Identity as a Latent Dimension in LLMs — Haoming Chen</title>
+
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #333; max-width: 1100px; margin: 0 auto; padding: 2rem; background: #fafafa; }
+    article { background: white; padding: 3rem; border-radius: 8px; box-shadow: 0 2px 15px rgba(0,0,0,0.05); }
+    h1 { font-size: 2.2rem; margin-bottom: 0.5rem; color: #111; }
+    h2 { border-bottom: 2px solid #eee; padding-bottom: 0.5rem; margin-top: 2.5rem; color: #222; }
+    h3 { margin-top: 2rem; color: #444; }
+    .blog-meta { color: #888; font-size: 0.9rem; margin-bottom: 2rem; }
+    .blog-tag { background: #eee; padding: 0.2rem 0.6rem; border-radius: 4px; margin-right: 0.5rem; }
+    blockquote { border-left: 4px solid #007bff; padding: 1rem; background: #f8f9fa; margin: 1.5rem 0; font-style: italic; }
+    .figure-box { background: #fff; border: 1px solid #ddd; padding: 1rem; margin: 2rem 0; text-align: center; }
+    .figure-box img { width: 100%; height: auto; display: block; }
+    .caption { font-size: 0.85rem; color: #666; margin-top: 0.5rem; }
+    code { background: #f4f4f4; padding: 0.2rem 0.4rem; border-radius: 3px; font-family: monospace; }
+    pre { background: #2d2d2d; color: #ccc; padding: 1rem; overflow-x: auto; border-radius: 5px; }
+    .back-home { display: inline-block; margin-bottom: 1rem; text-decoration: none; color: #007bff; font-weight: 500; }
+    .label-neutral  { color: #d97706; }
+    .label-implicit { color: #2563eb; }
+    .label-explicit { color: #dc2626; }
+    .bq-neutral  { border-left-color: #d97706; background: #fef3c7; }
+    .bq-implicit { border-left-color: #2563eb; background: #dbeafe; }
+    .bq-explicit { border-left-color: #dc2626; background: #fee2e2; }
+    .figures-row { display: flex; flex-direction: column; gap: 2rem; margin: 2rem 0; }
+    .figures-row .figure-box { margin: 0; }
+    .results-table { width: 100%; border-collapse: collapse; margin: 1.5rem 0; font-size: 0.92rem; }
+    .results-table th, .results-table td { border: 1px solid #ddd; padding: 0.5rem 0.8rem; text-align: left; }
+    .results-table th { background: #f3f4f6; font-weight: 600; }
+    .results-table tr:nth-child(even) { background: #f9fafb; }
+    .pole-table { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin: 1rem 0; }
+    .pole-col { background: #f9fafb; border: 1px solid #eee; border-radius: 6px; padding: 0.8rem 1rem; font-size: 0.9rem; }
+    .pole-col h4 { margin: 0 0 0.4rem; font-size: 0.85rem; color: #888; text-transform: uppercase; letter-spacing: 0.05em; }
+    .pos { color: #dc2626; }
+    .neg { color: #2563eb; }
+    details { border: 1px solid #ddd; border-radius: 6px; margin: 1rem 0; }
+    details summary { padding: 0.8rem 1rem; cursor: pointer; color: #555; font-size: 0.9rem; }
+    details summary:hover { color: #111; }
+    details .appendix-content { padding: 1rem 1rem 1.5rem; }
+    .figures-row-2 { display: flex; flex-direction: column; gap: 2rem; margin: 2rem 0; }
+    .figures-row-2 .figure-box { margin: 0; }
+    @media (max-width: 700px) {
+      .pole-table { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body class="blog-page">
+
+<article class="blog-article">
+  <a href="/" class="back-home">← Back to home</a>
+
+  <header class="blog-header">
+    <h1 class="blog-title">The Nationality Axis: Cultural Identity as a Latent Dimension in LLMs</h1>
+    <div class="blog-meta">
+      <span>April 2026</span>
+      <span class="blog-tag">Interpretability</span>
+      <span class="blog-tag">Activation Steering</span>
+      <span class="blog-tag">Culture</span>
+    </div>
+  </header>
+
+  <!-- ── Abstract ─────────────────────────────────────────────── -->
+  <section>
+    <h2>Abstract</h2>
+    <p>
+      Inspired by the assistant axis <a></a> research done at Anthropics, I started a personal implementation of their work on the subject of countries national identities.
+       I probe whether a nationality/culture axis exists in the MLP activations of three open-weight models — Mistral-7B, Qwen2.5-7B, and Llama-3.1-8B —
+      and whether it is steerable.
+      
+    </p>
+<p> A few highlights:
+  All models decides to put Nordic Culture at one extreme of the pole, the other pole varied between South American and Southeast Asian
+  China is presented very differently in Qwen compared to the other two models.
+  All models aligned in the center and skewed to the Nordic pole, with nearby countries like Singapore, United States, and European countries.
+  Steering model to extreme poles do change their behaviour when asking less 'sensitive questions' (which possibly skipped some of the alignment training)
+</p>
+  </section>
+
+  <!-- ── Motivation ───────────────────────────────────────────── -->
+
+
+  <!-- ── Methodology ──────────────────────────────────────────── -->
+  <section>
+    <h2>Methodology</h2>
+    <p>
+      The pipeline runs in three phases across three models
+      (<strong>Mistral-7B-Instruct-v0.3</strong>, <strong>Qwen2.5-7B-Instruct</strong>, <strong>Llama-3.1-8B-Instruct</strong>)
+      and <strong>50 countries</strong>.
+    </p>
+
+    <h3>Phase 1 — Response Generation</h3>
+    <p>
+      For each country, the model is prompted with a system message instructing it to respond as a citizen of that country.
+      It then answers <strong>99 value-laden questions</strong> covering topics including family, governance, healthcare, religion,
+      technology, and social norms. All generation is done via a <strong>vLLM OpenAI-compatible server</strong> running in Docker,
+      yielding 5000 prompt/response pairs per model.
+    </p>
+
+    <h3>Phase 2 — Hidden State Extraction</h3>
+    <p>
+      For each pair, a single forward pass is run over the full prompt + response. A forward hook captures the
+      <strong>MLP output at the middle layer</strong> (layer 16/32 for Mistral and Llama, 14/28 for Qwen).
+      Activations are averaged over response tokens, then averaged across all questions for each country,
+      giving one <strong>country mean vector</strong> per model. And per question/country activations to work with.
+    </p>
+
+    <h3>Phase 3 — PCA + Steering</h3>
+    <p>
+      SVD on the mean-centered matrix of country vectors (shape: 50 × hidden_dim) extracts principal directions.
+      PC1 is the direction of maximum variance across countries. We first project each country specific vector on this axis, then we project the default activations (with no country prompt) on to the axis for each model. For cross-model comparison, cosine similarity
+      is computed between country pairs within each model's own space — producing N×N matrices that are
+      comparable regardless of hidden dimension.
+    </p>
+    <p>
+      For steering, we inject <code>α × PC1</code> into the MLP output at every generation step via a forward hook.
+      Alpha is calibrated to <strong>±3σ</strong> of the natural spread of country projections onto PC1.
+    </p>
+  </section>
+
+  <!-- ── PC1 Axis ──────────────────────────────────────────────── -->
+  <section>
+    <h2>The Nationality Axis (PC1)</h2>
+    <p>
+      Across all three models, PC1 cleanly separates countries along a recognizable cultural axis.
+      The <strong>negative pole</strong> consistently groups Nordic/Western European countries;
+      the <strong>positive pole</strong> groups collectivist, religious, or Global-South cultures.
+    </p>
+
+    <div class="pole-table">
+      <div class="pole-col">
+        <h4>Mistral-7B</h4>
+        <p><strong class="pos">+ pole:</strong> Mexico, Brazil, Spain, France, Argentina</p>
+        <p><strong class="neg">− pole:</strong> Norway, Canada, Switzerland, Sweden, Finland</p>
+      </div>
+      <div class="pole-col">
+        <h4>Qwen2.5-7B</h4>
+        <p><strong class="pos">+ pole:</strong> Saudi Arabia, China, Pakistan, Egypt, Qatar</p>
+        <p><strong class="neg">− pole:</strong> Canada, Netherlands, Denmark, Australia, Sweden</p>
+      </div>
+      <div class="pole-col">
+        <h4>Llama-3.1-8B</h4>
+        <p><strong class="pos">+ pole:</strong> Malaysia, Philippines, Saudi Arabia, Thailand, Indonesia</p>
+        <p><strong class="neg">− pole:</strong> Switzerland, Norway, Sweden, Finland, Denmark</p>
+      </div>
+    </div>
+
+    <p>
+      The Nordic cluster (Norway, Sweden, Finland, Denmark) appears at the negative pole in <em>all three models</em>.
+      Qwen is the only model that puts CHina at the other end of the pole, possibly reflecting a different distirbution of China related task in its training set.
+      For the other two models, MIstral seem to beleive the South American culture is the opposite of the Nordic, while LLama put the Asian culture at the other end.
+
+    </p>
+
+    <div class="figures-row">
+      <div class="figure-box">
+        <img src="mistral_pc1.png" alt="Mistral PC1">
+        <p class="caption">Fig 1a — Mistral-7B PC1. Latin cluster vs. Nordic cluster.</p>
+      </div>
+      <div class="figure-box">
+        <img src="qwen_pc1.png" alt="Qwen PC1">
+        <p class="caption">Fig 1b — Qwen2.5-7B PC1. MENA/East Asia vs. Nordic/Anglosphere.</p>
+      </div>
+      <div class="figure-box">
+        <img src="llama_pc1.png" alt="Llama PC1">
+        <p class="caption">Fig 1c — Llama-3.1-8B PC1. Southeast Asia vs. Northern Europe.</p>
+      </div>
+    </div>
+
+    <p>
+      The <strong style="color:#2ca02c;">green vertical line</strong> in each chart marks where the
+      <em>default assistant persona</em> (no country system prompt) falls on the axis.
+      In all three models it lands toward the negative (Nordic/individualist) pole —
+      the default assistant voice carries an implicit Western liberal cultural prior.
+    </p>
+  </section>
+
+  <!-- ── Default Nationality ──────────────────────────────────── -->
+  <section>
+    <h2>What Nationality Are Models By Default?</h2>
+    <p>
+      In terms of where the model sits, MIstral seem to be closest to Singapore, Qwen closest to Portugal, and LLama closest to United States.
+    </p>
+    <blockquote>
+      <strong>Finding:</strong> LLMs' default identity is not culturally neutral. In activation space,
+      the unsteered model behaves like a citizen of a wealthy, secular, individualist Northern European democracy —
+      regardless of model family. This is likely an artifact of English-language RLHF training data
+      skewing toward Western sources.
+    </blockquote>
+  </section>
+
+  <!-- ── Steering ─────────────────────────────────────────────── -->
+  <section>
+    <h2>Activation Steering Experiment</h2>
+    <p>
+      We inject <code>α × PC1_direction</code> into the middle-layer MLP output at every generation step
+      via a forward hook and probe three questions under three conditions: <strong>−3σ</strong> (Nordic pole),
+      <strong>0</strong> (neutral), and <strong>+3σ</strong> (collectivist pole).
+      The steering vector is derived entirely from the variance structure of country activations — not hand-crafted.
+    </p>
+
+    <h3>Q1 — "What does a successful life look like?"</h3>
+    <p>
+      Responses across all three conditions retain a similar list structure, but the <em>ordering and emphasis</em>
+      of values shifts. Below are representative excerpts from Llama-3.1-8B:
+    </p>
+
+    <h4 class="label-implicit">− 3σ (Nordic/individualist pole)</h4>
+    <blockquote class="bq-implicit">
+      "…<strong>work-life balance</strong>… <strong>personal fulfillment</strong>…
+      <strong>autonomy</strong>… <strong>self-defined</strong> goals… <strong>financial independence</strong>…
+      Continuously learning, challenging yourself, and improving your skills, knowledge, and character."
+    </blockquote>
+
+    <h4 class="label-neutral">Neutral (no steering)</h4>
+    <blockquote class="bq-neutral">
+      "…purpose and meaning… strong relationships… personal growth and development…
+      Financial stability: having a stable financial situation, including a secure income."
+    </blockquote>
+
+    <h4 class="label-explicit">+ 3σ (collectivist pole)</h4>
+    <blockquote class="bq-explicit">
+      "…<strong>contribution to society</strong>… <strong>social belonging</strong>…
+      <strong>family and community</strong>… <strong>harmony</strong>…
+      <strong>societal role</strong>… Nurturing positive relationships with family, friends, and community."
+    </blockquote>
+
+    <p>
+      This maps onto Hofstede's <strong>individualism vs. collectivism</strong> dimension without
+      any explicit cultural instruction. The axis was discovered purely from variance in the hidden states.
+    </p>
+
+    <table class="results-table">
+      <thead>
+        <tr>
+          <th>Condition</th>
+          <th>Keywords emphasized (Q1)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong class="label-implicit">−3σ (Nordic)</strong></td>
+          <td>autonomy, work-life balance, self-expression, financial independence, personal growth</td>
+        </tr>
+        <tr>
+          <td><strong class="label-neutral">Neutral</strong></td>
+          <td>purpose, health, relationships, financial stability, personal development</td>
+        </tr>
+        <tr>
+          <td><strong class="label-explicit">+3σ (collectivist)</strong></td>
+          <td>contribution, social belonging, family, community, harmony, societal role, support</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>Q2 — "Should healthcare be primarily public or private?"</h3>
+    <p>
+      This is the clearest signal. All conditions across all models converge on a <em>mixed system</em> answer,
+      but the framing of that answer shifts systematically.
+    </p>
+
+    <h4 class="label-implicit">− 3σ (Nordic pole)</h4>
+    <blockquote class="bq-implicit">
+      Arguments lead with <strong>efficiency, innovation, choice, and competition</strong> as the primary
+      merits of private systems. Public coverage is framed as a practical floor, not a moral imperative.
+      "Private healthcare systems can provide higher quality care, as they are driven by competition and the profit motive."
+    </blockquote>
+
+    <h4 class="label-explicit">+ 3σ (collectivist pole)</h4>
+    <blockquote class="bq-explicit">
+      Arguments lead with <strong>universal access, social duty, public responsibility, and the right to healthcare</strong>
+      as the primary framing. Private systems are tolerated only as a supplement.
+      "Public healthcare can be seen as a fundamental right, promoting social equity and reducing health disparities."
+    </blockquote>
+
+    <blockquote>
+      <strong>Interpretation:</strong> The PC1 axis encodes a <em>welfare-state vs. market-norms</em> dimension.
+      Interestingly, the Nordic pole — which in reality operates the world's most universal healthcare systems —
+      emphasizes market mechanisms rhetorically. This suggests the axis captures <strong>rhetorical and normative style</strong>
+      associated with cultural identity, not empirical policy facts. The model has learned how each cultural
+      bloc <em>talks about</em> these issues, not what they actually do.
+    </blockquote>
+  </section>
+
+  <!-- ── Cross-model ──────────────────────────────────────────── -->
+  <section>
+    <h2>Cross-Model Comparison</h2>
+    <p>
+      Because models have different hidden dimensions (4096 for Mistral/Llama, 3584 for Qwen),
+      we cannot compare raw vectors. Instead we compute <strong>N×N cosine similarity matrices</strong>
+      between country mean vectors within each model's own activation space, then correlate the matrices
+      across models. This measures whether models agree on the <em>relational structure</em> of nationalities —
+      which countries are representationally close to which — independent of the absolute geometry.
+    </p>
+
+    <div class="figures-row-2">
+      <div class="figure-box">
+        <img src="consensus_sim_matrix.png" alt="Consensus similarity matrix">
+        <p class="caption">
+          Fig 2 — Consensus cosine similarity matrix (averaged across all three models, hierarchically clustered).
+          Visible clusters: Nordic bloc, MENA bloc, Southeast Asian bloc, Anglosphere.
+          Mean-centering before computing similarity reveals differential structure hidden by the raw activations.
+        </p>
+      </div>
+      <div class="figure-box">
+        <img src="model_agreement.png" alt="Model agreement">
+        <p class="caption">
+          Fig 3 — Pearson correlation between flattened similarity matrices for each model pair.
+          Values above 0.7 indicate substantial structural agreement on which countries are representationally similar,
+          despite different architectures and training data.
+        </p>
+      </div>
+    </div>
+
+    <p>
+      Where models <em>disagree</em> is more revealing. China, for instance, sits near the MENA cluster
+      in Qwen's activation space but is more isolated in Llama's — suggesting the two models learned
+      different cultural associations, likely from different proportions of Chinese-language training data.
+    </p>
+
+    <div class="figure-box">
+      <img src="mds_all_models.png" alt="MDS all models">
+      <p class="caption">
+        Fig 4 — Classical MDS on the consensus similarity matrix. Each dot is one country per model;
+        lines connect the same country across models. Countries with long lines are where models disagree most
+        on cultural placement. MDS was chosen over UMAP as it directly embeds the similarity kernel without
+        requiring additional hyperparameters.
+      </p>
+    </div>
+  </section>
+
+  <!-- ── Conclusion ───────────────────────────────────────────── -->
+  <section>
+    <h2>Conclusion</h2>
+    <p>Key findings:</p>
+    <ul>
+      <li>PC1 of country mean activations reliably separates Nordic/individualist from collectivist/communal cultures across all three model families.</li>
+      <li>The default (unsteered) assistant persona consistently falls near the Nordic/Western pole — LLMs are not culturally neutral by default.</li>
+      <li>Injecting ±3σ along PC1 during generation shifts value framing in ways that align with Hofstede's individualism/collectivism dimension — most clearly on healthcare (Q2) and conceptions of success (Q1).</li>
+      <li>The axis captures <em>rhetorical style</em> more than empirical cultural knowledge: it shifts how the model argues, not what it factually knows about a country.</li>
+      <li>All three models agree substantially on the relational structure of nationalities (r &gt; 0.7 for all pairs), despite different hidden dimensions and training data.</li>
+    </ul>
+    <blockquote>
+      <strong>Limitations:</strong> Steering signals are subtle — RLHF training creates a strong attractor toward
+      "balanced" responses that resists moderate activation perturbations. The axis conflates several cultural dimensions
+      (individualism, religiosity, economic development) that future work could disentangle via more targeted prompts
+      or with supervised probes for specific Hofstede dimensions.
+    </blockquote>
+  </section>
+
+  <!-- ── Appendix ─────────────────────────────────────────────── -->
+  <section>
+    <h2>Appendix</h2>
+
+    <details>
+      <summary>PC2 and PC3 per model</summary>
+      <div class="appendix-content">
+        <div class="figures-row">
+          <div class="figure-box"><img src="mistral_pc2.png" alt="Mistral PC2"><p class="caption">Mistral PC2</p></div>
+          <div class="figure-box"><img src="qwen_pc2.png" alt="Qwen PC2"><p class="caption">Qwen PC2</p></div>
+          <div class="figure-box"><img src="llama_pc2.png" alt="Llama PC2"><p class="caption">Llama PC2</p></div>
+        </div>
+        <div class="figures-row">
+          <div class="figure-box"><img src="mistral_pc3.png" alt="Mistral PC3"><p class="caption">Mistral PC3</p></div>
+          <div class="figure-box"><img src="qwen_pc3.png" alt="Qwen PC3"><p class="caption">Qwen PC3</p></div>
+          <div class="figure-box"><img src="llama_pc3.png" alt="Llama PC3"><p class="caption">Llama PC3</p></div>
+        </div>
+      </div>
+    </details>
+
+    <details>
+      <summary>Cross-model difference heatmaps (Model A − Model B)</summary>
+      <div class="appendix-content">
+        <p style="font-size:0.9rem; color:#555; margin-bottom:1rem;">
+          Red = model A considers these countries more similar than model B does. Blue = model B does.
+          These are the direct cross-model comparison: where structural disagreement lives.
+        </p>
+        <div class="figures-row">
+          <div class="figure-box"><img src="diff_llama_mistral.png" alt="Llama minus Mistral"><p class="caption">Llama − Mistral</p></div>
+          <div class="figure-box"><img src="diff_llama_qwen.png" alt="Llama minus Qwen"><p class="caption">Llama − Qwen</p></div>
+          <div class="figure-box"><img src="diff_mistral_qwen.png" alt="Mistral minus Qwen"><p class="caption">Mistral − Qwen</p></div>
+        </div>
+      </div>
+    </details>
+
+    <details>
+      <summary>China and USA nearest neighbors in PCA space (per model)</summary>
+      <div class="appendix-content">
+        <div class="figures-row-2">
+          <div class="figure-box"><img src="china_neighbors.png" alt="China neighbors"><p class="caption">Which countries each model places nearest to China in PCA space. Qwen groups China with MENA countries; Llama treats it as more isolated.</p></div>
+          <div class="figure-box"><img src="us_neighbors.png" alt="US neighbors"><p class="caption">Which countries each model places nearest to the United States in PCA space.</p></div>
+        </div>
+      </div>
+    </details>
+
+    <details>
+      <summary>Procrustes alignment and PC1 rank disagreement</summary>
+      <div class="appendix-content">
+        <div class="figures-row-2">
+          <div class="figure-box">
+            <img src="procrustes_disagreement.png" alt="Procrustes">
+            <p class="caption">
+              After optimal orthogonal (Procrustes) alignment of all three models' 2D PCA spaces,
+              lines show how far apart models place each country. Highlighted countries = highest disagreement
+              after removing coordinate arbitrariness.
+            </p>
+          </div>
+          <div class="figure-box">
+            <img src="pc1_rank_disagreement.png" alt="PC1 rank disagreement">
+            <p class="caption">
+              Countries ranked by variance in their PC1 position across models.
+              High variance = models disagree on where this country sits along the main cultural axis.
+            </p>
+          </div>
+        </div>
+      </div>
+    </details>
+
+  </section>
+
+</article>
+</body>
+</html>

@@ -2,10 +2,14 @@ create extension if not exists "pgcrypto";
 
 create table if not exists public.profiles (
   user_id uuid primary key references auth.users(id) on delete cascade,
+  email text,
   display_name text not null default 'Player',
   total_points integer not null default 0,
   created_at timestamptz not null default now()
 );
+
+alter table public.profiles
+add column if not exists email text;
 
 create table if not exists public.matches (
   id text primary key,
@@ -91,9 +95,10 @@ security definer
 set search_path = public
 as $$
 begin
-  insert into public.profiles (user_id, display_name)
-  values (new.id, coalesce(split_part(new.email, '@', 1), 'Player'))
-  on conflict (user_id) do nothing;
+  insert into public.profiles (user_id, email, display_name)
+  values (new.id, new.email, coalesce(split_part(new.email, '@', 1), 'Player'))
+  on conflict (user_id) do update
+    set email = excluded.email;
   return new;
 end;
 $$;
@@ -102,6 +107,42 @@ drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
 after insert on auth.users
 for each row execute function public.handle_new_user();
+
+update public.profiles
+set email = auth.users.email
+from auth.users
+where profiles.user_id = auth.users.id
+  and profiles.email is null;
+
+create or replace function public.get_leaderboard()
+returns table (
+  user_id uuid,
+  email text,
+  display_name text,
+  total_points integer,
+  guess_count bigint
+)
+language sql
+security definer
+set search_path = public
+as $$
+  select
+    profiles.user_id,
+    profiles.email,
+    profiles.display_name,
+    profiles.total_points,
+    coalesce(guess_counts.guess_count, 0)::bigint as guess_count
+  from public.profiles
+  left join (
+    select guesses.user_id, count(*)::bigint as guess_count
+    from public.guesses
+    group by guesses.user_id
+  ) as guess_counts on guess_counts.user_id = profiles.user_id
+  order by profiles.total_points desc, guess_count desc, profiles.created_at asc;
+$$;
+
+revoke all on function public.get_leaderboard() from public;
+grant execute on function public.get_leaderboard() to authenticated;
 
 create or replace function public.reject_late_guess()
 returns trigger

@@ -131,6 +131,7 @@ export default function App() {
   const [bracketPicks, setBracketPicks] = useState(() =>
     JSON.parse(localStorage.getItem(localBracketKey) || '{}')
   );
+  const [leaderboardRows, setLeaderboardRows] = useState([]);
   const [status, setStatus] = useState('Local draft mode');
   const [notice, setNotice] = useState('');
 
@@ -164,6 +165,7 @@ export default function App() {
         await supabase.from('profiles').upsert(
           {
             user_id: session.user.id,
+            email: session.user.email,
             display_name: session.user.email?.split('@')[0] || 'Player',
           },
           { onConflict: 'user_id' },
@@ -210,6 +212,25 @@ export default function App() {
 
     loadRemoteData();
   }, [session]);
+
+  useEffect(() => {
+    async function loadLeaderboard() {
+      if (!session) {
+        setLeaderboardRows([]);
+        return;
+      }
+
+      const { data, error } = await supabase.rpc('get_leaderboard');
+      if (error) {
+        setStatus(error.message);
+        return;
+      }
+
+      setLeaderboardRows(data || []);
+    }
+
+    loadLeaderboard();
+  }, [session, guesses]);
 
   const orderedMatches = useMemo(() => [...matches].sort(byKickoff), [matches]);
   const teams = useMemo(() => groups.flatMap((group) => group.teams).sort(), []);
@@ -369,7 +390,14 @@ export default function App() {
           onBracketPicks={saveBracketPicks}
         />
       )}
-      {activeTab === 'leaderboard' && <LeaderboardView guesses={guesses} matches={orderedMatches} />}
+      {activeTab === 'leaderboard' && (
+        <LeaderboardView
+          guesses={guesses}
+          matches={orderedMatches}
+          rows={leaderboardRows}
+          session={session}
+        />
+      )}
       {activeTab === 'personal' && (
         <PersonalView guesses={guesses} matches={orderedMatches} playerArtifact={playerArtifact} />
       )}
@@ -911,16 +939,20 @@ function KnockoutPredictor({ matches, groupRankings, picks, onPicks }) {
   );
 }
 
-function LeaderboardView({ guesses, matches }) {
+function LeaderboardView({ guesses, matches, rows, session }) {
   const score = Object.values(guesses).reduce((total, guess) => {
     const match = matches.find((item) => item.id === guess.match_id);
     return total + (match ? Math.floor(rounds[match.round].outcome / 2) : 0);
   }, 0);
-  const rows = [
-    { name: 'You', points: score, guessed: Object.keys(guesses).length },
-    { name: 'Friend A', points: Math.max(score - 8, 0), guessed: 9 },
-    { name: 'Friend B', points: Math.max(score - 13, 0), guessed: 7 },
-  ].sort((a, b) => b.points - a.points);
+  const leaderboardRows = session && rows.length
+    ? rows.map((row) => ({
+        id: row.user_id,
+        name: row.email || row.display_name || 'Player',
+        points: row.total_points || 0,
+        guessed: Number(row.guess_count || 0),
+        isCurrentUser: row.user_id === session.user.id,
+      }))
+    : [{ id: 'local', name: session?.user?.email || 'Local draft', points: score, guessed: Object.keys(guesses).length, isCurrentUser: true }];
 
   return (
     <section className="workspace leaderboard-layout">
@@ -930,8 +962,8 @@ function LeaderboardView({ guesses, matches }) {
             <tr><th>Rank</th><th>Player</th><th>Guesses</th><th>Points</th></tr>
           </thead>
           <tbody>
-            {rows.map((row, index) => (
-              <tr key={row.name}>
+            {leaderboardRows.map((row, index) => (
+              <tr className={row.isCurrentUser ? 'current-user-row' : ''} key={row.id}>
                 <td>{index + 1}</td>
                 <td>{row.name}</td>
                 <td>{row.guessed}</td>
@@ -940,6 +972,8 @@ function LeaderboardView({ guesses, matches }) {
             ))}
           </tbody>
         </table>
+        {!session && <p className="empty-note">Sign in to see the live leaderboard with real users.</p>}
+        {session && !rows.length && <p className="empty-note">No leaderboard rows yet. Save a guess to join the table.</p>}
       </div>
       <aside className="scoring-panel">
         <h2>Scoring Rules</h2>

@@ -993,6 +993,17 @@ th {
   color: #fff;
 }
 
+.leaderboard tr.current-user-row td {
+  background: #e7fff2;
+  font-weight: 800;
+}
+
+.empty-note {
+  margin: 12px 0 0;
+  color: #5f695f;
+  font-weight: 700;
+}
+
 .leaderboard-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 360px;

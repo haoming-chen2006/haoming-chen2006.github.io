@@ -11,11 +11,10 @@
 <body>
   <div id="root"></div>
 
-  <!-- React and Babel from CDN -->
   <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
   <script crossorigin src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  
+
   <script type="text/babel">
 
 // Navbar component
@@ -23,27 +22,26 @@ const Navbar = ({ setPage }) => (
   <nav className="navbar">
     <div className="nav-section">
       <a href="mailto:haoming_chen@berkeley.edu" className="link-styles icon-link">
-        <img src="/assets/website_basic/email_light.jpeg" alt="Email" className="nav-icon" />
+        <img src="/media/icons/email.jpeg" alt="Email" className="nav-icon" />
       </a>
       <a href="https://github.com/haoming-chen2006" className="link-styles icon-link">
-        <img src="/github.svg" alt="GitHub" className="nav-icon" />
+        <img src="/media/icons/github.svg" alt="GitHub" className="nav-icon" />
       </a>
       <a href="https://linkedin.com/in/haoming-chen-7421b230b" className="link-styles icon-link">
-        <img src="/assets/website_basic/linkedin.png" alt="LinkedIn" className="nav-icon" />
+        <img src="/media/icons/linkedin.png" alt="LinkedIn" className="nav-icon" />
       </a>
     </div>
     <div className="nav-section">
-      <button className="link-styles" onClick={() => setPage('about')}>about</button>
-      <button className="link-styles" onClick={() => setPage('research')}>research</button>
-      <button className="link-styles" onClick={() => setPage('experiences')}>experiences</button>
-      <button className="link-styles-small" onClick={() => window.open('/HAOMINGCHEN_RESUME.docx.pdf', '_blank')}>resume</button>
+      <button className="link-styles" onClick={() => setPage('about')}>About</button>
+      <button className="link-styles" onClick={() => setPage('research')}>Research</button>
+      <button className="link-styles" onClick={() => setPage('experiences')}>Experiences</button>
+      <button className="link-styles-small" onClick={() => window.open('/haomingresume.pdf', '_blank')}>Resume</button>
     </div>
   </nav>
 );
 
 // Home component
 const Home = ({ setPage }) => {
-  // Static blog entries — add new blogs here
   const blogEntries = [
     {
       title: "The Nationality Axis: Cultural Identity as a Latent Dimension in LLMs",
@@ -66,157 +64,59 @@ const Home = ({ setPage }) => {
       <div className="hero-section">
         <div className="hero">
           <h1 className="subhead">Haoming Chen</h1>
-          <p className="header"> I am a student at UC Berkeley studying Computer Science and Mathematics.</p>
+          <p className="header">I am a student at UC Berkeley studying Computer Science and Mathematics.</p>
         </div>
         <div className="hero-image">
-          <img src="/assets/website_basic/hero.jpg" alt="Haoming" />
+          <img src="/media/profile/hero.jpg" alt="Haoming" />
         </div>
       </div>
+
       <div className="section blog">
-        <h2>Bio</h2>
+        <h2>About Me</h2>
         <div className="bio-content-wrapper">
           <div className="bio-container">
             <p className='main-text'>
-              Academically, I'm interested in  <b><span>how language models generalize to exciting fields</span></b>
-                ,this involves things like vision language models and application of <b><span>machine learning in science</span></b>, especially physics.
+              Academically, I'm interested in <b><span>how language models generalize to exciting fields</span></b>,
+              this involves things like vision language models and application of <b><span>machine learning in science</span></b>, especially physics.
               I am also passionate about <b><span>creative use of LLM agents</span></b> in gamified settings.
             </p>
             <p className='main-text'>
-              I'm intested in <b><span>education inequality research</span></b> and <b><span>STEM outreach</span></b>.
+              I'm interested in <b><span>education inequality research</span></b> and <b><span>STEM outreach</span></b>.
             </p>
             <p className='main-text'>
               I am excited about cool sci-fi ideas and try my best to understand the frontier physics we have to explain the world.
             </p>
             <p className='main-text'>
-              I like to play soccer and support soccer teams, watch movies, and go on trips to amazing places. 
+              I like to play soccer and support soccer teams, watch movies, and go on trips to amazing places.
             </p>
             <p className='main-text'>
-              Checkout my{' '}
-              <span 
-                className="bio-link" 
-                onClick={() => setPage('research')}
-                style={{
-                  cursor: 'pointer',
-                  color: '#007bff',
-                  textDecoration: 'underline',
-                  transition: 'all 0.3s ease'
-                }}
-                onMouseEnter={(e) => {
-                  e.target.style.color = '#0056b3';
-                  e.target.style.backgroundColor = '#f8f9fa';
-                  e.target.style.padding = '0.2rem 0.4rem';
-                  e.target.style.borderRadius = '4px';
-                }}
-                onMouseLeave={(e) => {
-                  e.target.style.color = '#007bff';
-                  e.target.style.backgroundColor = 'transparent';
-                  e.target.style.padding = '0';
-                  e.target.style.borderRadius = '0';
-                }}
-              >
-                research projects
-              </span>,{' '}
-              <span 
-                className="bio-link" 
-                onClick={() => setPage('experiences')}
-                style={{
-                  cursor: 'pointer',
-                  color: '#007bff',
-                  textDecoration: 'underline',
-                  transition: 'all 0.3s ease'
-                }}
-                onMouseEnter={(e) => {
-                  e.target.style.color = '#0056b3';
-                  e.target.style.backgroundColor = '#f8f9fa';
-                  e.target.style.padding = '0.2rem 0.4rem';
-                  e.target.style.borderRadius = '4px';
-                }}
-                onMouseLeave={(e) => {
-                  e.target.style.color = '#007bff';
-                  e.target.style.backgroundColor = 'transparent';
-                  e.target.style.padding = '0';
-                  e.target.style.borderRadius = '0';
-                }}
-              >
-                experiences
-              </span>{' and '}
-              <a 
-                href="/blog/"
-                className="bio-link" 
-                style={{
-                  cursor: 'pointer',
-                  color: '#007bff',
-                  textDecoration: 'underline',
-                  transition: 'all 0.3s ease'
-                }}
-                onMouseEnter={(e) => {
-                  e.target.style.color = '#0056b3';
-                  e.target.style.backgroundColor = '#f8f9fa';
-                  e.target.style.padding = '0.2rem 0.4rem';
-                  e.target.style.borderRadius = '4px';
-                }}
-                onMouseLeave={(e) => {
-                  e.target.style.color = '#007bff';
-                  e.target.style.backgroundColor = 'transparent';
-                  e.target.style.padding = '0';
-                  e.target.style.borderRadius = '0';
-                }}
-              >
-                blog posts
-              </a>
-              !
+              Check out my{' '}
+              <a href="#" onClick={(e) => { e.preventDefault(); setPage('research'); }}>research projects</a>,{' '}
+              <a href="#" onClick={(e) => { e.preventDefault(); setPage('experiences'); }}>experiences</a>{' and '}
+              <a href="/blog/">blog posts</a>!
             </p>
           </div>
         </div>
       </div>
-      
-      {/* Blog Posts Section */}
+
       <div className="section blog">
         <h2>Blog Posts</h2>
-        <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+        <div>
           {blogEntries.map((entry, index) => (
-            <a
-              key={index}
-              href={entry.url}
-              style={{
-                display: 'block',
-                textDecoration: 'none',
-                color: 'inherit',
-                border: '1px solid #e0e0e0',
-                borderRadius: '8px',
-                padding: '1.5rem',
-                marginBottom: '1.5rem',
-                backgroundColor: '#fff',
-                cursor: 'pointer',
-                transition: 'all 0.3s ease',
-                boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
-                e.currentTarget.style.transform = 'translateY(-2px)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
-                e.currentTarget.style.transform = 'translateY(0)';
-              }}
-            >
-              <h3 style={{ margin: '0 0 0.5rem 0', color: '#333', fontSize: '1.4rem', fontWeight: 'bold' }}>
-                {entry.title}
-              </h3>
-              <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.8rem', fontSize: '0.85rem', flexWrap: 'wrap' }}>
-                <span style={{ color: '#888' }}>{entry.date}</span>
+            <a key={index} href={entry.url} className="blog-card">
+              <h3>{entry.title}</h3>
+              <div className="blog-card-meta">
+                <span className="blog-card-date">{entry.date}</span>
                 {entry.tags.map((tag, i) => (
-                  <span key={i} style={{ backgroundColor: '#f0f0f0', padding: '0.15rem 0.5rem', borderRadius: '4px', fontWeight: '600', color: '#555' }}>{tag}</span>
+                  <span key={i} className="blog-card-tag">{tag}</span>
                 ))}
               </div>
-              <p style={{ margin: 0, lineHeight: '1.6', color: '#555' }}>{entry.abstract}</p>
-              <div style={{ textAlign: 'right', marginTop: '0.8rem', fontSize: '0.9rem', color: '#007bff', fontWeight: '500' }}>
-                Read more →
-              </div>
+              <p className="blog-card-abstract">{entry.abstract}</p>
+              <span className="blog-card-link">Read more</span>
             </a>
           ))}
-          <div style={{ textAlign: 'center', marginTop: '1rem' }}>
-            <a href="/blog/" style={{ color: '#007bff', textDecoration: 'none', fontWeight: '500' }}>View all blog posts →</a>
+          <div style={{ marginTop: '1rem' }}>
+            <a href="/blog/">View all blog posts</a>
           </div>
         </div>
       </div>
@@ -252,7 +152,7 @@ const ResearchCard = ({ title, content, image, website, duration, role }) => {
         <p className="research-duration">{duration}</p>
         <div className="research-description">{content}</div>
         <div className="research-actions">
-          <button className="research-link-btn" onClick={handleCardClick}>Visit Website →</button>
+          <button className="research-link-btn" onClick={handleCardClick}>Visit Website</button>
           <button className="research-close-btn" onClick={() => setShow(false)}>Close</button>
         </div>
       </div>
@@ -263,13 +163,33 @@ const ResearchCard = ({ title, content, image, website, duration, role }) => {
 const Research = () => {
   const researchData = [
     {
-      title: "Vilex encoder for VLM",
-      role: "Researcher in BAIR, ATLAS group",
+      title: "CoVA: Chain of Visual Abstractions",
+      role: "Research Project",
       content: (
         <div>
-          <p>VILEX is an encoder that can work well in both <strong>visual generation and understanding tasks</strong> if integrated successfully with an autoregressive backbone. It has the potential to make text only model 'speak images' </p>
-
-          <img src={"/assets/website_basic/Screenshot 2025-09-07 at 14.54.35.png"} alt={"plot"} />
+          <p>Chain-of-thought (CoT) reasoning has dramatically improved large language models by allowing them to decompose problems into intermediate steps. While CoT is widely effective for naturally linguistic tasks, <strong>text-only CoT forces models to serialize naturally visual problems into awkward prose</strong>.</p>
+          <p>We introduce <strong>CoVA-SFT</strong>, a highly structured corpus of 53K samples containing over 229K multimodal reasoning steps across 5 distinct layout families and 17 complex tasks, and <strong>CoVA-Bench</strong>, a companion benchmark of 1,700 held-out test samples for reproducible evaluation.</p>
+          <img src="/media/research/cova-architecture.png" alt="CoVA Dataset Architecture" />
+          <h4>Key Results:</h4>
+          <ul>
+            <li>Models fine-tuned on CoVA-SFT outperform all interleaved CoT baselines by more than 2x on average</li>
+            <li>Teaches multimodal language models to interleave text and visual abstractions</li>
+            <li>Provides explicit rationale formulations, agentic renderings, and verification loops</li>
+          </ul>
+          <img src="/media/research/cova-results.png" alt="CoVA Model Performance" />
+        </div>
+      ),
+      duration: "2025",
+      image: "/media/research/cova-architecture.png",
+      website: "https://github.com/haoming-chen2006"
+    },
+    {
+      title: "VILEX Encoder for VLM",
+      role: "Researcher at BAIR, ATLAS Group",
+      content: (
+        <div>
+          <p>VILEX is an encoder that can work well in both <strong>visual generation and understanding tasks</strong> if integrated successfully with an autoregressive backbone. It has the potential to make text only model 'speak images'.</p>
+          <img src="/media/research/vilex-plot.png" alt="VILEX plot" />
           <h4>What I built:</h4>
           <ul>
             <li>Custom dataloading pipelines</li>
@@ -277,22 +197,21 @@ const Research = () => {
             <li>Adjustments of the BAGEL VLM model</li>
             <li>Experiments using augmented datasets</li>
           </ul>
-          <p>Learn more about the project:<a href="https://github.com/haoming-chen2006/VILEX_BAGEL" style={{color: '#000', marginLeft: '5px'}}>VILEX for BAGEL</a></p>
-          <p>Read relevant papers:<a href="https://arxiv.org/pdf/2412.06774" style={{color: '#000', marginLeft: '5px'}}></a></p>
+          <p>Learn more: <a href="https://github.com/haoming-chen2006/VILEX_BAGEL">VILEX for BAGEL</a></p>
         </div>
       ),
       duration: "June 2025 - Present",
-      image: "/assets/website_basic/vilex_poster.jpg",
+      image: "/media/research/vilex-poster.jpg",
       website: "https://github.com/haoming-chen2006/LLM4Tracking"
     },
     {
       title: "Language Model for High Energy Physics",
-      role: "Research Intern under Lawrence Berkeley National Laboratory, ATLAS group",
+      role: "Research Intern at Lawrence Berkeley National Laboratory",
       content: (
         <div>
           <p>The ambition of this project is to build a <strong>GPT-3 for particle physics data</strong> with zero-shot generalization capabilities. This revolutionary approach means we won't need to train separate models for each particle physics task.</p>
-          <p>An example was to tokenize, reconstruct, and possibly understand the semantic meaning of complex particle traces, like the traces of Higgs Boson experiments showed below</p>
-          <img src={"/assets/website_basic/plot.png"} alt={"plot"} />
+          <p>An example was to tokenize, reconstruct, and possibly understand the semantic meaning of complex particle traces, like the traces of Higgs Boson experiments showed below.</p>
+          <img src="/media/research/physics-plot.png" alt="Physics plot" />
           <h4>What I built:</h4>
           <ul>
             <li>Custom dataloader for particle physics data</li>
@@ -300,35 +219,33 @@ const Research = () => {
             <li>Integration into innovative language models</li>
             <li>Experiments using newest vision/language model techniques</li>
           </ul>
-          <p>Read relevant papers:<a href="https://www.researchgate.net/publication/377919900_Generative_machine_learning_for_detector_response_modeling_with_a_conditional_normalizing_flow" style={{color: '#000', marginLeft: '5px'}}>Generative Machinee Learning</a><br/><a href="https://arxiv.org/abs/2403.05618">Omnijet Experiment</a></p>
-          <p>Learn more about the tokenizers I made public:<a href="https://github.com/haoming-chen2006/LLM4Tracking" style={{color: '#000', marginLeft: '5px'}}>LLM for Jet and Particle Tokenization</a></p>
+          <p>Learn more: <a href="https://github.com/haoming-chen2006/LLM4Tracking">LLM for Jet and Particle Tokenization</a></p>
         </div>
       ),
       duration: "June 2025 - Present",
-      image: "/assets/website_basic/htobb.webp",
+      image: "/media/research/physics-htobb.webp",
       website: "https://github.com/haoming-chen2006/LLM4Tracking"
     },
     {
       title: "Education and Organization Lab",
-      role: "Research Apprentice, advised by professor Eos Trinidad",
+      role: "Research Apprentice, advised by Professor Eos Trinidad",
       content: (
         <div>
           <p>Conducting research on trends about <strong>networks of nonprofits</strong> that focus on education.</p>
           <p>This URAP supported research program.</p>
           <h4>What I made:</h4>
           <ul>
-            <li>250,000+ nonprofit dataset augmented with rich info added using webscraping </li>
+            <li>250,000+ nonprofit dataset augmented with rich info added using webscraping</li>
             <li>Exploratory data analysis, machine learning, and outlier detection applied on the dataset</li>
             <li>Extensive literature review</li>
             <li>Production of interactive plots</li>
           </ul>
-          <img src="/assets/website_basic/web.jpg" alt="WeLeap AI Demo" style={{width: '100%', maxWidth: '400px', borderRadius: '8px', margin: '1rem 0'}} />
-          <p>Read the book about the research:</p>
-          <a href="https://www.amazon.com/Subtle-Webs-Local-Organizations-Education/dp/0197786081">Subtle webs</a>
+          <img src="/media/research/education-web.jpg" alt="Education research" style={{width: '100%', maxWidth: '400px', borderRadius: '8px', margin: '1rem 0'}} />
+          <p>Read the book: <a href="https://www.amazon.com/Subtle-Webs-Local-Organizations-Education/dp/0197786081">Subtle Webs</a></p>
         </div>
       ),
       duration: "May 2025 - Present",
-      image: "/assets/website_basic/network.jpg",
+      image: "/media/research/education-network.jpg",
       website: "https://sites.google.com/view/eostrinidad/research"
     },
   ];
@@ -356,7 +273,7 @@ const ExperienceCard = ({ title, description, image, website, duration, role }) 
         <p className="experience-role">{role}</p>
         <p className="experience-duration">{duration}</p>
         <p className="experience-description">{description}</p>
-        <div className="experience-link"><span>Click to visit →</span></div>
+        <div className="experience-link"><span>Learn more</span></div>
       </div>
     </div>
   );
@@ -364,10 +281,11 @@ const ExperienceCard = ({ title, description, image, website, duration, role }) 
 
 const Experiences = () => {
   const experienceData = [
-    { title: "WeLeap. AI", role: "Software Engineer Intern", duration: "June 2025 - Present", description: "Supported by Berkeley Skydeck startup incubator program. Orchestrated a multi-agent system to deliver personalized financial guidance using multimodal inputs such as documents, photos, and forms.", image: "/assets/website_basic/leap.jpg", website: "https://www.f6s.com/weleap" },
-    { title: "CAL HACKS", role: "Participant", duration: "Julne 2023", description: "Had fun in the AI Hackathon, we built Kola coach, a wellness coach APP that gives phone calls, browse the web, and sends Email to users. Built at Cal Hack.", image: "/assets/website_basic/calhack.jpeg", website: "https://devpost.com/software/koacoach" },
-    { title: "YC AI Startup School", role: "Participant", duration: "July 2025 ", description: "Joined the amazing YCombinator startup school event, listened to inspring talks from many of my heros, and had fun in after parties.", image: "/assets/website_basic/Y_comb.png", website: "https://events.ycombinator.com/ai-susm" },
-    { title: "Berkeley CS C88C", role: "Course Staff", duration: "May 2025 - August 2026 ", description: "Helped organize Data C88C as UCS1 at Berkeley, organized teaching materials, instructed weekly sections, and hosted office hours for 400+ students.", image: "/assets/website_basic/88.png", website: "https://c88c.org/su25/staff/" }
+    { title: "Databricks", role: "Software Engineer Intern", duration: "Summer 2026", description: "Incoming software engineering intern at Databricks, the unified analytics platform. Working on data engineering and machine learning infrastructure at scale.", image: "/media/experience/databricks.png", website: "https://www.databricks.com" },
+    { title: "WeLeap AI", role: "Software Engineer Intern", duration: "June 2025 - Present", description: "Supported by Berkeley Skydeck startup incubator program. Orchestrated a multi-agent system to deliver personalized financial guidance using multimodal inputs such as documents, photos, and forms.", image: "/media/experience/weleap.jpg", website: "https://www.f6s.com/weleap" },
+    { title: "Cal Hacks", role: "Participant", duration: "June 2023", description: "Had fun in the AI Hackathon, we built Kola Coach, a wellness coach APP that gives phone calls, browses the web, and sends emails to users.", image: "/media/experience/calhacks.jpeg", website: "https://devpost.com/software/koacoach" },
+    { title: "YC AI Startup School", role: "Participant", duration: "July 2025", description: "Joined the YCombinator startup school event, listened to inspiring talks from many of my heroes, and had fun in after parties.", image: "/media/experience/ycombinator.png", website: "https://events.ycombinator.com/ai-susm" },
+    { title: "Berkeley CS C88C", role: "Course Staff", duration: "May 2025 - August 2026", description: "Helped organize Data C88C as UCS1 at Berkeley, organized teaching materials, instructed weekly sections, and hosted office hours for 400+ students.", image: "/media/experience/berkeley-88.png", website: "https://c88c.org/su25/staff/" }
   ];
   return (
     <div className="main-content">

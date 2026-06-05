@@ -1,157 +1,66 @@
+/* Base Styles - Modern Clean Design */
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   margin: 0;
-  font-family: Arial, sans-serif;
-  background-color: #fff;
-  color: #333;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  background-color: #fafafa;
+  color: #111827;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-
-.header {
-  font-family: Impact;
-  font-size:5rem;
-  font-weight: 100;
-}
-
-.navbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1rem 2rem;
-  background-color: #fff;
-  border-bottom: 2px solid #f0f0f0;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-  position: sticky;
-  top: 0;
-  z-index: 100;
-}
-
-.nav-left,
-.nav-right {
-  display: flex;
-  gap: 1.5rem;
-  align-items: center;
-}
-
-.nav-right a,
-.nav-left a {
-  color: #333;
+/* Links */
+a {
+  color: #3b82f6;
   text-decoration: none;
-  font-weight: 500;
-  padding: 0.5rem 1rem;
-  border-radius: 6px;
-  transition: all 0.3s ease;
-  position: relative;
+  transition: color 0.15s ease;
 }
 
-.nav-right a:hover,
-.nav-left a:hover {
-  background-color: #f8f9fa;
-  color: #000;
-  transform: translateY(-2px);
+a:hover {
+  color: #2563eb;
 }
 
-.nav-right a::after {
-  content: '';
-  position: absolute;
-  bottom: -2px;
-  left: 50%;
-  width: 0;
-  height: 2px;
-  background-color: #000;
-  transition: all 0.3s ease;
-  transform: translateX(-50%);
+/* Selection */
+::selection {
+  background: rgba(59, 130, 246, 0.15);
+  color: inherit;
 }
 
-.nav-right a:hover::after {
-  width: 80%;
+/* Focus States */
+:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
 }
 
-.nav-left a {
-  background-color: #f8f9fa;
-  border: 1px solid #e9ecef;
+button:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
 }
 
-.nav-left a:hover {
-  background-color: #000;
-  color: white;
-  border-color: #000;
+/* Scrollbar (for webkit browsers) */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
 }
 
-.main-content {
-  padding: 2rem;
+::-webkit-scrollbar-track {
+  background: transparent;
 }
 
-.hero-section {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 2rem;
-  align-items: center;
+::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 4px;
 }
 
-.hero-section .hero {
-  flex: 1;
-}
-
-.hero-section h1 {
-  font-size: 2.5rem;
-  margin-bottom: 1rem;
-}
-
-.hero-section p {
-  font-size: 1.2rem;
-}
-
-.hero-image {
-  flex: 1;
-  text-align: right;
-}
-
-.hero-image img {
-  width: 250px;
-  height: 250px;
-  object-fit: cover;
-}
-
-.section {
-  margin-top: 2rem;
-}
-
-.news {
-  min-height: 200px;
-  padding: 1rem;
-}
-
-/* Responsive design for mobile devices */
-@media (max-width: 768px) {
-  .navbar {
-    flex-direction: column;
-    padding: 1rem;
-    gap: 1rem;
-  }
-  
-  .nav-left,
-  .nav-right {
-    gap: 1rem;
-  }
-  
-  .nav-right a,
-  .nav-left a {
-    padding: 0.4rem 0.8rem;
-    font-size: 0.9rem;
-  }
-}
-
-@media (max-width: 480px) {
-  .nav-left,
-  .nav-right {
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 0.5rem;
-  }
-  
-  .nav-right a,
-  .nav-left a {
-    padding: 0.3rem 0.6rem;
-    font-size: 0.8rem;
-  }
+::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
 }

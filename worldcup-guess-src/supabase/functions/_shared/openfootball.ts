@@ -79,7 +79,7 @@ export function resolveActualResult(
   entry: OpenfootballMatch,
   teamHome: string,
   teamAway: string,
-): { homeScore: number; awayScore: number; winner: string } | null {
+): { homeScore: number; awayScore: number; winner: string | null } | null {
   if (!entry.score?.ft) return null;
   const [s1, s2] = entry.score.ft;
   const t1 = normalizeTeam(entry.team1);
@@ -100,7 +100,7 @@ export function resolveActualResult(
     }
   }
 
-  let winner: string;
+  let winner: string | null;
   if (entry.score.pen) {
     const [p1, p2] = entry.score.pen;
     const penWinnerSide = p1 > p2 ? entry.team1 : entry.team2;
@@ -110,7 +110,7 @@ export function resolveActualResult(
   } else if (awayScore > homeScore) {
     winner = teamAway;
   } else {
-    winner = teamHome; // draw — rare in knockouts; pick home for DB constraint
+    winner = null; // genuine draw (no penalties) → null actual_winner
   }
 
   return { homeScore, awayScore, winner };

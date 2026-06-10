@@ -51,13 +51,13 @@ export default function UserProfilePanel({ userId, onClose, t, lang, teamInfo })
                   </span>
                   <span>{formatKickoff(guess.kickoff_time, lang)}</span>
                   <b>{guess.pred_home_score} : {guess.pred_away_score}</b>
-                  <span>{guess.predicted_winner || t('noWinner')}</span>
+                  <span>{guess.predicted_winner || t('draw')}</span>
                   {guess.points_earned != null && (
                     <span className="points-earned">+{guess.points_earned} {t('pts')}</span>
                   )}
-                  {guess.actual_winner && (
+                  {guess.actual_home_score != null && (
                     <small>
-                      {t('actual')}: {guess.actual_home_score}:{guess.actual_away_score} ({guess.actual_winner})
+                      {t('actual')}: {guess.actual_home_score}:{guess.actual_away_score} ({guess.actual_winner || t('draw')})
                     </small>
                   )}
                 </article>

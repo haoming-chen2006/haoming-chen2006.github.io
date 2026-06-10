@@ -1172,6 +1172,10 @@ th {
   background: #3b82f6;
 }
 
+.pred-bar-fill.draw {
+  background: #9ca3af;
+}
+
 .pred-bar-fill.away {
   background: #ef4444;
 }

@@ -31,9 +31,11 @@ export default function MatchPredictionBars({ match, distribution, t, onSelectUs
 
   const homeCount = Number(distribution?.home_count ?? 0);
   const awayCount = Number(distribution?.away_count ?? 0);
-  const total = homeCount + awayCount;
-  const homePct = total ? Math.round((homeCount / total) * 100) : 50;
-  const awayPct = total ? 100 - homePct : 50;
+  const drawCount = Number(distribution?.draw_count ?? 0);
+  const total = homeCount + awayCount + drawCount;
+  const homePct = total ? Math.round((homeCount / total) * 100) : 33;
+  const drawPct = total ? Math.round((drawCount / total) * 100) : 34;
+  const awayPct = total ? 100 - homePct - drawPct : 33;
 
   async function openDetail(side) {
     setOpen(side);
@@ -55,6 +57,13 @@ export default function MatchPredictionBars({ match, distribution, t, onSelectUs
         </span>
         <span className="pred-bar-count">{homeCount}</span>
       </button>
+      <button type="button" className="pred-bar-row" onClick={() => openDetail('draw')}>
+        <span className="pred-bar-label">{t('draw')}</span>
+        <span className="pred-bar-track">
+          <span className="pred-bar-fill draw" style={{ width: `${drawPct}%` }} />
+        </span>
+        <span className="pred-bar-count">{drawCount}</span>
+      </button>
       <button type="button" className="pred-bar-row" onClick={() => openDetail('away')}>
         <span className="pred-bar-label">{match.team_away}</span>
         <span className="pred-bar-track">
@@ -75,8 +84,20 @@ export default function MatchPredictionBars({ match, distribution, t, onSelectUs
               {!loadingDetail && detail && (
                 <div className="pred-detail-columns">
                   <PickColumn
-                    title={open === 'home' ? detail.home_team : detail.away_team}
-                    picks={open === 'home' ? detail.home_picks : detail.away_picks}
+                    title={
+                      open === 'home'
+                        ? detail.home_team
+                        : open === 'away'
+                          ? detail.away_team
+                          : t('draw')
+                    }
+                    picks={
+                      open === 'home'
+                        ? detail.home_picks
+                        : open === 'away'
+                          ? detail.away_picks
+                          : detail.draw_picks
+                    }
                     t={t}
                     onSelectUser={onSelectUser}
                   />

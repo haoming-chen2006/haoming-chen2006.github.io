@@ -71,7 +71,9 @@ function getMatchState(match, guess, now = Date.now()) {
 
 function pickWinner(guess, match) {
   if (!guess) return '';
-  if (guess.pred_home_score === guess.pred_away_score) return guess.pred_winner || '';
+  if (Number(guess.pred_home_score) === Number(guess.pred_away_score)) {
+    return guess.pred_winner || 'draw';
+  }
   return Number(guess.pred_home_score) > Number(guess.pred_away_score) ? match.team_home : match.team_away;
 }
 
@@ -599,10 +601,13 @@ function MatchGuessRow({ match, guess, onSaveGuess, t, lang, now, distribution, 
         value={pickWinner(guess, match)}
         disabled={locked}
         aria-label={t('winner')}
-        onChange={(event) => onSaveGuess(match, { pred_winner: event.target.value })}
+        onChange={(event) =>
+          onSaveGuess(match, { pred_winner: event.target.value === 'draw' ? '' : event.target.value })
+        }
       >
         <option value="">{t('winner')}</option>
         {match.team_home && <option value={match.team_home}>{match.team_home}</option>}
+        <option value="draw">{t('draw')}</option>
         {match.team_away && <option value={match.team_away}>{match.team_away}</option>}
       </select>
       {bonusActive && <span className="bonus-chip active">{t('underdogBonus')}</span>}

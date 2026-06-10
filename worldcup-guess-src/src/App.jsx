@@ -30,6 +30,7 @@ const localGuessKey = 'worldcup-guess-local-guesses';
 const localPlayerKey = 'worldcup-guess-player-artifact';
 const localRankingKey = 'worldcup-guess-group-rankings';
 const localBracketKey = 'worldcup-guess-bracket-picks';
+const buyinDismissedKey = 'worldcup-guess-buyin-dismissed';
 
 function useNow(intervalMs = 1000) {
   const [now, setNow] = useState(() => Date.now());
@@ -38,6 +39,29 @@ function useNow(intervalMs = 1000) {
     return () => window.clearInterval(id);
   }, [intervalMs]);
   return now;
+}
+
+function BuyinModal({ t, onAgree }) {
+  const [dontShowAgain, setDontShowAgain] = useState(false);
+  return (
+    <div className="buyin-overlay" role="dialog" aria-modal="true" aria-label={t('buyinTitle')}>
+      <div className="buyin-modal">
+        <h2>{t('buyinTitle')}</h2>
+        <p>{t('buyinBody')}</p>
+        <label className="buyin-dont-show">
+          <input
+            type="checkbox"
+            checked={dontShowAgain}
+            onChange={(event) => setDontShowAgain(event.target.checked)}
+          />
+          <span>{t('buyinDontShow')}</span>
+        </label>
+        <button type="button" className="buyin-agree" onClick={() => onAgree(dontShowAgain)}>
+          {t('buyinAgree')}
+        </button>
+      </div>
+    </div>
+  );
 }
 
 function getMatchState(match, guess, now = Date.now()) {
@@ -138,6 +162,9 @@ export default function App() {
   );
   const [leaderboardRows, setLeaderboardRows] = useState([]);
   const [selectedUserId, setSelectedUserId] = useState(null);
+  const [showBuyin, setShowBuyin] = useState(
+    () => localStorage.getItem(buyinDismissedKey) !== 'true'
+  );
   const [status, setStatus] = useState('');
   const [notice, setNotice] = useState('');
   const now = useNow();
@@ -340,6 +367,15 @@ export default function App() {
 
   return (
     <main className="app-shell">
+      {showBuyin && (
+        <BuyinModal
+          t={t}
+          onAgree={(dontShowAgain) => {
+            if (dontShowAgain) localStorage.setItem(buyinDismissedKey, 'true');
+            setShowBuyin(false);
+          }}
+        />
+      )}
       {notice && <div className="toast-notice">{notice}</div>}
       <header className="topbar">
         <div>

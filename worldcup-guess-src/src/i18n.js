@@ -101,6 +101,11 @@ export const translations = {
     pts: 'pts',
     actual: 'Actual',
     leaderboardClickHint: 'Click a player to view their predictions.',
+    buyinTitle: 'Before you play',
+    buyinBody:
+      'To join the game, you agree to a small buy-in of around $10. The pooled buy-ins go toward buying the overall winner some World Cup merch. Predictions are just for fun until then — good luck!',
+    buyinAgree: "I agree — let's play",
+    buyinDontShow: "Don't show this again",
   },
   zh: {
     eyebrow: '2026 世界杯',
@@ -202,6 +207,11 @@ export const translations = {
     pts: '分',
     actual: '实际',
     leaderboardClickHint: '点击玩家查看其预测详情。',
+    buyinTitle: '参与前须知',
+    buyinBody:
+      '参与游戏即表示你同意约 10 美元的小额报名费。所有报名费将汇集用于为最终冠军购买世界杯周边。在此之前竞猜纯属娱乐——祝你好运！',
+    buyinAgree: '我同意——开始游戏',
+    buyinDontShow: '不再显示',
   },
 };
 

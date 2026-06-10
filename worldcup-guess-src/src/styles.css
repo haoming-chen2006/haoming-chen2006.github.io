@@ -1387,3 +1387,60 @@ th {
     grid-column: auto;
   }
 }
+
+.buyin-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(23, 32, 23, 0.55);
+}
+
+.buyin-modal {
+  width: min(440px, 100%);
+  padding: 24px;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 24px 60px rgba(23, 32, 23, 0.28);
+  text-align: center;
+}
+
+.buyin-modal h2 {
+  margin: 0 0 12px;
+  font-size: 1.3rem;
+}
+
+.buyin-modal p {
+  margin: 0 0 18px;
+  line-height: 1.5;
+  color: #2c3a2c;
+}
+
+.buyin-dont-show {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 18px;
+  font-size: 0.9rem;
+  color: #4a574a;
+  cursor: pointer;
+}
+
+.buyin-agree {
+  width: 100%;
+  padding: 12px 16px;
+  border: 0;
+  border-radius: 8px;
+  background: #1f7a3d;
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.buyin-agree:hover {
+  background: #186230;
+}

@@ -1,0 +1,3 @@
+
+[functions.refresh-results]
+verify_jwt = false

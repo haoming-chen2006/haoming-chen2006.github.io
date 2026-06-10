@@ -2,32 +2,47 @@ import { useEffect, useMemo, useState } from 'react';
 import { supabase } from './supabaseClient.js';
 import { groups, rounds, seedMatches, teamInfo } from './data/fixtures.js';
 import { playerPool } from './data/players.js';
+import RefreshResultsButton from './components/RefreshResultsButton.jsx';
+import MatchPredictionBars, { useGuessDistributions } from './components/MatchPredictionBars.jsx';
+import UserProfilePanel from './components/UserProfilePanel.jsx';
+import {
+  LANG_KEY,
+  applyDemoMexicoLock,
+  createT,
+  formatKickoff,
+  formatLockCountdown,
+  getGuessDeadline,
+  roundLabel,
+} from './i18n.js';
 
-const tabs = [
-  { id: 'guess', label: 'Guess' },
-  { id: 'schedule', label: 'Overall Schedule' },
-  { id: 'leaderboard', label: 'Leaderboard' },
-  { id: 'personal', label: 'Personal Info' },
-];
+const tabIds = ['guess', 'schedule', 'leaderboard', 'personal'];
 
 const trophyFields = [
-  { field: 'champion_team', label: 'Champion', icon: '🏆', type: 'team' },
-  { field: 'top4_teams', label: 'Top 4', icon: '🥇', type: 'teams' },
-  { field: 'top_scorer', label: 'Golden Boot', icon: '🥾', type: 'player' },
-  { field: 'top_assister', label: 'Assist King', icon: '🎯', type: 'player' },
-  { field: 'best_player', label: 'Golden Ball', icon: '⚽', type: 'player' },
-  { field: 'best_young_player', label: 'Best Young Player', icon: '🌟', type: 'player' },
+  { field: 'champion_team', labelKey: 'champion', icon: '🏆', type: 'team' },
+  { field: 'top4_teams', labelKey: 'top4', icon: '🥇', type: 'teams' },
+  { field: 'top_scorer', labelKey: 'goldenBoot', icon: '🥾', type: 'player' },
+  { field: 'top_assister', labelKey: 'assistKing', icon: '🎯', type: 'player' },
+  { field: 'best_player', labelKey: 'goldenBall', icon: '⚽', type: 'player' },
+  { field: 'best_young_player', labelKey: 'bestYoung', icon: '🌟', type: 'player' },
 ];
 
 const localGuessKey = 'worldcup-guess-local-guesses';
 const localPlayerKey = 'worldcup-guess-player-artifact';
 const localRankingKey = 'worldcup-guess-group-rankings';
 const localBracketKey = 'worldcup-guess-bracket-picks';
-const sourceRepoUrl = 'https://github.com/haoming-chen2006/worldcup_prediction';
 
-function getMatchState(match, guess) {
+function useNow(intervalMs = 1000) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = window.setInterval(() => setNow(Date.now()), intervalMs);
+    return () => window.clearInterval(id);
+  }, [intervalMs]);
+  return now;
+}
+
+function getMatchState(match, guess, now = Date.now()) {
   if (!match.sides_confirmed) return 'not_out';
-  if (new Date(match.kickoff_time).getTime() <= Date.now()) return 'backlogged';
+  if (new Date(getGuessDeadline(match)).getTime() <= now) return 'backlogged';
   return guess ? 'out_and_guessed' : 'out_not_guessed';
 }
 
@@ -35,16 +50,6 @@ function pickWinner(guess, match) {
   if (!guess) return '';
   if (guess.pred_home_score === guess.pred_away_score) return guess.pred_winner || '';
   return Number(guess.pred_home_score) > Number(guess.pred_away_score) ? match.team_home : match.team_away;
-}
-
-function formatKickoff(value) {
-  return new Intl.DateTimeFormat(undefined, {
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-  }).format(new Date(value));
 }
 
 function teamFlag(team) {
@@ -117,9 +122,9 @@ function getMatchSides(match, groupRankings, bracketPicks) {
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('guess');
+  const [lang, setLang] = useState(() => localStorage.getItem(LANG_KEY) || 'en');
   const [session, setSession] = useState(null);
-  const [email, setEmail] = useState('');
-  const [matches, setMatches] = useState(seedMatches);
+  const [matches, setMatches] = useState(() => applyDemoMexicoLock(seedMatches));
   const [players, setPlayers] = useState(playerPool);
   const [guesses, setGuesses] = useState(() => JSON.parse(localStorage.getItem(localGuessKey) || '{}'));
   const [playerArtifact, setPlayerArtifact] = useState(() =>
@@ -132,8 +137,27 @@ export default function App() {
     JSON.parse(localStorage.getItem(localBracketKey) || '{}')
   );
   const [leaderboardRows, setLeaderboardRows] = useState([]);
-  const [status, setStatus] = useState('Local draft mode');
+  const [selectedUserId, setSelectedUserId] = useState(null);
+  const [status, setStatus] = useState('');
   const [notice, setNotice] = useState('');
+  const now = useNow();
+  const t = useMemo(() => createT(lang), [lang]);
+  const displayStatus = status || t('statusLocalDraft');
+  const { distributions, reload: reloadDistributions } = useGuessDistributions();
+
+  async function reloadMatchesAndLeaderboard() {
+    const [{ data: remoteMatches }, { data: leaderboard }] = await Promise.all([
+      supabase.from('matches').select('*').order('kickoff_time', { ascending: true }),
+      supabase.rpc('get_leaderboard'),
+    ]);
+    if (remoteMatches?.length) setMatches(applyDemoMexicoLock(remoteMatches));
+    if (leaderboard) setLeaderboardRows(leaderboard);
+    await reloadDistributions();
+  }
+
+  useEffect(() => {
+    localStorage.setItem(LANG_KEY, lang);
+  }, [lang]);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setSession(data.session));
@@ -161,6 +185,8 @@ export default function App() {
 
   useEffect(() => {
     async function loadRemoteData() {
+      await supabase.rpc('refresh_demo_mexico_lock').catch(() => null);
+
       if (session) {
         await supabase.from('profiles').upsert(
           {
@@ -186,10 +212,10 @@ export default function App() {
         ]);
 
       if (remoteMatches?.length) {
-        setMatches(remoteMatches);
-        setStatus(session ? 'Synced with Supabase' : 'Fixture data loaded');
+        setMatches(applyDemoMexicoLock(remoteMatches));
+        setStatus(session ? t('statusSynced') : t('statusFixtureLoaded'));
       } else if (matchError) {
-        setStatus('Local draft mode');
+        setStatus(t('statusLocalDraft'));
       }
 
       if (remotePlayers?.length) {
@@ -211,21 +237,12 @@ export default function App() {
     }
 
     loadRemoteData();
-  }, [session]);
+  }, [session, t]);
 
   useEffect(() => {
     async function loadLeaderboard() {
-      if (!session) {
-        setLeaderboardRows([]);
-        return;
-      }
-
       const { data, error } = await supabase.rpc('get_leaderboard');
-      if (error) {
-        setStatus(error.message);
-        return;
-      }
-
+      if (error) return;
       setLeaderboardRows(data || []);
     }
 
@@ -235,32 +252,10 @@ export default function App() {
   const orderedMatches = useMemo(() => [...matches].sort(byKickoff), [matches]);
   const teams = useMemo(() => groups.flatMap((group) => group.teams).sort(), []);
 
-  async function requestSignIn(event) {
-    event.preventDefault();
-    if (!email.trim()) return;
-
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: { emailRedirectTo: window.location.href },
-    });
-    const nextMessage = error ? error.message : 'Please check your email for the sign-in link.';
-    setStatus(nextMessage);
-    setNotice(nextMessage);
-    window.setTimeout(() => setNotice(''), 4200);
-  }
-
   async function signOut() {
     await supabase.auth.signOut();
     setSession(null);
-    setStatus('Signed out');
-  }
-
-  function requireSignIn() {
-    if (session) return false;
-    setNotice('Please sign in first so your prediction is saved.');
-    setStatus('Please sign in first');
-    window.setTimeout(() => setNotice(''), 2800);
-    return true;
+    setStatus(t('statusSignedOut'));
   }
 
   async function savePredictionState(nextGroupRankings = groupRankings, nextBracketPicks = bracketPicks) {
@@ -274,11 +269,21 @@ export default function App() {
       },
       { onConflict: 'user_id' },
     );
-    setStatus(error ? error.message : 'Prediction state saved');
+    setStatus(error ? error.message : t('statusStateSaved'));
   }
 
   async function saveGuess(match, patch) {
-    if (requireSignIn()) return false;
+    const state = getMatchState(match, guesses[match.id], now);
+    if (state === 'backlogged') {
+      setNotice(t('noticeMatchLocked'));
+      window.setTimeout(() => setNotice(''), 2800);
+      return false;
+    }
+    if (state === 'not_out') {
+      setNotice(t('noticeMatchNotOpen'));
+      window.setTimeout(() => setNotice(''), 2800);
+      return false;
+    }
     const current = guesses[match.id] || {
       match_id: match.id,
       pred_home_score: 0,
@@ -288,26 +293,34 @@ export default function App() {
     const next = { ...current, ...patch };
     setGuesses((previous) => ({ ...previous, [match.id]: next }));
 
+    if (!session) {
+      setStatus(t('statusGuessSaved'));
+      return true;
+    }
+
     const payload = { ...next, user_id: session.user.id };
     const { error } = await supabase.from('guesses').upsert(payload, { onConflict: 'user_id,match_id' });
-    setStatus(error ? error.message : 'Guess saved');
+    setStatus(error ? error.message : t('statusGuessSaved'));
     return !error;
   }
 
   async function savePlayerArtifact(field, value) {
-    if (requireSignIn()) return false;
     const nextArtifact = { ...playerArtifact, [field]: value };
     setPlayerArtifact(nextArtifact);
+
+    if (!session) {
+      setStatus(t('statusTournamentSaved'));
+      return true;
+    }
 
     const { error } = await supabase
       .from('player_artifacts')
       .upsert({ ...nextArtifact, user_id: session.user.id }, { onConflict: 'user_id' });
-    setStatus(error ? error.message : 'Tournament pick saved');
+    setStatus(error ? error.message : t('statusTournamentSaved'));
     return !error;
   }
 
   function saveGroupRankings(nextOrUpdater) {
-    if (requireSignIn()) return false;
     setGroupRankings((current) => {
       const next = typeof nextOrUpdater === 'function' ? nextOrUpdater(current) : nextOrUpdater;
       savePredictionState(next, bracketPicks);
@@ -317,7 +330,6 @@ export default function App() {
   }
 
   function saveBracketPicks(nextOrUpdater) {
-    if (requireSignIn()) return false;
     setBracketPicks((current) => {
       const next = typeof nextOrUpdater === 'function' ? nextOrUpdater(current) : nextOrUpdater;
       savePredictionState(groupRankings, next);
@@ -328,43 +340,45 @@ export default function App() {
 
   return (
     <main className="app-shell">
-      <a className="host-link" href={sourceRepoUrl} target="_blank" rel="noreferrer">
-        I want to host this too!
-      </a>
-      <div className="session-host">Current game session host: Haoming Chen</div>
       {notice && <div className="toast-notice">{notice}</div>}
       <header className="topbar">
         <div>
-          <p className="eyebrow">World Cup 2026</p>
-          <h1>Guess</h1>
+          <p className="eyebrow">{t('eyebrow')}</p>
+          <h1>{t('title')}</h1>
         </div>
-        <form className="auth-panel" onSubmit={requestSignIn}>
-          <span>{session ? session.user.email : status}</span>
-          {!session && (
-            <>
-              <input
-                type="email"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                placeholder="email"
-                aria-label="Email"
-              />
-              <button type="submit">Sign in</button>
-            </>
+        <div className="topbar-actions">
+          <RefreshResultsButton t={t} onComplete={reloadMatchesAndLeaderboard} />
+          <button
+            type="button"
+            className="lang-toggle"
+            aria-label={t('langToggleAria')}
+            onClick={() => setLang((current) => (current === 'en' ? 'zh' : 'en'))}
+          >
+            {t('langToggle')}
+          </button>
+          <div className="demo-status-pill">{displayStatus}</div>
+          {session && (
+            <form className="auth-panel">
+              <span>{session.user.email}</span>
+              <button type="button" onClick={signOut}>
+                {t('signOut')}
+              </button>
+            </form>
           )}
-          {session && <button type="button" onClick={signOut}>Sign out</button>}
-        </form>
+        </div>
       </header>
 
+      <p className="demo-lock-banner">{t('demoLockActive')}</p>
+
       <nav className="tabbar" aria-label="Main sections">
-        {tabs.map((tab) => (
+        {tabIds.map((tabId) => (
           <button
-            key={tab.id}
-            className={activeTab === tab.id ? 'active' : ''}
-            onClick={() => setActiveTab(tab.id)}
+            key={tabId}
+            className={activeTab === tabId ? 'active' : ''}
+            onClick={() => setActiveTab(tabId)}
             type="button"
           >
-            {tab.label}
+            {t(`tab${tabId.charAt(0).toUpperCase()}${tabId.slice(1)}`)}
           </button>
         ))}
       </nav>
@@ -378,6 +392,11 @@ export default function App() {
           onPlayerArtifact={savePlayerArtifact}
           teams={teams}
           players={players}
+          t={t}
+          lang={lang}
+          now={now}
+          distributions={distributions}
+          onSelectUser={setSelectedUserId}
         />
       )}
       {activeTab === 'schedule' && (
@@ -388,6 +407,9 @@ export default function App() {
           onGroupRankings={saveGroupRankings}
           bracketPicks={bracketPicks}
           onBracketPicks={saveBracketPicks}
+          t={t}
+          lang={lang}
+          now={now}
         />
       )}
       {activeTab === 'leaderboard' && (
@@ -396,42 +418,64 @@ export default function App() {
           matches={orderedMatches}
           rows={leaderboardRows}
           session={session}
+          t={t}
+          onSelectUser={setSelectedUserId}
         />
       )}
       {activeTab === 'personal' && (
-        <PersonalView guesses={guesses} matches={orderedMatches} playerArtifact={playerArtifact} />
+        <PersonalView guesses={guesses} matches={orderedMatches} playerArtifact={playerArtifact} t={t} />
+      )}
+
+      {selectedUserId && (
+        <UserProfilePanel
+          userId={selectedUserId}
+          onClose={() => setSelectedUserId(null)}
+          t={t}
+          lang={lang}
+          teamInfo={teamInfo}
+        />
       )}
     </main>
   );
 }
 
-function GuessView({ matches, guesses, onSaveGuess, playerArtifact, onPlayerArtifact, teams, players }) {
+function GuessView({ matches, guesses, onSaveGuess, playerArtifact, onPlayerArtifact, teams, players, t, lang, now, distributions, onSelectUser }) {
   const groupMatches = matches.filter((match) => match.round === 'group');
 
   return (
     <section className="workspace guess-workspace">
-      <PlayerPicksPanel value={playerArtifact} onChange={onPlayerArtifact} teams={teams} players={players} />
+      <PlayerPicksPanel value={playerArtifact} onChange={onPlayerArtifact} teams={teams} players={players} t={t} />
       <div className="two-column">
         <div className="match-list">
           {groupMatches.map((match) => (
-            <MatchGuessRow match={match} guess={guesses[match.id]} onSaveGuess={onSaveGuess} key={match.id} />
+            <MatchGuessRow
+              match={match}
+              guess={guesses[match.id]}
+              onSaveGuess={onSaveGuess}
+              key={match.id}
+              t={t}
+              lang={lang}
+              now={now}
+              distribution={distributions[match.id]}
+              onSelectUser={onSelectUser}
+            />
           ))}
         </div>
         <aside className="side-panel">
-          <h2>Live Board</h2>
+          <h2>{t('liveBoard')}</h2>
           <div className="stat-strip">
             <b>{groupMatches.length}</b>
-            <span>group matches loaded</span>
+            <span>{t('groupMatchesLoaded')}</span>
           </div>
           <div className="stat-strip">
             <b>{Object.keys(guesses).length}</b>
-            <span>saved predictions</span>
+            <span>{t('savedPredictions')}</span>
           </div>
           <dl className="legend">
-            <div><dt className="swatch dark" /> <dd>Locked</dd></div>
-            <div><dt className="swatch grey" /> <dd>Hidden slot</dd></div>
-            <div><dt className="swatch orange" /> <dd>Open</dd></div>
-            <div><dt className="swatch green" /> <dd>Guessed</dd></div>
+            <div><dt className="swatch dark" /> <dd>{t('legendLocked')}</dd></div>
+            <div><dt className="swatch grey" /> <dd>{t('legendHidden')}</dd></div>
+            <div><dt className="swatch orange" /> <dd>{t('legendOpen')}</dd></div>
+            <div><dt className="swatch green" /> <dd>{t('legendGuessed')}</dd></div>
           </dl>
         </aside>
       </div>
@@ -439,24 +483,38 @@ function GuessView({ matches, guesses, onSaveGuess, playerArtifact, onPlayerArti
   );
 }
 
-function MatchGuessRow({ match, guess, onSaveGuess }) {
-  const state = getMatchState(match, guess);
+function MatchGuessRow({ match, guess, onSaveGuess, t, lang, now, distribution, onSelectUser }) {
+  const state = getMatchState(match, guess, now);
   const locked = state === 'backlogged' || state === 'not_out';
   const selectedWinner = pickWinner(guess, match);
   const hasMinorityShare = guess?.minority_share !== undefined && guess?.minority_share !== null;
   const bonusActive = Boolean(guess?.minority_bonus_active || (hasMinorityShare && Number(guess.minority_share) <= 0.2));
+  const deadline = getGuessDeadline(match);
+  const countdown = formatLockCountdown(deadline, now);
 
   return (
     <article className={`match-row ${state}`}>
       <div className="match-status" aria-label={state} />
       <div className="match-meta">
         <b>{match.matchday}</b>
-        <span>{formatKickoff(match.kickoff_time)}</span>
+        <span>{formatKickoff(match.kickoff_time, lang)}</span>
         <span>{match.venue} · {match.city}</span>
+        {countdown && (
+          <span className="lock-countdown">{t('locksIn')}: {countdown}</span>
+        )}
+        {state === 'backlogged' && (
+          <span className="lock-badge">{t('locked')}</span>
+        )}
       </div>
       <div className="team-pair">
-        <TeamName team={match.team_home} code={match.team_home_code} selected={selectedWinner === match.team_home} />
-        <TeamName team={match.team_away} code={match.team_away_code} selected={selectedWinner === match.team_away} />
+        <TeamName team={match.team_home} code={match.team_home_code} selected={selectedWinner === match.team_home} t={t} />
+        <TeamName team={match.team_away} code={match.team_away_code} selected={selectedWinner === match.team_away} t={t} />
+        <MatchPredictionBars
+          match={match}
+          distribution={distribution}
+          t={t}
+          onSelectUser={onSelectUser}
+        />
       </div>
       <div className="score-controls">
         <input
@@ -480,61 +538,62 @@ function MatchGuessRow({ match, guess, onSaveGuess }) {
       <select
         value={pickWinner(guess, match)}
         disabled={locked}
-        aria-label="Predicted winner"
+        aria-label={t('winner')}
         onChange={(event) => onSaveGuess(match, { pred_winner: event.target.value })}
       >
-        <option value="">Winner</option>
+        <option value="">{t('winner')}</option>
         {match.team_home && <option value={match.team_home}>{match.team_home}</option>}
         {match.team_away && <option value={match.team_away}>{match.team_away}</option>}
       </select>
-      {bonusActive && <span className="bonus-chip active">Underdog bonus live</span>}
+      {bonusActive && <span className="bonus-chip active">{t('underdogBonus')}</span>}
     </article>
   );
 }
 
-function TeamName({ team, selected = false }) {
+function TeamName({ team, selected = false, t }) {
   return (
     <span className={selected ? 'team-name selected' : 'team-name'}>
       <span className="flag">{teamFlag(team)}</span>
-      <span>{team || 'TBD'}</span>
+      <span>{team || t('tbd')}</span>
     </span>
   );
 }
 
-function PlayerPicksPanel({ value, onChange, teams, players }) {
+function PlayerPicksPanel({ value, onChange, teams, players, t }) {
   return (
     <section className="player-picks">
       <div className="player-picks-head">
         <div>
-          <h2>Tournament Futures</h2>
-          <p>Champion, top four, awards, and stat races lock when the opening match kicks off.</p>
+          <h2>{t('tournamentFutures')}</h2>
+          <p>{t('tournamentFuturesDesc')}</p>
         </div>
         <div className="player-db-pill">
           <b>{players.length}</b>
-          <span>players tracked</span>
+          <span>{t('playersTracked')}</span>
         </div>
       </div>
       <div className="trophy-grid">
         {trophyFields.map((item) => (
           <div className={item.type === 'teams' ? 'trophy-card trophy-card-wide' : 'trophy-card'} key={item.field}>
             <span className="trophy-icon">{item.icon}</span>
-            <span>{item.label}</span>
+            <span>{t(item.labelKey)}</span>
             {item.type === 'team' && (
               <select value={value[item.field] || ''} onChange={(event) => onChange(item.field, event.target.value)}>
-                <option value="">Pick team</option>
+                <option value="">{t('pickTeam')}</option>
                 {teams.map((team) => (
                   <option value={team} key={team}>{teamFlag(team)} {team}</option>
                 ))}
               </select>
             )}
             {item.type === 'teams' && (
-              <TopFourPicker value={value[item.field] || []} teams={teams} onChange={(next) => onChange(item.field, next)} />
+              <TopFourPicker value={value[item.field] || []} teams={teams} onChange={(next) => onChange(item.field, next)} t={t} />
             )}
             {item.type === 'player' && (
               <PlayerSearchSelect
                 players={players}
                 value={value[item.field] || ''}
                 onChange={(next) => onChange(item.field, next)}
+                t={t}
               />
             )}
           </div>
@@ -544,7 +603,7 @@ function PlayerPicksPanel({ value, onChange, teams, players }) {
   );
 }
 
-function TopFourPicker({ value, teams, onChange }) {
+function TopFourPicker({ value, teams, onChange, t }) {
   function setSlot(index, team) {
     const next = [...value];
     next[index] = team;
@@ -557,7 +616,7 @@ function TopFourPicker({ value, teams, onChange }) {
         <label key={index}>
           <span>#{index + 1}</span>
           <select value={value[index] || ''} onChange={(event) => setSlot(index, event.target.value)}>
-            <option value="">Pick team</option>
+            <option value="">{t('pickTeam')}</option>
             {teams
               .filter((team) => !value.includes(team) || value[index] === team)
               .map((team) => (
@@ -570,7 +629,7 @@ function TopFourPicker({ value, teams, onChange }) {
   );
 }
 
-function PlayerSearchSelect({ players, value, onChange }) {
+function PlayerSearchSelect({ players, value, onChange, t }) {
   const [query, setQuery] = useState(value);
   const [open, setOpen] = useState(false);
   const matches = useMemo(() => {
@@ -596,8 +655,8 @@ function PlayerSearchSelect({ players, value, onChange }) {
           setQuery(event.target.value);
           setOpen(true);
         }}
-        placeholder="Type a player name"
-        aria-label="Search player"
+        placeholder={t('typePlayer')}
+        aria-label={t('typePlayer')}
       />
       {open && query && query !== value && (
         <div className="player-results">
@@ -619,14 +678,14 @@ function PlayerSearchSelect({ players, value, onChange }) {
               <span>{player.flag} {player.team} · {player.position} · {player.club}</span>
             </button>
           ))}
-          {!matches.length && <span className="empty-result">No close player match</span>}
+          {!matches.length && <span className="empty-result">{t('noPlayerMatch')}</span>}
         </div>
       )}
     </div>
   );
 }
 
-function ScheduleView({ matches, guesses, groupRankings, onGroupRankings, bracketPicks, onBracketPicks }) {
+function ScheduleView({ matches, guesses, groupRankings, onGroupRankings, bracketPicks, onBracketPicks, t, lang, now }) {
   const [groupFilter, setGroupFilter] = useState('All');
   const [venueFilter, setVenueFilter] = useState('All');
   const [selectedMatchId, setSelectedMatchId] = useState(matches[0]?.id || '');
@@ -658,9 +717,9 @@ function ScheduleView({ matches, guesses, groupRankings, onGroupRankings, bracke
     <section className="workspace schedule-grid">
       <div className="schedule-controls">
         <select value={groupFilter} onChange={(event) => setGroupFilter(event.target.value)} aria-label="Group filter">
-          <option value="All">All groups</option>
+          <option value="All">{t('allGroups')}</option>
           {groups.map((group) => (
-            <option value={group.label} key={group.label}>Group {group.label}</option>
+            <option value={group.label} key={group.label}>{t('groupLabel', { label: group.label })}</option>
           ))}
         </select>
         <select value={venueFilter} onChange={(event) => setVenueFilter(event.target.value)} aria-label="Venue filter">
@@ -677,6 +736,7 @@ function ScheduleView({ matches, guesses, groupRankings, onGroupRankings, bracke
             rankings={groupRankings}
             onRankings={onGroupRankings}
             onGroupFilter={setGroupFilter}
+            t={t}
           />
         ) : (
           <KnockoutPredictor
@@ -684,6 +744,8 @@ function ScheduleView({ matches, guesses, groupRankings, onGroupRankings, bracke
             groupRankings={groupRankings}
             picks={bracketPicks}
             onPicks={onBracketPicks}
+            t={t}
+            lang={lang}
           />
         )}
 
@@ -695,24 +757,24 @@ function ScheduleView({ matches, guesses, groupRankings, onGroupRankings, bracke
               key={match.id}
               onClick={() => setSelectedMatchId(match.id)}
             >
-              <span>{rounds[match.round].label}</span>
+              <span>{roundLabel(match.round, t)}</span>
               <b>{teamFlag(match.team_home)} {match.team_home}</b>
               <b>{teamFlag(match.team_away)} {match.team_away}</b>
-              <small>{formatKickoff(match.kickoff_time)} · {match.city}</small>
+              <small>{formatKickoff(match.kickoff_time, lang)} · {match.city}</small>
             </button>
           ))}
         </div>
 
         {selectedMatch && (
           <div className="match-detail">
-            <p className="eyebrow">Selected Match</p>
-            <h2>{teamFlag(selectedMatch.team_home)} {selectedMatch.team_home} vs {teamFlag(selectedMatch.team_away)} {selectedMatch.team_away}</h2>
+            <p className="eyebrow">{t('selectedMatch')}</p>
+            <h2>{teamFlag(selectedMatch.team_home)} {selectedMatch.team_home} {t('vs')} {teamFlag(selectedMatch.team_away)} {selectedMatch.team_away}</h2>
             <div className="detail-grid">
-              <span>Match {selectedMatch.match_number}</span>
-              <span>{formatKickoff(selectedMatch.kickoff_time)}</span>
+              <span>{t('matchNumber', { n: selectedMatch.match_number })}</span>
+              <span>{formatKickoff(selectedMatch.kickoff_time, lang)}</span>
               <span>{selectedMatch.venue}</span>
               <span>{selectedMatch.city}, {selectedMatch.host_country}</span>
-              <span>{selectedMatch.stadium_capacity?.toLocaleString()} capacity</span>
+              <span>{t('capacity', { n: selectedMatch.stadium_capacity?.toLocaleString() })}</span>
             </div>
           </div>
         )}
@@ -721,16 +783,16 @@ function ScheduleView({ matches, guesses, groupRankings, onGroupRankings, bracke
       <div className="bracket-lane">
         {['r32', 'r16', 'qf', 'sf', 'third', 'final'].map((round) => (
           <div className="bracket-round" key={round}>
-            <h2>{rounds[round].label}</h2>
+            <h2>{roundLabel(round, t)}</h2>
             {populatedKnockout.filter((match) => match.round === round).map((match) => (
               <button
-                className={`bracket-node ${getMatchState(match, guesses[match.id])}`}
+                className={`bracket-node ${getMatchState(match, guesses[match.id], now)}`}
                 key={match.id}
                 type="button"
               >
                 <span>{teamFlag(match.display_home)} {match.display_home || match.bracket_pos}</span>
-                <span>{teamFlag(match.display_away)} {match.display_away || 'TBD'}</span>
-                <small>{formatKickoff(match.kickoff_time)} · {match.city}</small>
+                <span>{teamFlag(match.display_away)} {match.display_away || t('tbd')}</span>
+                <small>{formatKickoff(match.kickoff_time, lang)} · {match.city}</small>
               </button>
             ))}
           </div>
@@ -740,7 +802,7 @@ function ScheduleView({ matches, guesses, groupRankings, onGroupRankings, bracke
   );
 }
 
-function GroupRankingBoard({ groupFilter, rankings, onRankings, onGroupFilter }) {
+function GroupRankingBoard({ groupFilter, rankings, onRankings, onGroupFilter, t }) {
   const visibleGroups = groupFilter === 'All' ? groups : groups.filter((group) => group.label === groupFilter);
 
   function confirmGroup(groupLabel, ranking) {
@@ -756,13 +818,14 @@ function GroupRankingBoard({ groupFilter, rankings, onRankings, onGroupFilter })
           ranking={rankings[group.label] || group.teams}
           onConfirm={(ranking) => confirmGroup(group.label, ranking)}
           onFocus={() => onGroupFilter(group.label)}
+          t={t}
         />
       ))}
     </div>
   );
 }
 
-function GroupRanker({ group, ranking, onConfirm, onFocus }) {
+function GroupRanker({ group, ranking, onConfirm, onFocus, t }) {
   const [draft, setDraft] = useState(ranking);
   const [draggedTeam, setDraggedTeam] = useState('');
 
@@ -790,8 +853,8 @@ function GroupRanker({ group, ranking, onConfirm, onFocus }) {
   return (
     <section className="rank-card" onFocus={onFocus}>
       <div className="rank-card-head">
-        <b>Group {group.label}</b>
-        <button type="button" onClick={() => onConfirm(draft)}>Confirm</button>
+        <b>{t('groupLabel', { label: group.label })}</b>
+        <button type="button" onClick={() => onConfirm(draft)}>{t('confirm')}</button>
       </div>
       <div className="rank-list">
         {draft.map((team, index) => (
@@ -804,7 +867,7 @@ function GroupRanker({ group, ranking, onConfirm, onFocus }) {
             onDrop={() => dropOn(team)}
           >
             <span className="rank-number">{index + 1}</span>
-            <TeamName team={team} />
+            <TeamName team={team} t={t} />
             <div className="rank-actions">
               <button type="button" onClick={() => moveTeam(team, -1)} aria-label={`Move ${team} up`}>↑</button>
               <button type="button" onClick={() => moveTeam(team, 1)} aria-label={`Move ${team} down`}>↓</button>
@@ -816,7 +879,7 @@ function GroupRanker({ group, ranking, onConfirm, onFocus }) {
   );
 }
 
-function KnockoutPredictor({ matches, groupRankings, picks, onPicks }) {
+function KnockoutPredictor({ matches, groupRankings, picks, onPicks, t, lang }) {
   const orderedMatches = useMemo(() => [...matches].sort((a, b) => a.match_number - b.match_number), [matches]);
   const nextMatch =
     orderedMatches.find((match) => {
@@ -896,16 +959,16 @@ function KnockoutPredictor({ matches, groupRankings, picks, onPicks }) {
     <section className="knockout-predictor">
       <div className="knockout-head">
         <div>
-          <b>Bracket Builder</b>
-          <span>{Object.keys(picks).length} knockout picks made</span>
+          <b>{t('bracketBuilder')}</b>
+          <span>{t('knockoutPicksMade', { n: Object.keys(picks).length })}</span>
         </div>
-        <button type="button" onClick={resetBracket}>Reset</button>
+        <button type="button" onClick={resetBracket}>{t('reset')}</button>
       </div>
 
       {nextMatch ? (
         <div className="next-match-picker">
-          <span>{rounds[nextMatch.round].label} · Match {nextMatch.match_number}</span>
-          <h2>Choose the winner</h2>
+          <span>{roundLabel(nextMatch.round, t)} · {t('matchNumber', { n: nextMatch.match_number })}</span>
+          <h2>{t('chooseWinner')}</h2>
           <div className="winner-buttons">
             {[getMatchSides(nextMatch, groupRankings, picks).home, getMatchSides(nextMatch, groupRankings, picks).away].map((team) => (
               <button type="button" key={team} onClick={() => chooseWinner(nextMatch, team)}>
@@ -917,9 +980,9 @@ function KnockoutPredictor({ matches, groupRankings, picks, onPicks }) {
         </div>
       ) : (
         <div className="next-match-picker complete">
-          <span>Bracket complete</span>
-          <h2>{finalPick ? `${teamFlag(finalPick)} ${finalPick}` : 'Champion TBD'}</h2>
-          <button type="button" className="save-png-button" onClick={savePng}>Save my prediction as PNG</button>
+          <span>{t('bracketComplete')}</span>
+          <h2>{finalPick ? `${teamFlag(finalPick)} ${finalPick}` : t('championTbd')}</h2>
+          <button type="button" className="save-png-button" onClick={savePng}>{t('savePng')}</button>
         </div>
       )}
 
@@ -929,8 +992,8 @@ function KnockoutPredictor({ matches, groupRankings, picks, onPicks }) {
           return (
             <div className={picks[match.match_number] ? 'mini-pick picked' : 'mini-pick'} key={match.match_number}>
               <span>M{match.match_number}</span>
-              <b>{picks[match.match_number]?.winner || 'Waiting'}</b>
-              <small>{sides.home || match.team_home} vs {sides.away || match.team_away}</small>
+              <b>{picks[match.match_number]?.winner || t('waiting')}</b>
+              <small>{sides.home || match.team_home} {t('vs')} {sides.away || match.team_away}</small>
             </div>
           );
         })}
@@ -939,31 +1002,41 @@ function KnockoutPredictor({ matches, groupRankings, picks, onPicks }) {
   );
 }
 
-function LeaderboardView({ guesses, matches, rows, session }) {
+function LeaderboardView({ guesses, matches, rows, session, t, onSelectUser }) {
   const score = Object.values(guesses).reduce((total, guess) => {
     const match = matches.find((item) => item.id === guess.match_id);
-    return total + (match ? Math.floor(rounds[match.round].outcome / 2) : 0);
+    return total + (guess.points_earned ?? (match ? Math.floor(rounds[match.round].outcome / 2) : 0));
   }, 0);
-  const leaderboardRows = session && rows.length
+  const leaderboardRows = rows.length
     ? rows.map((row) => ({
         id: row.user_id,
-        name: row.email || row.display_name || 'Player',
+        name: row.email || row.display_name || t('player'),
         points: row.total_points || 0,
         guessed: Number(row.guess_count || 0),
-        isCurrentUser: row.user_id === session.user.id,
+        isCurrentUser: session?.user?.id === row.user_id,
       }))
-    : [{ id: 'local', name: session?.user?.email || 'Local draft', points: score, guessed: Object.keys(guesses).length, isCurrentUser: true }];
+    : [{ id: 'local', name: t('localDraft'), points: score, guessed: Object.keys(guesses).length, isCurrentUser: true }];
 
   return (
     <section className="workspace leaderboard-layout">
       <div>
+        <p className="leaderboard-hint">{t('leaderboardClickHint')}</p>
         <table className="leaderboard">
           <thead>
-            <tr><th>Rank</th><th>Player</th><th>Guesses</th><th>Points</th></tr>
+            <tr><th>{t('rank')}</th><th>{t('player')}</th><th>{t('guesses')}</th><th>{t('points')}</th></tr>
           </thead>
           <tbody>
             {leaderboardRows.map((row, index) => (
-              <tr className={row.isCurrentUser ? 'current-user-row' : ''} key={row.id}>
+              <tr
+                className={`${row.isCurrentUser ? 'current-user-row ' : ''}leaderboard-row-clickable`}
+                key={row.id}
+                onClick={() => row.id !== 'local' && onSelectUser?.(row.id)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' && row.id !== 'local') onSelectUser?.(row.id);
+                }}
+                tabIndex={row.id === 'local' ? -1 : 0}
+                role={row.id === 'local' ? undefined : 'button'}
+              >
                 <td>{index + 1}</td>
                 <td>{row.name}</td>
                 <td>{row.guessed}</td>
@@ -972,51 +1045,50 @@ function LeaderboardView({ guesses, matches, rows, session }) {
             ))}
           </tbody>
         </table>
-        {!session && <p className="empty-note">Sign in to see the live leaderboard with real users.</p>}
-        {session && !rows.length && <p className="empty-note">No leaderboard rows yet. Save a guess to join the table.</p>}
+        {!rows.length && <p className="empty-note">{t('noLeaderboardRows')}</p>}
       </div>
       <aside className="scoring-panel">
-        <h2>Scoring Rules</h2>
+        <h2>{t('scoringRules')}</h2>
         <table>
-          <thead><tr><th>Round</th><th>Outcome</th><th>Exact</th></tr></thead>
+          <thead><tr><th>{t('round')}</th><th>{t('outcome')}</th><th>{t('exact')}</th></tr></thead>
           <tbody>
-            <tr><td>Group</td><td>3</td><td>+2</td></tr>
-            <tr><td>Round of 32</td><td>5</td><td>+3</td></tr>
-            <tr><td>Round of 16</td><td>8</td><td>+4</td></tr>
-            <tr><td>Quarterfinal</td><td>13</td><td>+5</td></tr>
-            <tr><td>Semifinal</td><td>21</td><td>+8</td></tr>
-            <tr><td>Final</td><td>34</td><td>+13</td></tr>
+            <tr><td>{t('roundGroup')}</td><td>3</td><td>+2</td></tr>
+            <tr><td>{t('roundR32')}</td><td>5</td><td>+3</td></tr>
+            <tr><td>{t('roundR16')}</td><td>8</td><td>+4</td></tr>
+            <tr><td>{t('roundQf')}</td><td>13</td><td>+5</td></tr>
+            <tr><td>{t('roundSf')}</td><td>21</td><td>+8</td></tr>
+            <tr><td>{t('roundFinal')}</td><td>34</td><td>+13</td></tr>
           </tbody>
         </table>
-        <p>Knockout outcome points use the advancing team, separate from exact-score bonuses.</p>
-        <p>Correct minority picks can earn an underdog bonus after the match locks and the full guess pool is known.</p>
-        <p>Tournament picks: champion 30, top four 5 each plus 10 for all four, top scorer 15, top assister 15, Golden Ball 15, best young player 10.</p>
+        <p>{t('scoringKnockout')}</p>
+        <p>{t('scoringMinority')}</p>
+        <p>{t('scoringTournament')}</p>
       </aside>
     </section>
   );
 }
 
-function PersonalView({ guesses, matches, playerArtifact }) {
+function PersonalView({ guesses, matches, playerArtifact, t }) {
   return (
     <section className="workspace personal-grid">
       <div>
-        <h2>Match Guesses</h2>
+        <h2>{t('matchGuesses')}</h2>
         <div className="history-list">
           {Object.values(guesses).map((guess) => {
             const match = matches.find((item) => item.id === guess.match_id);
             if (!match) return null;
             return (
               <article className="history-row" key={guess.match_id}>
-                <span>{teamFlag(match.team_home)} {match.team_home} vs {teamFlag(match.team_away)} {match.team_away}</span>
+                <span>{teamFlag(match.team_home)} {match.team_home} {t('vs')} {teamFlag(match.team_away)} {match.team_away}</span>
                 <b>{guess.pred_home_score} : {guess.pred_away_score}</b>
-                <span>{pickWinner(guess, match) || 'No winner'}</span>
+                <span>{pickWinner(guess, match) || t('noWinner')}</span>
               </article>
             );
           })}
         </div>
       </div>
       <div>
-        <h2>Tournament Picks</h2>
+        <h2>{t('tournamentPicks')}</h2>
         <pre className="artifact-dump">{JSON.stringify(playerArtifact, null, 2)}</pre>
       </div>
     </section>

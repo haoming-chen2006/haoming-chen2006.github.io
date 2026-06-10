@@ -1230,6 +1230,19 @@ th {
   margin-bottom: 12px;
 }
 
+.pred-detail-head {
+  position: sticky;
+  top: 0;
+  background: #fff;
+  padding-bottom: 8px;
+  margin-bottom: 8px;
+  z-index: 1;
+}
+
+.pred-detail-body {
+  overflow-y: auto;
+}
+
 .pred-detail-head button,
 .profile-close {
   border: 0;

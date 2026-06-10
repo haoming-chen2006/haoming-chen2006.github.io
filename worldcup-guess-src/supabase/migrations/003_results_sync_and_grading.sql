@@ -42,6 +42,7 @@ language sql
 immutable
 as $$
   select case
+    when p_pred_home is null or p_pred_away is null then nullif(p_pred_winner, '')
     when p_pred_home = p_pred_away then nullif(p_pred_winner, '')
     when p_pred_home > p_pred_away then p_team_home
     else p_team_away
@@ -213,17 +214,20 @@ as $$
     m.team_home as home_team,
     m.team_away as away_team,
     count(*) filter (
-      where public.guess_predicted_winner(
-        g.pred_home_score, g.pred_away_score, g.pred_winner, m.team_home, m.team_away
-      ) = m.team_home
+      where g.user_id is not null
+        and public.guess_predicted_winner(
+          g.pred_home_score, g.pred_away_score, g.pred_winner, m.team_home, m.team_away
+        ) = m.team_home
     ) as home_count,
     count(*) filter (
-      where public.guess_predicted_winner(
-        g.pred_home_score, g.pred_away_score, g.pred_winner, m.team_home, m.team_away
-      ) = m.team_away
+      where g.user_id is not null
+        and public.guess_predicted_winner(
+          g.pred_home_score, g.pred_away_score, g.pred_winner, m.team_home, m.team_away
+        ) = m.team_away
     ) as away_count,
     count(*) filter (
-      where g.pred_home_score = g.pred_away_score
+      where g.user_id is not null
+        and g.pred_home_score = g.pred_away_score
         and coalesce(g.pred_winner, '') = ''
     ) as draw_count
   from public.matches m

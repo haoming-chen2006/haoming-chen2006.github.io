@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { supabase } from '../supabaseClient.js';
 
 export function useGuessDistributions() {
@@ -35,12 +36,12 @@ export default function MatchPredictionBars({ match, distribution, t, onSelectUs
   const awayPct = total ? 100 - homePct : 50;
 
   async function openDetail(side) {
-    setOpen(true);
+    setOpen(side);
+    setDetail(null);
     setLoadingDetail(true);
     const { data } = await supabase.rpc('get_match_guess_detail', { p_match_id: match.id });
     setDetail(data);
     setLoadingDetail(false);
-    setOpen(side);
   }
 
   if (!match.team_home || !match.team_away) return null;
@@ -62,26 +63,29 @@ export default function MatchPredictionBars({ match, distribution, t, onSelectUs
         <span className="pred-bar-count">{awayCount}</span>
       </button>
 
-      {open && (
+      {open && createPortal(
         <div className="pred-detail-overlay" onClick={() => setOpen(false)} role="presentation">
           <div className="pred-detail-panel" onClick={(e) => e.stopPropagation()}>
             <div className="pred-detail-head">
               <b>{t('whoPredicted')}</b>
               <button type="button" onClick={() => setOpen(false)}>×</button>
             </div>
-            {loadingDetail && <p>{t('loading')}</p>}
-            {!loadingDetail && detail && (
-              <div className="pred-detail-columns">
-                <PickColumn
-                  title={open === 'home' ? detail.home_team : detail.away_team}
-                  picks={open === 'home' ? detail.home_picks : detail.away_picks}
-                  t={t}
-                  onSelectUser={onSelectUser}
-                />
-              </div>
-            )}
+            <div className="pred-detail-body">
+              {loadingDetail && <p>{t('loading')}</p>}
+              {!loadingDetail && detail && (
+                <div className="pred-detail-columns">
+                  <PickColumn
+                    title={open === 'home' ? detail.home_team : detail.away_team}
+                    picks={open === 'home' ? detail.home_picks : detail.away_picks}
+                    t={t}
+                    onSelectUser={onSelectUser}
+                  />
+                </div>
+              )}
+            </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

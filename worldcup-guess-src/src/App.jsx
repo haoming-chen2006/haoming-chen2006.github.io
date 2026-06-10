@@ -328,6 +328,7 @@ export default function App() {
     const payload = { ...next, user_id: session.user.id };
     const { error } = await supabase.from('guesses').upsert(payload, { onConflict: 'user_id,match_id' });
     setStatus(error ? error.message : t('statusGuessSaved'));
+    if (!error) reloadDistributions();
     return !error;
   }
 

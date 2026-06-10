@@ -147,6 +147,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('guess');
   const [lang, setLang] = useState(() => localStorage.getItem(LANG_KEY) || 'en');
   const [session, setSession] = useState(null);
+  const [email, setEmail] = useState('');
   const [matches, setMatches] = useState(seedMatches);
   const [players, setPlayers] = useState(playerPool);
   const [guesses, setGuesses] = useState(() => JSON.parse(localStorage.getItem(localGuessKey) || '{}'));
@@ -276,10 +277,32 @@ export default function App() {
   const orderedMatches = useMemo(() => [...matches].sort(byKickoff), [matches]);
   const teams = useMemo(() => groups.flatMap((group) => group.teams).sort(), []);
 
+  async function requestSignIn(event) {
+    event.preventDefault();
+    if (!email.trim()) return;
+
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: { emailRedirectTo: window.location.href },
+    });
+    const message = error ? error.message : t('checkEmailLink');
+    setStatus(message);
+    setNotice(message);
+    window.setTimeout(() => setNotice(''), 4200);
+  }
+
   async function signOut() {
     await supabase.auth.signOut();
     setSession(null);
     setStatus(t('statusSignedOut'));
+  }
+
+  function requireSignIn() {
+    if (session) return false;
+    setNotice(t('noticeSignIn'));
+    setStatus(t('noticeSignInShort'));
+    window.setTimeout(() => setNotice(''), 2800);
+    return true;
   }
 
   async function savePredictionState(nextGroupRankings = groupRankings, nextBracketPicks = bracketPicks) {
@@ -297,6 +320,7 @@ export default function App() {
   }
 
   async function saveGuess(match, patch) {
+    if (requireSignIn()) return false;
     const state = getMatchState(match, guesses[match.id], now);
     if (state === 'backlogged') {
       setNotice(t('noticeMatchLocked'));
@@ -317,11 +341,6 @@ export default function App() {
     const next = { ...current, ...patch };
     setGuesses((previous) => ({ ...previous, [match.id]: next }));
 
-    if (!session) {
-      setStatus(t('statusGuessSaved'));
-      return true;
-    }
-
     const payload = { ...next, user_id: session.user.id };
     const { error } = await supabase.from('guesses').upsert(payload, { onConflict: 'user_id,match_id' });
     setStatus(error ? error.message : t('statusGuessSaved'));
@@ -330,13 +349,9 @@ export default function App() {
   }
 
   async function savePlayerArtifact(field, value) {
+    if (requireSignIn()) return false;
     const nextArtifact = { ...playerArtifact, [field]: value };
     setPlayerArtifact(nextArtifact);
-
-    if (!session) {
-      setStatus(t('statusTournamentSaved'));
-      return true;
-    }
 
     const { error } = await supabase
       .from('player_artifacts')
@@ -391,14 +406,27 @@ export default function App() {
             {t('langToggle')}
           </button>
           <div className="status-pill">{displayStatus}</div>
-          {session && (
-            <form className="auth-panel">
-              <span>{session.user.email}</span>
-              <button type="button" onClick={signOut}>
-                {t('signOut')}
-              </button>
-            </form>
-          )}
+          <form className="auth-panel" onSubmit={requestSignIn}>
+            {session ? (
+              <>
+                <span>{session.user.email}</span>
+                <button type="button" onClick={signOut}>
+                  {t('signOut')}
+                </button>
+              </>
+            ) : (
+              <>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  placeholder={t('emailPlaceholder')}
+                  aria-label={t('emailAria')}
+                />
+                <button type="submit">{t('signIn')}</button>
+              </>
+            )}
+          </form>
         </div>
       </header>
 

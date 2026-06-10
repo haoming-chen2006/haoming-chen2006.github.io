@@ -42,24 +42,3 @@ begin
   return new;
 end;
 $$;
-
--- Demo helper: refresh Mexico opener lock to 2 minutes from now (repeatable).
-create or replace function public.refresh_demo_mexico_lock()
-returns timestamptz
-language plpgsql
-security definer
-set search_path = public
-as $$
-declare
-  new_deadline timestamptz := now() + interval '2 minutes';
-begin
-  update public.matches
-  set guess_deadline = new_deadline
-  where id = 'g-a-1';
-
-  return new_deadline;
-end;
-$$;
-
-revoke all on function public.refresh_demo_mexico_lock() from public;
-grant execute on function public.refresh_demo_mexico_lock() to anon, authenticated;

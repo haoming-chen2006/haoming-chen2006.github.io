@@ -7,7 +7,6 @@ import MatchPredictionBars, { useGuessDistributions } from './components/MatchPr
 import UserProfilePanel from './components/UserProfilePanel.jsx';
 import {
   LANG_KEY,
-  applyDemoMexicoLock,
   createT,
   formatKickoff,
   formatLockCountdown,
@@ -148,7 +147,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('guess');
   const [lang, setLang] = useState(() => localStorage.getItem(LANG_KEY) || 'en');
   const [session, setSession] = useState(null);
-  const [matches, setMatches] = useState(() => applyDemoMexicoLock(seedMatches));
+  const [matches, setMatches] = useState(seedMatches);
   const [players, setPlayers] = useState(playerPool);
   const [guesses, setGuesses] = useState(() => JSON.parse(localStorage.getItem(localGuessKey) || '{}'));
   const [playerArtifact, setPlayerArtifact] = useState(() =>
@@ -177,7 +176,7 @@ export default function App() {
       supabase.from('matches').select('*').order('kickoff_time', { ascending: true }),
       supabase.rpc('get_leaderboard'),
     ]);
-    if (remoteMatches?.length) setMatches(applyDemoMexicoLock(remoteMatches));
+    if (remoteMatches?.length) setMatches(remoteMatches);
     if (leaderboard) setLeaderboardRows(leaderboard);
     await reloadDistributions();
   }
@@ -212,8 +211,6 @@ export default function App() {
 
   useEffect(() => {
     async function loadRemoteData() {
-      await supabase.rpc('refresh_demo_mexico_lock').catch(() => null);
-
       if (session) {
         await supabase.from('profiles').upsert(
           {
@@ -239,7 +236,7 @@ export default function App() {
         ]);
 
       if (remoteMatches?.length) {
-        setMatches(applyDemoMexicoLock(remoteMatches));
+        setMatches(remoteMatches);
         setStatus(session ? t('statusSynced') : t('statusFixtureLoaded'));
       } else if (matchError) {
         setStatus(t('statusLocalDraft'));
@@ -393,7 +390,7 @@ export default function App() {
           >
             {t('langToggle')}
           </button>
-          <div className="demo-status-pill">{displayStatus}</div>
+          <div className="status-pill">{displayStatus}</div>
           {session && (
             <form className="auth-panel">
               <span>{session.user.email}</span>
@@ -404,8 +401,6 @@ export default function App() {
           )}
         </div>
       </header>
-
-      <p className="demo-lock-banner">{t('demoLockActive')}</p>
 
       <nav className="tabbar" aria-label="Main sections">
         {tabIds.map((tabId) => (

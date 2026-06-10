@@ -107,7 +107,7 @@ button {
   background: #f3f5ee;
 }
 
-.demo-status-pill {
+.status-pill {
   display: inline-flex;
   align-items: center;
   min-height: 44px;
@@ -117,19 +117,6 @@ button {
   background: #ecfff2;
   color: #1f6f50;
   font-weight: 800;
-}
-
-.demo-lock-banner {
-  max-width: 1440px;
-  margin: 0 auto 12px;
-  padding: 10px 14px;
-  border: 1px solid rgba(207, 125, 48, 0.28);
-  border-radius: 8px;
-  background: #fff7ea;
-  color: #6a3927;
-  font-size: 0.88rem;
-  font-weight: 800;
-  text-align: center;
 }
 
 .lock-countdown {

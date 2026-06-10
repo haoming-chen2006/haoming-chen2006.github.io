@@ -13,7 +13,7 @@ export const translations = {
     tabPersonal: 'Personal Info',
     langToggle: '中文',
     langToggleAria: 'Switch to Chinese',
-    statusLocalDraft: 'Demo mode',
+    statusLocalDraft: 'Local draft',
     statusSynced: 'Synced with Supabase',
     statusFixtureLoaded: 'Fixture data loaded',
     statusSignedOut: 'Signed out',
@@ -80,7 +80,6 @@ export const translations = {
     matchGuesses: 'Match Guesses',
     tournamentPicks: 'Tournament Picks',
     noWinner: 'No winner',
-    demoLockActive: 'Demo: Mexico opener locks in 2 min',
     vs: 'vs',
     roundGroup: 'Group',
     roundR32: 'Round of 32',
@@ -119,7 +118,7 @@ export const translations = {
     tabPersonal: '个人信息',
     langToggle: 'EN',
     langToggleAria: '切换到英文',
-    statusLocalDraft: '演示模式',
+    statusLocalDraft: '本地草稿',
     statusSynced: '已与 Supabase 同步',
     statusFixtureLoaded: '赛程数据已加载',
     statusSignedOut: '已退出登录',
@@ -186,7 +185,6 @@ export const translations = {
     matchGuesses: '比赛预测',
     tournamentPicks: '锦标赛预测',
     noWinner: '未选胜者',
-    demoLockActive: '演示：墨西哥揭幕战 2 分钟后锁定',
     vs: '对',
     roundGroup: '小组赛',
     roundR32: '32 强',
@@ -260,11 +258,4 @@ export function formatLockCountdown(deadlineIso, nowMs) {
 
 export function getGuessDeadline(match) {
   return match.guess_deadline || match.kickoff_time;
-}
-
-export function applyDemoMexicoLock(matches) {
-  const deadline = new Date(Date.now() + 2 * 60 * 1000).toISOString();
-  return matches.map((match) =>
-    match.id === 'g-a-1' ? { ...match, guess_deadline: deadline } : match,
-  );
 }

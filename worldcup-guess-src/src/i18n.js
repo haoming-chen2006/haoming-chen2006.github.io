@@ -120,6 +120,12 @@ export const translations = {
     buyinDontShow: "Don't show this again",
     trophyLocked: 'Tournament picks locked — group stage is over.',
     trophyLocksIn: 'Picks lock in',
+    dailyReport: 'Daily Report',
+    dailyBest: "Today's best",
+    dailyWorst: "Today's worst",
+    dailyLeader: 'Leader',
+    dailyAuto: '— automated daily message from Claude 🤖',
+    dailyClose: 'Dismiss daily report',
   },
   zh: {
     eyebrow: '2026 世界杯',
@@ -230,6 +236,12 @@ export const translations = {
     buyinDontShow: '不再显示',
     trophyLocked: '锦标赛预测已锁定——小组赛已结束。',
     trophyLocksIn: '预测锁定倒计时',
+    dailyReport: '每日战报',
+    dailyBest: '今日最佳',
+    dailyWorst: '今日最差',
+    dailyLeader: '榜首',
+    dailyAuto: '— 来自 Claude 的每日自动播报 🤖',
+    dailyClose: '关闭每日战报',
   },
 };
 

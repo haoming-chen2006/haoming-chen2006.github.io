@@ -1132,6 +1132,52 @@ th {
   opacity: 0.7;
 }
 
+.daily-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0 0 12px;
+  padding: 10px 14px;
+  border: 1px solid #d7e3d3;
+  border-radius: 12px;
+  background: linear-gradient(90deg, #f3f8f0, #eef4fb);
+  box-shadow: 0 6px 18px rgba(20, 30, 20, 0.06);
+}
+
+.daily-banner-body {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 16px;
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
+.daily-banner-title {
+  font-size: 0.86rem;
+  color: #172017;
+}
+
+.daily-banner-sign {
+  color: #5a6b58;
+  font-style: italic;
+}
+
+.daily-banner-close {
+  margin-left: auto;
+  border: 0;
+  background: transparent;
+  font-size: 1.2rem;
+  line-height: 1;
+  color: #6b766a;
+  cursor: pointer;
+  padding: 0 4px;
+}
+
+.daily-banner-close:hover {
+  color: #172017;
+}
+
 .prediction-bars {
   display: grid;
   gap: 6px;

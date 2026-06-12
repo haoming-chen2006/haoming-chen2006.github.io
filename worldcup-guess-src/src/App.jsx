@@ -65,6 +65,51 @@ function BuyinModal({ t, onAgree }) {
   );
 }
 
+const dailyDismissKey = 'worldcup-guess-daily-dismissed';
+
+function DailyReportBanner({ report, t }) {
+  const [dismissed, setDismissed] = useState(
+    () => localStorage.getItem(dailyDismissKey) || '',
+  );
+
+  if (!report || !report.has_data) return null;
+  if (dismissed === report.report_date) return null;
+
+  const best = report.best_today;
+  const worst = report.worst_today;
+  const leaders = (report.leaders || []).map((l) => l.display_name).join(', ');
+  const leaderPts = report.leaders?.[0]?.total_points;
+
+  function dismiss() {
+    localStorage.setItem(dailyDismissKey, report.report_date);
+    setDismissed(report.report_date);
+  }
+
+  return (
+    <div className="daily-banner">
+      <div className="daily-banner-body">
+        <strong className="daily-banner-title">
+          📅 {t('dailyReport')} · {report.report_date}
+        </strong>
+        {best && (
+          <span>🏆 {t('dailyBest')}: <b>{best.display_name}</b> ({best.points} {t('pts')})</span>
+        )}
+        {worst && (
+          <span>😬 {t('dailyWorst')}: <b>{worst.display_name}</b> ({worst.points} {t('pts')})</span>
+        )}
+        {leaders && (
+          <span>👑 {t('dailyLeader')}: <b>{leaders}</b>{leaderPts != null ? ` (${leaderPts} ${t('pts')})` : ''}</span>
+        )}
+        {report.fun_fact && <span>💡 {report.fun_fact}</span>}
+        <span className="daily-banner-sign">{t('dailyAuto')}</span>
+      </div>
+      <button type="button" className="daily-banner-close" onClick={dismiss} aria-label={t('dailyClose')}>
+        ×
+      </button>
+    </div>
+  );
+}
+
 function getMatchState(match, guess, now = Date.now()) {
   if (!match.sides_confirmed) return 'not_out';
   if (new Date(getGuessDeadline(match)).getTime() <= now) return 'backlogged';
@@ -165,6 +210,7 @@ export default function App() {
     JSON.parse(localStorage.getItem(localBracketKey) || '{}')
   );
   const [leaderboardRows, setLeaderboardRows] = useState([]);
+  const [dailyReport, setDailyReport] = useState(null);
   const [selectedUserId, setSelectedUserId] = useState(null);
   const [showBuyin, setShowBuyin] = useState(
     () => localStorage.getItem(buyinDismissedKey) !== 'true'
@@ -176,6 +222,11 @@ export default function App() {
   const displayStatus = status || t('statusLocalDraft');
   const { distributions, reload: reloadDistributions } = useGuessDistributions();
 
+  async function reloadDailyReport() {
+    const { data, error } = await supabase.rpc('get_daily_report');
+    if (!error && data) setDailyReport(data);
+  }
+
   async function reloadMatchesAndLeaderboard() {
     const [{ data: remoteMatches }, { data: leaderboard }] = await Promise.all([
       supabase.from('matches').select('*').order('kickoff_time', { ascending: true }),
@@ -183,7 +234,7 @@ export default function App() {
     ]);
     if (remoteMatches?.length) setMatches(remoteMatches);
     if (leaderboard) setLeaderboardRows(leaderboard);
-    await reloadDistributions();
+    await Promise.all([reloadDistributions(), reloadDailyReport()]);
   }
 
   useEffect(() => {
@@ -277,6 +328,12 @@ export default function App() {
 
     loadLeaderboard();
   }, [session, guesses]);
+
+  useEffect(() => {
+    supabase.rpc('get_daily_report').then(({ data, error }) => {
+      if (!error && data) setDailyReport(data);
+    });
+  }, []);
 
   const orderedMatches = useMemo(() => [...matches].sort(byKickoff), [matches]);
   const teams = useMemo(() => groups.flatMap((group) => group.teams).sort(), []);
@@ -399,6 +456,7 @@ export default function App() {
         />
       )}
       {notice && <div className="toast-notice">{notice}</div>}
+      <DailyReportBanner report={dailyReport} t={t} />
       <header className="topbar">
         <div>
           <p className="eyebrow">{t('eyebrow')}</p>

@@ -1,5 +1,14 @@
 export const LANG_KEY = 'worldcup-guess-lang';
 
+// Tournament-long trophy/player picks freeze when the group stage ends, i.e.
+// when the first knockout (R32) kicks off. Keep this in sync with the SQL
+// trophy_pick_deadline() in migration 006.
+export const TROPHY_LOCK_ISO = '2026-06-28T19:00:00.000Z';
+
+export function isTrophyLocked(nowMs = Date.now()) {
+  return nowMs >= new Date(TROPHY_LOCK_ISO).getTime();
+}
+
 export const translations = {
   en: {
     eyebrow: 'World Cup 2026',
@@ -29,7 +38,7 @@ export const translations = {
     noticeMatchLocked: 'This match is locked — guessing closed.',
     noticeMatchNotOpen: 'This match is not open for guesses yet.',
     tournamentFutures: 'Tournament Futures',
-    tournamentFuturesDesc: 'Champion, top four, awards, and stat races lock when the opening match kicks off.',
+    tournamentFuturesDesc: 'Champion, top four, awards, and stat races lock when the group stage ends.',
     playersTracked: 'players tracked',
     champion: 'Champion',
     top4: 'Top 4',
@@ -109,6 +118,8 @@ export const translations = {
       'To join the game, you agree to a small buy-in of around $10. The pooled buy-ins go toward buying the overall winner some World Cup merch. Predictions are just for fun until then — good luck!',
     buyinAgree: "I agree — let's play",
     buyinDontShow: "Don't show this again",
+    trophyLocked: 'Tournament picks locked — group stage is over.',
+    trophyLocksIn: 'Picks lock in',
   },
   zh: {
     eyebrow: '2026 世界杯',
@@ -137,7 +148,7 @@ export const translations = {
     noticeMatchLocked: '该场比赛已锁定，无法继续竞猜。',
     noticeMatchNotOpen: '该场比赛尚未开放竞猜。',
     tournamentFutures: '锦标赛长期预测',
-    tournamentFuturesDesc: '冠军、四强、奖项和数据统计类预测在揭幕战开赛后锁定。',
+    tournamentFuturesDesc: '冠军、四强、奖项和数据统计类预测在小组赛结束后锁定。',
     playersTracked: '名球员已收录',
     champion: '冠军',
     top4: '四强',
@@ -217,6 +228,8 @@ export const translations = {
       '参与游戏即表示你同意约 10 美元的小额报名费。所有报名费将汇集用于为最终冠军购买世界杯周边。在此之前竞猜纯属娱乐——祝你好运！',
     buyinAgree: '我同意——开始游戏',
     buyinDontShow: '不再显示',
+    trophyLocked: '锦标赛预测已锁定——小组赛已结束。',
+    trophyLocksIn: '预测锁定倒计时',
   },
 };
 

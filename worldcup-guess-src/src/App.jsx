@@ -7,10 +7,12 @@ import MatchPredictionBars, { useGuessDistributions } from './components/MatchPr
 import UserProfilePanel from './components/UserProfilePanel.jsx';
 import {
   LANG_KEY,
+  TROPHY_LOCK_ISO,
   createT,
   formatKickoff,
   formatLockCountdown,
   getGuessDeadline,
+  isTrophyLocked,
   roundLabel,
 } from './i18n.js';
 
@@ -352,6 +354,11 @@ export default function App() {
 
   async function savePlayerArtifact(field, value) {
     if (requireSignIn()) return false;
+    if (isTrophyLocked(now)) {
+      setNotice(t('trophyLocked'));
+      window.setTimeout(() => setNotice(''), 2800);
+      return false;
+    }
     const nextArtifact = { ...playerArtifact, [field]: value };
     setPlayerArtifact(nextArtifact);
 
@@ -506,7 +513,7 @@ function GuessView({ matches, guesses, onSaveGuess, playerArtifact, onPlayerArti
 
   return (
     <section className="workspace guess-workspace">
-      <PlayerPicksPanel value={playerArtifact} onChange={onPlayerArtifact} teams={teams} players={players} t={t} />
+      <PlayerPicksPanel value={playerArtifact} onChange={onPlayerArtifact} teams={teams} players={players} t={t} now={now} />
       <div className="two-column">
         <div className="match-list">
           {groupMatches.map((match) => (
@@ -624,13 +631,22 @@ function TeamName({ team, selected = false, t }) {
   );
 }
 
-function PlayerPicksPanel({ value, onChange, teams, players, t }) {
+function PlayerPicksPanel({ value, onChange, teams, players, t, now }) {
+  const locked = isTrophyLocked(now);
+  const countdown = formatLockCountdown(TROPHY_LOCK_ISO, now);
   return (
-    <section className="player-picks">
+    <section className={`player-picks${locked ? ' player-picks-locked' : ''}`}>
       <div className="player-picks-head">
         <div>
           <h2>{t('tournamentFutures')}</h2>
           <p>{t('tournamentFuturesDesc')}</p>
+          {locked ? (
+            <span className="lock-badge">{t('trophyLocked')}</span>
+          ) : (
+            countdown && (
+              <span className="lock-countdown">{t('trophyLocksIn')}: {countdown}</span>
+            )
+          )}
         </div>
         <div className="player-db-pill">
           <b>{players.length}</b>
@@ -643,7 +659,11 @@ function PlayerPicksPanel({ value, onChange, teams, players, t }) {
             <span className="trophy-icon">{item.icon}</span>
             <span>{t(item.labelKey)}</span>
             {item.type === 'team' && (
-              <select value={value[item.field] || ''} onChange={(event) => onChange(item.field, event.target.value)}>
+              <select
+                value={value[item.field] || ''}
+                disabled={locked}
+                onChange={(event) => onChange(item.field, event.target.value)}
+              >
                 <option value="">{t('pickTeam')}</option>
                 {teams.map((team) => (
                   <option value={team} key={team}>{teamFlag(team)} {team}</option>
@@ -651,7 +671,7 @@ function PlayerPicksPanel({ value, onChange, teams, players, t }) {
               </select>
             )}
             {item.type === 'teams' && (
-              <TopFourPicker value={value[item.field] || []} teams={teams} onChange={(next) => onChange(item.field, next)} t={t} />
+              <TopFourPicker value={value[item.field] || []} teams={teams} onChange={(next) => onChange(item.field, next)} t={t} disabled={locked} />
             )}
             {item.type === 'player' && (
               <PlayerSearchSelect
@@ -659,6 +679,7 @@ function PlayerPicksPanel({ value, onChange, teams, players, t }) {
                 value={value[item.field] || ''}
                 onChange={(next) => onChange(item.field, next)}
                 t={t}
+                disabled={locked}
               />
             )}
           </div>
@@ -668,7 +689,7 @@ function PlayerPicksPanel({ value, onChange, teams, players, t }) {
   );
 }
 
-function TopFourPicker({ value, teams, onChange, t }) {
+function TopFourPicker({ value, teams, onChange, t, disabled = false }) {
   function setSlot(index, team) {
     const next = [...value];
     next[index] = team;
@@ -680,7 +701,7 @@ function TopFourPicker({ value, teams, onChange, t }) {
       {[0, 1, 2, 3].map((index) => (
         <label key={index}>
           <span>#{index + 1}</span>
-          <select value={value[index] || ''} onChange={(event) => setSlot(index, event.target.value)}>
+          <select value={value[index] || ''} disabled={disabled} onChange={(event) => setSlot(index, event.target.value)}>
             <option value="">{t('pickTeam')}</option>
             {teams
               .filter((team) => !value.includes(team) || value[index] === team)
@@ -694,7 +715,7 @@ function TopFourPicker({ value, teams, onChange, t }) {
   );
 }
 
-function PlayerSearchSelect({ players, value, onChange, t }) {
+function PlayerSearchSelect({ players, value, onChange, t, disabled = false }) {
   const [query, setQuery] = useState(value);
   const [open, setOpen] = useState(false);
   const matches = useMemo(() => {
@@ -714,6 +735,7 @@ function PlayerSearchSelect({ players, value, onChange, t }) {
     <div className="player-search">
       <input
         value={query}
+        disabled={disabled}
         onFocus={() => setOpen(true)}
         onBlur={() => window.setTimeout(() => setOpen(false), 120)}
         onChange={(event) => {
@@ -723,7 +745,7 @@ function PlayerSearchSelect({ players, value, onChange, t }) {
         placeholder={t('typePlayer')}
         aria-label={t('typePlayer')}
       />
-      {open && query && query !== value && (
+      {!disabled && open && query && query !== value && (
         <div className="player-results">
           {matches.map((player) => (
             <button

@@ -401,6 +401,43 @@ select {
   padding: 9px 8px;
 }
 
+.guess-actions {
+  display: grid;
+  gap: 6px;
+  justify-items: stretch;
+}
+
+.guess-outcome {
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-align: center;
+  color: #155e3a;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.guess-outcome.draw {
+  color: #667066;
+}
+
+.guess-confirm {
+  min-height: 38px;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: #172017;
+  color: #fff;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background 0.18s ease, opacity 0.18s ease;
+}
+
+.guess-confirm:disabled {
+  background: #c3cabf;
+  cursor: default;
+}
+
 .bonus-chip {
   display: inline-flex;
   align-items: center;

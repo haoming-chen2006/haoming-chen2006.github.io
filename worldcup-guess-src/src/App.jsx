@@ -116,12 +116,19 @@ function getMatchState(match, guess, now = Date.now()) {
   return guess ? 'out_and_guessed' : 'out_not_guessed';
 }
 
+// Winner is derived purely from the predicted score: equal → 'draw'.
 function pickWinner(guess, match) {
   if (!guess) return '';
-  if (Number(guess.pred_home_score) === Number(guess.pred_away_score)) {
-    return guess.pred_winner || 'draw';
-  }
-  return Number(guess.pred_home_score) > Number(guess.pred_away_score) ? match.team_home : match.team_away;
+  const home = Number(guess.pred_home_score);
+  const away = Number(guess.pred_away_score);
+  if (home === away) return 'draw';
+  return home > away ? match.team_home : match.team_away;
+}
+
+// The pred_winner value persisted to the DB for a given score ('' means draw).
+function winnerFromScore(home, away, match) {
+  if (Number(home) === Number(away)) return '';
+  return Number(home) > Number(away) ? match.team_home || '' : match.team_away || '';
 }
 
 function teamFlag(team) {
@@ -613,11 +620,37 @@ function GuessView({ matches, guesses, onSaveGuess, playerArtifact, onPlayerArti
 function MatchGuessRow({ match, guess, onSaveGuess, t, lang, now, distribution, onSelectUser }) {
   const state = getMatchState(match, guess, now);
   const locked = state === 'backlogged' || state === 'not_out';
-  const selectedWinner = pickWinner(guess, match);
+  const [home, setHome] = useState(guess?.pred_home_score ?? 0);
+  const [away, setAway] = useState(guess?.pred_away_score ?? 0);
+  const [saving, setSaving] = useState(false);
+
+  // Re-sync local inputs when the saved guess changes (remote load / external update).
+  useEffect(() => {
+    setHome(guess?.pred_home_score ?? 0);
+    setAway(guess?.pred_away_score ?? 0);
+  }, [guess?.pred_home_score, guess?.pred_away_score]);
+
+  // Outcome is auto-derived from the entered score — no separate winner pick.
+  const predWinner = Number(home) === Number(away) ? 'draw' : Number(home) > Number(away) ? match.team_home : match.team_away;
+  const dirty = !guess
+    || Number(home) !== Number(guess.pred_home_score)
+    || Number(away) !== Number(guess.pred_away_score);
+
   const hasMinorityShare = guess?.minority_share !== undefined && guess?.minority_share !== null;
   const bonusActive = Boolean(guess?.minority_bonus_active || (hasMinorityShare && Number(guess.minority_share) <= 0.2));
   const deadline = getGuessDeadline(match);
   const countdown = formatLockCountdown(deadline, now);
+
+  async function confirm() {
+    if (locked || saving) return;
+    setSaving(true);
+    await onSaveGuess(match, {
+      pred_home_score: Number(home),
+      pred_away_score: Number(away),
+      pred_winner: winnerFromScore(home, away, match),
+    });
+    setSaving(false);
+  }
 
   return (
     <article className={`match-row ${state}`}>
@@ -634,8 +667,8 @@ function MatchGuessRow({ match, guess, onSaveGuess, t, lang, now, distribution, 
         )}
       </div>
       <div className="team-pair">
-        <TeamName team={match.team_home} code={match.team_home_code} selected={selectedWinner === match.team_home} t={t} />
-        <TeamName team={match.team_away} code={match.team_away_code} selected={selectedWinner === match.team_away} t={t} />
+        <TeamName team={match.team_home} code={match.team_home_code} selected={predWinner === match.team_home} t={t} />
+        <TeamName team={match.team_away} code={match.team_away_code} selected={predWinner === match.team_away} t={t} />
         <MatchPredictionBars
           match={match}
           distribution={distribution}
@@ -647,34 +680,34 @@ function MatchGuessRow({ match, guess, onSaveGuess, t, lang, now, distribution, 
         <input
           type="number"
           min="0"
-          value={guess?.pred_home_score ?? 0}
+          value={home}
           disabled={locked}
           aria-label={`${match.team_home || 'Home'} score`}
-          onChange={(event) => onSaveGuess(match, { pred_home_score: Number(event.target.value) })}
+          onChange={(event) => setHome(Number(event.target.value))}
         />
         <span>:</span>
         <input
           type="number"
           min="0"
-          value={guess?.pred_away_score ?? 0}
+          value={away}
           disabled={locked}
           aria-label={`${match.team_away || 'Away'} score`}
-          onChange={(event) => onSaveGuess(match, { pred_away_score: Number(event.target.value) })}
+          onChange={(event) => setAway(Number(event.target.value))}
         />
       </div>
-      <select
-        value={pickWinner(guess, match)}
-        disabled={locked}
-        aria-label={t('winner')}
-        onChange={(event) =>
-          onSaveGuess(match, { pred_winner: event.target.value === 'draw' ? '' : event.target.value })
-        }
-      >
-        <option value="">{t('winner')}</option>
-        {match.team_home && <option value={match.team_home}>{match.team_home}</option>}
-        <option value="draw">{t('draw')}</option>
-        {match.team_away && <option value={match.team_away}>{match.team_away}</option>}
-      </select>
+      <div className="guess-actions">
+        <span className={`guess-outcome${predWinner === 'draw' ? ' draw' : ''}`}>
+          {predWinner === 'draw' ? t('draw') : predWinner || t('tbd')}
+        </span>
+        <button
+          type="button"
+          className="guess-confirm"
+          disabled={locked || saving || !dirty}
+          onClick={confirm}
+        >
+          {saving ? t('saving') : dirty ? t('confirm') : t('saved')}
+        </button>
+      </div>
       {bonusActive && <span className="bonus-chip active">{t('underdogBonus')}</span>}
     </article>
   );
@@ -1226,7 +1259,7 @@ function PersonalView({ guesses, matches, playerArtifact, t }) {
               <article className="history-row" key={guess.match_id}>
                 <span>{teamFlag(match.team_home)} {match.team_home} {t('vs')} {teamFlag(match.team_away)} {match.team_away}</span>
                 <b>{guess.pred_home_score} : {guess.pred_away_score}</b>
-                <span>{pickWinner(guess, match) || t('noWinner')}</span>
+                <span>{(() => { const w = pickWinner(guess, match); return w === 'draw' ? t('draw') : w || t('noWinner'); })()}</span>
               </article>
             );
           })}

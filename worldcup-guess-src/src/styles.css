@@ -438,6 +438,31 @@ select {
   cursor: default;
 }
 
+.jump-next {
+  position: fixed;
+  top: 88px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 40;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 16px;
+  border: 0;
+  border-radius: 999px;
+  background: #172017;
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 8px 22px rgba(20, 30, 20, 0.22);
+  animation: riseIn 0.2s ease both;
+}
+
+.jump-next:hover {
+  background: #243324;
+}
+
 .bonus-chip {
   display: inline-flex;
   align-items: center;

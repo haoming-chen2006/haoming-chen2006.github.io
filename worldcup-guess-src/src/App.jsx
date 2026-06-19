@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { supabase } from './supabaseClient.js';
 import { groups, rounds, seedMatches, teamInfo } from './data/fixtures.js';
 import { playerPool } from './data/players.js';
@@ -575,12 +575,50 @@ export default function App() {
 
 function GuessView({ matches, guesses, onSaveGuess, playerArtifact, onPlayerArtifact, teams, players, t, lang, now, distributions, onSelectUser }) {
   const groupMatches = matches.filter((match) => match.round === 'group');
+  const listRef = useRef(null);
+  const [showJump, setShowJump] = useState(false);
+
+  // First still-open, unguessed match sitting below the current viewport.
+  function nextUnguessedRow() {
+    const container = listRef.current;
+    if (!container) return null;
+    const rows = container.querySelectorAll('.match-row.out_not_guessed');
+    for (const row of rows) {
+      if (row.getBoundingClientRect().top > 200) return row;
+    }
+    return null;
+  }
+
+  useEffect(() => {
+    function update() {
+      setShowJump(Boolean(nextUnguessedRow()));
+    }
+    update();
+    window.addEventListener('scroll', update, { passive: true });
+    window.addEventListener('resize', update);
+    return () => {
+      window.removeEventListener('scroll', update);
+      window.removeEventListener('resize', update);
+    };
+  }, [guesses]);
+
+  function jumpToNext() {
+    const row = nextUnguessedRow();
+    if (!row) return;
+    const top = window.scrollY + row.getBoundingClientRect().top - 110;
+    window.scrollTo({ top, behavior: 'smooth' });
+  }
 
   return (
     <section className="workspace guess-workspace">
+      {showJump && (
+        <button type="button" className="jump-next" onClick={jumpToNext}>
+          ↓ {t('jumpNext')}
+        </button>
+      )}
       <PlayerPicksPanel value={playerArtifact} onChange={onPlayerArtifact} teams={teams} players={players} t={t} now={now} />
       <div className="two-column">
-        <div className="match-list">
+        <div className="match-list" ref={listRef}>
           {groupMatches.map((match) => (
             <MatchGuessRow
               match={match}

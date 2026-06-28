@@ -537,8 +537,6 @@ export default function App() {
         <ScheduleView
           matches={orderedMatches}
           guesses={guesses}
-          groupRankings={groupRankings}
-          onGroupRankings={saveGroupRankings}
           bracketPicks={bracketPicks}
           onBracketPicks={saveBracketPicks}
           t={t}
@@ -574,7 +572,7 @@ export default function App() {
 }
 
 function GuessView({ matches, guesses, onSaveGuess, playerArtifact, onPlayerArtifact, teams, players, t, lang, now, distributions, onSelectUser }) {
-  const groupMatches = matches.filter((match) => match.round === 'group');
+  const groupMatches = matches.filter((match) => match.round === 'r32');
   const listRef = useRef(null);
   const [showJump, setShowJump] = useState(false);
 
@@ -674,8 +672,6 @@ function MatchGuessRow({ match, guess, onSaveGuess, t, lang, now, distribution, 
     || Number(home) !== Number(guess.pred_home_score)
     || Number(away) !== Number(guess.pred_away_score);
 
-  const hasMinorityShare = guess?.minority_share !== undefined && guess?.minority_share !== null;
-  const bonusActive = Boolean(guess?.minority_bonus_active || (hasMinorityShare && Number(guess.minority_share) <= 0.2));
   const deadline = getGuessDeadline(match);
   const countdown = formatLockCountdown(deadline, now);
 
@@ -746,7 +742,6 @@ function MatchGuessRow({ match, guess, onSaveGuess, t, lang, now, distribution, 
           {saving ? t('saving') : dirty ? t('confirm') : t('saved')}
         </button>
       </div>
-      {bonusActive && <span className="bonus-chip active">{t('underdogBonus')}</span>}
     </article>
   );
 }
@@ -901,99 +896,29 @@ function PlayerSearchSelect({ players, value, onChange, t, disabled = false }) {
   );
 }
 
-function ScheduleView({ matches, guesses, groupRankings, onGroupRankings, bracketPicks, onBracketPicks, t, lang, now }) {
-  const [groupFilter, setGroupFilter] = useState('All');
-  const [venueFilter, setVenueFilter] = useState('All');
-  const [selectedMatchId, setSelectedMatchId] = useState(matches[0]?.id || '');
-
-  const venues = useMemo(() => ['All', ...new Set(matches.map((match) => match.venue))], [matches]);
-  const visibleMatches = useMemo(
-    () =>
-      matches.filter(
-        (match) =>
-          (groupFilter === 'All' || match.group_label === groupFilter) &&
-          (venueFilter === 'All' || match.venue === venueFilter),
-      ),
-    [groupFilter, matches, venueFilter],
-  );
-  const selectedMatch = matches.find((match) => match.id === selectedMatchId) || visibleMatches[0] || matches[0];
-  const knockout = matches.filter((match) => match.round !== 'group');
-  const groupsComplete = groups.every((group) => groupRankings[group.label]?.length === 4);
+function ScheduleView({ matches, guesses, bracketPicks, onBracketPicks, t, lang, now }) {
+  const knockout = useMemo(() => matches.filter((match) => match.round !== 'group'), [matches]);
   const populatedKnockout = useMemo(
     () =>
       knockout.map((match) => ({
         ...match,
-        display_home: getMatchSides(match, groupRankings, bracketPicks).home,
-        display_away: getMatchSides(match, groupRankings, bracketPicks).away,
+        display_home: getMatchSides(match, {}, bracketPicks).home,
+        display_away: getMatchSides(match, {}, bracketPicks).away,
       })),
-    [bracketPicks, groupRankings, knockout],
+    [bracketPicks, knockout],
   );
 
   return (
     <section className="workspace schedule-grid">
-      <div className="schedule-controls">
-        <select value={groupFilter} onChange={(event) => setGroupFilter(event.target.value)} aria-label="Group filter">
-          <option value="All">{t('allGroups')}</option>
-          {groups.map((group) => (
-            <option value={group.label} key={group.label}>{t('groupLabel', { label: group.label })}</option>
-          ))}
-        </select>
-        <select value={venueFilter} onChange={(event) => setVenueFilter(event.target.value)} aria-label="Venue filter">
-          {venues.map((venue) => (
-            <option value={venue} key={venue}>{venue}</option>
-          ))}
-        </select>
-      </div>
-
-      <div className="interactive-schedule">
-        {!groupsComplete ? (
-          <GroupRankingBoard
-            groupFilter={groupFilter}
-            rankings={groupRankings}
-            onRankings={onGroupRankings}
-            onGroupFilter={setGroupFilter}
-            t={t}
-          />
-        ) : (
-          <KnockoutPredictor
-            matches={knockout}
-            groupRankings={groupRankings}
-            picks={bracketPicks}
-            onPicks={onBracketPicks}
-            t={t}
-            lang={lang}
-          />
-        )}
-
-        <div className="fixture-rail">
-          {visibleMatches.slice(0, 36).map((match) => (
-            <button
-              className={`fixture-card ${selectedMatch?.id === match.id ? 'active' : ''}`}
-              type="button"
-              key={match.id}
-              onClick={() => setSelectedMatchId(match.id)}
-            >
-              <span>{roundLabel(match.round, t)}</span>
-              <b>{teamFlag(match.team_home)} {match.team_home}</b>
-              <b>{teamFlag(match.team_away)} {match.team_away}</b>
-              <small>{formatKickoff(match.kickoff_time, lang)} · {match.city}</small>
-            </button>
-          ))}
-        </div>
-
-        {selectedMatch && (
-          <div className="match-detail">
-            <p className="eyebrow">{t('selectedMatch')}</p>
-            <h2>{teamFlag(selectedMatch.team_home)} {selectedMatch.team_home} {t('vs')} {teamFlag(selectedMatch.team_away)} {selectedMatch.team_away}</h2>
-            <div className="detail-grid">
-              <span>{t('matchNumber', { n: selectedMatch.match_number })}</span>
-              <span>{formatKickoff(selectedMatch.kickoff_time, lang)}</span>
-              <span>{selectedMatch.venue}</span>
-              <span>{selectedMatch.city}, {selectedMatch.host_country}</span>
-              <span>{t('capacity', { n: selectedMatch.stadium_capacity?.toLocaleString() })}</span>
-            </div>
-          </div>
-        )}
+      <div className="schedule-knockout-only">
+        <KnockoutPredictor
+          matches={knockout}
+          groupRankings={{}}
+          picks={bracketPicks}
+          onPicks={onBracketPicks}
+          t={t}
+          lang={lang}
+        />
       </div>
 
       <div className="bracket-lane">
@@ -1266,18 +1191,12 @@ function LeaderboardView({ guesses, matches, rows, session, t, onSelectUser }) {
       <aside className="scoring-panel">
         <h2>{t('scoringRules')}</h2>
         <table>
-          <thead><tr><th>{t('round')}</th><th>{t('outcome')}</th><th>{t('exact')}</th></tr></thead>
+          <thead><tr><th>{t('outcome')}</th><th>{t('exact')}</th></tr></thead>
           <tbody>
-            <tr><td>{t('roundGroup')}</td><td>3</td><td>+2</td></tr>
-            <tr><td>{t('roundR32')}</td><td>5</td><td>+3</td></tr>
-            <tr><td>{t('roundR16')}</td><td>8</td><td>+4</td></tr>
-            <tr><td>{t('roundQf')}</td><td>13</td><td>+5</td></tr>
-            <tr><td>{t('roundSf')}</td><td>21</td><td>+8</td></tr>
-            <tr><td>{t('roundFinal')}</td><td>34</td><td>+13</td></tr>
+            <tr><td>3</td><td>+2</td></tr>
           </tbody>
         </table>
-        <p>{t('scoringKnockout')}</p>
-        <p>{t('scoringMinority')}</p>
+        <p>{t('scoringFlat')}</p>
         <p>{t('scoringTournament')}</p>
       </aside>
     </section>

@@ -2368,3 +2368,34 @@ export const seedMatches = [
     "stadium_capacity": 82500
   }
 ];
+
+// Round of 32 confirmed matchups (groups concluded). Overrides the placeholder
+// slots on the existing m-73..m-88 rows so the bracket structure (W73 → R16, etc.)
+// stays intact while showing real teams.
+export const r32Confirmed = [
+  { id: 'm-73', team_home: 'South Africa', team_away: 'Canada', team_home_code: 'ZA', team_away_code: 'CA', kickoff_time: '2026-06-28T19:00:00.000Z', local_time: '12:00 UTC-7' },
+  { id: 'm-74', team_home: 'Brazil', team_away: 'Japan', team_home_code: 'BR', team_away_code: 'JP', kickoff_time: '2026-06-29T17:00:00.000Z', local_time: '10:00 UTC-7' },
+  { id: 'm-75', team_home: 'Germany', team_away: 'Paraguay', team_home_code: 'DE', team_away_code: 'PY', kickoff_time: '2026-06-29T20:30:00.000Z', local_time: '13:30 UTC-7' },
+  { id: 'm-76', team_home: 'Netherlands', team_away: 'Morocco', team_home_code: 'NL', team_away_code: 'MA', kickoff_time: '2026-06-30T01:00:00.000Z', local_time: '18:00 UTC-7' },
+  { id: 'm-77', team_home: "Cote d'Ivoire", team_away: 'Norway', team_home_code: 'CI', team_away_code: 'NO', kickoff_time: '2026-06-30T17:00:00.000Z', local_time: '10:00 UTC-7' },
+  { id: 'm-78', team_home: 'France', team_away: 'Sweden', team_home_code: 'FR', team_away_code: 'SE', kickoff_time: '2026-06-30T21:00:00.000Z', local_time: '14:00 UTC-7' },
+  { id: 'm-79', team_home: 'Mexico', team_away: 'Ecuador', team_home_code: 'MX', team_away_code: 'EC', kickoff_time: '2026-07-01T01:00:00.000Z', local_time: '18:00 UTC-7' },
+  { id: 'm-80', team_home: 'England', team_away: 'DR Congo', team_home_code: 'GB-ENG', team_away_code: 'CD', kickoff_time: '2026-07-01T16:00:00.000Z', local_time: '09:00 UTC-7' },
+  { id: 'm-81', team_home: 'Belgium', team_away: 'Senegal', team_home_code: 'BE', team_away_code: 'SN', kickoff_time: '2026-07-01T20:00:00.000Z', local_time: '13:00 UTC-7' },
+  { id: 'm-82', team_home: 'United States', team_away: 'Bosnia and Herzegovina', team_home_code: 'US', team_away_code: 'BA', kickoff_time: '2026-07-02T00:00:00.000Z', local_time: '17:00 UTC-7' },
+  { id: 'm-83', team_home: 'Spain', team_away: 'Austria', team_home_code: 'ES', team_away_code: 'AT', kickoff_time: '2026-07-02T19:00:00.000Z', local_time: '12:00 UTC-7' },
+  { id: 'm-84', team_home: 'Portugal', team_away: 'Croatia', team_home_code: 'PT', team_away_code: 'HR', kickoff_time: '2026-07-02T23:00:00.000Z', local_time: '16:00 UTC-7' },
+  { id: 'm-85', team_home: 'Switzerland', team_away: 'Algeria', team_home_code: 'CH', team_away_code: 'DZ', kickoff_time: '2026-07-03T03:00:00.000Z', local_time: '20:00 UTC-7' },
+  { id: 'm-86', team_home: 'Australia', team_away: 'Egypt', team_home_code: 'AU', team_away_code: 'EG', kickoff_time: '2026-07-03T18:00:00.000Z', local_time: '11:00 UTC-7' },
+  { id: 'm-87', team_home: 'Argentina', team_away: 'Cape Verde', team_home_code: 'AR', team_away_code: 'CV', kickoff_time: '2026-07-03T22:00:00.000Z', local_time: '15:00 UTC-7' },
+  { id: 'm-88', team_home: 'Colombia', team_away: 'Ghana', team_home_code: 'CO', team_away_code: 'GH', kickoff_time: '2026-07-04T01:30:00.000Z', local_time: '18:30 UTC-7' },
+];
+
+const r32ById = Object.fromEntries(r32Confirmed.map((entry) => [entry.id, entry]));
+
+for (const match of seedMatches) {
+  const override = r32ById[match.id];
+  if (override) {
+    Object.assign(match, override, { sides_confirmed: true });
+  }
+}

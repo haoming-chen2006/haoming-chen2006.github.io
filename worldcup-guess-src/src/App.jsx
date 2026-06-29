@@ -249,7 +249,25 @@ export default function App() {
   }, [lang]);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => setSession(data.session));
+    supabase.auth.getSession().then(({ data }) => {
+      setSession(data.session);
+      // Clean up any auth params (hash tokens, stale ?code=, error=) left in the
+      // URL so refreshes don't try to re-process an expired link.
+      const url = new URL(window.location.href);
+      const hadAuthParams =
+        url.hash.includes('access_token') ||
+        url.hash.includes('error') ||
+        url.searchParams.has('code') ||
+        url.searchParams.has('error') ||
+        url.searchParams.has('error_description');
+      if (hadAuthParams) {
+        ['code', 'error', 'error_description', 'error_code', 'state'].forEach((key) =>
+          url.searchParams.delete(key),
+        );
+        url.hash = '';
+        window.history.replaceState({}, document.title, url.toString());
+      }
+    });
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, nextSession) => setSession(nextSession));
@@ -349,9 +367,10 @@ export default function App() {
     event.preventDefault();
     if (!email.trim()) return;
 
+    const redirectTo = `${window.location.origin}${window.location.pathname}`;
     const { error } = await supabase.auth.signInWithOtp({
       email,
-      options: { emailRedirectTo: window.location.href },
+      options: { emailRedirectTo: redirectTo },
     });
     const message = error ? error.message : t('checkEmailLink');
     setStatus(message);

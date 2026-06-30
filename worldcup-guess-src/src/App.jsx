@@ -1210,9 +1210,15 @@ function LeaderboardView({ guesses, matches, rows, session, t, onSelectUser }) {
       <aside className="scoring-panel">
         <h2>{t('scoringRules')}</h2>
         <table>
-          <thead><tr><th>{t('outcome')}</th><th>{t('exact')}</th></tr></thead>
+          <thead><tr><th>{t('round')}</th><th>{t('outcome')}</th><th>{t('exact')}</th></tr></thead>
           <tbody>
-            <tr><td>3</td><td>+2</td></tr>
+            {['group', 'r32', 'r16', 'qf', 'sf', 'final'].map((round) => (
+              <tr key={round}>
+                <td>{roundLabel(round, t)}</td>
+                <td>{rounds[round].outcome}</td>
+                <td>+{rounds[round].exact}</td>
+              </tr>
+            ))}
           </tbody>
         </table>
         <p>{t('scoringFlat')}</p>

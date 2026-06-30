@@ -121,42 +121,47 @@ export function findDbMatch(
   dbMatches: DbMatch[],
 ): DbMatch | null {
   const key = makeOpenfootballKey(entry);
-
-  const byKey = dbMatches.find((m) => m.openfootball_key === key);
-  if (byKey) return byKey;
-
-  if (entry.num != null) {
-    const byNum = dbMatches.find((m) => m.match_number === entry.num);
-    if (byNum) return byNum;
-  }
-
   const t1 = normalizeTeam(entry.team1);
   const t2 = normalizeTeam(entry.team2);
-  const pairKey = teamsPairKey(entry.date, t1, t2);
 
+  // 1) Team names are authoritative. openfootball's match numbers do NOT line up
+  //    with our match_number column (the R32 draw is numbered differently), so we
+  //    must match on the actual teams first, never on number alone.
+  const pairKey = teamsPairKey(entry.date, t1, t2);
   const candidates = dbMatches.filter((m) => {
     if (!m.team_home || !m.team_away) return false;
-    const dbPair = teamsPairKey(entry.date, m.team_home, m.team_away);
-    return dbPair === pairKey;
+    return teamsPairKey(entry.date, m.team_home, m.team_away) === pairKey;
   });
-
   if (candidates.length === 1) return candidates[0];
-
   if (candidates.length > 1) {
     const byGround = candidates.find((m) => groundsMatch(m.city, m.venue, entry.ground));
     if (byGround) return byGround;
+    return candidates[0];
   }
 
-  // Last resort: date + ground only (team names may be placeholders pre-playoff)
+  // 2) Exact openfootball_key (only trusted when teams didn't resolve, e.g. a row
+  //    whose teams are still placeholders but was previously keyed).
+  const byKey = dbMatches.find((m) => m.openfootball_key === key);
+  if (byKey && (!byKey.team_home || !byKey.team_away)) return byKey;
+
+  // 3) Venue + at least one matching team (handles partial placeholder rows).
   const byVenue = dbMatches.filter(
     (m) => groundsMatch(m.city, m.venue, entry.ground) &&
       m.team_home && m.team_away &&
-      (normalizeTeam(entry.team1) === m.team_home ||
-        normalizeTeam(entry.team2) === m.team_away ||
-        normalizeTeam(entry.team1) === m.team_away ||
-        normalizeTeam(entry.team2) === m.team_home),
+      (t1 === normalizeTeam(m.team_home) ||
+        t2 === normalizeTeam(m.team_away) ||
+        t1 === normalizeTeam(m.team_away) ||
+        t2 === normalizeTeam(m.team_home)),
   );
   if (byVenue.length === 1) return byVenue[0];
+
+  // 4) Last resort for fully-placeholder rows: match number.
+  if (entry.num != null) {
+    const byNum = dbMatches.find(
+      (m) => m.match_number === entry.num && (!m.team_home || !m.team_away),
+    );
+    if (byNum) return byNum;
+  }
 
   return null;
 }

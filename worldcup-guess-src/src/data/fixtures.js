@@ -2391,10 +2391,24 @@ export const r32Confirmed = [
   { id: 'm-88', team_home: 'Colombia', team_away: 'Ghana', team_home_code: 'CO', team_away_code: 'GH', kickoff_time: '2026-07-04T01:30:00.000Z', local_time: '18:30 UTC-7' },
 ];
 
-const r32ById = Object.fromEntries(r32Confirmed.map((entry) => [entry.id, entry]));
+// Round of 16 confirmed matchups (mapped by venue to the real 2026 bracket).
+export const r16Confirmed = [
+  { id: 'm-89', team_home: 'Paraguay', team_away: 'France', team_home_code: 'PY', team_away_code: 'FR', kickoff_time: '2026-07-04T21:00:00.000Z', local_time: '17:00 UTC-4' },
+  { id: 'm-90', team_home: 'Canada', team_away: 'Morocco', team_home_code: 'CA', team_away_code: 'MA', kickoff_time: '2026-07-04T17:00:00.000Z', local_time: '12:00 UTC-5' },
+  { id: 'm-91', team_home: 'Brazil', team_away: 'Norway', team_home_code: 'BR', team_away_code: 'NO', kickoff_time: '2026-07-05T20:00:00.000Z', local_time: '16:00 UTC-4' },
+  { id: 'm-92', team_home: 'Mexico', team_away: 'England', team_home_code: 'MX', team_away_code: 'GB-ENG', kickoff_time: '2026-07-06T00:00:00.000Z', local_time: '18:00 UTC-6' },
+  { id: 'm-93', team_home: 'Portugal', team_away: 'Spain', team_home_code: 'PT', team_away_code: 'ES', kickoff_time: '2026-07-06T19:00:00.000Z', local_time: '14:00 UTC-5' },
+  { id: 'm-94', team_home: 'United States', team_away: 'Belgium', team_home_code: 'US', team_away_code: 'BE', kickoff_time: '2026-07-07T00:00:00.000Z', local_time: '17:00 UTC-7' },
+  { id: 'm-95', team_home: 'Argentina', team_away: 'Egypt', team_home_code: 'AR', team_away_code: 'EG', kickoff_time: '2026-07-07T16:00:00.000Z', local_time: '12:00 UTC-4' },
+  { id: 'm-96', team_home: 'Switzerland', team_away: 'Colombia', team_home_code: 'CH', team_away_code: 'CO', kickoff_time: '2026-07-07T20:00:00.000Z', local_time: '13:00 UTC-7' },
+];
+
+const knockoutById = Object.fromEntries(
+  [...r32Confirmed, ...r16Confirmed].map((entry) => [entry.id, entry]),
+);
 
 for (const match of seedMatches) {
-  const override = r32ById[match.id];
+  const override = knockoutById[match.id];
   if (override) {
     Object.assign(match, override, { sides_confirmed: true });
   }

@@ -48,11 +48,13 @@ function setRoomInUrl(roomId) {
   window.history.replaceState({}, '', url);
 }
 
-function ArticleView({ uiLang, wikiLang, title, onNavigate, disabled }) {
+function ArticleView({ uiLang, wikiLang, title, onNavigate, onLoadError, disabled }) {
   const [article, setArticle] = useState(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const containerRef = useRef(null);
+  const onLoadErrorRef = useRef(onLoadError);
+  onLoadErrorRef.current = onLoadError;
 
   useEffect(() => {
     let cancelled = false;
@@ -68,6 +70,7 @@ function ArticleView({ uiLang, wikiLang, title, onNavigate, disabled }) {
         if (cancelled) return;
         setError(err.message);
         setLoading(false);
+        onLoadErrorRef.current?.(title);
       });
     return () => { cancelled = true; };
   }, [wikiLang, title]);
@@ -209,6 +212,7 @@ export default function App() {
   const [roundStartAt, setRoundStartAt] = useState(null);
   const [resolvedRound, setResolvedRound] = useState({ start: '', end: '' });
   const [langSwitching, setLangSwitching] = useState(false);
+  const [notice, setNotice] = useState('');
 
   const roundTimerRef = useRef(null);
   const finishBroadcastRef = useRef(false);
@@ -585,6 +589,35 @@ export default function App() {
     }
   };
 
+  const showNotice = useCallback((msg) => {
+    setNotice(msg);
+    window.setTimeout(() => setNotice(''), 2600);
+  }, []);
+
+  // Undo the last link click and step back to the previous page (also refunds
+  // the hop). Never goes past the round's start page.
+  const goBack = useCallback(() => {
+    if (finished || gaveUp || screen !== 'playing') return;
+    if (path.length <= 1) return;
+    const next = path.slice(0, -1);
+    setPath(next);
+    setCurrentTitle(next[next.length - 1]);
+    setHops((h) => Math.max(0, h - 1));
+  }, [finished, gaveUp, screen, path]);
+
+  // A link that leads to a missing/non-article page auto-reverts to where you
+  // came from, so a bad click never strands you.
+  const handleLoadError = useCallback((badTitle) => {
+    if (screen !== 'playing') return;
+    if (path.length <= 1) return;
+    if (path[path.length - 1] !== badTitle) return;
+    const next = path.slice(0, -1);
+    setPath(next);
+    setCurrentTitle(next[next.length - 1]);
+    setHops((h) => Math.max(0, h - 1));
+    showNotice(t(lang, 'pageUnavailable'));
+  }, [screen, path, lang, showNotice]);
+
   const handleLeave = () => {
     setRoomId('');
     setIsHost(false);
@@ -783,13 +816,25 @@ export default function App() {
             {langSwitching ? '…' : t(lang, 'langToggle')}
           </button>
           {!finished && !gaveUp ? (
+            <button
+              type="button"
+              className="btn ghost"
+              onClick={goBack}
+              disabled={path.length <= 1}
+              title={t(lang, 'back')}
+            >
+              ↩ {t(lang, 'back')}
+            </button>
+          ) : null}
+          {!finished && !gaveUp ? (
             <button type="button" className="btn ghost" onClick={handleGiveUp}>{t(lang, 'giveUp')}</button>
           ) : null}
         </div>
       </header>
 
       <p className="rule-hint">
-        {gaveUp ? t(lang, 'nextRound') : t(lang, 'clickLinksOnly')}
+        {notice ? <span className="notice">{notice}</span>
+          : gaveUp ? t(lang, 'nextRound') : t(lang, 'clickLinksOnly')}
       </p>
 
       <div className="game-grid">
@@ -805,6 +850,7 @@ export default function App() {
             wikiLang={activeWikiLang}
             title={currentTitle}
             onNavigate={handleNavigate}
+            onLoadError={handleLoadError}
             disabled={finished || gaveUp || timeLeft <= 0}
           />
         </section>

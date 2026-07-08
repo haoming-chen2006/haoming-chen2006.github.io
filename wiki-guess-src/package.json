@@ -10,6 +10,7 @@
     "fetch-topics": "node scripts/fetch-topics.mjs"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.110.1",
     "@vitejs/plugin-react": "^4.3.4",
     "dompurify": "^3.2.4",
     "react": "^19.1.0",

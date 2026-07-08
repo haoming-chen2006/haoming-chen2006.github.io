@@ -1,26 +1,28 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { joinRoom } from 'trystero/supabase';
+import { supabase } from '../supabaseClient';
 
-// Signaling only: Supabase Realtime relays the WebRTC handshake so friends can
-// find each other reliably. No tables and no data are stored — once peers
-// connect, all game traffic is direct peer-to-peer. (The public torrent
-// trackers Trystero uses by default are frequently unreachable, which is why
-// players couldn't see each other or receive the host's "start".)
-// Reuses the World Cup Supabase project purely as a rendezvous point.
-const SUPABASE_URL =
-  import.meta.env.VITE_SUPABASE_URL || 'https://bgxmcgsfkjhpocptrezi.supabase.co';
-const SUPABASE_KEY =
-  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
-  'sb_publishable_18hn9O3SKu_Sr1H7RRGVKw_5lnb8UJL';
-
-// Trystero's supabase strategy takes the project URL in the `appId` slot.
-const ROOM_CONFIG = { appId: SUPABASE_URL, supabaseKey: SUPABASE_KEY };
+// Multiplayer runs entirely over Supabase Realtime (broadcast + presence).
+// Every player subscribes to a channel keyed by the room code; there is no
+// WebRTC/peer handshake to fail, and nothing is written to the database.
+//
+// App.jsx broadcasts with these action names, which map to Realtime events:
+const EVENT_BY_ACTION = {
+  sendPresence: 'presence',
+  sendProgress: 'progress',
+  sendGameState: 'gameState',
+  sendRoundResult: 'roundResult',
+  sendChat: 'chat',
+};
 
 export function useRoom(roomId, selfId, playerName, isHost) {
-  const roomRef = useRef(null);
+  const channelRef = useRef(null);
+  const peerMapRef = useRef({});
   const [peers, setPeers] = useState({});
   const [connected, setConnected] = useState(0);
   const handlersRef = useRef({});
+  // Keep latest identity available to callbacks without re-subscribing.
+  const selfRef = useRef({ playerName, isHost });
+  selfRef.current = { playerName, isHost };
 
   const registerHandler = useCallback((event, fn) => {
     handlersRef.current[event] = fn;
@@ -29,77 +31,101 @@ export function useRoom(roomId, selfId, playerName, isHost) {
   useEffect(() => {
     if (!roomId) return undefined;
 
-    const room = joinRoom(ROOM_CONFIG, roomId);
-    roomRef.current = room;
+    peerMapRef.current = {};
+    setPeers({});
+    setConnected(0);
 
-    const [sendPresence, getPresence] = room.makeAction('presence', { max: 50 });
-    const [sendProgress, getProgress] = room.makeAction('progress', { max: 50 });
-    const [sendGameState, getGameState] = room.makeAction('gameState', { max: 10 });
-    const [sendRoundResult, getRoundResult] = room.makeAction('roundResult', { max: 10 });
-    const [sendChat, getChat] = room.makeAction('chat', { max: 20 });
+    const channel = supabase.channel(`wiki-guess-${roomId}`, {
+      config: {
+        broadcast: { self: false },
+        presence: { key: selfId },
+      },
+    });
+    channelRef.current = channel;
+
+    const commitPeers = () => setPeers({ ...peerMapRef.current });
+
+    const upsertPeer = (id, patch) => {
+      if (!id || id === selfId) return;
+      const map = peerMapRef.current;
+      map[id] = { ...map[id], id, peerId: id, ...patch };
+      commitPeers();
+    };
 
     const announce = () => {
-      sendPresence({ id: selfId, name: playerName, isHost });
+      const { playerName: nm, isHost: host } = selfRef.current;
+      channel.send({
+        type: 'broadcast',
+        event: 'presence',
+        payload: { id: selfId, name: nm, isHost: host },
+      });
     };
 
-    const peerMap = {};
+    channel
+      .on('broadcast', { event: 'presence' }, ({ payload }) => {
+        if (!payload?.id) return;
+        upsertPeer(payload.id, { name: payload.name, isHost: payload.isHost });
+      })
+      .on('broadcast', { event: 'progress' }, ({ payload }) => {
+        if (!payload?.id) return;
+        upsertPeer(payload.id, { progress: payload });
+        handlersRef.current.onProgress?.(payload, payload.id);
+      })
+      .on('broadcast', { event: 'gameState' }, ({ payload }) => {
+        handlersRef.current.onGameState?.(payload);
+      })
+      .on('broadcast', { event: 'roundResult' }, ({ payload }) => {
+        handlersRef.current.onRoundResult?.(payload);
+      })
+      .on('broadcast', { event: 'chat' }, ({ payload }) => {
+        handlersRef.current.onChat?.(payload);
+      })
+      .on('presence', { event: 'sync' }, () => {
+        // Presence state is the reliable source of who's here and their name
+        // (from track()), with no broadcast timing gap. Progress fields already
+        // merged from broadcasts are preserved.
+        const state = channel.presenceState();
+        const map = peerMapRef.current;
+        const presentIds = new Set();
+        for (const key of Object.keys(state)) {
+          const meta = state[key]?.[0] ?? {};
+          const id = meta.id ?? key;
+          presentIds.add(id);
+          if (id === selfId) continue;
+          map[id] = { ...map[id], id, peerId: id, name: meta.name, isHost: meta.isHost };
+        }
+        for (const id of Object.keys(map)) {
+          if (!presentIds.has(id)) delete map[id];
+        }
+        setConnected([...presentIds].filter((id) => id !== selfId).length);
+        commitPeers();
+      })
+      .on('presence', { event: 'join' }, () => {
+        // A newcomer needs our identity right away.
+        announce();
+      });
 
-    room.onPeerJoin((peerId) => {
-      setConnected((c) => c + 1);
-      announce();
+    channel.subscribe(async (status) => {
+      if (status === 'SUBSCRIBED') {
+        const { playerName: nm, isHost: host } = selfRef.current;
+        await channel.track({ id: selfId, name: nm, isHost: host });
+        announce();
+      }
     });
 
-    room.onPeerLeave((peerId) => {
-      setConnected((c) => Math.max(0, c - 1));
-      delete peerMap[peerId];
-      setPeers({ ...peerMap });
-    });
-
-    getPresence((data, peerId) => {
-      if (!data?.id) return;
-      peerMap[peerId] = { ...peerMap[peerId], peerId, ...data };
-      setPeers({ ...peerMap });
-    });
-
-    getProgress((data, peerId) => {
-      if (!data?.id) return;
-      peerMap[peerId] = { ...peerMap[peerId], peerId, progress: data };
-      setPeers({ ...peerMap });
-      handlersRef.current.onProgress?.(data, peerId);
-    });
-
-    getGameState((data) => {
-      handlersRef.current.onGameState?.(data);
-    });
-
-    getRoundResult((data) => {
-      handlersRef.current.onRoundResult?.(data);
-    });
-
-    getChat((data) => {
-      handlersRef.current.onChat?.(data);
-    });
-
-    announce();
     const interval = setInterval(announce, 8000);
-
-    roomRef.current._actions = {
-      sendPresence,
-      sendProgress,
-      sendGameState,
-      sendRoundResult,
-      sendChat,
-    };
 
     return () => {
       clearInterval(interval);
-      room.leave();
-      roomRef.current = null;
+      supabase.removeChannel(channel);
+      channelRef.current = null;
     };
-  }, [roomId, selfId, playerName, isHost]);
+  }, [roomId, selfId]);
 
   const broadcast = useCallback((action, data) => {
-    roomRef.current?._actions?.[action]?.(data);
+    const event = EVENT_BY_ACTION[action];
+    if (!event) return;
+    channelRef.current?.send({ type: 'broadcast', event, payload: data });
   }, []);
 
   return { peers, connected, broadcast, registerHandler };

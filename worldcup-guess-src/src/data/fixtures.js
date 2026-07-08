@@ -2403,13 +2403,36 @@ export const r16Confirmed = [
   { id: 'm-96', team_home: 'Switzerland', team_away: 'Colombia', team_home_code: 'CH', team_away_code: 'CO', kickoff_time: '2026-07-07T20:00:00.000Z', local_time: '13:00 UTC-7' },
 ];
 
+export const qfConfirmed = [
+  { id: 'm-97', team_home: 'France', team_away: 'Morocco', team_home_code: 'FR', team_away_code: 'MA', kickoff_time: '2026-07-09T20:00:00.000Z', local_time: '16:00 UTC-4' },
+  { id: 'm-98', team_home: 'Spain', team_away: 'Belgium', team_home_code: 'ES', team_away_code: 'BE', kickoff_time: '2026-07-10T19:00:00.000Z', local_time: '12:00 UTC-7' },
+  { id: 'm-99', team_home: 'Norway', team_away: 'England', team_home_code: 'NO', team_away_code: 'GB-ENG', kickoff_time: '2026-07-11T21:00:00.000Z', local_time: '17:00 UTC-4' },
+  { id: 'm-100', team_home: 'Argentina', team_away: 'Switzerland', team_home_code: 'AR', team_away_code: 'CH', kickoff_time: '2026-07-12T01:00:00.000Z', local_time: '20:00 UTC-5' },
+];
+
+export const futureGateLabels = [
+  { id: 'm-101', team_home: 'France / Morocco', team_away: 'Spain / Belgium' },
+  { id: 'm-102', team_home: 'Norway / England', team_away: 'Argentina / Switzerland' },
+  { id: 'm-103', team_home: 'Loser (SF France/Morocco–Spain/Belgium)', team_away: 'Loser (SF Norway/England–Argentina/Switzerland)' },
+  { id: 'm-104', team_home: 'Winner (SF France/Morocco–Spain/Belgium)', team_away: 'Winner (SF Norway/England–Argentina/Switzerland)' },
+];
+
 const knockoutById = Object.fromEntries(
-  [...r32Confirmed, ...r16Confirmed].map((entry) => [entry.id, entry]),
+  [...r32Confirmed, ...r16Confirmed, ...qfConfirmed].map((entry) => [entry.id, entry]),
+);
+
+const gateLabelById = Object.fromEntries(
+  futureGateLabels.map((entry) => [entry.id, entry]),
 );
 
 for (const match of seedMatches) {
   const override = knockoutById[match.id];
   if (override) {
     Object.assign(match, override, { sides_confirmed: true });
+    continue;
+  }
+  const gate = gateLabelById[match.id];
+  if (gate) {
+    Object.assign(match, gate, { sides_confirmed: false });
   }
 }

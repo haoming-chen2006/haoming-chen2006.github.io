@@ -592,7 +592,7 @@ export default function App() {
 
 function GuessView({ matches, guesses, onSaveGuess, playerArtifact, onPlayerArtifact, teams, players, t, lang, now, distributions, onSelectUser }) {
   const groupMatches = matches
-    .filter((match) => match.round === 'r32' || match.round === 'r16')
+    .filter((match) => match.round === 'qf')
     .sort((a, b) => new Date(a.kickoff_time) - new Date(b.kickoff_time));
   const listRef = useRef(null);
   const [showJump, setShowJump] = useState(false);
@@ -918,7 +918,10 @@ function PlayerSearchSelect({ players, value, onChange, t, disabled = false }) {
 }
 
 function ScheduleView({ matches, guesses, bracketPicks, onBracketPicks, t, lang, now }) {
-  const knockout = useMemo(() => matches.filter((match) => match.round !== 'group'), [matches]);
+  const knockout = useMemo(
+    () => matches.filter((match) => match.round !== 'group' && match.round !== 'r32'),
+    [matches],
+  );
   const populatedKnockout = useMemo(
     () =>
       knockout.map((match) => ({
@@ -943,7 +946,7 @@ function ScheduleView({ matches, guesses, bracketPicks, onBracketPicks, t, lang,
       </div>
 
       <div className="bracket-lane">
-        {['r32', 'r16', 'qf', 'sf', 'third', 'final'].map((round) => (
+        {['r16', 'qf', 'sf', 'third', 'final'].map((round) => (
           <div className="bracket-round" key={round}>
             <h2>{roundLabel(round, t)}</h2>
             {populatedKnockout.filter((match) => match.round === round).map((match) => (
@@ -1080,7 +1083,7 @@ function KnockoutPredictor({ matches, groupRankings, picks, onPicks, t, lang }) 
     ctx.font = '24px system-ui, sans-serif';
     ctx.fillText(`Champion: ${finalPick || 'TBD'}`, 64, 124);
 
-    const roundsToDraw = ['r32', 'r16', 'qf', 'sf', 'third', 'final'];
+    const roundsToDraw = ['r16', 'qf', 'sf', 'third', 'final'];
     const colWidth = 210;
     roundsToDraw.forEach((round, column) => {
       const roundMatches = orderedMatches.filter((match) => match.round === round);
@@ -1214,7 +1217,7 @@ function LeaderboardView({ guesses, matches, rows, session, t, onSelectUser }) {
         <table>
           <thead><tr><th>{t('round')}</th><th>{t('outcome')}</th><th>{t('exact')}</th></tr></thead>
           <tbody>
-            {['group', 'r32', 'r16', 'qf', 'sf', 'final'].map((round) => (
+            {['group', 'r16', 'qf', 'sf', 'final'].map((round) => (
               <tr key={round}>
                 <td>{roundLabel(round, t)}</td>
                 <td>{rounds[round].outcome}</td>

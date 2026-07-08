@@ -1,4 +1,4 @@
-const WIKI_HOSTS = { en: 'en.wikipedia.org', zh: 'zh.wikipedia.org' };
+const WIKI_HOSTS = { en: 'en.wikipedia.org', zh: 'zh.wikipedia.org', 'zh-tw': 'zh.wikipedia.org' };
 
 const SKIP_NS = [
   'Special:', 'File:', 'Help:', 'Wikipedia:', 'Template:', 'Category:',
@@ -27,7 +27,7 @@ export function titlesMatch(a, b) {
 }
 
 function isWikiHost(hostname, lang) {
-  const prefix = lang === 'zh' ? 'zh' : 'en';
+  const prefix = [ 'zh', 'zh-tw' ].includes(lang) ? 'zh' : 'en';
   return hostname === `${prefix}.wikipedia.org` || hostname === `${prefix}.m.wikipedia.org`;
 }
 
@@ -67,6 +67,7 @@ export async function resolveTitle(lang, title) {
     action: 'query',
     titles: title,
     redirects: '1',
+    variant: lang === 'zh' ? 'zh-cn' : (lang === 'zh-tw' ? 'zh-tw' : undefined),
     format: 'json',
     formatversion: '2',
     origin: '*',
@@ -84,6 +85,7 @@ export async function getPageId(lang, title) {
     action: 'query',
     titles: title,
     redirects: '1',
+    variant: lang === 'zh' ? 'zh-cn' : (lang === 'zh-tw' ? 'zh-tw' : undefined),
     format: 'json',
     formatversion: '2',
     origin: '*',
@@ -137,6 +139,7 @@ export async function fetchArticle(lang, title) {
     formatversion: '2',
     origin: '*',
     redirects: '1',
+    variant: lang === 'zh' ? 'zh-cn' : (lang === 'zh-tw' ? 'zh-tw' : undefined),
   });
   const data = await wikiGet(lang, params);
   if (data.error) throw new Error(data.error.info ?? 'Article not found');

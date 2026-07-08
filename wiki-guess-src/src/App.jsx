@@ -215,7 +215,8 @@ export default function App() {
 
   const toggleLang = async () => {
     if (screen === 'playing') return;
-    const next = lang === 'en' ? 'zh' : 'en';
+    const langCycle = { en: 'zh', zh: 'zh-tw', 'zh-tw': 'en' };
+    const next = langCycle[lang];
     setLangSwitching(true);
     try {
       if (screen === 'playing' && currentTitle) {
@@ -224,7 +225,7 @@ export default function App() {
       }
       setLang(next);
       setLangState(next);
-      document.documentElement.lang = next === 'zh' ? 'zh-Hans' : 'en';
+      document.documentElement.lang = next === 'zh' ? 'zh-Hans' : (next === 'zh-tw' ? 'zh-Hant' : 'en');
     } finally {
       setLangSwitching(false);
     }

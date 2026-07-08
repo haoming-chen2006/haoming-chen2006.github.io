@@ -99,6 +99,23 @@ function ArticleView({ uiLang, wikiLang, title, onNavigate, disabled }) {
     return () => el.removeEventListener('click', onClick);
   }, [wikiLang, onNavigate, disabled, safeHtml]);
 
+  // Anti-cheat: browsers won't let JS reliably block Cmd/Ctrl+F, so instead we
+  // make the article un-searchable. Injecting a zero-width space between every
+  // character means find-in-page has no contiguous run of text to match, while
+  // the text still reads normally and links still work (clicks use href).
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+    const nodes = [];
+    while (walker.nextNode()) nodes.push(walker.currentNode);
+    for (const node of nodes) {
+      const text = node.nodeValue;
+      if (!text || !text.trim()) continue;
+      node.nodeValue = Array.from(text).join('\u200B');
+    }
+  }, [safeHtml]);
+
   if (loading) return <div className="article-status">{t(uiLang, 'loading')}</div>;
   if (error) return <div className="article-status error">{t(uiLang, 'loadError')}</div>;
 

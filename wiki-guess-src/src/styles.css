@@ -222,7 +222,7 @@ h1 {
 }
 
 .game-main,
-.sidebar,
+aside.sidebar,
 .article-view {
   border: 1px solid rgba(26, 31, 46, 0.1);
   border-radius: 16px;
@@ -235,13 +235,13 @@ h1 {
   min-height: 70vh;
 }
 
-.sidebar {
+aside.sidebar {
   padding: 16px;
   position: sticky;
   top: 18px;
 }
 
-.sidebar h3 {
+aside.sidebar h3 {
   margin: 0 0 12px;
 }
 
@@ -346,6 +346,51 @@ h1 {
   padding: 6px 8px;
 }
 
+/*
+ * Wikipedia articles ship floated infoboxes, vertical navigation "sidebars",
+ * and navboxes that otherwise cover the passage. Un-float them, keep them in
+ * normal flow, and cap their width so the reading column stays usable.
+ */
+.article-body .infobox,
+.article-body table.infobox,
+.article-body .sidebar,
+.article-body .vertical-navbox,
+.article-body .navbox,
+.article-body .thumb,
+.article-body figure,
+.article-body .mw-halign-right,
+.article-body .mw-halign-left,
+.article-body .floatright,
+.article-body .floatleft {
+  float: none !important;
+  position: static !important;
+  clear: both !important;
+  width: auto !important;
+  max-width: 100% !important;
+  margin: 12px auto !important;
+  box-shadow: none !important;
+}
+
+.article-body .infobox,
+.article-body table.infobox {
+  max-width: 360px !important;
+}
+
+/* Strip Wikipedia chrome that adds noise but no navigable value. */
+.article-body .mw-editsection,
+.article-body .navbox,
+.article-body .metadata,
+.article-body .noprint,
+.article-body #toc,
+.article-body .toc {
+  display: none !important;
+}
+
+.article-body {
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
 .path-trail {
   margin-bottom: 14px;
   padding: 10px 12px;
@@ -438,7 +483,7 @@ h1 {
     grid-template-columns: 1fr;
   }
 
-  .sidebar {
+  aside.sidebar {
     position: static;
     order: -1;
   }

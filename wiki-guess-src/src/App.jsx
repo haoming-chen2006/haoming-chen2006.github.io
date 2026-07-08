@@ -240,6 +240,24 @@ export default function App() {
     document.documentElement.lang = lang === 'zh' ? 'zh-Hans' : 'en';
   }, [lang]);
 
+  // Block find-in-page while racing so players can't search the article for
+  // the target — they must navigate by clicking links.
+  useEffect(() => {
+    if (screen !== 'playing') return undefined;
+    const blockFind = (e) => {
+      const key = e.key?.toLowerCase();
+      if ((e.ctrlKey || e.metaKey) && (key === 'f' || key === 'g')) {
+        e.preventDefault();
+        e.stopPropagation();
+      } else if (key === '/' && e.target === document.body) {
+        // Firefox quick-find
+        e.preventDefault();
+      }
+    };
+    window.addEventListener('keydown', blockFind, true);
+    return () => window.removeEventListener('keydown', blockFind, true);
+  }, [screen]);
+
   useEffect(() => {
     if (!currentRound) return undefined;
     let cancelled = false;

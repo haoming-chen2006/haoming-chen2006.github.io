@@ -640,7 +640,7 @@ export default function App() {
             <p className="subtitle">{t(lang, 'subtitle')}</p>
           </div>
           <button type="button" className="lang-toggle" onClick={toggleLang} disabled={langSwitching} aria-label={t(lang, 'langToggleAria')}>
-            {langSwitching ? '…' : t(lang, 'langToggle')}
+            🌐 {langSwitching ? '…' : t(lang, 'langToggle')}
           </button>
         </header>
 
@@ -698,8 +698,8 @@ export default function App() {
           </div>
           <div className="topbar-actions">
             <span className="status-pill">{t(lang, 'connected', { n: connected + 1 })}</span>
-            <button type="button" className="lang-toggle" onClick={toggleLang} disabled={langSwitching}>
-            {langSwitching ? '…' : t(lang, 'langToggle')}
+            <button type="button" className="lang-toggle" onClick={toggleLang} disabled={langSwitching || screen === 'playing'} title={screen === 'playing' ? t(lang, 'langLocked') : undefined}>
+            🌐 {langSwitching ? '…' : t(lang, 'langToggle')}
           </button>
           </div>
         </header>
@@ -746,7 +746,7 @@ export default function App() {
         <header className="topbar compact">
           <h1>{isFinal ? t(lang, 'gameOver') : t(lang, 'roundOver')}</h1>
           <button type="button" className="lang-toggle" onClick={toggleLang} disabled={langSwitching}>
-            {langSwitching ? '…' : t(lang, 'langToggle')}
+            🌐 {langSwitching ? '…' : t(lang, 'langToggle')}
           </button>
         </header>
         <main className="results-card">
@@ -813,7 +813,7 @@ export default function App() {
         <div className="topbar-actions">
           <span className={`timer ${timeLeft < 60000 ? 'urgent' : ''}`}>{t(lang, 'timeLeft', timeFmt)}</span>
           <button type="button" className="lang-toggle" onClick={toggleLang} disabled={langSwitching}>
-            {langSwitching ? '…' : t(lang, 'langToggle')}
+            🌐 {langSwitching ? '…' : t(lang, 'langToggle')}
           </button>
           {!finished && !gaveUp ? (
             <button

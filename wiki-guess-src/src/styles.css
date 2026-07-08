@@ -86,6 +86,16 @@ h1 {
   font-weight: 700;
 }
 
+.lang-toggle {
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.lang-toggle:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 .status-pill {
   color: #1d4ed8;
   background: #eff6ff;

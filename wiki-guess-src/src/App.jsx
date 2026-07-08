@@ -17,11 +17,39 @@ import {
   rewriteArticleHtml,
   titleFromHref,
   titlesMatchOnWiki,
-  translateTitle,
 } from './utils/wikipedia';
 
 const NAME_KEY = 'wiki-guess-name';
 const SELF_ID_KEY = 'wiki-guess-self-id';
+
+// Bump on every deploy so it's obvious the latest build reached the site.
+const APP_VERSION = 'v2.0';
+
+const LANG_OPTIONS = [
+  { code: 'en', label: 'English' },
+  { code: 'zh', label: '简体中文' },
+  { code: 'zh-tw', label: '繁體中文' },
+];
+
+function LangSelector({ lang, onSelect, disabled, lockedLabel }) {
+  return (
+    <div className="lang-selector" role="group" aria-label="Language">
+      {LANG_OPTIONS.map((o) => (
+        <button
+          key={o.code}
+          type="button"
+          className={`lang-option ${lang === o.code ? 'active' : ''}`}
+          onClick={() => onSelect(o.code)}
+          disabled={disabled}
+          title={disabled && lockedLabel ? lockedLabel : undefined}
+          aria-pressed={lang === o.code}
+        >
+          {o.label}
+        </button>
+      ))}
+    </div>
+  );
+}
 
 function getSelfId() {
   let id = localStorage.getItem(SELF_ID_KEY);
@@ -211,7 +239,6 @@ export default function App() {
   const [roundResult, setRoundResult] = useState(null);
   const [roundStartAt, setRoundStartAt] = useState(null);
   const [resolvedRound, setResolvedRound] = useState({ start: '', end: '' });
-  const [langSwitching, setLangSwitching] = useState(false);
   const [notice, setNotice] = useState('');
 
   const roundTimerRef = useRef(null);
@@ -239,23 +266,15 @@ export default function App() {
     elapsedMs,
   }), [selfId, name, currentTitle, hops, path, finished, gaveUp, elapsedMs]);
 
-  const toggleLang = async () => {
+  // Pick a language directly (no more confusing cycle). Locked mid-round so a
+  // switch can't desync the race.
+  const selectLang = useCallback((target) => {
     if (screen === 'playing') return;
-    const langCycle = { en: 'zh', zh: 'zh-tw', 'zh-tw': 'en' };
-    const next = langCycle[lang];
-    setLangSwitching(true);
-    try {
-      if (screen === 'playing' && currentTitle) {
-        const translated = await translateTitle(wikiLang, next, currentTitle);
-        setCurrentTitle(translated);
-      }
-      setLang(next);
-      setLangState(next);
-      document.documentElement.lang = next === 'zh' ? 'zh-Hans' : (next === 'zh-tw' ? 'zh-Hant' : 'en');
-    } finally {
-      setLangSwitching(false);
-    }
-  };
+    if (target === lang) return;
+    setLang(target);
+    setLangState(target);
+    document.documentElement.lang = target === 'zh' ? 'zh-Hans' : (target === 'zh-tw' ? 'zh-Hant' : 'en');
+  }, [screen, lang]);
 
   useEffect(() => {
     document.documentElement.lang = lang === 'zh' ? 'zh-Hans' : 'en';
@@ -639,9 +658,7 @@ export default function App() {
             <h1>{t(lang, 'title')}</h1>
             <p className="subtitle">{t(lang, 'subtitle')}</p>
           </div>
-          <button type="button" className="lang-toggle" onClick={toggleLang} disabled={langSwitching} aria-label={t(lang, 'langToggleAria')}>
-            🌐 {langSwitching ? '…' : t(lang, 'langToggle')}
-          </button>
+          <LangSelector lang={lang} onSelect={selectLang} />
         </header>
 
         <main className="lobby-card">
@@ -683,6 +700,7 @@ export default function App() {
           </div>
 
           <p className="hint">{t(lang, 'roundDuration')} · {t(lang, 'totalRounds')}</p>
+          <p className="app-version">Wiki Guess {APP_VERSION}</p>
         </main>
       </div>
     );
@@ -698,9 +716,7 @@ export default function App() {
           </div>
           <div className="topbar-actions">
             <span className="status-pill">{t(lang, 'connected', { n: connected + 1 })}</span>
-            <button type="button" className="lang-toggle" onClick={toggleLang} disabled={langSwitching || screen === 'playing'} title={screen === 'playing' ? t(lang, 'langLocked') : undefined}>
-            🌐 {langSwitching ? '…' : t(lang, 'langToggle')}
-          </button>
+            <LangSelector lang={lang} onSelect={selectLang} />
           </div>
         </header>
 
@@ -745,9 +761,7 @@ export default function App() {
       <div className="app-shell">
         <header className="topbar compact">
           <h1>{isFinal ? t(lang, 'gameOver') : t(lang, 'roundOver')}</h1>
-          <button type="button" className="lang-toggle" onClick={toggleLang} disabled={langSwitching}>
-            🌐 {langSwitching ? '…' : t(lang, 'langToggle')}
-          </button>
+          <LangSelector lang={lang} onSelect={selectLang} disabled={screen === 'playing'} lockedLabel={t(lang, 'langLocked')} />
         </header>
         <main className="results-card">
           {roundResult?.sorted?.length ? (
@@ -812,9 +826,7 @@ export default function App() {
         </div>
         <div className="topbar-actions">
           <span className={`timer ${timeLeft < 60000 ? 'urgent' : ''}`}>{t(lang, 'timeLeft', timeFmt)}</span>
-          <button type="button" className="lang-toggle" onClick={toggleLang} disabled={langSwitching}>
-            🌐 {langSwitching ? '…' : t(lang, 'langToggle')}
-          </button>
+          <LangSelector lang={lang} onSelect={selectLang} disabled={screen === 'playing'} lockedLabel={t(lang, 'langLocked')} />
           {!finished && !gaveUp ? (
             <button
               type="button"

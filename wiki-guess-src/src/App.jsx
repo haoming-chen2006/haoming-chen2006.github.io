@@ -122,16 +122,19 @@ function PlayerSidebar({ lang, selfId, playerName, isHost, peers, myProgress, to
         list.push({ id: p.id, name: p.name, isHost: p.isHost, progress: p.progress, isSelf: false });
       }
     });
-    return list;
-  }, [peers, selfId, playerName, isHost, myProgress]);
+    // Live scoreboard: highest running score first, ties keep self/join order.
+    return list
+      .map((p) => ({ ...p, pts: totalScores[p.id] ?? 0 }))
+      .sort((a, b) => b.pts - a.pts);
+  }, [peers, selfId, playerName, isHost, myProgress, totalScores]);
 
   return (
     <aside className="sidebar">
-      <h3>{t(lang, 'players')}</h3>
+      <h3>{t(lang, 'scoreboard')}</h3>
       <ul className="player-list">
-        {allPlayers.map((p) => {
+        {allPlayers.map((p, idx) => {
           const prog = p.progress ?? {};
-          const pts = totalScores[p.id] ?? 0;
+          const pts = p.pts;
           let status = t(lang, 'waiting');
           if (prog.finished) status = t(lang, 'finished');
           else if (prog.gaveUp) status = t(lang, 'gaveUp');
@@ -141,6 +144,7 @@ function PlayerSidebar({ lang, selfId, playerName, isHost, peers, myProgress, to
             <li key={p.id} className={`player-card ${p.isSelf ? 'self' : ''} ${prog.finished ? 'done' : ''}`}>
               <div className="player-top">
                 <span className="player-name">
+                  <span className="player-rank">{idx + 1}</span>
                   {p.isSelf ? t(lang, 'you') : p.name}
                   {p.isHost ? <span className="host-badge">{t(lang, 'host')}</span> : null}
                 </span>
@@ -208,10 +212,11 @@ export default function App() {
     name,
     current: currentTitle,
     hops,
+    path,
     finished,
     gaveUp,
     elapsedMs,
-  }), [selfId, name, currentTitle, hops, finished, gaveUp, elapsedMs]);
+  }), [selfId, name, currentTitle, hops, path, finished, gaveUp, elapsedMs]);
 
   const toggleLang = async () => {
     if (screen === 'playing') return;
@@ -361,8 +366,8 @@ export default function App() {
     });
   }, [registerHandler, startRound, rounds]);
 
-  const finishersRef = useRef({ finished, elapsedMs, gaveUp, hops, peers, selfId, name });
-  finishersRef.current = { finished, elapsedMs, gaveUp, hops, peers, selfId, name };
+  const finishersRef = useRef({ finished, elapsedMs, gaveUp, hops, path, peers, selfId, name });
+  finishersRef.current = { finished, elapsedMs, gaveUp, hops, path, peers, selfId, name };
 
   useEffect(() => {
     if (screen !== 'playing' || !roundStartAt) return undefined;
@@ -375,12 +380,12 @@ export default function App() {
         const f = finishersRef.current;
         const list = [];
         if (f.finished && f.elapsedMs != null) {
-          list.push({ id: f.selfId, name: f.name, elapsedMs: f.elapsedMs, hops: f.hops });
+          list.push({ id: f.selfId, name: f.name, elapsedMs: f.elapsedMs, hops: f.hops, path: f.path });
         }
         Object.values(f.peers).forEach((p) => {
           const prog = p.progress;
           if (prog?.finished && prog.elapsedMs != null) {
-            list.push({ id: p.id, name: p.name, elapsedMs: prog.elapsedMs, hops: prog.hops });
+            list.push({ id: p.id, name: p.name, elapsedMs: prog.elapsedMs, hops: prog.hops, path: prog.path });
           }
         });
         if (isSoloSession || isHost) {
@@ -413,7 +418,7 @@ export default function App() {
 
     const list = [];
     if (finished && elapsedMs != null) {
-      list.push({ id: selfId, name, elapsedMs, hops });
+      list.push({ id: selfId, name, elapsedMs, hops, path });
     }
     peerList.forEach((p) => {
       if (p.progress?.finished && p.progress.elapsedMs != null) {
@@ -422,12 +427,13 @@ export default function App() {
           name: p.name,
           elapsedMs: p.progress.elapsedMs,
           hops: p.progress.hops,
+          path: p.progress.path,
         });
       }
     });
     finishRound(list);
   }, [
-    screen, isHost, isSoloSession, roomId, finished, gaveUp, elapsedMs, hops,
+    screen, isHost, isSoloSession, roomId, finished, gaveUp, elapsedMs, hops, path,
     peers, selfId, name, roundResult, finishRound,
   ]);
 
@@ -492,13 +498,14 @@ export default function App() {
     const reached = await titlesMatchOnWiki(wikiLang, nextTitle, currentRound.end);
     if (reached) {
       const elapsed = Date.now() - roundStartAt;
+      const finalPath = [...path, nextTitle];
       setFinished(true);
       setElapsedMs(elapsed);
       finishBroadcastRef.current = true;
       broadcast('sendProgress', {
-        id: selfId, name, current: nextTitle, hops: hops + 1, finished: true, gaveUp: false, elapsedMs: elapsed,
+        id: selfId, name, current: nextTitle, hops: hops + 1, path: finalPath, finished: true, gaveUp: false, elapsedMs: elapsed,
       });
-      const finisher = { id: selfId, name, elapsedMs: elapsed, hops: hops + 1 };
+      const finisher = { id: selfId, name, elapsedMs: elapsed, hops: hops + 1, path: finalPath };
       if (isSoloSession) {
         finishRound([finisher]);
       } else if (isHost) {
@@ -511,6 +518,7 @@ export default function App() {
               name: p.name,
               elapsedMs: p.progress.elapsedMs,
               hops: p.progress.hops,
+              path: p.progress.path,
             })),
         ]), 600);
       }
@@ -675,11 +683,28 @@ export default function App() {
         </header>
         <main className="results-card">
           {roundResult?.sorted?.length ? (
-            <p className="round-winner">
-              {t(lang, 'roundWinner', { name: roundResult.sorted[0].name })}
-            </p>
+            <>
+              <p className="round-winner">
+                {t(lang, 'roundWinner', { name: roundResult.sorted[0].name })}
+              </p>
+              {roundResult.sorted[0].path?.length ? (
+                <div className="winner-path">
+                  <p className="winner-path-label">
+                    {t(lang, 'winnerPath', {
+                      name: roundResult.sorted[0].name,
+                      hops: roundResult.sorted[0].hops ?? (roundResult.sorted[0].path.length - 1),
+                    })}
+                  </p>
+                  <ol className="winner-path-trail">
+                    {roundResult.sorted[0].path.map((step, i) => (
+                      <li key={`${step}-${i}`}>{displayTitle(step)}</li>
+                    ))}
+                  </ol>
+                </div>
+              ) : null}
+            </>
           ) : (
-            <p>{t(lang, 'nobodyFinished')}</p>
+            <p className="nobody-finished">{t(lang, 'nobodyFinished')}</p>
           )}
           <h3>{isFinal ? t(lang, 'finalScores') : t(lang, 'players')}</h3>
           <ol className="score-list">

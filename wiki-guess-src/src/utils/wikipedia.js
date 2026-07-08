@@ -129,26 +129,37 @@ export async function titlesMatchOnWiki(wikiLang, titleA, titleB) {
   return Boolean(idA && idB && idA === idB);
 }
 
+// The wiki-language code used for langlinks: zh and zh-tw share one wiki.
+function wikiLangCode(lang) {
+  return lang === 'zh' || lang === 'zh-tw' ? 'zh' : 'en';
+}
+
+// Translate an article title across wikis (e.g. en <-> zh). Within one wiki
+// (en<->en, zh<->zh-tw) the title is unchanged, we just resolve redirects.
 export async function translateTitle(fromLang, toLang, title) {
-  if (fromLang === toLang) return resolveTitle(fromLang, title) ?? title;
+  if (wikiHost(fromLang) === wikiHost(toLang)) {
+    return (await resolveTitle(toLang, title)) ?? title;
+  }
 
   const resolved = await resolveTitle(fromLang, title);
   if (!resolved) return title;
 
+  const toCode = wikiLangCode(toLang);
   const params = new URLSearchParams({
     action: 'query',
     titles: resolved,
     prop: 'langlinks',
-    lllang: toLang,
+    lllang: toCode,
     format: 'json',
     formatversion: '2',
     origin: '*',
   });
   const data = await wikiGet(fromLang, params);
   const page = data.query?.pages?.[0];
-  const link = page?.langlinks?.find((l) => l.lang === toLang);
+  const link = page?.langlinks?.find((l) => l.lang === toCode);
   if (link?.title) return link.title;
 
+  // No cross-wiki equivalent: fall back to the original (may still redirect).
   return resolved;
 }
 

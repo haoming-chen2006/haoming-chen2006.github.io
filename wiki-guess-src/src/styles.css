@@ -134,6 +134,17 @@ h1 {
   font-weight: 600;
 }
 
+.hard-badge {
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #fee2e2;
+  color: #b91c1c;
+  font-size: 0.72rem;
+  font-weight: 800;
+  vertical-align: middle;
+}
+
 .status-pill {
   color: #1d4ed8;
   background: #eff6ff;

@@ -13,17 +13,17 @@ import {
 } from './utils/gameLogic';
 import {
   fetchArticle,
-  resolveTitle,
   rewriteArticleHtml,
   titleFromHref,
   titlesMatchOnWiki,
+  translateTitle,
 } from './utils/wikipedia';
 
 const NAME_KEY = 'wiki-guess-name';
 const SELF_ID_KEY = 'wiki-guess-self-id';
 
 // Bump on every deploy so it's obvious the latest build reached the site.
-const APP_VERSION = 'v2.0';
+const APP_VERSION = 'v3.09';
 
 const LANG_OPTIONS = [
   { code: 'en', label: 'English' },
@@ -88,6 +88,8 @@ function ArticleView({ uiLang, wikiLang, title, onNavigate, onLoadError, disable
     let cancelled = false;
     setLoading(true);
     setError('');
+    // Empty title = we're mid-translation; just show the loading state.
+    if (!title) return () => { cancelled = true; };
     fetchArticle(wikiLang, title)
       .then((data) => {
         if (cancelled) return;
@@ -252,8 +254,18 @@ export default function App() {
   );
 
   const currentRound = rounds[roundIndex];
-  const wikiLang = gameLang || lang;
+  // Each player views/navigates in their OWN language (activeWikiLang below);
+  // the round's canonical titles stay in gameLang and are translated per player.
   const isSoloSession = !roomId || connected === 0;
+
+  // Refs let async round/translation code read the latest language without
+  // being recreated (and desynced) on every change.
+  const langRef = useRef(lang);
+  langRef.current = lang;
+  const gameLangRef = useRef(gameLang);
+  gameLangRef.current = gameLang;
+  const roundTokenRef = useRef(0);
+  const [translating, setTranslating] = useState(false);
 
   const myProgress = useMemo(() => ({
     id: selfId,
@@ -266,15 +278,37 @@ export default function App() {
     elapsedMs,
   }), [selfId, name, currentTitle, hops, path, finished, gaveUp, elapsedMs]);
 
-  // Pick a language directly (no more confusing cycle). Locked mid-round so a
-  // switch can't desync the race.
-  const selectLang = useCallback((target) => {
-    if (screen === 'playing') return;
+  // Pick a language directly (no confusing cycle). Works mid-round too: each
+  // player reads/races in their own language while chasing the same target.
+  const selectLang = useCallback(async (target) => {
     if (target === lang) return;
+    const from = lang;
     setLang(target);
     setLangState(target);
     document.documentElement.lang = target === 'zh' ? 'zh-Hans' : (target === 'zh-tw' ? 'zh-Hant' : 'en');
-  }, [screen, lang]);
+
+    if (screen !== 'playing' || !currentTitle) return;
+
+    // Translate what the player is looking at into the new language. Blank the
+    // title first so the article view doesn't try to load the old-language
+    // title against the new wiki (which would trip the auto-revert).
+    const token = roundTokenRef.current;
+    setTranslating(true);
+    setCurrentTitle('');
+    try {
+      const translatedCurrent = await translateTitle(from, target, currentTitle)
+        .then((r) => r || currentTitle)
+        .catch(() => currentTitle);
+      const translatedPath = await Promise.all(
+        path.map((p) => translateTitle(from, target, p).then((r) => r || p).catch(() => p)),
+      );
+      if (roundTokenRef.current !== token) return; // a new round started meanwhile
+      setCurrentTitle(translatedCurrent);
+      setPath(translatedPath);
+    } finally {
+      setTranslating(false);
+    }
+  }, [lang, screen, currentTitle, path]);
 
   useEffect(() => {
     document.documentElement.lang = lang === 'zh' ? 'zh-Hans' : 'en';
@@ -301,9 +335,10 @@ export default function App() {
   useEffect(() => {
     if (!currentRound) return undefined;
     let cancelled = false;
+    const src = currentRound.srcLang || gameLang || lang;
     Promise.all([
-      resolveTitle(wikiLang, currentRound.start),
-      resolveTitle(wikiLang, currentRound.end),
+      translateTitle(src, lang, currentRound.start),
+      translateTitle(src, lang, currentRound.end),
     ]).then(([start, end]) => {
       if (cancelled) return;
       setResolvedRound({
@@ -312,7 +347,7 @@ export default function App() {
       });
     });
     return () => { cancelled = true; };
-  }, [currentRound, wikiLang]);
+  }, [currentRound, lang, gameLang]);
 
   const inviteUrl = roomId
     ? `${window.location.origin}${window.location.pathname}?room=${roomId}`
@@ -325,13 +360,17 @@ export default function App() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const startRound = useCallback((index, roundList, startAt) => {
+  const startRound = useCallback(async (index, roundList, startAt, srcLang) => {
     const round = roundList[index];
     if (!round) return;
+    const token = ++roundTokenRef.current;
+    // The round may pin its own source language (the hard final round is always
+    // stored in English); otherwise use the game's language.
+    const src = round.srcLang || srcLang || gameLangRef.current || langRef.current;
+    const view = langRef.current;
+
     setRoundIndex(index);
-    setCurrentTitle(round.start);
     setHops(0);
-    setPath([round.start]);
     setFinished(false);
     setGaveUp(false);
     setElapsedMs(null);
@@ -340,6 +379,28 @@ export default function App() {
     setRoundStartAt(startAt);
     setScreen('playing');
     finishBroadcastRef.current = false;
+
+    if (!src || src === view) {
+      setCurrentTitle(round.start);
+      setPath([round.start]);
+      return;
+    }
+
+    // Player's language differs from the round's: translate the start title.
+    // Blank first so the article view shows a loading state instead of trying
+    // to load the wrong-language title.
+    setCurrentTitle('');
+    setPath([]);
+    try {
+      const translated = (await translateTitle(src, view, round.start)) || round.start;
+      if (roundTokenRef.current !== token) return;
+      setCurrentTitle(translated);
+      setPath([translated]);
+    } catch {
+      if (roundTokenRef.current !== token) return;
+      setCurrentTitle(round.start);
+      setPath([round.start]);
+    }
   }, []);
 
   const beginGame = useCallback((nextGameLang) => {
@@ -352,7 +413,7 @@ export default function App() {
     if (isHost) {
       broadcast('sendGameState', { type: 'start', rounds: newRounds, startAt, lang: nextGameLang });
     }
-    startRound(0, newRounds, startAt);
+    startRound(0, newRounds, startAt, nextGameLang);
   }, [isHost, broadcast, startRound]);
 
   const finishRound = useCallback((localFinishers) => {
@@ -381,7 +442,7 @@ export default function App() {
     if (isHost && roomId) {
       broadcast('sendGameState', { type: 'round', roundIndex: next, rounds, startAt });
     }
-    startRound(next, rounds, startAt);
+    startRound(next, rounds, startAt, gameLangRef.current);
   }, [roundIndex, isHost, roomId, broadcast, rounds, startRound]);
 
   const skipToNextRound = useCallback(() => {
@@ -394,7 +455,7 @@ export default function App() {
     if (isHost && roomId) {
       broadcast('sendGameState', { type: 'round', roundIndex: next, rounds, startAt });
     }
-    startRound(next, rounds, startAt);
+    startRound(next, rounds, startAt, gameLangRef.current);
   }, [roundIndex, isHost, roomId, broadcast, rounds, startRound]);
 
   useEffect(() => {
@@ -404,10 +465,10 @@ export default function App() {
         if (data.lang) setGameLang(data.lang);
         setRounds(data.rounds);
         setTotalScores({});
-        startRound(0, data.rounds, data.startAt);
+        startRound(0, data.rounds, data.startAt, data.lang ?? gameLangRef.current);
       } else if (data.type === 'round') {
         if (data.rounds) setRounds(data.rounds);
-        startRound(data.roundIndex, data.rounds ?? rounds, data.startAt);
+        startRound(data.roundIndex, data.rounds ?? rounds, data.startAt, gameLangRef.current);
       }
     });
     registerHandler('onRoundResult', (data) => {
@@ -553,7 +614,10 @@ export default function App() {
     setHops((h) => h + 1);
     setPath((p) => [...p, nextTitle]);
 
-    const reached = await titlesMatchOnWiki(wikiLang, nextTitle, currentRound.end);
+    // Target is compared in the player's own language (resolvedRound.end is the
+    // canonical end translated into `lang`).
+    const target = resolvedRound.end || currentRound.end;
+    const reached = await titlesMatchOnWiki(lang, nextTitle, target);
     if (reached) {
       const elapsed = Date.now() - roundStartAt;
       const finalPath = [...path, nextTitle];
@@ -761,7 +825,7 @@ export default function App() {
       <div className="app-shell">
         <header className="topbar compact">
           <h1>{isFinal ? t(lang, 'gameOver') : t(lang, 'roundOver')}</h1>
-          <LangSelector lang={lang} onSelect={selectLang} disabled={screen === 'playing'} lockedLabel={t(lang, 'langLocked')} />
+          <LangSelector lang={lang} onSelect={selectLang} disabled={translating} />
         </header>
         <main className="results-card">
           {roundResult?.sorted?.length ? (
@@ -817,7 +881,10 @@ export default function App() {
     <div className="app-shell game-layout">
       <header className="game-topbar">
         <div className="round-info">
-          <span className="eyebrow">{t(lang, 'round', { n: roundIndex + 1, total: TOTAL_ROUNDS })}</span>
+          <span className="eyebrow">
+            {t(lang, 'round', { n: roundIndex + 1, total: TOTAL_ROUNDS })}
+            {currentRound?.hard ? <span className="hard-badge">🔥 {t(lang, 'finalBoss')}</span> : null}
+          </span>
           <div className="targets">
             <span><strong>{t(lang, 'startArticle')}:</strong> {displayTitle(resolvedRound.start || currentRound?.start)}</span>
             <span><strong>{t(lang, 'targetArticle')}:</strong> {displayTitle(resolvedRound.end || currentRound?.end)}</span>
@@ -826,7 +893,7 @@ export default function App() {
         </div>
         <div className="topbar-actions">
           <span className={`timer ${timeLeft < 60000 ? 'urgent' : ''}`}>{t(lang, 'timeLeft', timeFmt)}</span>
-          <LangSelector lang={lang} onSelect={selectLang} disabled={screen === 'playing'} lockedLabel={t(lang, 'langLocked')} />
+          <LangSelector lang={lang} onSelect={selectLang} disabled={translating} />
           {!finished && !gaveUp ? (
             <button
               type="button"

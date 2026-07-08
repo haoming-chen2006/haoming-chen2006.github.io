@@ -4,6 +4,48 @@ export const ROUND_DURATION_MS = 5 * 60 * 1000;
 export const TOTAL_ROUNDS = 5;
 export const ROUND_POINTS = [5, 3, 2, 1];
 
+// Final-round "boss" pairs: both endpoints are household-famous, but they live
+// in wildly different worlds so connecting them is brutal. Stored in English;
+// each round carries srcLang so every player (any language) gets them
+// translated at runtime via langlinks.
+const HARD_PAIRS = [
+  ['LeBron_James', 'Excalibur'],
+  ['Pizza', 'Black_hole'],
+  ['Taylor_Swift', 'Genghis_Khan'],
+  ['Pikachu', 'French_Revolution'],
+  ['SpongeBob_SquarePants', 'Quantum_mechanics'],
+  ['Cristiano_Ronaldo', 'Photosynthesis'],
+  ['Mona_Lisa', 'Basketball'],
+  ['Coca-Cola', 'Julius_Caesar'],
+  ['Mount_Everest', 'Beyoncé'],
+  ['Sushi', 'Isaac_Newton'],
+  ['Darth_Vader', 'Great_Wall_of_China'],
+  ['Minecraft', 'William_Shakespeare'],
+  ['Elon_Musk', 'Ancient_Egypt'],
+  ['The_Beatles', 'DNA'],
+  ['Harry_Potter', 'Periodic_table'],
+  ['IPhone', 'Roman_Empire'],
+  ['Titanic_(1997_film)', 'Mount_Fuji'],
+  ['Pokémon', 'World_War_I'],
+  ['Michael_Jackson', 'Amazon_River'],
+  ['Batman', 'Great_Barrier_Reef'],
+  ['Instagram', 'Napoleon'],
+  ['Lion', 'Eiffel_Tower'],
+  ['Association_football', 'Solar_System'],
+  ["McDonald's", 'Leonardo_da_Vinci'],
+  ['Spider-Man', 'Mount_Kilimanjaro'],
+  ['Nintendo', 'Cleopatra'],
+  ['YouTube', 'Ludwig_van_Beethoven'],
+  ['Banana', 'Nikola_Tesla'],
+  ['Dinosaur', 'Statue_of_Liberty'],
+  ['Great_white_shark', 'Wolfgang_Amadeus_Mozart'],
+];
+
+export function pickHardPair() {
+  const [start, end] = HARD_PAIRS[Math.floor(Math.random() * HARD_PAIRS.length)];
+  return { start, end, srcLang: 'en', hard: true };
+}
+
 // Topics are hand-curated in popularArticles.json, so nothing is blocked.
 const BLOCKED_TOPICS = new Set([]);
 
@@ -87,11 +129,14 @@ export function pickRoundPair(lang, usedPairs = new Set()) {
 export function generateRounds(lang) {
   const usedPairs = new Set();
   const rounds = [];
-  for (let i = 0; i < TOTAL_ROUNDS; i++) {
+  // Rounds 1..N-1 are normal cross-category pairs.
+  for (let i = 0; i < TOTAL_ROUNDS - 1; i++) {
     const pair = pickRoundPair(lang, usedPairs);
     usedPairs.add(`${pair.start}→${pair.end}`);
     rounds.push({ round: i + 1, ...pair });
   }
+  // Final round is a deliberately brutal "boss" pair.
+  rounds.push({ round: TOTAL_ROUNDS, ...pickHardPair() });
   return rounds;
 }
 

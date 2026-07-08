@@ -1,7 +1,20 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { joinRoom } from 'trystero/torrent';
+import { joinRoom } from 'trystero/supabase';
 
-const APP_ID = 'wiki-guess-v1';
+// Signaling only: Supabase Realtime relays the WebRTC handshake so friends can
+// find each other reliably. No tables and no data are stored — once peers
+// connect, all game traffic is direct peer-to-peer. (The public torrent
+// trackers Trystero uses by default are frequently unreachable, which is why
+// players couldn't see each other or receive the host's "start".)
+// Reuses the World Cup Supabase project purely as a rendezvous point.
+const SUPABASE_URL =
+  import.meta.env.VITE_SUPABASE_URL || 'https://bgxmcgsfkjhpocptrezi.supabase.co';
+const SUPABASE_KEY =
+  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
+  'sb_publishable_18hn9O3SKu_Sr1H7RRGVKw_5lnb8UJL';
+
+// Trystero's supabase strategy takes the project URL in the `appId` slot.
+const ROOM_CONFIG = { appId: SUPABASE_URL, supabaseKey: SUPABASE_KEY };
 
 export function useRoom(roomId, selfId, playerName, isHost) {
   const roomRef = useRef(null);
@@ -16,7 +29,7 @@ export function useRoom(roomId, selfId, playerName, isHost) {
   useEffect(() => {
     if (!roomId) return undefined;
 
-    const room = joinRoom({ appId: APP_ID }, roomId);
+    const room = joinRoom(ROOM_CONFIG, roomId);
     roomRef.current = room;
 
     const [sendPresence, getPresence] = room.makeAction('presence', { max: 50 });

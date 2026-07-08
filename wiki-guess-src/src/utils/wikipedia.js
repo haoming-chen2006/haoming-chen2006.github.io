@@ -55,23 +55,43 @@ export function titleFromHref(href, lang) {
   }
 }
 
-async function wikiGet(lang, params) {
+function variantFor(lang) {
+  if (lang === 'zh') return 'zh-cn';
+  if (lang === 'zh-tw') return 'zh-tw';
+  return null;
+}
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+// Wikipedia rate-limits anonymous clients (HTTP 429), which is easy to hit
+// because English articles are large and each move used to fire several calls.
+// Retry a throttled request a few times with growing backoff before giving up.
+async function wikiGet(lang, params, attempt = 0) {
   const host = wikiHost(lang);
   const res = await fetch(`https://${host}/w/api.php?${params}`);
+  if ((res.status === 429 || res.status === 503) && attempt < 4) {
+    await sleep(500 * (attempt + 1));
+    return wikiGet(lang, params, attempt + 1);
+  }
   if (!res.ok) throw new Error(`Wikipedia API error (${res.status})`);
   return res.json();
 }
+
+// Cache resolved page ids per lang+title. Within a round the target title is
+// checked on every click, so this turns most win-checks into zero requests.
+const pageIdCache = new Map();
 
 export async function resolveTitle(lang, title) {
   const params = new URLSearchParams({
     action: 'query',
     titles: title,
     redirects: '1',
-    variant: lang === 'zh' ? 'zh-cn' : (lang === 'zh-tw' ? 'zh-tw' : undefined),
     format: 'json',
     formatversion: '2',
     origin: '*',
   });
+  const variant = variantFor(lang);
+  if (variant) params.set('variant', variant);
   const data = await wikiGet(lang, params);
   const pages = data.query?.pages;
   if (!pages?.length) return null;
@@ -81,19 +101,24 @@ export async function resolveTitle(lang, title) {
 }
 
 export async function getPageId(lang, title) {
+  const cacheKey = `${lang}::${title}`;
+  if (pageIdCache.has(cacheKey)) return pageIdCache.get(cacheKey);
+
   const params = new URLSearchParams({
     action: 'query',
     titles: title,
     redirects: '1',
-    variant: lang === 'zh' ? 'zh-cn' : (lang === 'zh-tw' ? 'zh-tw' : undefined),
     format: 'json',
     formatversion: '2',
     origin: '*',
   });
+  const variant = variantFor(lang);
+  if (variant) params.set('variant', variant);
   const data = await wikiGet(lang, params);
   const page = data.query?.pages?.[0];
-  if (!page || page.missing) return null;
-  return page.pageid;
+  const id = !page || page.missing ? null : page.pageid;
+  if (id != null) pageIdCache.set(cacheKey, id);
+  return id;
 }
 
 export async function titlesMatchOnWiki(wikiLang, titleA, titleB) {
@@ -128,25 +153,31 @@ export async function translateTitle(fromLang, toLang, title) {
 }
 
 export async function fetchArticle(lang, title) {
-  const resolved = await resolveTitle(lang, title);
-  if (!resolved) throw new Error('Article not found');
-
+  // parse resolves redirects itself, so we skip a separate resolveTitle call.
   const params = new URLSearchParams({
     action: 'parse',
-    page: resolved,
+    page: title,
     prop: 'text|displaytitle',
     format: 'json',
     formatversion: '2',
     origin: '*',
     redirects: '1',
-    variant: lang === 'zh' ? 'zh-cn' : (lang === 'zh-tw' ? 'zh-tw' : undefined),
   });
+  const variant = variantFor(lang);
+  if (variant) params.set('variant', variant);
   const data = await wikiGet(lang, params);
   if (data.error) throw new Error(data.error.info ?? 'Article not found');
   if (!data.parse?.text) throw new Error('Article not found');
 
+  // Remember the id so the win-check for this page is free.
+  if (data.parse.pageid != null) {
+    pageIdCache.set(`${lang}::${title}`, data.parse.pageid);
+    pageIdCache.set(`${lang}::${data.parse.title}`, data.parse.pageid);
+  }
+
   return {
     title: data.parse.title,
+    pageid: data.parse.pageid,
     displayTitle: data.parse.displaytitle,
     html: data.parse.text,
   };

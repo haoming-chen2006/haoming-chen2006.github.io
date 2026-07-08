@@ -23,7 +23,7 @@ const NAME_KEY = 'wiki-guess-name';
 const SELF_ID_KEY = 'wiki-guess-self-id';
 
 // Bump on every deploy so it's obvious the latest build reached the site.
-const APP_VERSION = 'v3.09';
+const APP_VERSION = 'v3.1';
 
 const LANG_OPTIONS = [
   { code: 'en', label: 'English' },
@@ -242,9 +242,13 @@ export default function App() {
   const [roundStartAt, setRoundStartAt] = useState(null);
   const [resolvedRound, setResolvedRound] = useState({ start: '', end: '' });
   const [notice, setNotice] = useState('');
+  const [ready, setReady] = useState(false);
+  const [countdownTo, setCountdownTo] = useState(null);
+  const [countdownNow, setCountdownNow] = useState(0);
 
   const roundTimerRef = useRef(null);
   const finishBroadcastRef = useRef(false);
+  const pendingRoundsRef = useRef(null);
 
   const { peers, connected, broadcast, registerHandler } = useRoom(
     roomId || null,
@@ -461,7 +465,14 @@ export default function App() {
   useEffect(() => {
     registerHandler('onGameState', (data) => {
       if (!data) return;
-      if (data.type === 'start') {
+      if (data.type === 'countdown') {
+        if (data.lang) setGameLang(data.lang);
+        setRounds(data.rounds);
+        setTotalScores({});
+        pendingRoundsRef.current = data.rounds;
+        setCountdownTo(data.beginAt);
+        setScreen('countdown');
+      } else if (data.type === 'start') {
         if (data.lang) setGameLang(data.lang);
         setRounds(data.rounds);
         setTotalScores({});
@@ -484,6 +495,55 @@ export default function App() {
       });
     });
   }, [registerHandler, startRound, rounds]);
+
+  // Broadcast our ready state (and re-send when a new peer connects so they
+  // learn it without waiting for a toggle).
+  useEffect(() => {
+    if (!roomId) return;
+    broadcast('sendReady', { id: selfId, ready });
+  }, [ready, connected, roomId, broadcast, selfId]);
+
+  // Host watches for everyone ready, then kicks off a synchronized 10s
+  // countdown that begins the game for all players at the same instant.
+  useEffect(() => {
+    if (screen !== 'lobby' || !roomId || !isHost || countdownTo) return;
+    if (!ready) return;
+    const others = Object.values(peers);
+    if (others.length < connected) return; // roster still syncing
+    if (!others.every((p) => p.ready)) return;
+
+    const beginAt = Date.now() + 10000;
+    const newRounds = generateRounds(lang);
+    broadcast('sendGameState', { type: 'countdown', rounds: newRounds, lang, beginAt });
+    setGameLang(lang);
+    setRounds(newRounds);
+    setTotalScores({});
+    pendingRoundsRef.current = newRounds;
+    setCountdownTo(beginAt);
+    setScreen('countdown');
+  }, [screen, roomId, isHost, ready, peers, connected, countdownTo, lang, broadcast]);
+
+  // Countdown ticker: re-render each 100ms, and start round 0 exactly at beginAt.
+  useEffect(() => {
+    if (screen !== 'countdown' || !countdownTo) return undefined;
+    let done = false;
+    const tick = () => {
+      if (done) return;
+      const t = Date.now();
+      if (t >= countdownTo) {
+        done = true;
+        const rs = pendingRoundsRef.current;
+        setCountdownTo(null);
+        setReady(false);
+        if (rs) startRound(0, rs, countdownTo, gameLangRef.current);
+      } else {
+        setCountdownNow(t);
+      }
+    };
+    tick();
+    const id = setInterval(tick, 100);
+    return () => clearInterval(id);
+  }, [screen, countdownTo, startRound]);
 
   const finishersRef = useRef({ finished, elapsedMs, gaveUp, hops, path, peers, selfId, name });
   finishersRef.current = { finished, elapsedMs, gaveUp, hops, path, peers, selfId, name };
@@ -708,6 +768,8 @@ export default function App() {
     setScreen('lobby');
     setRounds([]);
     setRoomInUrl('');
+    setReady(false);
+    setCountdownTo(null);
   };
 
   const activeWikiLang = lang;
@@ -786,31 +848,60 @@ export default function App() {
 
         <main className="lobby-card">
           <p className="room-code">Room: <strong>{roomId}</strong></p>
-          <div className="player-list">
-            <p><strong>Players ({connected + 1})</strong></p>
-            <ul>
-              <li>{name} (You)</li>
-              {Object.values(peers).map((p) => (
-                <li key={p.id}>{p.name}</li>
-              ))}
-            </ul>
-          </div>
+          {(() => {
+            const others = Object.values(peers);
+            const readyCount = (ready ? 1 : 0) + others.filter((p) => p.ready).length;
+            const total = connected + 1;
+            return (
+              <>
+                <div className="player-list">
+                  <p><strong>{t(lang, 'readyCount', { n: readyCount, total })}</strong></p>
+                  <ul>
+                    <li>
+                      {name} ({t(lang, 'you')})
+                      <span className={`ready-dot ${ready ? 'on' : ''}`}>{ready ? '✓' : '…'}</span>
+                    </li>
+                    {others.map((p) => (
+                      <li key={p.id}>
+                        {p.name}
+                        <span className={`ready-dot ${p.ready ? 'on' : ''}`}>{p.ready ? '✓' : '…'}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
 
-          <p className="hint">{t(lang, 'inviteHint')}</p>
-          <button type="button" className="btn" onClick={copyInvite}>
-            {copied ? t(lang, 'copied') : t(lang, 'copyInvite')}
-          </button>
+                <p className="hint">{t(lang, 'inviteHint')}</p>
+                <button type="button" className="btn" onClick={copyInvite}>
+                  {copied ? t(lang, 'copied') : t(lang, 'copyInvite')}
+                </button>
 
-          {isHost ? (
-            <button type="button" className="btn primary" onClick={() => beginGame(lang)}>
-              {t(lang, 'startGame')}
-            </button>
-          ) : (
-            <p className="waiting">{t(lang, 'waitingForHost')}</p>
-          )}
+                <button
+                  type="button"
+                  className={`btn ${ready ? '' : 'primary'}`}
+                  onClick={() => setReady((r) => !r)}
+                >
+                  {ready ? t(lang, 'cancelReady') : t(lang, 'imReady')}
+                </button>
+                <p className="waiting">{t(lang, 'waitingReady')}</p>
+              </>
+            );
+          })()}
 
           <button type="button" className="btn ghost" onClick={handleLeave}>{t(lang, 'leaveRoom')}</button>
         </main>
+      </div>
+    );
+  }
+
+  if (screen === 'countdown') {
+    const secs = Math.max(0, Math.ceil((countdownTo - (countdownNow || Date.now())) / 1000));
+    return (
+      <div className="app-shell countdown-shell">
+        <div className="countdown-box">
+          <p className="countdown-label">{t(lang, 'getReady')}</p>
+          <div className="countdown-number">{secs}</div>
+          <p className="countdown-sub">{t(lang, 'everyoneReady')}</p>
+        </div>
       </div>
     );
   }
@@ -862,7 +953,7 @@ export default function App() {
             ))}
           </ol>
           {isFinal ? (
-            <button type="button" className="btn primary" onClick={() => { setScreen('lobby'); setRounds([]); setGameLang(null); }}>
+            <button type="button" className="btn primary" onClick={() => { setScreen('lobby'); setRounds([]); setGameLang(null); setReady(false); }}>
               {roomId && isHost ? t(lang, 'playAgain') : t(lang, 'backToLobby')}
             </button>
           ) : isHost ? (

@@ -12,6 +12,7 @@ const EVENT_BY_ACTION = {
   sendGameState: 'gameState',
   sendRoundResult: 'roundResult',
   sendChat: 'chat',
+  sendReady: 'ready',
 };
 
 export function useRoom(roomId, selfId, playerName, isHost) {
@@ -70,6 +71,10 @@ export function useRoom(roomId, selfId, playerName, isHost) {
         if (!payload?.id) return;
         upsertPeer(payload.id, { progress: payload });
         handlersRef.current.onProgress?.(payload, payload.id);
+      })
+      .on('broadcast', { event: 'ready' }, ({ payload }) => {
+        if (!payload?.id) return;
+        upsertPeer(payload.id, { ready: !!payload.ready });
       })
       .on('broadcast', { event: 'gameState' }, ({ payload }) => {
         handlersRef.current.onGameState?.(payload);

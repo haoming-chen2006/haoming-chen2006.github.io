@@ -592,7 +592,7 @@ export default function App() {
 
 function GuessView({ matches, guesses, onSaveGuess, playerArtifact, onPlayerArtifact, teams, players, t, lang, now, distributions, onSelectUser }) {
   const groupMatches = matches
-    .filter((match) => match.round === 'qf')
+    .filter((match) => match.round === 'sf')
     .sort((a, b) => new Date(a.kickoff_time) - new Date(b.kickoff_time));
   const listRef = useRef(null);
   const [showJump, setShowJump] = useState(false);
@@ -946,7 +946,7 @@ function ScheduleView({ matches, guesses, bracketPicks, onBracketPicks, t, lang,
       </div>
 
       <div className="bracket-lane">
-        {['r16', 'qf', 'sf', 'third', 'final'].map((round) => (
+        {['qf', 'sf', 'third', 'final'].map((round) => (
           <div className="bracket-round" key={round}>
             <h2>{roundLabel(round, t)}</h2>
             {populatedKnockout.filter((match) => match.round === round).map((match) => (

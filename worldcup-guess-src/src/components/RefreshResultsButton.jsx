@@ -1,6 +1,10 @@
 import { useState } from 'react';
 import { supabase } from '../supabaseClient.js';
 
+// This button ONLY re-grades every prediction against the official scores that
+// are already stored on each match. It never fetches or overwrites results, so
+// pressing it can't corrupt the pipeline. Matches without an entered score are
+// left ungraded (grade_all_predictions skips null scorelines).
 export default function RefreshResultsButton({ t, onComplete }) {
   const [loading, setLoading] = useState(false);
   const [lastResult, setLastResult] = useState(null);
@@ -9,11 +13,11 @@ export default function RefreshResultsButton({ t, onComplete }) {
     setLoading(true);
     setLastResult(null);
     try {
-      const { data, error } = await supabase.functions.invoke('refresh-results');
+      const { data, error } = await supabase.rpc('grade_all_predictions');
       if (error) throw error;
-      if (!data?.ok) throw new Error(data?.error || t('refreshFailed'));
-      setLastResult(data);
-      onComplete?.(data);
+      const result = { ok: true, guesses_graded: data?.graded ?? 0 };
+      setLastResult(result);
+      onComplete?.(result);
     } catch (err) {
       setLastResult({ ok: false, error: err.message || String(err) });
     } finally {
@@ -33,10 +37,7 @@ export default function RefreshResultsButton({ t, onComplete }) {
       </button>
       {lastResult?.ok && (
         <span className="refresh-results-summary">
-          {t('refreshSummary', {
-            matches: lastResult.matches_updated ?? 0,
-            graded: lastResult.guesses_graded ?? 0,
-          })}
+          {t('refreshSummary', { graded: lastResult.guesses_graded ?? 0 })}
         </span>
       )}
       {lastResult && !lastResult.ok && (

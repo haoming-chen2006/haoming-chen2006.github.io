@@ -592,7 +592,7 @@ export default function App() {
 
 function GuessView({ matches, guesses, onSaveGuess, playerArtifact, onPlayerArtifact, teams, players, t, lang, now, distributions, onSelectUser }) {
   const groupMatches = matches
-    .filter((match) => match.round === 'sf')
+    .filter((match) => match.round === 'final' || match.round === 'third')
     .sort((a, b) => new Date(a.kickoff_time) - new Date(b.kickoff_time));
   const listRef = useRef(null);
   const [showJump, setShowJump] = useState(false);

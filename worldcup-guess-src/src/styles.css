@@ -1104,6 +1104,78 @@ th {
   align-items: start;
 }
 
+/* Merged final leaderboard: side rail of stat metrics + overall board. */
+.final-leaderboard {
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.stat-rail {
+  display: grid;
+  gap: 14px;
+}
+
+.stat-rail > h2 {
+  margin: 0;
+  font-size: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #5f695f;
+}
+
+.stat-rail ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.stat-rail button {
+  width: 100%;
+  text-align: left;
+  display: grid;
+  gap: 2px;
+  padding: 10px 12px;
+  border: 1px solid rgba(23, 32, 23, 0.14);
+  border-radius: 10px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.stat-rail button.active {
+  background: #1f6f50;
+  border-color: #1f6f50;
+  color: #fff;
+}
+
+.stat-rail .stat-name { font-weight: 800; }
+.stat-rail .stat-desc { font-size: 0.76rem; opacity: 0.75; }
+
+.winners-card {
+  padding: 14px;
+  border: 1px solid rgba(23, 32, 23, 0.12);
+  border-radius: 10px;
+  background: #f7faf7;
+  display: grid;
+  gap: 4px;
+}
+.winners-card h3 { margin: 0 0 4px; font-size: 0.95rem; }
+.winners-card p { margin: 0; font-size: 0.85rem; color: #33403a; }
+
+.stat-board h2 { margin: 0; }
+.stat-board-desc { margin: 2px 0 12px; color: #5f695f; }
+.leaderboard th.num, .leaderboard td.num { text-align: right; }
+.leaderboard .highlight-col { color: #1f6f50; }
+.current-user-row .highlight-col { color: inherit; }
+.stat-foot { margin-top: 10px; color: #8a938a; font-size: 0.8rem; }
+
+@media (max-width: 760px) {
+  .final-leaderboard { grid-template-columns: 1fr; }
+}
+
 .scoring-panel {
   display: grid;
   gap: 12px;

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { supabase } from './supabaseClient.js';
 import { groups, rounds, seedMatches, teamInfo } from './data/fixtures.js';
 import { playerPool } from './data/players.js';
-import RefreshResultsButton from './components/RefreshResultsButton.jsx';
+import finalStats from './data/finalStats.json';
 import MatchPredictionBars, { useGuessDistributions } from './components/MatchPredictionBars.jsx';
 import UserProfilePanel from './components/UserProfilePanel.jsx';
 import {
@@ -16,7 +16,7 @@ import {
   roundLabel,
 } from './i18n.js';
 
-const tabIds = ['guess', 'schedule', 'leaderboard', 'personal'];
+const tabIds = ['leaderboard', 'schedule', 'personal'];
 
 const trophyFields = [
   { field: 'champion_team', labelKey: 'champion', icon: '🏆', type: 'team' },
@@ -200,7 +200,7 @@ function getMatchSides(match, groupRankings, bracketPicks) {
 }
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState('guess');
+  const [activeTab, setActiveTab] = useState('leaderboard');
   const [lang, setLang] = useState(() => localStorage.getItem(LANG_KEY) || 'en');
   const [session, setSession] = useState(null);
   const [email, setEmail] = useState('');
@@ -489,7 +489,6 @@ export default function App() {
           <h1>{t('title')}</h1>
         </div>
         <div className="topbar-actions">
-          <RefreshResultsButton t={t} onComplete={reloadMatchesAndLeaderboard} />
           <button
             type="button"
             className="lang-toggle"
@@ -536,22 +535,6 @@ export default function App() {
         ))}
       </nav>
 
-      {activeTab === 'guess' && (
-        <GuessView
-          matches={orderedMatches}
-          guesses={guesses}
-          onSaveGuess={saveGuess}
-          playerArtifact={playerArtifact}
-          onPlayerArtifact={savePlayerArtifact}
-          teams={teams}
-          players={players}
-          t={t}
-          lang={lang}
-          now={now}
-          distributions={distributions}
-          onSelectUser={setSelectedUserId}
-        />
-      )}
       {activeTab === 'schedule' && (
         <ScheduleView
           matches={orderedMatches}
@@ -564,14 +547,7 @@ export default function App() {
         />
       )}
       {activeTab === 'leaderboard' && (
-        <LeaderboardView
-          guesses={guesses}
-          matches={orderedMatches}
-          rows={leaderboardRows}
-          session={session}
-          t={t}
-          onSelectUser={setSelectedUserId}
-        />
+        <FinalLeaderboard session={session} t={t} onSelectUser={setSelectedUserId} />
       )}
       {activeTab === 'personal' && (
         <PersonalView guesses={guesses} matches={orderedMatches} playerArtifact={playerArtifact} t={t} />
@@ -1162,6 +1138,86 @@ function KnockoutPredictor({ matches, groupRankings, picks, onPicks, t, lang }) 
             </div>
           );
         })}
+      </div>
+    </section>
+  );
+}
+
+const STAT_METRICS = [
+  { key: 'points',     tkey: 'statOverall',    value: (p) => p.points,        suffix: '', sort: (a, b) => b.points - a.points || b.exactsCorrect - a.exactsCorrect },
+  { key: 'accuracy',   tkey: 'statAccuracy',   value: (p) => p.accuracy,      suffix: '%', sort: (a, b) => b.accuracy - a.accuracy || b.guessed - a.guessed },
+  { key: 'exacts',     tkey: 'statExacts',     value: (p) => p.exactsCorrect, suffix: '', sort: (a, b) => b.exactsCorrect - a.exactsCorrect || b.points - a.points },
+  { key: 'exactPct',   tkey: 'statExactPct',   value: (p) => p.exactPct,      suffix: '%', sort: (a, b) => b.exactPct - a.exactPct || b.guessed - a.guessed },
+  { key: 'winStreak',  tkey: 'statWinStreak',  value: (p) => p.winStreak,     suffix: '', sort: (a, b) => b.winStreak - a.winStreak || b.points - a.points },
+  { key: 'loseStreak', tkey: 'statLoseStreak', value: (p) => p.loseStreak,     suffix: '', sort: (a, b) => b.loseStreak - a.loseStreak || a.points - b.points },
+];
+
+// Merged final leaderboard: one overall board with a side rail to re-rank by
+// any of six stats. Data is a static end-of-tournament snapshot (finalStats.json).
+function FinalLeaderboard({ session, t, onSelectUser }) {
+  const [metric, setMetric] = useState('points');
+  const active = STAT_METRICS.find((m) => m.key === metric) || STAT_METRICS[0];
+  const rows = useMemo(() => [...finalStats.players].sort(active.sort), [active]);
+  const w = finalStats.winners;
+
+  return (
+    <section className="workspace final-leaderboard">
+      <aside className="stat-rail">
+        <h2>{t('standingsBy')}</h2>
+        <ul>
+          {STAT_METRICS.map((m) => (
+            <li key={m.key}>
+              <button type="button" className={m.key === metric ? 'active' : ''} onClick={() => setMetric(m.key)}>
+                <span className="stat-name">{t(m.tkey)}</span>
+                <span className="stat-desc">{t(`${m.tkey}Desc`)}</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+        <div className="winners-card">
+          <h3>{t('finalResults')}</h3>
+          <p>🏆 {t('wChampion')}: <b>{w.champion}</b></p>
+          <p>🥇 {t('wGoldenBoot')}: <b>{w.goldenBoot}</b></p>
+          <p>🅰️ {t('wAssists')}: <b>{w.assists}</b></p>
+          <p>⭐ {t('wGoldenBall')}: <b>{w.goldenBall}</b></p>
+          <p>🌱 {t('wYoungPlayer')}: <b>{w.youngPlayer}</b></p>
+          <p>🎯 {t('wFinalFour')}: <b>{w.finalFour.join(', ')}</b></p>
+        </div>
+      </aside>
+
+      <div className="stat-board">
+        <h2>{t(active.tkey)}</h2>
+        <p className="stat-board-desc">{t(`${active.tkey}Desc`)}</p>
+        <table className="leaderboard">
+          <thead>
+            <tr>
+              <th>{t('rank')}</th>
+              <th>{t('player')}</th>
+              <th className="num">{t('gp')}</th>
+              <th className="num highlight-col">{t(active.tkey)}</th>
+              <th className="num">{t('points')}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((p, i) => {
+              const isMe = session?.user?.id === p.user_id;
+              return (
+                <tr key={p.user_id}
+                    className={`${isMe ? 'current-user-row ' : ''}leaderboard-row-clickable`}
+                    onClick={() => onSelectUser?.(p.user_id)}
+                    tabIndex={0} role="button"
+                    onKeyDown={(e) => { if (e.key === 'Enter') onSelectUser?.(p.user_id); }}>
+                  <td>{i + 1}</td>
+                  <td>{p.name}</td>
+                  <td className="num">{p.guessed}</td>
+                  <td className="num highlight-col"><b>{active.value(p)}{active.suffix}</b></td>
+                  <td className="num">{p.points}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+        <p className="stat-foot">{t('statFootnote', { n: rows.length })}</p>
       </div>
     </section>
   );

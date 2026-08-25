@@ -1,0 +1,27 @@
+{
+  "name": "draft",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "build": "vite build",
+    "preview": "vite preview --host 0.0.0.0",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "fixtures": "node --experimental-strip-types scripts/make-fixtures.mjs",
+    "validate:fixtures": "node --experimental-strip-types scripts/validate-bank.mjs all --bank-dir fixtures/banks --hidden-dir fixtures/hidden"
+  },
+  "dependencies": {
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.0",
+    "@vitejs/plugin-react": "^4.3.4",
+    "typescript": "^5.7.3",
+    "vite": "^5.4.11",
+    "vitest": "^2.1.9"
+  }
+}

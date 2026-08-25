@@ -21,6 +21,8 @@ export function apply(state: RoomState, action: Action, now: number): Result {
       return bid(state, action.seat, action.amount, now)
     case 'resolve':
       return resolve(state, now)
+    case 'swap':
+      return swap(state, action.seat, action.a, action.b)
     default:
       return no(`${action.type} is not handled yet`)
   }
@@ -73,6 +75,32 @@ function bid(state: RoomState, seatIndex: number, amount: number, now: number): 
       // extended: it is a head start on the card, not on the clock.
       deadline: new Date(now + state.config.bidMs).toISOString(),
     },
+  })
+}
+
+/** Rearranging your own lineup. Either end may be an empty slot — moving a card
+ *  into a gap is the same move as trading two cards, and a drafter needs both to
+ *  present the lineup they mean. Open until judging starts; shut afterwards, or a
+ *  drafter could rewrite the roster the judge is already reading. */
+function swap(state: RoomState, seatIndex: number, a: number, b: number): Result {
+  if (state.phase !== 'lobby' && state.phase !== 'auction')
+    return no('the lineups are locked once judging begins')
+
+  const seat: Seat | undefined = state.seats[seatIndex]
+  if (seat === undefined) return no(`there is no seat ${seatIndex}`)
+
+  const inRange = (i: number) => Number.isInteger(i) && i >= 0 && i < seat.slots.length
+  if (!inRange(a) || !inRange(b)) return no('that is not one of your slots')
+  if (a === b) return no('pick two different slots')
+
+  const slots = [...seat.slots]
+  const held = slots[a] ?? null
+  slots[a] = slots[b] ?? null
+  slots[b] = held
+
+  return yes({
+    ...state,
+    seats: state.seats.map((s, i) => (i === seatIndex ? { ...s, slots } : s)),
   })
 }
 

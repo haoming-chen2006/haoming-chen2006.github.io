@@ -368,3 +368,69 @@ describe('the end of the draft', () => {
     expect(after.round).toBeNull()
   })
 })
+
+describe('slots', () => {
+  /** Let the current card go for nothing and move on to the next one. */
+  const passOn = (state: RoomState): RoomState =>
+    ok(apply(state, { type: 'resolve' }, Date.parse(state.round!.deadline) + 1))
+
+  /** That seat takes the card that is currently up. */
+  function win(state: RoomState, seat: number, amount = 1): RoomState {
+    const bid = ok(apply(state, { type: 'bid', seat, amount }, Date.parse(state.round!.exclusiveUntil)))
+    return ok(apply(bid, { type: 'resolve' }, Date.parse(bid.round!.deadline) + 1))
+  }
+
+  it('puts a won card in an open slot of its own position', () => {
+    // Pass on the PG and the SG so the small forward is up: it should reach
+    // the SF slot rather than the first open one, which is PG.
+    const smallForward = passOn(passOn(auction('nba', ['Ada', 'Bo'])))
+    expect(smallForward.round?.card).toEqual({ id: 'nba-003', position: 'SF' })
+
+    const after = win(smallForward, 0)
+
+    expect(after.seats[0]!.slots).toEqual([null, null, 'nba-003', null, null, null])
+  })
+
+  it('falls back to the first open slot, which is how a centre becomes the 6th man', () => {
+    // Ada holds PG through C already; only the 6th is open.
+    const state = withFilled(auction('nba', ['Ada', 'Bo']), 0, 5)
+    expect(state.round?.card.position).toBe('PG')
+
+    const after = win(state, 0)
+
+    // The PG slot is taken, so the card lands in the one slot no card is ever
+    // positioned for.
+    expect(MODES.nba.slots[5]).toBe('6th')
+    expect(after.seats[0]!.slots[5]).toBe('nba-001')
+  })
+
+  it('swaps two of a drafter’s own slots', () => {
+    const withPg = win(auction('nba', ['Ada', 'Bo']), 0)
+    const withSf = win(passOn(withPg), 0)
+    expect(withSf.seats[0]!.slots).toEqual(['nba-001', null, 'nba-003', null, null, null])
+
+    const swapped = ok(apply(withSf, { type: 'swap', seat: 0, a: 0, b: 2 }, T0))
+
+    expect(swapped.seats[0]!.slots).toEqual(['nba-003', null, 'nba-001', null, null, null])
+    // Bo's lineup is none of Ada's business.
+    expect(swapped.seats[1]).toEqual(withSf.seats[1])
+  })
+
+  it('moves a card into an empty slot, and refuses nonsense slots', () => {
+    const withPg = win(auction('nba', ['Ada', 'Bo']), 0)
+
+    expect(ok(apply(withPg, { type: 'swap', seat: 0, a: 0, b: 5 }, T0)).seats[0]!.slots)
+      .toEqual([null, null, null, null, null, 'nba-001'])
+    expect(why(apply(withPg, { type: 'swap', seat: 0, a: 0, b: 9 }, T0))).toMatch(/not one of your slots/)
+    expect(why(apply(withPg, { type: 'swap', seat: 0, a: 2, b: 2 }, T0))).toMatch(/two different slots/)
+  })
+
+  it('locks the lineups once judging begins', () => {
+    // Ada is full, Bo needs one; Bo takes it and the draft closes.
+    const nearlyDone = withFilled(withFullRoster(auction('hok', ['Ada', 'Bo']), 0), 1, 4)
+    const judging = win(nearlyDone, 1)
+    expect(judging.phase).toBe('judging')
+
+    expect(why(apply(judging, { type: 'swap', seat: 0, a: 0, b: 1 }, T0))).toMatch(/locked once judging/)
+  })
+})

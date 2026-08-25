@@ -1,0 +1,929 @@
+{
+  "mode": "hok",
+  "cards": [
+    {
+      "id": "hok-001",
+      "name": "Hale Quarrow",
+      "description": "Verdant Lantern",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Hale+Quarrow",
+      "position": "Clash"
+    },
+    {
+      "id": "hok-002",
+      "name": "Pell Nettleby",
+      "description": "Verdant Coil",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Pell+Nettleby",
+      "position": "Jungle"
+    },
+    {
+      "id": "hok-003",
+      "name": "Emryn Stonemarch",
+      "description": "Obsidian Coil",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Emryn+Stonemarch",
+      "position": "Mid"
+    },
+    {
+      "id": "hok-004",
+      "name": "Tam Glasshill",
+      "description": "Frostbound Bulwark",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Tam+Glasshill",
+      "position": "Farm"
+    },
+    {
+      "id": "hok-005",
+      "name": "Quill Ironmere",
+      "description": "Hollow Vanguard",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Quill+Ironmere",
+      "position": "Roam"
+    },
+    {
+      "id": "hok-006",
+      "name": "Kell Junewood",
+      "description": "Obsidian Requiem",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Kell+Junewood",
+      "position": "Clash"
+    },
+    {
+      "id": "hok-007",
+      "name": "Ivor Zephyrly",
+      "description": "Radiant Vanguard",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Ivor+Zephyrly",
+      "position": "Jungle"
+    },
+    {
+      "id": "hok-008",
+      "name": "Jarek Thistlewaite",
+      "description": "Silent Vanguard",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Jarek+Thistlewaite",
+      "position": "Mid"
+    },
+    {
+      "id": "hok-009",
+      "name": "Sten Stonemarch",
+      "description": "Frostbound Vanguard",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Sten+Stonemarch",
+      "position": "Farm"
+    },
+    {
+      "id": "hok-010",
+      "name": "Jarek Westergale",
+      "description": "Obsidian Warden",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Jarek+Westergale",
+      "position": "Roam"
+    },
+    {
+      "id": "hok-011",
+      "name": "Lorne Everline",
+      "description": "Silent Tempest",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Lorne+Everline",
+      "position": "Clash"
+    },
+    {
+      "id": "hok-012",
+      "name": "Bram Ironmere",
+      "description": "Crimson Coil",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Bram+Ironmere",
+      "position": "Jungle"
+    },
+    {
+      "id": "hok-013",
+      "name": "Zev Ashcroft",
+      "description": "Thunderous Bastion",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Zev+Ashcroft",
+      "position": "Mid"
+    },
+    {
+      "id": "hok-014",
+      "name": "Sten Ashcroft",
+      "description": "Silent Oracle",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Sten+Ashcroft",
+      "position": "Farm"
+    },
+    {
+      "id": "hok-015",
+      "name": "Nils Nettleby",
+      "description": "Iron Bastion",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Nils+Nettleby",
+      "position": "Roam"
+    },
+    {
+      "id": "hok-016",
+      "name": "Lorne Everline",
+      "description": "Obsidian Requiem",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Lorne+Everline",
+      "position": "Clash"
+    },
+    {
+      "id": "hok-017",
+      "name": "Bram Kestrelly",
+      "description": "Radiant Ember",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Bram+Kestrelly",
+      "position": "Jungle"
+    },
+    {
+      "id": "hok-018",
+      "name": "Hale Zephyrly",
+      "description": "Obsidian Reverie",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Hale+Zephyrly",
+      "position": "Mid"
+    },
+    {
+      "id": "hok-019",
+      "name": "Hale Ravensford",
+      "description": "Radiant Ember",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Hale+Ravensford",
+      "position": "Farm"
+    },
+    {
+      "id": "hok-020",
+      "name": "Jarek Larkspur",
+      "description": "Iron Reverie",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Jarek+Larkspur",
+      "position": "Roam"
+    },
+    {
+      "id": "hok-021",
+      "name": "Casti Brambleton",
+      "description": "Hollow Warden",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Casti+Brambleton",
+      "position": "Clash"
+    },
+    {
+      "id": "hok-022",
+      "name": "Yorn Thistlewaite",
+      "description": "Wandering Requiem",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Yorn+Thistlewaite",
+      "position": "Jungle"
+    },
+    {
+      "id": "hok-023",
+      "name": "Jarek Stonemarch",
+      "description": "Silent Vanguard",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Jarek+Stonemarch",
+      "position": "Mid"
+    },
+    {
+      "id": "hok-024",
+      "name": "Wick Varden",
+      "description": "Gilded Lantern",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Wick+Varden",
+      "position": "Farm"
+    },
+    {
+      "id": "hok-025",
+      "name": "Nils Junewood",
+      "description": "Wandering Requiem",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Nils+Junewood",
+      "position": "Roam"
+    },
+    {
+      "id": "hok-026",
+      "name": "Bram Hollowfen",
+      "description": "Radiant Lantern",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Bram+Hollowfen",
+      "position": "Clash"
+    },
+    {
+      "id": "hok-027",
+      "name": "Lorne Stonemarch",
+      "description": "Wandering Lantern",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Lorne+Stonemarch",
+      "position": "Jungle"
+    },
+    {
+      "id": "hok-028",
+      "name": "Hale Farrowick",
+      "description": "Hollow Tempest",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Hale+Farrowick",
+      "position": "Mid"
+    },
+    {
+      "id": "hok-029",
+      "name": "Orin Kestrelly",
+      "description": "Obsidian Warden",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Orin+Kestrelly",
+      "position": "Farm"
+    },
+    {
+      "id": "hok-030",
+      "name": "Nils Hollowfen",
+      "description": "Gilded Ember",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Nils+Hollowfen",
+      "position": "Roam"
+    },
+    {
+      "id": "hok-031",
+      "name": "Wick Glasshill",
+      "description": "Obsidian Lantern",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Wick+Glasshill",
+      "position": "Clash"
+    },
+    {
+      "id": "hok-032",
+      "name": "Bram Junewood",
+      "description": "Iron Tempest",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Bram+Junewood",
+      "position": "Jungle"
+    },
+    {
+      "id": "hok-033",
+      "name": "Zev Kestrelly",
+      "description": "Wandering Bulwark",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Zev+Kestrelly",
+      "position": "Mid"
+    },
+    {
+      "id": "hok-034",
+      "name": "Casti Larkspur",
+      "description": "Gilded Vanguard",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Casti+Larkspur",
+      "position": "Farm"
+    },
+    {
+      "id": "hok-035",
+      "name": "Rask Yarrowfield",
+      "description": "Wandering Vanguard",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Rask+Yarrowfield",
+      "position": "Roam"
+    },
+    {
+      "id": "hok-036",
+      "name": "Mabry Larkspur",
+      "description": "Obsidian Sovereign",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Mabry+Larkspur",
+      "position": "Clash"
+    },
+    {
+      "id": "hok-037",
+      "name": "Bram Ravensford",
+      "description": "Iron Sovereign",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Bram+Ravensford",
+      "position": "Jungle"
+    },
+    {
+      "id": "hok-038",
+      "name": "Bram Undercliff",
+      "description": "Crimson Requiem",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Bram+Undercliff",
+      "position": "Mid"
+    },
+    {
+      "id": "hok-039",
+      "name": "Lorne Duskmoor",
+      "description": "Crimson Ember",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Lorne+Duskmoor",
+      "position": "Farm"
+    },
+    {
+      "id": "hok-040",
+      "name": "Hale Kestrelly",
+      "description": "Radiant Warden",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Hale+Kestrelly",
+      "position": "Roam"
+    },
+    {
+      "id": "hok-041",
+      "name": "Sten Oakhurst",
+      "description": "Crimson Ember",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Sten+Oakhurst",
+      "position": "Clash"
+    },
+    {
+      "id": "hok-042",
+      "name": "Wick Marrowgate",
+      "description": "Frostbound Vanguard",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Wick+Marrowgate",
+      "position": "Jungle"
+    },
+    {
+      "id": "hok-043",
+      "name": "Pell Kestrelly",
+      "description": "Iron Warden",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Pell+Kestrelly",
+      "position": "Mid"
+    },
+    {
+      "id": "hok-044",
+      "name": "Lorne Farrowick",
+      "description": "Hollow Bulwark",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Lorne+Farrowick",
+      "position": "Farm"
+    },
+    {
+      "id": "hok-045",
+      "name": "Orin Varden",
+      "description": "Wandering Coil",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Orin+Varden",
+      "position": "Roam"
+    },
+    {
+      "id": "hok-046",
+      "name": "Mabry Kestrelly",
+      "description": "Hollow Bulwark",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Mabry+Kestrelly",
+      "position": "Clash"
+    },
+    {
+      "id": "hok-047",
+      "name": "Emryn Hollowfen",
+      "description": "Gilded Bulwark",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Emryn+Hollowfen",
+      "position": "Jungle"
+    },
+    {
+      "id": "hok-048",
+      "name": "Zev Oakhurst",
+      "description": "Thunderous Lantern",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Zev+Oakhurst",
+      "position": "Mid"
+    },
+    {
+      "id": "hok-049",
+      "name": "Vane Glasshill",
+      "description": "Silent Vanguard",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Vane+Glasshill",
+      "position": "Farm"
+    },
+    {
+      "id": "hok-050",
+      "name": "Ivor Quarrow",
+      "description": "Wandering Reverie",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Ivor+Quarrow",
+      "position": "Roam"
+    },
+    {
+      "id": "hok-051",
+      "name": "Pell Stonemarch",
+      "description": "Sundered Coil",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Pell+Stonemarch",
+      "position": "Clash"
+    },
+    {
+      "id": "hok-052",
+      "name": "Doran Nettleby",
+      "description": "Sundered Tempest",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Doran+Nettleby",
+      "position": "Jungle"
+    },
+    {
+      "id": "hok-053",
+      "name": "Ulric Ironmere",
+      "description": "Frostbound Sovereign",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Ulric+Ironmere",
+      "position": "Mid"
+    },
+    {
+      "id": "hok-054",
+      "name": "Sten Marrowgate",
+      "description": "Sundered Reverie",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Sten+Marrowgate",
+      "position": "Farm"
+    },
+    {
+      "id": "hok-055",
+      "name": "Hale Duskmoor",
+      "description": "Wandering Oracle",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Hale+Duskmoor",
+      "position": "Roam"
+    },
+    {
+      "id": "hok-056",
+      "name": "Zev Marrowgate",
+      "description": "Gilded Tempest",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Zev+Marrowgate",
+      "position": "Clash"
+    },
+    {
+      "id": "hok-057",
+      "name": "Lorne Everline",
+      "description": "Gilded Sovereign",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Lorne+Everline",
+      "position": "Jungle"
+    },
+    {
+      "id": "hok-058",
+      "name": "Bram Junewood",
+      "description": "Verdant Lantern",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Bram+Junewood",
+      "position": "Mid"
+    },
+    {
+      "id": "hok-059",
+      "name": "Ivor Everline",
+      "description": "Obsidian Warden",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Ivor+Everline",
+      "position": "Farm"
+    },
+    {
+      "id": "hok-060",
+      "name": "Yorn Ravensford",
+      "description": "Silent Sovereign",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Yorn+Ravensford",
+      "position": "Roam"
+    },
+    {
+      "id": "hok-061",
+      "name": "Ulric Undercliff",
+      "description": "Thunderous Requiem",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Ulric+Undercliff",
+      "position": "Clash"
+    },
+    {
+      "id": "hok-062",
+      "name": "Lorne Hollowfen",
+      "description": "Hollow Ember",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Lorne+Hollowfen",
+      "position": "Jungle"
+    },
+    {
+      "id": "hok-063",
+      "name": "Pell Varden",
+      "description": "Hollow Tempest",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Pell+Varden",
+      "position": "Mid"
+    },
+    {
+      "id": "hok-064",
+      "name": "Casti Ironmere",
+      "description": "Wandering Reverie",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Casti+Ironmere",
+      "position": "Farm"
+    },
+    {
+      "id": "hok-065",
+      "name": "Jarek Ironmere",
+      "description": "Thunderous Requiem",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Jarek+Ironmere",
+      "position": "Roam"
+    },
+    {
+      "id": "hok-066",
+      "name": "Nils Brambleton",
+      "description": "Gilded Lantern",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Nils+Brambleton",
+      "position": "Clash"
+    },
+    {
+      "id": "hok-067",
+      "name": "Casti Quarrow",
+      "description": "Hollow Vanguard",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Casti+Quarrow",
+      "position": "Jungle"
+    },
+    {
+      "id": "hok-068",
+      "name": "Falk Quarrow",
+      "description": "Hollow Reverie",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Falk+Quarrow",
+      "position": "Mid"
+    },
+    {
+      "id": "hok-069",
+      "name": "Casti Junewood",
+      "description": "Silent Reverie",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Casti+Junewood",
+      "position": "Farm"
+    },
+    {
+      "id": "hok-070",
+      "name": "Yorn Brambleton",
+      "description": "Thunderous Oracle",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Yorn+Brambleton",
+      "position": "Roam"
+    },
+    {
+      "id": "hok-071",
+      "name": "Ulric Brambleton",
+      "description": "Wandering Vanguard",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Ulric+Brambleton",
+      "position": "Clash"
+    },
+    {
+      "id": "hok-072",
+      "name": "Bram Everline",
+      "description": "Wandering Bulwark",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Bram+Everline",
+      "position": "Jungle"
+    },
+    {
+      "id": "hok-073",
+      "name": "Goran Duskmoor",
+      "description": "Thunderous Ember",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Goran+Duskmoor",
+      "position": "Mid"
+    },
+    {
+      "id": "hok-074",
+      "name": "Quill Westergale",
+      "description": "Hollow Vanguard",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Quill+Westergale",
+      "position": "Farm"
+    },
+    {
+      "id": "hok-075",
+      "name": "Goran Everline",
+      "description": "Radiant Tempest",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Goran+Everline",
+      "position": "Roam"
+    },
+    {
+      "id": "hok-076",
+      "name": "Vane Zephyrly",
+      "description": "Crimson Ember",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Vane+Zephyrly",
+      "position": "Clash"
+    },
+    {
+      "id": "hok-077",
+      "name": "Pell Yarrowfield",
+      "description": "Crimson Bulwark",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Pell+Yarrowfield",
+      "position": "Jungle"
+    },
+    {
+      "id": "hok-078",
+      "name": "Jarek Pinebank",
+      "description": "Gilded Oracle",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Jarek+Pinebank",
+      "position": "Mid"
+    },
+    {
+      "id": "hok-079",
+      "name": "Doran Glasshill",
+      "description": "Thunderous Warden",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Doran+Glasshill",
+      "position": "Farm"
+    },
+    {
+      "id": "hok-080",
+      "name": "Quill Stonemarch",
+      "description": "Crimson Warden",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Quill+Stonemarch",
+      "position": "Roam"
+    },
+    {
+      "id": "hok-081",
+      "name": "Ulric Stonemarch",
+      "description": "Radiant Coil",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Ulric+Stonemarch",
+      "position": "Clash"
+    },
+    {
+      "id": "hok-082",
+      "name": "Lorne Junewood",
+      "description": "Verdant Bastion",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Lorne+Junewood",
+      "position": "Jungle"
+    },
+    {
+      "id": "hok-083",
+      "name": "Orin Kestrelly",
+      "description": "Sundered Requiem",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Orin+Kestrelly",
+      "position": "Mid"
+    },
+    {
+      "id": "hok-084",
+      "name": "Lorne Stonemarch",
+      "description": "Crimson Vanguard",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Lorne+Stonemarch",
+      "position": "Farm"
+    },
+    {
+      "id": "hok-085",
+      "name": "Zev Duskmoor",
+      "description": "Crimson Reverie",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Zev+Duskmoor",
+      "position": "Roam"
+    },
+    {
+      "id": "hok-086",
+      "name": "Ade Everline",
+      "description": "Hollow Requiem",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Ade+Everline",
+      "position": "Clash"
+    },
+    {
+      "id": "hok-087",
+      "name": "Nils Kestrelly",
+      "description": "Gilded Sovereign",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Nils+Kestrelly",
+      "position": "Jungle"
+    },
+    {
+      "id": "hok-088",
+      "name": "Bram Brambleton",
+      "description": "Frostbound Ember",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Bram+Brambleton",
+      "position": "Mid"
+    },
+    {
+      "id": "hok-089",
+      "name": "Kell Glasshill",
+      "description": "Gilded Sovereign",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Kell+Glasshill",
+      "position": "Farm"
+    },
+    {
+      "id": "hok-090",
+      "name": "Zev Ironmere",
+      "description": "Hollow Bastion",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Zev+Ironmere",
+      "position": "Roam"
+    },
+    {
+      "id": "hok-091",
+      "name": "Ulric Nettleby",
+      "description": "Obsidian Warden",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Ulric+Nettleby",
+      "position": "Clash"
+    },
+    {
+      "id": "hok-092",
+      "name": "Ivor Glasshill",
+      "description": "Thunderous Sovereign",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Ivor+Glasshill",
+      "position": "Jungle"
+    },
+    {
+      "id": "hok-093",
+      "name": "Yorn Hollowfen",
+      "description": "Hollow Lantern",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Yorn+Hollowfen",
+      "position": "Mid"
+    },
+    {
+      "id": "hok-094",
+      "name": "Nils Varden",
+      "description": "Verdant Vanguard",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Nils+Varden",
+      "position": "Farm"
+    },
+    {
+      "id": "hok-095",
+      "name": "Wick Yarrowfield",
+      "description": "Frostbound Bastion",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Wick+Yarrowfield",
+      "position": "Roam"
+    },
+    {
+      "id": "hok-096",
+      "name": "Doran Glasshill",
+      "description": "Radiant Requiem",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Doran+Glasshill",
+      "position": "Clash"
+    },
+    {
+      "id": "hok-097",
+      "name": "Mabry Farrowick",
+      "description": "Gilded Tempest",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Mabry+Farrowick",
+      "position": "Jungle"
+    },
+    {
+      "id": "hok-098",
+      "name": "Casti Everline",
+      "description": "Gilded Coil",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Casti+Everline",
+      "position": "Mid"
+    },
+    {
+      "id": "hok-099",
+      "name": "Ade Glasshill",
+      "description": "Obsidian Bastion",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Ade+Glasshill",
+      "position": "Farm"
+    },
+    {
+      "id": "hok-100",
+      "name": "Hale Kestrelly",
+      "description": "Gilded Bulwark",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Hale+Kestrelly",
+      "position": "Roam"
+    },
+    {
+      "id": "hok-101",
+      "name": "Ade Westergale",
+      "description": "Frostbound Tempest",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Ade+Westergale",
+      "position": "Clash"
+    },
+    {
+      "id": "hok-102",
+      "name": "Jarek Undercliff",
+      "description": "Hollow Coil",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Jarek+Undercliff",
+      "position": "Jungle"
+    },
+    {
+      "id": "hok-103",
+      "name": "Rask Larkspur",
+      "description": "Iron Coil",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Rask+Larkspur",
+      "position": "Mid"
+    },
+    {
+      "id": "hok-104",
+      "name": "Orin Brambleton",
+      "description": "Crimson Tempest",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Orin+Brambleton",
+      "position": "Farm"
+    },
+    {
+      "id": "hok-105",
+      "name": "Falk Kestrelly",
+      "description": "Thunderous Sovereign",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Falk+Kestrelly",
+      "position": "Roam"
+    },
+    {
+      "id": "hok-106",
+      "name": "Kell Ashcroft",
+      "description": "Iron Vanguard",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Kell+Ashcroft",
+      "position": "Clash"
+    },
+    {
+      "id": "hok-107",
+      "name": "Quill Nettleby",
+      "description": "Wandering Bulwark",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Quill+Nettleby",
+      "position": "Jungle"
+    },
+    {
+      "id": "hok-108",
+      "name": "Bram Thistlewaite",
+      "description": "Wandering Sovereign",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Bram+Thistlewaite",
+      "position": "Mid"
+    },
+    {
+      "id": "hok-109",
+      "name": "Ade Zephyrly",
+      "description": "Gilded Oracle",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Ade+Zephyrly",
+      "position": "Farm"
+    },
+    {
+      "id": "hok-110",
+      "name": "Bram Varden",
+      "description": "Sundered Ember",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Bram+Varden",
+      "position": "Roam"
+    },
+    {
+      "id": "hok-111",
+      "name": "Yorn Westergale",
+      "description": "Crimson Sovereign",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Yorn+Westergale",
+      "position": "Clash"
+    },
+    {
+      "id": "hok-112",
+      "name": "Mabry Yarrowfield",
+      "description": "Frostbound Ember",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Mabry+Yarrowfield",
+      "position": "Jungle"
+    },
+    {
+      "id": "hok-113",
+      "name": "Quill Kestrelly",
+      "description": "Thunderous Warden",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Quill+Kestrelly",
+      "position": "Mid"
+    },
+    {
+      "id": "hok-114",
+      "name": "Hale Everline",
+      "description": "Hollow Bulwark",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Hale+Everline",
+      "position": "Farm"
+    },
+    {
+      "id": "hok-115",
+      "name": "Ulric Thistlewaite",
+      "description": "Frostbound Reverie",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Ulric+Thistlewaite",
+      "position": "Roam"
+    },
+    {
+      "id": "hok-116",
+      "name": "Kell Quarrow",
+      "description": "Iron Sovereign",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Kell+Quarrow",
+      "position": "Clash"
+    },
+    {
+      "id": "hok-117",
+      "name": "Casti Stonemarch",
+      "description": "Hollow Coil",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Casti+Stonemarch",
+      "position": "Jungle"
+    },
+    {
+      "id": "hok-118",
+      "name": "Orin Stonemarch",
+      "description": "Wandering Warden",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Orin+Stonemarch",
+      "position": "Mid"
+    },
+    {
+      "id": "hok-119",
+      "name": "Pell Oakhurst",
+      "description": "Frostbound Bulwark",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Pell+Oakhurst",
+      "position": "Farm"
+    },
+    {
+      "id": "hok-120",
+      "name": "Kell Farrowick",
+      "description": "Wandering Warden",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Kell+Farrowick",
+      "position": "Roam"
+    },
+    {
+      "id": "hok-121",
+      "name": "Ade Varden",
+      "description": "Obsidian Reverie",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Ade+Varden",
+      "position": "Clash"
+    },
+    {
+      "id": "hok-122",
+      "name": "Mabry Farrowick",
+      "description": "Obsidian Oracle",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Mabry+Farrowick",
+      "position": "Jungle"
+    },
+    {
+      "id": "hok-123",
+      "name": "Quill Ironmere",
+      "description": "Radiant Tempest",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Quill+Ironmere",
+      "position": "Mid"
+    },
+    {
+      "id": "hok-124",
+      "name": "Vane Ironmere",
+      "description": "Hollow Coil",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Vane+Ironmere",
+      "position": "Farm"
+    },
+    {
+      "id": "hok-125",
+      "name": "Wick Coldwater",
+      "description": "Verdant Vanguard",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Wick+Coldwater",
+      "position": "Roam"
+    },
+    {
+      "id": "hok-126",
+      "name": "Pell Brambleton",
+      "description": "Sundered Bulwark",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Pell+Brambleton",
+      "position": "Clash"
+    },
+    {
+      "id": "hok-127",
+      "name": "Casti Yarrowfield",
+      "description": "Wandering Coil",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Casti+Yarrowfield",
+      "position": "Jungle"
+    },
+    {
+      "id": "hok-128",
+      "name": "Rask Pinebank",
+      "description": "Obsidian Warden",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Rask+Pinebank",
+      "position": "Mid"
+    },
+    {
+      "id": "hok-129",
+      "name": "Falk Larkspur",
+      "description": "Hollow Requiem",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Falk+Larkspur",
+      "position": "Farm"
+    },
+    {
+      "id": "hok-130",
+      "name": "Ivor Stonemarch",
+      "description": "Crimson Bulwark",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Ivor+Stonemarch",
+      "position": "Roam"
+    },
+    {
+      "id": "hok-131",
+      "name": "Nils Quarrow",
+      "description": "Hollow Requiem",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Nils+Quarrow",
+      "position": "Clash"
+    },
+    {
+      "id": "hok-132",
+      "name": "Nils Duskmoor",
+      "description": "Sundered Vanguard",
+      "art": "https://placehold.co/1040x760/7e22ce/faf5ff.png?text=Nils+Duskmoor",
+      "position": "Jungle"
+    }
+  ]
+}

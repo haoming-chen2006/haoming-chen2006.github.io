@@ -1,0 +1,2089 @@
+{
+  "mode": "soccer",
+  "hidden": {
+    "soccer-001": {
+      "matches": 32,
+      "minutes": 2734,
+      "scored": 0,
+      "created": 2,
+      "shots_on_target": 0,
+      "duels_won_pct": 55,
+      "clean_sheets": 16,
+      "saves": 102
+    },
+    "soccer-002": {
+      "matches": 36,
+      "minutes": 1555,
+      "scored": 33,
+      "created": 5,
+      "shots_on_target": 17,
+      "duels_won_pct": 57
+    },
+    "soccer-003": {
+      "matches": 33,
+      "minutes": 1574,
+      "scored": 8,
+      "created": 2,
+      "shots_on_target": 58,
+      "duels_won_pct": 55
+    },
+    "soccer-004": {
+      "matches": 36,
+      "minutes": 2733,
+      "scored": 33,
+      "created": 21,
+      "shots_on_target": 57,
+      "duels_won_pct": 43
+    },
+    "soccer-005": {
+      "matches": 27,
+      "minutes": 3201,
+      "scored": 22,
+      "created": 9,
+      "shots_on_target": 30,
+      "duels_won_pct": 63
+    },
+    "soccer-006": {
+      "matches": 22,
+      "minutes": 2150,
+      "scored": 31,
+      "created": 19,
+      "shots_on_target": 56,
+      "duels_won_pct": 46
+    },
+    "soccer-007": {
+      "matches": 25,
+      "minutes": 3047,
+      "scored": 0,
+      "created": 0,
+      "shots_on_target": 0,
+      "duels_won_pct": 55,
+      "clean_sheets": 16,
+      "saves": 59
+    },
+    "soccer-008": {
+      "matches": 25,
+      "minutes": 1829,
+      "scored": 18,
+      "created": 7,
+      "shots_on_target": 35,
+      "duels_won_pct": 40
+    },
+    "soccer-009": {
+      "matches": 30,
+      "minutes": 1439,
+      "scored": 8,
+      "created": 21,
+      "shots_on_target": 88,
+      "duels_won_pct": 68
+    },
+    "soccer-010": {
+      "matches": 36,
+      "minutes": 2703,
+      "scored": 29,
+      "created": 12,
+      "shots_on_target": 80,
+      "duels_won_pct": 55
+    },
+    "soccer-011": {
+      "matches": 38,
+      "minutes": 3233,
+      "scored": 23,
+      "created": 3,
+      "shots_on_target": 46,
+      "duels_won_pct": 48
+    },
+    "soccer-012": {
+      "matches": 34,
+      "minutes": 1665,
+      "scored": 26,
+      "created": 16,
+      "shots_on_target": 15,
+      "duels_won_pct": 53
+    },
+    "soccer-013": {
+      "matches": 21,
+      "minutes": 3293,
+      "scored": 0,
+      "created": 1,
+      "shots_on_target": 0,
+      "duels_won_pct": 59,
+      "clean_sheets": 9,
+      "saves": 135
+    },
+    "soccer-014": {
+      "matches": 24,
+      "minutes": 1452,
+      "scored": 32,
+      "created": 0,
+      "shots_on_target": 19,
+      "duels_won_pct": 60
+    },
+    "soccer-015": {
+      "matches": 22,
+      "minutes": 1722,
+      "scored": 16,
+      "created": 18,
+      "shots_on_target": 43,
+      "duels_won_pct": 47
+    },
+    "soccer-016": {
+      "matches": 32,
+      "minutes": 3101,
+      "scored": 27,
+      "created": 9,
+      "shots_on_target": 45,
+      "duels_won_pct": 69
+    },
+    "soccer-017": {
+      "matches": 21,
+      "minutes": 2085,
+      "scored": 31,
+      "created": 18,
+      "shots_on_target": 85,
+      "duels_won_pct": 59
+    },
+    "soccer-018": {
+      "matches": 23,
+      "minutes": 3146,
+      "scored": 5,
+      "created": 9,
+      "shots_on_target": 82,
+      "duels_won_pct": 42
+    },
+    "soccer-019": {
+      "matches": 25,
+      "minutes": 1994,
+      "scored": 0,
+      "created": 2,
+      "shots_on_target": 0,
+      "duels_won_pct": 69,
+      "clean_sheets": 8,
+      "saves": 128
+    },
+    "soccer-020": {
+      "matches": 28,
+      "minutes": 2475,
+      "scored": 31,
+      "created": 0,
+      "shots_on_target": 44,
+      "duels_won_pct": 59
+    },
+    "soccer-021": {
+      "matches": 32,
+      "minutes": 3309,
+      "scored": 20,
+      "created": 19,
+      "shots_on_target": 54,
+      "duels_won_pct": 40
+    },
+    "soccer-022": {
+      "matches": 28,
+      "minutes": 3224,
+      "scored": 12,
+      "created": 13,
+      "shots_on_target": 12,
+      "duels_won_pct": 64
+    },
+    "soccer-023": {
+      "matches": 30,
+      "minutes": 3222,
+      "scored": 14,
+      "created": 19,
+      "shots_on_target": 52,
+      "duels_won_pct": 63
+    },
+    "soccer-024": {
+      "matches": 30,
+      "minutes": 3030,
+      "scored": 16,
+      "created": 5,
+      "shots_on_target": 52,
+      "duels_won_pct": 41
+    },
+    "soccer-025": {
+      "matches": 26,
+      "minutes": 3175,
+      "scored": 0,
+      "created": 0,
+      "shots_on_target": 0,
+      "duels_won_pct": 45,
+      "clean_sheets": 7,
+      "saves": 136
+    },
+    "soccer-026": {
+      "matches": 24,
+      "minutes": 1782,
+      "scored": 24,
+      "created": 14,
+      "shots_on_target": 13,
+      "duels_won_pct": 47
+    },
+    "soccer-027": {
+      "matches": 34,
+      "minutes": 1976,
+      "scored": 24,
+      "created": 0,
+      "shots_on_target": 55,
+      "duels_won_pct": 70
+    },
+    "soccer-028": {
+      "matches": 26,
+      "minutes": 2871,
+      "scored": 8,
+      "created": 11,
+      "shots_on_target": 86,
+      "duels_won_pct": 51
+    },
+    "soccer-029": {
+      "matches": 25,
+      "minutes": 3002,
+      "scored": 27,
+      "created": 1,
+      "shots_on_target": 54,
+      "duels_won_pct": 51
+    },
+    "soccer-030": {
+      "matches": 33,
+      "minutes": 2133,
+      "scored": 27,
+      "created": 7,
+      "shots_on_target": 60,
+      "duels_won_pct": 69
+    },
+    "soccer-031": {
+      "matches": 26,
+      "minutes": 1727,
+      "scored": 0,
+      "created": 0,
+      "shots_on_target": 0,
+      "duels_won_pct": 72,
+      "clean_sheets": 11,
+      "saves": 118
+    },
+    "soccer-032": {
+      "matches": 25,
+      "minutes": 2503,
+      "scored": 19,
+      "created": 18,
+      "shots_on_target": 29,
+      "duels_won_pct": 43
+    },
+    "soccer-033": {
+      "matches": 26,
+      "minutes": 1854,
+      "scored": 12,
+      "created": 0,
+      "shots_on_target": 7,
+      "duels_won_pct": 39
+    },
+    "soccer-034": {
+      "matches": 29,
+      "minutes": 2868,
+      "scored": 4,
+      "created": 18,
+      "shots_on_target": 40,
+      "duels_won_pct": 71
+    },
+    "soccer-035": {
+      "matches": 32,
+      "minutes": 2031,
+      "scored": 21,
+      "created": 19,
+      "shots_on_target": 41,
+      "duels_won_pct": 60
+    },
+    "soccer-036": {
+      "matches": 20,
+      "minutes": 2132,
+      "scored": 22,
+      "created": 13,
+      "shots_on_target": 51,
+      "duels_won_pct": 55
+    },
+    "soccer-037": {
+      "matches": 24,
+      "minutes": 2985,
+      "scored": 0,
+      "created": 1,
+      "shots_on_target": 0,
+      "duels_won_pct": 43,
+      "clean_sheets": 3,
+      "saves": 114
+    },
+    "soccer-038": {
+      "matches": 34,
+      "minutes": 3293,
+      "scored": 16,
+      "created": 12,
+      "shots_on_target": 35,
+      "duels_won_pct": 57
+    },
+    "soccer-039": {
+      "matches": 27,
+      "minutes": 2388,
+      "scored": 10,
+      "created": 10,
+      "shots_on_target": 31,
+      "duels_won_pct": 51
+    },
+    "soccer-040": {
+      "matches": 23,
+      "minutes": 3068,
+      "scored": 23,
+      "created": 10,
+      "shots_on_target": 13,
+      "duels_won_pct": 56
+    },
+    "soccer-041": {
+      "matches": 23,
+      "minutes": 2835,
+      "scored": 32,
+      "created": 21,
+      "shots_on_target": 29,
+      "duels_won_pct": 54
+    },
+    "soccer-042": {
+      "matches": 37,
+      "minutes": 1864,
+      "scored": 25,
+      "created": 4,
+      "shots_on_target": 64,
+      "duels_won_pct": 47
+    },
+    "soccer-043": {
+      "matches": 35,
+      "minutes": 1707,
+      "scored": 0,
+      "created": 0,
+      "shots_on_target": 0,
+      "duels_won_pct": 54,
+      "clean_sheets": 16,
+      "saves": 123
+    },
+    "soccer-044": {
+      "matches": 23,
+      "minutes": 2037,
+      "scored": 6,
+      "created": 20,
+      "shots_on_target": 34,
+      "duels_won_pct": 47
+    },
+    "soccer-045": {
+      "matches": 26,
+      "minutes": 2268,
+      "scored": 24,
+      "created": 12,
+      "shots_on_target": 62,
+      "duels_won_pct": 69
+    },
+    "soccer-046": {
+      "matches": 37,
+      "minutes": 2487,
+      "scored": 21,
+      "created": 21,
+      "shots_on_target": 7,
+      "duels_won_pct": 59
+    },
+    "soccer-047": {
+      "matches": 30,
+      "minutes": 1577,
+      "scored": 0,
+      "created": 8,
+      "shots_on_target": 66,
+      "duels_won_pct": 54
+    },
+    "soccer-048": {
+      "matches": 22,
+      "minutes": 2141,
+      "scored": 10,
+      "created": 6,
+      "shots_on_target": 24,
+      "duels_won_pct": 59
+    },
+    "soccer-049": {
+      "matches": 29,
+      "minutes": 2365,
+      "scored": 0,
+      "created": 2,
+      "shots_on_target": 0,
+      "duels_won_pct": 44,
+      "clean_sheets": 18,
+      "saves": 67
+    },
+    "soccer-050": {
+      "matches": 25,
+      "minutes": 2937,
+      "scored": 23,
+      "created": 0,
+      "shots_on_target": 38,
+      "duels_won_pct": 55
+    },
+    "soccer-051": {
+      "matches": 24,
+      "minutes": 1833,
+      "scored": 2,
+      "created": 20,
+      "shots_on_target": 6,
+      "duels_won_pct": 68
+    },
+    "soccer-052": {
+      "matches": 37,
+      "minutes": 2806,
+      "scored": 25,
+      "created": 2,
+      "shots_on_target": 90,
+      "duels_won_pct": 48
+    },
+    "soccer-053": {
+      "matches": 34,
+      "minutes": 3250,
+      "scored": 4,
+      "created": 3,
+      "shots_on_target": 38,
+      "duels_won_pct": 55
+    },
+    "soccer-054": {
+      "matches": 30,
+      "minutes": 2905,
+      "scored": 11,
+      "created": 3,
+      "shots_on_target": 85,
+      "duels_won_pct": 48
+    },
+    "soccer-055": {
+      "matches": 28,
+      "minutes": 1918,
+      "scored": 0,
+      "created": 2,
+      "shots_on_target": 0,
+      "duels_won_pct": 44,
+      "clean_sheets": 20,
+      "saves": 77
+    },
+    "soccer-056": {
+      "matches": 20,
+      "minutes": 2306,
+      "scored": 3,
+      "created": 8,
+      "shots_on_target": 13,
+      "duels_won_pct": 55
+    },
+    "soccer-057": {
+      "matches": 23,
+      "minutes": 1914,
+      "scored": 25,
+      "created": 8,
+      "shots_on_target": 71,
+      "duels_won_pct": 53
+    },
+    "soccer-058": {
+      "matches": 26,
+      "minutes": 3209,
+      "scored": 21,
+      "created": 6,
+      "shots_on_target": 75,
+      "duels_won_pct": 60
+    },
+    "soccer-059": {
+      "matches": 22,
+      "minutes": 2780,
+      "scored": 32,
+      "created": 16,
+      "shots_on_target": 45,
+      "duels_won_pct": 44
+    },
+    "soccer-060": {
+      "matches": 35,
+      "minutes": 2403,
+      "scored": 17,
+      "created": 22,
+      "shots_on_target": 51,
+      "duels_won_pct": 65
+    },
+    "soccer-061": {
+      "matches": 38,
+      "minutes": 3004,
+      "scored": 0,
+      "created": 0,
+      "shots_on_target": 0,
+      "duels_won_pct": 72,
+      "clean_sheets": 12,
+      "saves": 80
+    },
+    "soccer-062": {
+      "matches": 38,
+      "minutes": 1997,
+      "scored": 14,
+      "created": 22,
+      "shots_on_target": 6,
+      "duels_won_pct": 40
+    },
+    "soccer-063": {
+      "matches": 33,
+      "minutes": 2788,
+      "scored": 1,
+      "created": 12,
+      "shots_on_target": 30,
+      "duels_won_pct": 64
+    },
+    "soccer-064": {
+      "matches": 23,
+      "minutes": 2356,
+      "scored": 15,
+      "created": 11,
+      "shots_on_target": 16,
+      "duels_won_pct": 48
+    },
+    "soccer-065": {
+      "matches": 37,
+      "minutes": 2637,
+      "scored": 20,
+      "created": 3,
+      "shots_on_target": 14,
+      "duels_won_pct": 46
+    },
+    "soccer-066": {
+      "matches": 32,
+      "minutes": 2129,
+      "scored": 22,
+      "created": 10,
+      "shots_on_target": 48,
+      "duels_won_pct": 53
+    },
+    "soccer-067": {
+      "matches": 33,
+      "minutes": 2917,
+      "scored": 0,
+      "created": 0,
+      "shots_on_target": 0,
+      "duels_won_pct": 55,
+      "clean_sheets": 21,
+      "saves": 122
+    },
+    "soccer-068": {
+      "matches": 25,
+      "minutes": 2968,
+      "scored": 22,
+      "created": 10,
+      "shots_on_target": 73,
+      "duels_won_pct": 52
+    },
+    "soccer-069": {
+      "matches": 20,
+      "minutes": 2812,
+      "scored": 13,
+      "created": 17,
+      "shots_on_target": 60,
+      "duels_won_pct": 61
+    },
+    "soccer-070": {
+      "matches": 22,
+      "minutes": 1950,
+      "scored": 27,
+      "created": 13,
+      "shots_on_target": 42,
+      "duels_won_pct": 64
+    },
+    "soccer-071": {
+      "matches": 24,
+      "minutes": 2399,
+      "scored": 23,
+      "created": 13,
+      "shots_on_target": 26,
+      "duels_won_pct": 55
+    },
+    "soccer-072": {
+      "matches": 31,
+      "minutes": 3241,
+      "scored": 29,
+      "created": 7,
+      "shots_on_target": 55,
+      "duels_won_pct": 69
+    },
+    "soccer-073": {
+      "matches": 37,
+      "minutes": 2621,
+      "scored": 0,
+      "created": 1,
+      "shots_on_target": 0,
+      "duels_won_pct": 57,
+      "clean_sheets": 8,
+      "saves": 105
+    },
+    "soccer-074": {
+      "matches": 35,
+      "minutes": 1694,
+      "scored": 5,
+      "created": 5,
+      "shots_on_target": 10,
+      "duels_won_pct": 63
+    },
+    "soccer-075": {
+      "matches": 20,
+      "minutes": 3081,
+      "scored": 0,
+      "created": 21,
+      "shots_on_target": 72,
+      "duels_won_pct": 52
+    },
+    "soccer-076": {
+      "matches": 36,
+      "minutes": 1709,
+      "scored": 27,
+      "created": 22,
+      "shots_on_target": 23,
+      "duels_won_pct": 41
+    },
+    "soccer-077": {
+      "matches": 22,
+      "minutes": 2898,
+      "scored": 29,
+      "created": 6,
+      "shots_on_target": 60,
+      "duels_won_pct": 71
+    },
+    "soccer-078": {
+      "matches": 29,
+      "minutes": 3343,
+      "scored": 7,
+      "created": 4,
+      "shots_on_target": 45,
+      "duels_won_pct": 43
+    },
+    "soccer-079": {
+      "matches": 26,
+      "minutes": 2062,
+      "scored": 0,
+      "created": 2,
+      "shots_on_target": 0,
+      "duels_won_pct": 69,
+      "clean_sheets": 12,
+      "saves": 80
+    },
+    "soccer-080": {
+      "matches": 26,
+      "minutes": 2667,
+      "scored": 16,
+      "created": 18,
+      "shots_on_target": 45,
+      "duels_won_pct": 58
+    },
+    "soccer-081": {
+      "matches": 22,
+      "minutes": 2341,
+      "scored": 21,
+      "created": 18,
+      "shots_on_target": 89,
+      "duels_won_pct": 43
+    },
+    "soccer-082": {
+      "matches": 33,
+      "minutes": 1754,
+      "scored": 24,
+      "created": 20,
+      "shots_on_target": 85,
+      "duels_won_pct": 40
+    },
+    "soccer-083": {
+      "matches": 23,
+      "minutes": 1580,
+      "scored": 1,
+      "created": 13,
+      "shots_on_target": 42,
+      "duels_won_pct": 43
+    },
+    "soccer-084": {
+      "matches": 34,
+      "minutes": 2716,
+      "scored": 26,
+      "created": 2,
+      "shots_on_target": 36,
+      "duels_won_pct": 63
+    },
+    "soccer-085": {
+      "matches": 38,
+      "minutes": 1416,
+      "scored": 0,
+      "created": 1,
+      "shots_on_target": 0,
+      "duels_won_pct": 65,
+      "clean_sheets": 5,
+      "saves": 136
+    },
+    "soccer-086": {
+      "matches": 29,
+      "minutes": 3107,
+      "scored": 32,
+      "created": 3,
+      "shots_on_target": 22,
+      "duels_won_pct": 47
+    },
+    "soccer-087": {
+      "matches": 34,
+      "minutes": 3017,
+      "scored": 12,
+      "created": 21,
+      "shots_on_target": 17,
+      "duels_won_pct": 64
+    },
+    "soccer-088": {
+      "matches": 30,
+      "minutes": 2224,
+      "scored": 24,
+      "created": 15,
+      "shots_on_target": 45,
+      "duels_won_pct": 39
+    },
+    "soccer-089": {
+      "matches": 28,
+      "minutes": 3065,
+      "scored": 20,
+      "created": 4,
+      "shots_on_target": 76,
+      "duels_won_pct": 39
+    },
+    "soccer-090": {
+      "matches": 27,
+      "minutes": 1635,
+      "scored": 11,
+      "created": 6,
+      "shots_on_target": 83,
+      "duels_won_pct": 43
+    },
+    "soccer-091": {
+      "matches": 26,
+      "minutes": 2350,
+      "scored": 0,
+      "created": 0,
+      "shots_on_target": 0,
+      "duels_won_pct": 60,
+      "clean_sheets": 2,
+      "saves": 60
+    },
+    "soccer-092": {
+      "matches": 24,
+      "minutes": 1752,
+      "scored": 28,
+      "created": 22,
+      "shots_on_target": 29,
+      "duels_won_pct": 40
+    },
+    "soccer-093": {
+      "matches": 29,
+      "minutes": 2706,
+      "scored": 7,
+      "created": 21,
+      "shots_on_target": 70,
+      "duels_won_pct": 48
+    },
+    "soccer-094": {
+      "matches": 24,
+      "minutes": 2579,
+      "scored": 25,
+      "created": 17,
+      "shots_on_target": 57,
+      "duels_won_pct": 38
+    },
+    "soccer-095": {
+      "matches": 37,
+      "minutes": 1805,
+      "scored": 17,
+      "created": 7,
+      "shots_on_target": 27,
+      "duels_won_pct": 56
+    },
+    "soccer-096": {
+      "matches": 20,
+      "minutes": 2745,
+      "scored": 10,
+      "created": 10,
+      "shots_on_target": 59,
+      "duels_won_pct": 52
+    },
+    "soccer-097": {
+      "matches": 34,
+      "minutes": 2363,
+      "scored": 0,
+      "created": 1,
+      "shots_on_target": 0,
+      "duels_won_pct": 46,
+      "clean_sheets": 11,
+      "saves": 70
+    },
+    "soccer-098": {
+      "matches": 38,
+      "minutes": 2921,
+      "scored": 23,
+      "created": 13,
+      "shots_on_target": 71,
+      "duels_won_pct": 59
+    },
+    "soccer-099": {
+      "matches": 21,
+      "minutes": 2700,
+      "scored": 31,
+      "created": 22,
+      "shots_on_target": 65,
+      "duels_won_pct": 38
+    },
+    "soccer-100": {
+      "matches": 33,
+      "minutes": 1490,
+      "scored": 5,
+      "created": 2,
+      "shots_on_target": 35,
+      "duels_won_pct": 66
+    },
+    "soccer-101": {
+      "matches": 33,
+      "minutes": 1772,
+      "scored": 3,
+      "created": 17,
+      "shots_on_target": 73,
+      "duels_won_pct": 49
+    },
+    "soccer-102": {
+      "matches": 24,
+      "minutes": 1485,
+      "scored": 1,
+      "created": 13,
+      "shots_on_target": 35,
+      "duels_won_pct": 58
+    },
+    "soccer-103": {
+      "matches": 27,
+      "minutes": 1988,
+      "scored": 0,
+      "created": 2,
+      "shots_on_target": 0,
+      "duels_won_pct": 52,
+      "clean_sheets": 9,
+      "saves": 120
+    },
+    "soccer-104": {
+      "matches": 27,
+      "minutes": 2669,
+      "scored": 23,
+      "created": 16,
+      "shots_on_target": 72,
+      "duels_won_pct": 62
+    },
+    "soccer-105": {
+      "matches": 32,
+      "minutes": 1492,
+      "scored": 15,
+      "created": 2,
+      "shots_on_target": 50,
+      "duels_won_pct": 66
+    },
+    "soccer-106": {
+      "matches": 28,
+      "minutes": 1790,
+      "scored": 3,
+      "created": 0,
+      "shots_on_target": 11,
+      "duels_won_pct": 40
+    },
+    "soccer-107": {
+      "matches": 25,
+      "minutes": 3013,
+      "scored": 13,
+      "created": 4,
+      "shots_on_target": 7,
+      "duels_won_pct": 55
+    },
+    "soccer-108": {
+      "matches": 29,
+      "minutes": 3244,
+      "scored": 1,
+      "created": 9,
+      "shots_on_target": 66,
+      "duels_won_pct": 63
+    },
+    "soccer-109": {
+      "matches": 33,
+      "minutes": 1656,
+      "scored": 0,
+      "created": 1,
+      "shots_on_target": 0,
+      "duels_won_pct": 53,
+      "clean_sheets": 10,
+      "saves": 125
+    },
+    "soccer-110": {
+      "matches": 29,
+      "minutes": 1802,
+      "scored": 31,
+      "created": 3,
+      "shots_on_target": 47,
+      "duels_won_pct": 48
+    },
+    "soccer-111": {
+      "matches": 23,
+      "minutes": 2406,
+      "scored": 19,
+      "created": 2,
+      "shots_on_target": 67,
+      "duels_won_pct": 72
+    },
+    "soccer-112": {
+      "matches": 21,
+      "minutes": 2084,
+      "scored": 34,
+      "created": 21,
+      "shots_on_target": 87,
+      "duels_won_pct": 53
+    },
+    "soccer-113": {
+      "matches": 20,
+      "minutes": 3216,
+      "scored": 23,
+      "created": 11,
+      "shots_on_target": 15,
+      "duels_won_pct": 45
+    },
+    "soccer-114": {
+      "matches": 28,
+      "minutes": 1752,
+      "scored": 19,
+      "created": 19,
+      "shots_on_target": 89,
+      "duels_won_pct": 67
+    },
+    "soccer-115": {
+      "matches": 30,
+      "minutes": 2449,
+      "scored": 0,
+      "created": 0,
+      "shots_on_target": 0,
+      "duels_won_pct": 55,
+      "clean_sheets": 15,
+      "saves": 46
+    },
+    "soccer-116": {
+      "matches": 27,
+      "minutes": 3101,
+      "scored": 12,
+      "created": 19,
+      "shots_on_target": 26,
+      "duels_won_pct": 67
+    },
+    "soccer-117": {
+      "matches": 22,
+      "minutes": 2682,
+      "scored": 17,
+      "created": 8,
+      "shots_on_target": 54,
+      "duels_won_pct": 39
+    },
+    "soccer-118": {
+      "matches": 33,
+      "minutes": 2652,
+      "scored": 10,
+      "created": 13,
+      "shots_on_target": 14,
+      "duels_won_pct": 44
+    },
+    "soccer-119": {
+      "matches": 28,
+      "minutes": 1640,
+      "scored": 4,
+      "created": 1,
+      "shots_on_target": 27,
+      "duels_won_pct": 56
+    },
+    "soccer-120": {
+      "matches": 29,
+      "minutes": 1893,
+      "scored": 31,
+      "created": 6,
+      "shots_on_target": 57,
+      "duels_won_pct": 39
+    },
+    "soccer-121": {
+      "matches": 26,
+      "minutes": 1662,
+      "scored": 0,
+      "created": 0,
+      "shots_on_target": 0,
+      "duels_won_pct": 58,
+      "clean_sheets": 19,
+      "saves": 90
+    },
+    "soccer-122": {
+      "matches": 22,
+      "minutes": 3248,
+      "scored": 20,
+      "created": 2,
+      "shots_on_target": 56,
+      "duels_won_pct": 50
+    },
+    "soccer-123": {
+      "matches": 37,
+      "minutes": 3361,
+      "scored": 12,
+      "created": 22,
+      "shots_on_target": 85,
+      "duels_won_pct": 59
+    },
+    "soccer-124": {
+      "matches": 36,
+      "minutes": 2254,
+      "scored": 1,
+      "created": 3,
+      "shots_on_target": 21,
+      "duels_won_pct": 52
+    },
+    "soccer-125": {
+      "matches": 29,
+      "minutes": 2145,
+      "scored": 1,
+      "created": 9,
+      "shots_on_target": 49,
+      "duels_won_pct": 50
+    },
+    "soccer-126": {
+      "matches": 38,
+      "minutes": 1441,
+      "scored": 22,
+      "created": 20,
+      "shots_on_target": 24,
+      "duels_won_pct": 43
+    },
+    "soccer-127": {
+      "matches": 34,
+      "minutes": 2630,
+      "scored": 0,
+      "created": 2,
+      "shots_on_target": 0,
+      "duels_won_pct": 71,
+      "clean_sheets": 13,
+      "saves": 128
+    },
+    "soccer-128": {
+      "matches": 32,
+      "minutes": 2629,
+      "scored": 13,
+      "created": 4,
+      "shots_on_target": 7,
+      "duels_won_pct": 54
+    },
+    "soccer-129": {
+      "matches": 28,
+      "minutes": 2289,
+      "scored": 34,
+      "created": 7,
+      "shots_on_target": 34,
+      "duels_won_pct": 57
+    },
+    "soccer-130": {
+      "matches": 21,
+      "minutes": 3089,
+      "scored": 11,
+      "created": 14,
+      "shots_on_target": 39,
+      "duels_won_pct": 53
+    },
+    "soccer-131": {
+      "matches": 27,
+      "minutes": 1755,
+      "scored": 7,
+      "created": 22,
+      "shots_on_target": 5,
+      "duels_won_pct": 56
+    },
+    "soccer-132": {
+      "matches": 33,
+      "minutes": 3152,
+      "scored": 34,
+      "created": 4,
+      "shots_on_target": 24,
+      "duels_won_pct": 48
+    },
+    "soccer-133": {
+      "matches": 31,
+      "minutes": 2656,
+      "scored": 0,
+      "created": 1,
+      "shots_on_target": 0,
+      "duels_won_pct": 69,
+      "clean_sheets": 20,
+      "saves": 74
+    },
+    "soccer-134": {
+      "matches": 27,
+      "minutes": 2197,
+      "scored": 3,
+      "created": 18,
+      "shots_on_target": 69,
+      "duels_won_pct": 58
+    },
+    "soccer-135": {
+      "matches": 34,
+      "minutes": 2315,
+      "scored": 24,
+      "created": 21,
+      "shots_on_target": 42,
+      "duels_won_pct": 69
+    },
+    "soccer-136": {
+      "matches": 37,
+      "minutes": 2063,
+      "scored": 33,
+      "created": 18,
+      "shots_on_target": 54,
+      "duels_won_pct": 39
+    },
+    "soccer-137": {
+      "matches": 28,
+      "minutes": 1587,
+      "scored": 5,
+      "created": 16,
+      "shots_on_target": 68,
+      "duels_won_pct": 47
+    },
+    "soccer-138": {
+      "matches": 34,
+      "minutes": 2771,
+      "scored": 27,
+      "created": 18,
+      "shots_on_target": 82,
+      "duels_won_pct": 49
+    },
+    "soccer-139": {
+      "matches": 37,
+      "minutes": 2017,
+      "scored": 0,
+      "created": 2,
+      "shots_on_target": 0,
+      "duels_won_pct": 40,
+      "clean_sheets": 9,
+      "saves": 138
+    },
+    "soccer-140": {
+      "matches": 35,
+      "minutes": 3267,
+      "scored": 14,
+      "created": 11,
+      "shots_on_target": 66,
+      "duels_won_pct": 58
+    },
+    "soccer-141": {
+      "matches": 25,
+      "minutes": 1823,
+      "scored": 26,
+      "created": 20,
+      "shots_on_target": 65,
+      "duels_won_pct": 44
+    },
+    "soccer-142": {
+      "matches": 22,
+      "minutes": 2458,
+      "scored": 1,
+      "created": 9,
+      "shots_on_target": 88,
+      "duels_won_pct": 61
+    },
+    "soccer-143": {
+      "matches": 25,
+      "minutes": 2719,
+      "scored": 0,
+      "created": 4,
+      "shots_on_target": 44,
+      "duels_won_pct": 52
+    },
+    "soccer-144": {
+      "matches": 29,
+      "minutes": 2250,
+      "scored": 24,
+      "created": 3,
+      "shots_on_target": 85,
+      "duels_won_pct": 60
+    },
+    "soccer-145": {
+      "matches": 35,
+      "minutes": 1691,
+      "scored": 0,
+      "created": 1,
+      "shots_on_target": 0,
+      "duels_won_pct": 62,
+      "clean_sheets": 5,
+      "saves": 91
+    },
+    "soccer-146": {
+      "matches": 36,
+      "minutes": 2697,
+      "scored": 18,
+      "created": 2,
+      "shots_on_target": 84,
+      "duels_won_pct": 54
+    },
+    "soccer-147": {
+      "matches": 23,
+      "minutes": 2233,
+      "scored": 9,
+      "created": 19,
+      "shots_on_target": 44,
+      "duels_won_pct": 41
+    },
+    "soccer-148": {
+      "matches": 30,
+      "minutes": 2285,
+      "scored": 25,
+      "created": 1,
+      "shots_on_target": 39,
+      "duels_won_pct": 50
+    },
+    "soccer-149": {
+      "matches": 22,
+      "minutes": 1756,
+      "scored": 11,
+      "created": 12,
+      "shots_on_target": 40,
+      "duels_won_pct": 56
+    },
+    "soccer-150": {
+      "matches": 31,
+      "minutes": 1940,
+      "scored": 12,
+      "created": 11,
+      "shots_on_target": 79,
+      "duels_won_pct": 65
+    },
+    "soccer-151": {
+      "matches": 29,
+      "minutes": 3030,
+      "scored": 0,
+      "created": 0,
+      "shots_on_target": 0,
+      "duels_won_pct": 54,
+      "clean_sheets": 15,
+      "saves": 110
+    },
+    "soccer-152": {
+      "matches": 28,
+      "minutes": 2059,
+      "scored": 5,
+      "created": 22,
+      "shots_on_target": 54,
+      "duels_won_pct": 60
+    },
+    "soccer-153": {
+      "matches": 20,
+      "minutes": 3237,
+      "scored": 10,
+      "created": 6,
+      "shots_on_target": 35,
+      "duels_won_pct": 62
+    },
+    "soccer-154": {
+      "matches": 30,
+      "minutes": 2875,
+      "scored": 17,
+      "created": 4,
+      "shots_on_target": 88,
+      "duels_won_pct": 43
+    },
+    "soccer-155": {
+      "matches": 37,
+      "minutes": 1666,
+      "scored": 24,
+      "created": 17,
+      "shots_on_target": 45,
+      "duels_won_pct": 67
+    },
+    "soccer-156": {
+      "matches": 27,
+      "minutes": 1608,
+      "scored": 14,
+      "created": 1,
+      "shots_on_target": 68,
+      "duels_won_pct": 62
+    },
+    "soccer-157": {
+      "matches": 21,
+      "minutes": 3332,
+      "scored": 0,
+      "created": 0,
+      "shots_on_target": 0,
+      "duels_won_pct": 59,
+      "clean_sheets": 18,
+      "saves": 101
+    },
+    "soccer-158": {
+      "matches": 35,
+      "minutes": 1941,
+      "scored": 23,
+      "created": 18,
+      "shots_on_target": 71,
+      "duels_won_pct": 40
+    },
+    "soccer-159": {
+      "matches": 34,
+      "minutes": 3239,
+      "scored": 7,
+      "created": 9,
+      "shots_on_target": 48,
+      "duels_won_pct": 43
+    },
+    "soccer-160": {
+      "matches": 31,
+      "minutes": 1976,
+      "scored": 14,
+      "created": 1,
+      "shots_on_target": 13,
+      "duels_won_pct": 68
+    },
+    "soccer-161": {
+      "matches": 36,
+      "minutes": 1973,
+      "scored": 31,
+      "created": 20,
+      "shots_on_target": 56,
+      "duels_won_pct": 46
+    },
+    "soccer-162": {
+      "matches": 37,
+      "minutes": 2884,
+      "scored": 20,
+      "created": 16,
+      "shots_on_target": 81,
+      "duels_won_pct": 61
+    },
+    "soccer-163": {
+      "matches": 28,
+      "minutes": 2309,
+      "scored": 0,
+      "created": 1,
+      "shots_on_target": 0,
+      "duels_won_pct": 49,
+      "clean_sheets": 2,
+      "saves": 117
+    },
+    "soccer-164": {
+      "matches": 28,
+      "minutes": 1865,
+      "scored": 22,
+      "created": 2,
+      "shots_on_target": 32,
+      "duels_won_pct": 50
+    },
+    "soccer-165": {
+      "matches": 26,
+      "minutes": 2320,
+      "scored": 24,
+      "created": 14,
+      "shots_on_target": 85,
+      "duels_won_pct": 70
+    },
+    "soccer-166": {
+      "matches": 31,
+      "minutes": 1833,
+      "scored": 32,
+      "created": 10,
+      "shots_on_target": 46,
+      "duels_won_pct": 39
+    },
+    "soccer-167": {
+      "matches": 31,
+      "minutes": 1607,
+      "scored": 6,
+      "created": 14,
+      "shots_on_target": 5,
+      "duels_won_pct": 64
+    },
+    "soccer-168": {
+      "matches": 37,
+      "minutes": 2581,
+      "scored": 27,
+      "created": 4,
+      "shots_on_target": 51,
+      "duels_won_pct": 42
+    },
+    "soccer-169": {
+      "matches": 24,
+      "minutes": 1894,
+      "scored": 0,
+      "created": 0,
+      "shots_on_target": 0,
+      "duels_won_pct": 71,
+      "clean_sheets": 5,
+      "saves": 110
+    },
+    "soccer-170": {
+      "matches": 30,
+      "minutes": 2333,
+      "scored": 13,
+      "created": 10,
+      "shots_on_target": 87,
+      "duels_won_pct": 41
+    },
+    "soccer-171": {
+      "matches": 28,
+      "minutes": 2824,
+      "scored": 23,
+      "created": 0,
+      "shots_on_target": 45,
+      "duels_won_pct": 47
+    },
+    "soccer-172": {
+      "matches": 35,
+      "minutes": 1863,
+      "scored": 13,
+      "created": 17,
+      "shots_on_target": 85,
+      "duels_won_pct": 58
+    },
+    "soccer-173": {
+      "matches": 30,
+      "minutes": 2630,
+      "scored": 33,
+      "created": 17,
+      "shots_on_target": 25,
+      "duels_won_pct": 42
+    },
+    "soccer-174": {
+      "matches": 24,
+      "minutes": 3119,
+      "scored": 33,
+      "created": 7,
+      "shots_on_target": 28,
+      "duels_won_pct": 66
+    },
+    "soccer-175": {
+      "matches": 38,
+      "minutes": 2802,
+      "scored": 0,
+      "created": 0,
+      "shots_on_target": 0,
+      "duels_won_pct": 56,
+      "clean_sheets": 2,
+      "saves": 86
+    },
+    "soccer-176": {
+      "matches": 24,
+      "minutes": 1558,
+      "scored": 24,
+      "created": 2,
+      "shots_on_target": 36,
+      "duels_won_pct": 54
+    },
+    "soccer-177": {
+      "matches": 27,
+      "minutes": 1978,
+      "scored": 29,
+      "created": 18,
+      "shots_on_target": 55,
+      "duels_won_pct": 69
+    },
+    "soccer-178": {
+      "matches": 20,
+      "minutes": 2407,
+      "scored": 2,
+      "created": 11,
+      "shots_on_target": 20,
+      "duels_won_pct": 65
+    },
+    "soccer-179": {
+      "matches": 22,
+      "minutes": 2093,
+      "scored": 5,
+      "created": 22,
+      "shots_on_target": 74,
+      "duels_won_pct": 57
+    },
+    "soccer-180": {
+      "matches": 37,
+      "minutes": 1763,
+      "scored": 11,
+      "created": 22,
+      "shots_on_target": 26,
+      "duels_won_pct": 53
+    },
+    "soccer-181": {
+      "matches": 32,
+      "minutes": 2972,
+      "scored": 0,
+      "created": 1,
+      "shots_on_target": 0,
+      "duels_won_pct": 38,
+      "clean_sheets": 3,
+      "saves": 54
+    },
+    "soccer-182": {
+      "matches": 32,
+      "minutes": 1585,
+      "scored": 34,
+      "created": 14,
+      "shots_on_target": 42,
+      "duels_won_pct": 49
+    },
+    "soccer-183": {
+      "matches": 32,
+      "minutes": 2027,
+      "scored": 15,
+      "created": 10,
+      "shots_on_target": 30,
+      "duels_won_pct": 38
+    },
+    "soccer-184": {
+      "matches": 24,
+      "minutes": 3287,
+      "scored": 26,
+      "created": 10,
+      "shots_on_target": 8,
+      "duels_won_pct": 62
+    },
+    "soccer-185": {
+      "matches": 33,
+      "minutes": 3067,
+      "scored": 5,
+      "created": 0,
+      "shots_on_target": 51,
+      "duels_won_pct": 53
+    },
+    "soccer-186": {
+      "matches": 27,
+      "minutes": 3196,
+      "scored": 8,
+      "created": 3,
+      "shots_on_target": 48,
+      "duels_won_pct": 61
+    },
+    "soccer-187": {
+      "matches": 22,
+      "minutes": 2131,
+      "scored": 0,
+      "created": 1,
+      "shots_on_target": 0,
+      "duels_won_pct": 40,
+      "clean_sheets": 2,
+      "saves": 59
+    },
+    "soccer-188": {
+      "matches": 37,
+      "minutes": 2491,
+      "scored": 31,
+      "created": 21,
+      "shots_on_target": 54,
+      "duels_won_pct": 51
+    },
+    "soccer-189": {
+      "matches": 31,
+      "minutes": 1786,
+      "scored": 21,
+      "created": 2,
+      "shots_on_target": 60,
+      "duels_won_pct": 38
+    },
+    "soccer-190": {
+      "matches": 21,
+      "minutes": 2394,
+      "scored": 16,
+      "created": 17,
+      "shots_on_target": 60,
+      "duels_won_pct": 42
+    },
+    "soccer-191": {
+      "matches": 32,
+      "minutes": 1439,
+      "scored": 34,
+      "created": 6,
+      "shots_on_target": 69,
+      "duels_won_pct": 56
+    },
+    "soccer-192": {
+      "matches": 32,
+      "minutes": 3344,
+      "scored": 28,
+      "created": 6,
+      "shots_on_target": 14,
+      "duels_won_pct": 64
+    },
+    "soccer-193": {
+      "matches": 35,
+      "minutes": 2687,
+      "scored": 0,
+      "created": 2,
+      "shots_on_target": 0,
+      "duels_won_pct": 67,
+      "clean_sheets": 18,
+      "saves": 121
+    },
+    "soccer-194": {
+      "matches": 37,
+      "minutes": 2039,
+      "scored": 7,
+      "created": 6,
+      "shots_on_target": 62,
+      "duels_won_pct": 46
+    },
+    "soccer-195": {
+      "matches": 20,
+      "minutes": 2780,
+      "scored": 21,
+      "created": 15,
+      "shots_on_target": 50,
+      "duels_won_pct": 54
+    },
+    "soccer-196": {
+      "matches": 33,
+      "minutes": 2055,
+      "scored": 16,
+      "created": 8,
+      "shots_on_target": 6,
+      "duels_won_pct": 61
+    },
+    "soccer-197": {
+      "matches": 31,
+      "minutes": 2791,
+      "scored": 21,
+      "created": 20,
+      "shots_on_target": 85,
+      "duels_won_pct": 39
+    },
+    "soccer-198": {
+      "matches": 24,
+      "minutes": 2024,
+      "scored": 32,
+      "created": 13,
+      "shots_on_target": 21,
+      "duels_won_pct": 49
+    },
+    "soccer-199": {
+      "matches": 22,
+      "minutes": 2186,
+      "scored": 0,
+      "created": 1,
+      "shots_on_target": 0,
+      "duels_won_pct": 63,
+      "clean_sheets": 2,
+      "saves": 52
+    },
+    "soccer-200": {
+      "matches": 20,
+      "minutes": 2567,
+      "scored": 14,
+      "created": 12,
+      "shots_on_target": 9,
+      "duels_won_pct": 46
+    },
+    "soccer-201": {
+      "matches": 21,
+      "minutes": 2433,
+      "scored": 25,
+      "created": 12,
+      "shots_on_target": 69,
+      "duels_won_pct": 70
+    },
+    "soccer-202": {
+      "matches": 28,
+      "minutes": 2926,
+      "scored": 30,
+      "created": 19,
+      "shots_on_target": 88,
+      "duels_won_pct": 48
+    },
+    "soccer-203": {
+      "matches": 37,
+      "minutes": 3054,
+      "scored": 1,
+      "created": 12,
+      "shots_on_target": 27,
+      "duels_won_pct": 69
+    },
+    "soccer-204": {
+      "matches": 21,
+      "minutes": 2945,
+      "scored": 23,
+      "created": 3,
+      "shots_on_target": 77,
+      "duels_won_pct": 54
+    },
+    "soccer-205": {
+      "matches": 33,
+      "minutes": 2178,
+      "scored": 0,
+      "created": 0,
+      "shots_on_target": 0,
+      "duels_won_pct": 67,
+      "clean_sheets": 18,
+      "saves": 71
+    },
+    "soccer-206": {
+      "matches": 30,
+      "minutes": 1527,
+      "scored": 3,
+      "created": 4,
+      "shots_on_target": 61,
+      "duels_won_pct": 42
+    },
+    "soccer-207": {
+      "matches": 37,
+      "minutes": 2312,
+      "scored": 15,
+      "created": 1,
+      "shots_on_target": 55,
+      "duels_won_pct": 72
+    },
+    "soccer-208": {
+      "matches": 28,
+      "minutes": 2007,
+      "scored": 2,
+      "created": 20,
+      "shots_on_target": 57,
+      "duels_won_pct": 66
+    },
+    "soccer-209": {
+      "matches": 25,
+      "minutes": 2552,
+      "scored": 28,
+      "created": 11,
+      "shots_on_target": 83,
+      "duels_won_pct": 69
+    },
+    "soccer-210": {
+      "matches": 38,
+      "minutes": 1827,
+      "scored": 27,
+      "created": 4,
+      "shots_on_target": 44,
+      "duels_won_pct": 60
+    },
+    "soccer-211": {
+      "matches": 28,
+      "minutes": 3223,
+      "scored": 0,
+      "created": 1,
+      "shots_on_target": 0,
+      "duels_won_pct": 69,
+      "clean_sheets": 6,
+      "saves": 111
+    },
+    "soccer-212": {
+      "matches": 33,
+      "minutes": 1618,
+      "scored": 5,
+      "created": 4,
+      "shots_on_target": 21,
+      "duels_won_pct": 70
+    },
+    "soccer-213": {
+      "matches": 31,
+      "minutes": 2181,
+      "scored": 32,
+      "created": 8,
+      "shots_on_target": 50,
+      "duels_won_pct": 47
+    },
+    "soccer-214": {
+      "matches": 23,
+      "minutes": 3384,
+      "scored": 25,
+      "created": 16,
+      "shots_on_target": 5,
+      "duels_won_pct": 44
+    },
+    "soccer-215": {
+      "matches": 26,
+      "minutes": 1430,
+      "scored": 14,
+      "created": 17,
+      "shots_on_target": 81,
+      "duels_won_pct": 63
+    },
+    "soccer-216": {
+      "matches": 30,
+      "minutes": 2846,
+      "scored": 20,
+      "created": 8,
+      "shots_on_target": 12,
+      "duels_won_pct": 61
+    },
+    "soccer-217": {
+      "matches": 26,
+      "minutes": 2455,
+      "scored": 0,
+      "created": 2,
+      "shots_on_target": 0,
+      "duels_won_pct": 64,
+      "clean_sheets": 14,
+      "saves": 115
+    },
+    "soccer-218": {
+      "matches": 30,
+      "minutes": 3078,
+      "scored": 25,
+      "created": 1,
+      "shots_on_target": 17,
+      "duels_won_pct": 43
+    },
+    "soccer-219": {
+      "matches": 30,
+      "minutes": 2984,
+      "scored": 0,
+      "created": 12,
+      "shots_on_target": 33,
+      "duels_won_pct": 64
+    },
+    "soccer-220": {
+      "matches": 37,
+      "minutes": 1435,
+      "scored": 32,
+      "created": 4,
+      "shots_on_target": 37,
+      "duels_won_pct": 43
+    },
+    "soccer-221": {
+      "matches": 36,
+      "minutes": 3216,
+      "scored": 15,
+      "created": 6,
+      "shots_on_target": 26,
+      "duels_won_pct": 51
+    },
+    "soccer-222": {
+      "matches": 33,
+      "minutes": 2260,
+      "scored": 11,
+      "created": 9,
+      "shots_on_target": 84,
+      "duels_won_pct": 64
+    },
+    "soccer-223": {
+      "matches": 27,
+      "minutes": 2763,
+      "scored": 0,
+      "created": 0,
+      "shots_on_target": 0,
+      "duels_won_pct": 41,
+      "clean_sheets": 17,
+      "saves": 46
+    },
+    "soccer-224": {
+      "matches": 23,
+      "minutes": 1923,
+      "scored": 24,
+      "created": 13,
+      "shots_on_target": 21,
+      "duels_won_pct": 43
+    },
+    "soccer-225": {
+      "matches": 20,
+      "minutes": 1773,
+      "scored": 0,
+      "created": 20,
+      "shots_on_target": 36,
+      "duels_won_pct": 45
+    },
+    "soccer-226": {
+      "matches": 37,
+      "minutes": 2803,
+      "scored": 15,
+      "created": 14,
+      "shots_on_target": 75,
+      "duels_won_pct": 68
+    },
+    "soccer-227": {
+      "matches": 29,
+      "minutes": 3279,
+      "scored": 20,
+      "created": 0,
+      "shots_on_target": 16,
+      "duels_won_pct": 57
+    },
+    "soccer-228": {
+      "matches": 20,
+      "minutes": 2131,
+      "scored": 20,
+      "created": 20,
+      "shots_on_target": 7,
+      "duels_won_pct": 40
+    },
+    "soccer-229": {
+      "matches": 30,
+      "minutes": 3289,
+      "scored": 0,
+      "created": 0,
+      "shots_on_target": 0,
+      "duels_won_pct": 46,
+      "clean_sheets": 14,
+      "saves": 75
+    },
+    "soccer-230": {
+      "matches": 36,
+      "minutes": 1695,
+      "scored": 19,
+      "created": 0,
+      "shots_on_target": 43,
+      "duels_won_pct": 67
+    },
+    "soccer-231": {
+      "matches": 32,
+      "minutes": 3135,
+      "scored": 18,
+      "created": 2,
+      "shots_on_target": 10,
+      "duels_won_pct": 66
+    },
+    "soccer-232": {
+      "matches": 34,
+      "minutes": 2466,
+      "scored": 18,
+      "created": 15,
+      "shots_on_target": 13,
+      "duels_won_pct": 56
+    },
+    "soccer-233": {
+      "matches": 24,
+      "minutes": 3213,
+      "scored": 22,
+      "created": 4,
+      "shots_on_target": 57,
+      "duels_won_pct": 66
+    },
+    "soccer-234": {
+      "matches": 25,
+      "minutes": 1485,
+      "scored": 0,
+      "created": 11,
+      "shots_on_target": 52,
+      "duels_won_pct": 56
+    },
+    "soccer-235": {
+      "matches": 24,
+      "minutes": 2574,
+      "scored": 0,
+      "created": 2,
+      "shots_on_target": 0,
+      "duels_won_pct": 38,
+      "clean_sheets": 2,
+      "saves": 132
+    },
+    "soccer-236": {
+      "matches": 23,
+      "minutes": 3257,
+      "scored": 11,
+      "created": 5,
+      "shots_on_target": 62,
+      "duels_won_pct": 68
+    },
+    "soccer-237": {
+      "matches": 25,
+      "minutes": 1752,
+      "scored": 27,
+      "created": 15,
+      "shots_on_target": 51,
+      "duels_won_pct": 53
+    },
+    "soccer-238": {
+      "matches": 26,
+      "minutes": 1965,
+      "scored": 13,
+      "created": 7,
+      "shots_on_target": 29,
+      "duels_won_pct": 71
+    },
+    "soccer-239": {
+      "matches": 30,
+      "minutes": 2090,
+      "scored": 30,
+      "created": 3,
+      "shots_on_target": 64,
+      "duels_won_pct": 51
+    },
+    "soccer-240": {
+      "matches": 33,
+      "minutes": 3077,
+      "scored": 24,
+      "created": 12,
+      "shots_on_target": 85,
+      "duels_won_pct": 61
+    },
+    "soccer-241": {
+      "matches": 23,
+      "minutes": 2909,
+      "scored": 0,
+      "created": 0,
+      "shots_on_target": 0,
+      "duels_won_pct": 64,
+      "clean_sheets": 21,
+      "saves": 82
+    },
+    "soccer-242": {
+      "matches": 37,
+      "minutes": 2138,
+      "scored": 23,
+      "created": 10,
+      "shots_on_target": 69,
+      "duels_won_pct": 42
+    },
+    "soccer-243": {
+      "matches": 37,
+      "minutes": 2368,
+      "scored": 26,
+      "created": 7,
+      "shots_on_target": 35,
+      "duels_won_pct": 60
+    },
+    "soccer-244": {
+      "matches": 24,
+      "minutes": 2010,
+      "scored": 32,
+      "created": 0,
+      "shots_on_target": 85,
+      "duels_won_pct": 64
+    },
+    "soccer-245": {
+      "matches": 35,
+      "minutes": 1550,
+      "scored": 34,
+      "created": 11,
+      "shots_on_target": 53,
+      "duels_won_pct": 61
+    },
+    "soccer-246": {
+      "matches": 38,
+      "minutes": 3126,
+      "scored": 13,
+      "created": 13,
+      "shots_on_target": 14,
+      "duels_won_pct": 57
+    },
+    "soccer-247": {
+      "matches": 32,
+      "minutes": 1595,
+      "scored": 0,
+      "created": 0,
+      "shots_on_target": 0,
+      "duels_won_pct": 64,
+      "clean_sheets": 14,
+      "saves": 120
+    },
+    "soccer-248": {
+      "matches": 37,
+      "minutes": 1614,
+      "scored": 9,
+      "created": 8,
+      "shots_on_target": 14,
+      "duels_won_pct": 48
+    },
+    "soccer-249": {
+      "matches": 33,
+      "minutes": 2926,
+      "scored": 25,
+      "created": 10,
+      "shots_on_target": 40,
+      "duels_won_pct": 48
+    },
+    "soccer-250": {
+      "matches": 38,
+      "minutes": 1790,
+      "scored": 10,
+      "created": 6,
+      "shots_on_target": 50,
+      "duels_won_pct": 41
+    }
+  }
+}

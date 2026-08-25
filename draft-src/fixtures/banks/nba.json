@@ -1,0 +1,1755 @@
+{
+  "mode": "nba",
+  "cards": [
+    {
+      "id": "nba-001",
+      "name": "Zev Everline",
+      "description": "2010-11 · Morrow Thornbacks",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Zev+Everline",
+      "position": "PG"
+    },
+    {
+      "id": "nba-002",
+      "name": "Sten Westergale",
+      "description": "1999-00 · Kesh Foxes",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Sten+Westergale",
+      "position": "SG"
+    },
+    {
+      "id": "nba-003",
+      "name": "Wick Junewood",
+      "description": "2013-14 · Pellhaven Wolves",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Wick+Junewood",
+      "position": "SF"
+    },
+    {
+      "id": "nba-004",
+      "name": "Bram Stonemarch",
+      "description": "2013-14 · Vantor Beacons",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Bram+Stonemarch",
+      "position": "PF"
+    },
+    {
+      "id": "nba-005",
+      "name": "Wick Marrowgate",
+      "description": "2000-01 · Ellwater Thornbacks",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Wick+Marrowgate",
+      "position": "C"
+    },
+    {
+      "id": "nba-006",
+      "name": "Ulric Ironmere",
+      "description": "2012-13 · Ellwater Kestrels",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Ulric+Ironmere",
+      "position": "PG"
+    },
+    {
+      "id": "nba-007",
+      "name": "Casti Hollowfen",
+      "description": "2013-14 · Corvane Mariners",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Casti+Hollowfen",
+      "position": "SG"
+    },
+    {
+      "id": "nba-008",
+      "name": "Emryn Ironmere",
+      "description": "2015-16 · Drybank Ironmen",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Emryn+Ironmere",
+      "position": "SF"
+    },
+    {
+      "id": "nba-009",
+      "name": "Falk Undercliff",
+      "description": "2016-17 · Gale End Kestrels",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Falk+Undercliff",
+      "position": "PF"
+    },
+    {
+      "id": "nba-010",
+      "name": "Orin Varden",
+      "description": "1999-00 · Kesh Mariners",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Orin+Varden",
+      "position": "C"
+    },
+    {
+      "id": "nba-011",
+      "name": "Falk Pinebank",
+      "description": "2024-25 · Fenmark Kestrels",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Falk+Pinebank",
+      "position": "PG"
+    },
+    {
+      "id": "nba-012",
+      "name": "Emryn Pinebank",
+      "description": "2010-11 · Fenmark Harriers",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Emryn+Pinebank",
+      "position": "SG"
+    },
+    {
+      "id": "nba-013",
+      "name": "Lorne Pinebank",
+      "description": "1998-99 · Hallowdeep Wardens",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Lorne+Pinebank",
+      "position": "SF"
+    },
+    {
+      "id": "nba-014",
+      "name": "Orin Stonemarch",
+      "description": "2006-07 · Pellhaven Kestrels",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Orin+Stonemarch",
+      "position": "PF"
+    },
+    {
+      "id": "nba-015",
+      "name": "Jarek Ashcroft",
+      "description": "2014-15 · Corvane Cinders",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Jarek+Ashcroft",
+      "position": "C"
+    },
+    {
+      "id": "nba-016",
+      "name": "Bram Larkspur",
+      "description": "2015-16 · Fenmark Cinders",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Bram+Larkspur",
+      "position": "PG"
+    },
+    {
+      "id": "nba-017",
+      "name": "Rask Everline",
+      "description": "2023-24 · Gale End Ironmen",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Rask+Everline",
+      "position": "SG"
+    },
+    {
+      "id": "nba-018",
+      "name": "Kell Oakhurst",
+      "description": "2007-08 · Irondale Thornbacks",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Kell+Oakhurst",
+      "position": "SF"
+    },
+    {
+      "id": "nba-019",
+      "name": "Sten Coldwater",
+      "description": "1999-00 · Kesh Mariners",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Sten+Coldwater",
+      "position": "PF"
+    },
+    {
+      "id": "nba-020",
+      "name": "Goran Undercliff",
+      "description": "2006-07 · Hallowdeep Foxes",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Goran+Undercliff",
+      "position": "C"
+    },
+    {
+      "id": "nba-021",
+      "name": "Orin Varden",
+      "description": "2013-14 · Pellhaven Anvils",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Orin+Varden",
+      "position": "PG"
+    },
+    {
+      "id": "nba-022",
+      "name": "Tam Junewood",
+      "description": "2018-19 · Irondale Foxes",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Tam+Junewood",
+      "position": "SG"
+    },
+    {
+      "id": "nba-023",
+      "name": "Zev Pinebank",
+      "description": "2023-24 · Irondale Beacons",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Zev+Pinebank",
+      "position": "SF"
+    },
+    {
+      "id": "nba-024",
+      "name": "Sten Junewood",
+      "description": "2019-20 · Gale End Mariners",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Sten+Junewood",
+      "position": "PF"
+    },
+    {
+      "id": "nba-025",
+      "name": "Ulric Thistlewaite",
+      "description": "1999-00 · Corvane Wolves",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Ulric+Thistlewaite",
+      "position": "C"
+    },
+    {
+      "id": "nba-026",
+      "name": "Orin Westergale",
+      "description": "2023-24 · Kesh Lanterns",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Orin+Westergale",
+      "position": "PG"
+    },
+    {
+      "id": "nba-027",
+      "name": "Emryn Westergale",
+      "description": "2019-20 · Aldreth Harriers",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Emryn+Westergale",
+      "position": "SG"
+    },
+    {
+      "id": "nba-028",
+      "name": "Ade Westergale",
+      "description": "2009-10 · Drybank Harriers",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Ade+Westergale",
+      "position": "SF"
+    },
+    {
+      "id": "nba-029",
+      "name": "Wick Larkspur",
+      "description": "2002-03 · Irondale Mariners",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Wick+Larkspur",
+      "position": "PF"
+    },
+    {
+      "id": "nba-030",
+      "name": "Kell Oakhurst",
+      "description": "2018-19 · Hallowdeep Beacons",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Kell+Oakhurst",
+      "position": "C"
+    },
+    {
+      "id": "nba-031",
+      "name": "Kell Junewood",
+      "description": "2005-06 · Ellwater Mariners",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Kell+Junewood",
+      "position": "PG"
+    },
+    {
+      "id": "nba-032",
+      "name": "Doran Stonemarch",
+      "description": "2016-17 · Morrow Thornbacks",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Doran+Stonemarch",
+      "position": "SG"
+    },
+    {
+      "id": "nba-033",
+      "name": "Casti Nettleby",
+      "description": "2020-21 · Drybank Cinders",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Casti+Nettleby",
+      "position": "SF"
+    },
+    {
+      "id": "nba-034",
+      "name": "Kell Coldwater",
+      "description": "2014-15 · Vantor Beacons",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Kell+Coldwater",
+      "position": "PF"
+    },
+    {
+      "id": "nba-035",
+      "name": "Quill Farrowick",
+      "description": "2007-08 · Drybank Lanterns",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Quill+Farrowick",
+      "position": "C"
+    },
+    {
+      "id": "nba-036",
+      "name": "Quill Undercliff",
+      "description": "1998-99 · Kesh Cinders",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Quill+Undercliff",
+      "position": "PG"
+    },
+    {
+      "id": "nba-037",
+      "name": "Mabry Varden",
+      "description": "2013-14 · Irondale Harriers",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Mabry+Varden",
+      "position": "SG"
+    },
+    {
+      "id": "nba-038",
+      "name": "Bram Thistlewaite",
+      "description": "2007-08 · Gale End Beacons",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Bram+Thistlewaite",
+      "position": "SF"
+    },
+    {
+      "id": "nba-039",
+      "name": "Jarek Duskmoor",
+      "description": "2018-19 · Fenmark Wardens",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Jarek+Duskmoor",
+      "position": "PF"
+    },
+    {
+      "id": "nba-040",
+      "name": "Ade Everline",
+      "description": "2017-18 · Fenmark Wolves",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Ade+Everline",
+      "position": "C"
+    },
+    {
+      "id": "nba-041",
+      "name": "Casti Thistlewaite",
+      "description": "2010-11 · Morrow Foxes",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Casti+Thistlewaite",
+      "position": "PG"
+    },
+    {
+      "id": "nba-042",
+      "name": "Goran Duskmoor",
+      "description": "2002-03 · Aldreth Cinders",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Goran+Duskmoor",
+      "position": "SG"
+    },
+    {
+      "id": "nba-043",
+      "name": "Hale Undercliff",
+      "description": "2016-17 · Irondale Ironmen",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Hale+Undercliff",
+      "position": "SF"
+    },
+    {
+      "id": "nba-044",
+      "name": "Doran Marrowgate",
+      "description": "2006-07 · Hallowdeep Wolves",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Doran+Marrowgate",
+      "position": "PF"
+    },
+    {
+      "id": "nba-045",
+      "name": "Hale Duskmoor",
+      "description": "2000-01 · Kesh Thornbacks",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Hale+Duskmoor",
+      "position": "C"
+    },
+    {
+      "id": "nba-046",
+      "name": "Vane Coldwater",
+      "description": "2009-10 · Corvane Anvils",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Vane+Coldwater",
+      "position": "PG"
+    },
+    {
+      "id": "nba-047",
+      "name": "Quill Undercliff",
+      "description": "2011-12 · Morrow Thornbacks",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Quill+Undercliff",
+      "position": "SG"
+    },
+    {
+      "id": "nba-048",
+      "name": "Lorne Varden",
+      "description": "2012-13 · Hallowdeep Lanterns",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Lorne+Varden",
+      "position": "SF"
+    },
+    {
+      "id": "nba-049",
+      "name": "Orin Ironmere",
+      "description": "2007-08 · Corvane Wardens",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Orin+Ironmere",
+      "position": "PF"
+    },
+    {
+      "id": "nba-050",
+      "name": "Kell Quarrow",
+      "description": "2003-04 · Ellwater Mariners",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Kell+Quarrow",
+      "position": "C"
+    },
+    {
+      "id": "nba-051",
+      "name": "Emryn Duskmoor",
+      "description": "2003-04 · Hallowdeep Lanterns",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Emryn+Duskmoor",
+      "position": "PG"
+    },
+    {
+      "id": "nba-052",
+      "name": "Tam Brambleton",
+      "description": "2001-02 · Gale End Harriers",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Tam+Brambleton",
+      "position": "SG"
+    },
+    {
+      "id": "nba-053",
+      "name": "Zev Varden",
+      "description": "2024-25 · Morrow Anvils",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Zev+Varden",
+      "position": "SF"
+    },
+    {
+      "id": "nba-054",
+      "name": "Falk Larkspur",
+      "description": "2005-06 · Hallowdeep Lanterns",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Falk+Larkspur",
+      "position": "PF"
+    },
+    {
+      "id": "nba-055",
+      "name": "Sten Kestrelly",
+      "description": "2010-11 · Fenmark Lanterns",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Sten+Kestrelly",
+      "position": "C"
+    },
+    {
+      "id": "nba-056",
+      "name": "Pell Ashcroft",
+      "description": "2004-05 · Ellwater Foxes",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Pell+Ashcroft",
+      "position": "PG"
+    },
+    {
+      "id": "nba-057",
+      "name": "Kell Ravensford",
+      "description": "1999-00 · Ellwater Lanterns",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Kell+Ravensford",
+      "position": "SG"
+    },
+    {
+      "id": "nba-058",
+      "name": "Sten Nettleby",
+      "description": "2024-25 · Corvane Harriers",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Sten+Nettleby",
+      "position": "SF"
+    },
+    {
+      "id": "nba-059",
+      "name": "Pell Coldwater",
+      "description": "2013-14 · Kesh Thornbacks",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Pell+Coldwater",
+      "position": "PF"
+    },
+    {
+      "id": "nba-060",
+      "name": "Rask Nettleby",
+      "description": "2023-24 · Hallowdeep Anvils",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Rask+Nettleby",
+      "position": "C"
+    },
+    {
+      "id": "nba-061",
+      "name": "Jarek Stonemarch",
+      "description": "2023-24 · Pellhaven Cinders",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Jarek+Stonemarch",
+      "position": "PG"
+    },
+    {
+      "id": "nba-062",
+      "name": "Nils Everline",
+      "description": "2022-23 · Aldreth Mariners",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Nils+Everline",
+      "position": "SG"
+    },
+    {
+      "id": "nba-063",
+      "name": "Tam Duskmoor",
+      "description": "2003-04 · Ellwater Ironmen",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Tam+Duskmoor",
+      "position": "SF"
+    },
+    {
+      "id": "nba-064",
+      "name": "Mabry Varden",
+      "description": "2015-16 · Hallowdeep Beacons",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Mabry+Varden",
+      "position": "PF"
+    },
+    {
+      "id": "nba-065",
+      "name": "Casti Everline",
+      "description": "2009-10 · Fenmark Mariners",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Casti+Everline",
+      "position": "C"
+    },
+    {
+      "id": "nba-066",
+      "name": "Ulric Ironmere",
+      "description": "2018-19 · Aldreth Ironmen",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Ulric+Ironmere",
+      "position": "PG"
+    },
+    {
+      "id": "nba-067",
+      "name": "Mabry Junewood",
+      "description": "2020-21 · Vantor Wardens",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Mabry+Junewood",
+      "position": "SG"
+    },
+    {
+      "id": "nba-068",
+      "name": "Pell Everline",
+      "description": "2005-06 · Aldreth Anvils",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Pell+Everline",
+      "position": "SF"
+    },
+    {
+      "id": "nba-069",
+      "name": "Doran Ironmere",
+      "description": "2011-12 · Pellhaven Cinders",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Doran+Ironmere",
+      "position": "PF"
+    },
+    {
+      "id": "nba-070",
+      "name": "Quill Marrowgate",
+      "description": "2012-13 · Aldreth Cinders",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Quill+Marrowgate",
+      "position": "C"
+    },
+    {
+      "id": "nba-071",
+      "name": "Nils Zephyrly",
+      "description": "2013-14 · Gale End Lanterns",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Nils+Zephyrly",
+      "position": "PG"
+    },
+    {
+      "id": "nba-072",
+      "name": "Falk Marrowgate",
+      "description": "2008-09 · Morrow Thornbacks",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Falk+Marrowgate",
+      "position": "SG"
+    },
+    {
+      "id": "nba-073",
+      "name": "Quill Coldwater",
+      "description": "2012-13 · Gale End Anvils",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Quill+Coldwater",
+      "position": "SF"
+    },
+    {
+      "id": "nba-074",
+      "name": "Goran Hollowfen",
+      "description": "2008-09 · Ellwater Cinders",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Goran+Hollowfen",
+      "position": "PF"
+    },
+    {
+      "id": "nba-075",
+      "name": "Doran Marrowgate",
+      "description": "2023-24 · Ellwater Kestrels",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Doran+Marrowgate",
+      "position": "C"
+    },
+    {
+      "id": "nba-076",
+      "name": "Hale Kestrelly",
+      "description": "2007-08 · Kesh Wolves",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Hale+Kestrelly",
+      "position": "PG"
+    },
+    {
+      "id": "nba-077",
+      "name": "Zev Coldwater",
+      "description": "2020-21 · Pellhaven Mariners",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Zev+Coldwater",
+      "position": "SG"
+    },
+    {
+      "id": "nba-078",
+      "name": "Bram Ravensford",
+      "description": "2008-09 · Vantor Anvils",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Bram+Ravensford",
+      "position": "SF"
+    },
+    {
+      "id": "nba-079",
+      "name": "Ulric Stonemarch",
+      "description": "2024-25 · Fenmark Anvils",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Ulric+Stonemarch",
+      "position": "PF"
+    },
+    {
+      "id": "nba-080",
+      "name": "Falk Pinebank",
+      "description": "2001-02 · Gale End Lanterns",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Falk+Pinebank",
+      "position": "C"
+    },
+    {
+      "id": "nba-081",
+      "name": "Emryn Ravensford",
+      "description": "2013-14 · Morrow Anvils",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Emryn+Ravensford",
+      "position": "PG"
+    },
+    {
+      "id": "nba-082",
+      "name": "Falk Hollowfen",
+      "description": "2019-20 · Corvane Anvils",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Falk+Hollowfen",
+      "position": "SG"
+    },
+    {
+      "id": "nba-083",
+      "name": "Sten Everline",
+      "description": "1999-00 · Kesh Mariners",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Sten+Everline",
+      "position": "SF"
+    },
+    {
+      "id": "nba-084",
+      "name": "Ade Westergale",
+      "description": "2016-17 · Kesh Ironmen",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Ade+Westergale",
+      "position": "PF"
+    },
+    {
+      "id": "nba-085",
+      "name": "Rask Ironmere",
+      "description": "2010-11 · Morrow Cinders",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Rask+Ironmere",
+      "position": "C"
+    },
+    {
+      "id": "nba-086",
+      "name": "Hale Marrowgate",
+      "description": "2012-13 · Gale End Wolves",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Hale+Marrowgate",
+      "position": "PG"
+    },
+    {
+      "id": "nba-087",
+      "name": "Mabry Glasshill",
+      "description": "2013-14 · Corvane Thornbacks",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Mabry+Glasshill",
+      "position": "SG"
+    },
+    {
+      "id": "nba-088",
+      "name": "Yorn Yarrowfield",
+      "description": "2022-23 · Drybank Kestrels",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Yorn+Yarrowfield",
+      "position": "SF"
+    },
+    {
+      "id": "nba-089",
+      "name": "Doran Glasshill",
+      "description": "2005-06 · Pellhaven Kestrels",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Doran+Glasshill",
+      "position": "PF"
+    },
+    {
+      "id": "nba-090",
+      "name": "Zev Undercliff",
+      "description": "2008-09 · Drybank Cinders",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Zev+Undercliff",
+      "position": "C"
+    },
+    {
+      "id": "nba-091",
+      "name": "Pell Farrowick",
+      "description": "1999-00 · Vantor Anvils",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Pell+Farrowick",
+      "position": "PG"
+    },
+    {
+      "id": "nba-092",
+      "name": "Ade Ravensford",
+      "description": "2016-17 · Pellhaven Ironmen",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Ade+Ravensford",
+      "position": "SG"
+    },
+    {
+      "id": "nba-093",
+      "name": "Ulric Stonemarch",
+      "description": "2006-07 · Fenmark Anvils",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Ulric+Stonemarch",
+      "position": "SF"
+    },
+    {
+      "id": "nba-094",
+      "name": "Yorn Quarrow",
+      "description": "2008-09 · Morrow Wolves",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Yorn+Quarrow",
+      "position": "PF"
+    },
+    {
+      "id": "nba-095",
+      "name": "Doran Nettleby",
+      "description": "2015-16 · Drybank Wardens",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Doran+Nettleby",
+      "position": "C"
+    },
+    {
+      "id": "nba-096",
+      "name": "Falk Brambleton",
+      "description": "2007-08 · Pellhaven Wolves",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Falk+Brambleton",
+      "position": "PG"
+    },
+    {
+      "id": "nba-097",
+      "name": "Quill Farrowick",
+      "description": "2009-10 · Hallowdeep Foxes",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Quill+Farrowick",
+      "position": "SG"
+    },
+    {
+      "id": "nba-098",
+      "name": "Kell Pinebank",
+      "description": "2004-05 · Drybank Kestrels",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Kell+Pinebank",
+      "position": "SF"
+    },
+    {
+      "id": "nba-099",
+      "name": "Goran Everline",
+      "description": "2013-14 · Corvane Foxes",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Goran+Everline",
+      "position": "PF"
+    },
+    {
+      "id": "nba-100",
+      "name": "Ade Duskmoor",
+      "description": "2014-15 · Hallowdeep Kestrels",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Ade+Duskmoor",
+      "position": "C"
+    },
+    {
+      "id": "nba-101",
+      "name": "Doran Varden",
+      "description": "2020-21 · Drybank Anvils",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Doran+Varden",
+      "position": "PG"
+    },
+    {
+      "id": "nba-102",
+      "name": "Jarek Junewood",
+      "description": "2004-05 · Irondale Harriers",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Jarek+Junewood",
+      "position": "SG"
+    },
+    {
+      "id": "nba-103",
+      "name": "Casti Larkspur",
+      "description": "2007-08 · Hallowdeep Lanterns",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Casti+Larkspur",
+      "position": "SF"
+    },
+    {
+      "id": "nba-104",
+      "name": "Mabry Larkspur",
+      "description": "2022-23 · Hallowdeep Beacons",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Mabry+Larkspur",
+      "position": "PF"
+    },
+    {
+      "id": "nba-105",
+      "name": "Sten Varden",
+      "description": "2001-02 · Irondale Wardens",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Sten+Varden",
+      "position": "C"
+    },
+    {
+      "id": "nba-106",
+      "name": "Ulric Larkspur",
+      "description": "2019-20 · Gale End Kestrels",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Ulric+Larkspur",
+      "position": "PG"
+    },
+    {
+      "id": "nba-107",
+      "name": "Bram Duskmoor",
+      "description": "2015-16 · Drybank Harriers",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Bram+Duskmoor",
+      "position": "SG"
+    },
+    {
+      "id": "nba-108",
+      "name": "Mabry Zephyrly",
+      "description": "2014-15 · Irondale Mariners",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Mabry+Zephyrly",
+      "position": "SF"
+    },
+    {
+      "id": "nba-109",
+      "name": "Ulric Thistlewaite",
+      "description": "2018-19 · Drybank Harriers",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Ulric+Thistlewaite",
+      "position": "PF"
+    },
+    {
+      "id": "nba-110",
+      "name": "Emryn Marrowgate",
+      "description": "1998-99 · Fenmark Cinders",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Emryn+Marrowgate",
+      "position": "C"
+    },
+    {
+      "id": "nba-111",
+      "name": "Emryn Junewood",
+      "description": "1998-99 · Kesh Thornbacks",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Emryn+Junewood",
+      "position": "PG"
+    },
+    {
+      "id": "nba-112",
+      "name": "Kell Ashcroft",
+      "description": "2000-01 · Aldreth Beacons",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Kell+Ashcroft",
+      "position": "SG"
+    },
+    {
+      "id": "nba-113",
+      "name": "Yorn Westergale",
+      "description": "2018-19 · Hallowdeep Harriers",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Yorn+Westergale",
+      "position": "SF"
+    },
+    {
+      "id": "nba-114",
+      "name": "Nils Nettleby",
+      "description": "2005-06 · Gale End Harriers",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Nils+Nettleby",
+      "position": "PF"
+    },
+    {
+      "id": "nba-115",
+      "name": "Kell Ashcroft",
+      "description": "2003-04 · Kesh Kestrels",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Kell+Ashcroft",
+      "position": "C"
+    },
+    {
+      "id": "nba-116",
+      "name": "Bram Zephyrly",
+      "description": "2011-12 · Kesh Wolves",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Bram+Zephyrly",
+      "position": "PG"
+    },
+    {
+      "id": "nba-117",
+      "name": "Pell Kestrelly",
+      "description": "2016-17 · Hallowdeep Kestrels",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Pell+Kestrelly",
+      "position": "SG"
+    },
+    {
+      "id": "nba-118",
+      "name": "Ulric Junewood",
+      "description": "2007-08 · Ellwater Anvils",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Ulric+Junewood",
+      "position": "SF"
+    },
+    {
+      "id": "nba-119",
+      "name": "Mabry Marrowgate",
+      "description": "2001-02 · Irondale Cinders",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Mabry+Marrowgate",
+      "position": "PF"
+    },
+    {
+      "id": "nba-120",
+      "name": "Pell Ashcroft",
+      "description": "2014-15 · Pellhaven Foxes",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Pell+Ashcroft",
+      "position": "C"
+    },
+    {
+      "id": "nba-121",
+      "name": "Yorn Thistlewaite",
+      "description": "2024-25 · Irondale Thornbacks",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Yorn+Thistlewaite",
+      "position": "PG"
+    },
+    {
+      "id": "nba-122",
+      "name": "Mabry Oakhurst",
+      "description": "2007-08 · Pellhaven Harriers",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Mabry+Oakhurst",
+      "position": "SG"
+    },
+    {
+      "id": "nba-123",
+      "name": "Ulric Ravensford",
+      "description": "2011-12 · Pellhaven Wolves",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Ulric+Ravensford",
+      "position": "SF"
+    },
+    {
+      "id": "nba-124",
+      "name": "Doran Larkspur",
+      "description": "1998-99 · Irondale Wardens",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Doran+Larkspur",
+      "position": "PF"
+    },
+    {
+      "id": "nba-125",
+      "name": "Emryn Kestrelly",
+      "description": "2021-22 · Vantor Ironmen",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Emryn+Kestrelly",
+      "position": "C"
+    },
+    {
+      "id": "nba-126",
+      "name": "Rask Everline",
+      "description": "2016-17 · Vantor Mariners",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Rask+Everline",
+      "position": "PG"
+    },
+    {
+      "id": "nba-127",
+      "name": "Vane Duskmoor",
+      "description": "2011-12 · Kesh Cinders",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Vane+Duskmoor",
+      "position": "SG"
+    },
+    {
+      "id": "nba-128",
+      "name": "Lorne Pinebank",
+      "description": "2007-08 · Vantor Anvils",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Lorne+Pinebank",
+      "position": "SF"
+    },
+    {
+      "id": "nba-129",
+      "name": "Yorn Kestrelly",
+      "description": "2019-20 · Pellhaven Ironmen",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Yorn+Kestrelly",
+      "position": "PF"
+    },
+    {
+      "id": "nba-130",
+      "name": "Lorne Ironmere",
+      "description": "2014-15 · Vantor Foxes",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Lorne+Ironmere",
+      "position": "C"
+    },
+    {
+      "id": "nba-131",
+      "name": "Orin Hollowfen",
+      "description": "2002-03 · Morrow Beacons",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Orin+Hollowfen",
+      "position": "PG"
+    },
+    {
+      "id": "nba-132",
+      "name": "Lorne Hollowfen",
+      "description": "2003-04 · Aldreth Ironmen",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Lorne+Hollowfen",
+      "position": "SG"
+    },
+    {
+      "id": "nba-133",
+      "name": "Ulric Zephyrly",
+      "description": "2022-23 · Vantor Harriers",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Ulric+Zephyrly",
+      "position": "SF"
+    },
+    {
+      "id": "nba-134",
+      "name": "Jarek Varden",
+      "description": "2019-20 · Ellwater Harriers",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Jarek+Varden",
+      "position": "PF"
+    },
+    {
+      "id": "nba-135",
+      "name": "Wick Zephyrly",
+      "description": "2000-01 · Ellwater Wardens",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Wick+Zephyrly",
+      "position": "C"
+    },
+    {
+      "id": "nba-136",
+      "name": "Emryn Yarrowfield",
+      "description": "2002-03 · Irondale Cinders",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Emryn+Yarrowfield",
+      "position": "PG"
+    },
+    {
+      "id": "nba-137",
+      "name": "Tam Stonemarch",
+      "description": "2023-24 · Ellwater Kestrels",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Tam+Stonemarch",
+      "position": "SG"
+    },
+    {
+      "id": "nba-138",
+      "name": "Jarek Yarrowfield",
+      "description": "2002-03 · Aldreth Ironmen",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Jarek+Yarrowfield",
+      "position": "SF"
+    },
+    {
+      "id": "nba-139",
+      "name": "Falk Nettleby",
+      "description": "2007-08 · Aldreth Wolves",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Falk+Nettleby",
+      "position": "PF"
+    },
+    {
+      "id": "nba-140",
+      "name": "Nils Duskmoor",
+      "description": "2001-02 · Vantor Kestrels",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Nils+Duskmoor",
+      "position": "C"
+    },
+    {
+      "id": "nba-141",
+      "name": "Quill Pinebank",
+      "description": "2015-16 · Kesh Beacons",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Quill+Pinebank",
+      "position": "PG"
+    },
+    {
+      "id": "nba-142",
+      "name": "Pell Brambleton",
+      "description": "1998-99 · Aldreth Anvils",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Pell+Brambleton",
+      "position": "SG"
+    },
+    {
+      "id": "nba-143",
+      "name": "Emryn Yarrowfield",
+      "description": "2019-20 · Gale End Harriers",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Emryn+Yarrowfield",
+      "position": "SF"
+    },
+    {
+      "id": "nba-144",
+      "name": "Orin Stonemarch",
+      "description": "2015-16 · Hallowdeep Cinders",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Orin+Stonemarch",
+      "position": "PF"
+    },
+    {
+      "id": "nba-145",
+      "name": "Hale Brambleton",
+      "description": "2011-12 · Irondale Lanterns",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Hale+Brambleton",
+      "position": "C"
+    },
+    {
+      "id": "nba-146",
+      "name": "Hale Everline",
+      "description": "2024-25 · Irondale Harriers",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Hale+Everline",
+      "position": "PG"
+    },
+    {
+      "id": "nba-147",
+      "name": "Kell Ironmere",
+      "description": "2016-17 · Aldreth Beacons",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Kell+Ironmere",
+      "position": "SG"
+    },
+    {
+      "id": "nba-148",
+      "name": "Zev Zephyrly",
+      "description": "2022-23 · Drybank Mariners",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Zev+Zephyrly",
+      "position": "SF"
+    },
+    {
+      "id": "nba-149",
+      "name": "Casti Glasshill",
+      "description": "2013-14 · Kesh Anvils",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Casti+Glasshill",
+      "position": "PF"
+    },
+    {
+      "id": "nba-150",
+      "name": "Doran Oakhurst",
+      "description": "2006-07 · Corvane Kestrels",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Doran+Oakhurst",
+      "position": "C"
+    },
+    {
+      "id": "nba-151",
+      "name": "Tam Glasshill",
+      "description": "2007-08 · Hallowdeep Ironmen",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Tam+Glasshill",
+      "position": "PG"
+    },
+    {
+      "id": "nba-152",
+      "name": "Yorn Ravensford",
+      "description": "2019-20 · Kesh Wardens",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Yorn+Ravensford",
+      "position": "SG"
+    },
+    {
+      "id": "nba-153",
+      "name": "Ade Ravensford",
+      "description": "2000-01 · Morrow Wardens",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Ade+Ravensford",
+      "position": "SF"
+    },
+    {
+      "id": "nba-154",
+      "name": "Rask Undercliff",
+      "description": "1999-00 · Irondale Kestrels",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Rask+Undercliff",
+      "position": "PF"
+    },
+    {
+      "id": "nba-155",
+      "name": "Sten Brambleton",
+      "description": "2016-17 · Gale End Mariners",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Sten+Brambleton",
+      "position": "C"
+    },
+    {
+      "id": "nba-156",
+      "name": "Goran Kestrelly",
+      "description": "2008-09 · Irondale Kestrels",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Goran+Kestrelly",
+      "position": "PG"
+    },
+    {
+      "id": "nba-157",
+      "name": "Goran Quarrow",
+      "description": "2022-23 · Aldreth Harriers",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Goran+Quarrow",
+      "position": "SG"
+    },
+    {
+      "id": "nba-158",
+      "name": "Pell Nettleby",
+      "description": "2020-21 · Ellwater Harriers",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Pell+Nettleby",
+      "position": "SF"
+    },
+    {
+      "id": "nba-159",
+      "name": "Goran Nettleby",
+      "description": "2005-06 · Drybank Mariners",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Goran+Nettleby",
+      "position": "PF"
+    },
+    {
+      "id": "nba-160",
+      "name": "Ade Coldwater",
+      "description": "2016-17 · Drybank Anvils",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Ade+Coldwater",
+      "position": "C"
+    },
+    {
+      "id": "nba-161",
+      "name": "Ade Ravensford",
+      "description": "2003-04 · Ellwater Wardens",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Ade+Ravensford",
+      "position": "PG"
+    },
+    {
+      "id": "nba-162",
+      "name": "Ivor Pinebank",
+      "description": "2015-16 · Drybank Cinders",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Ivor+Pinebank",
+      "position": "SG"
+    },
+    {
+      "id": "nba-163",
+      "name": "Mabry Ravensford",
+      "description": "2005-06 · Irondale Kestrels",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Mabry+Ravensford",
+      "position": "SF"
+    },
+    {
+      "id": "nba-164",
+      "name": "Wick Everline",
+      "description": "1998-99 · Drybank Lanterns",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Wick+Everline",
+      "position": "PF"
+    },
+    {
+      "id": "nba-165",
+      "name": "Emryn Oakhurst",
+      "description": "2016-17 · Aldreth Cinders",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Emryn+Oakhurst",
+      "position": "C"
+    },
+    {
+      "id": "nba-166",
+      "name": "Ivor Quarrow",
+      "description": "2020-21 · Irondale Wolves",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Ivor+Quarrow",
+      "position": "PG"
+    },
+    {
+      "id": "nba-167",
+      "name": "Ade Thistlewaite",
+      "description": "2006-07 · Hallowdeep Mariners",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Ade+Thistlewaite",
+      "position": "SG"
+    },
+    {
+      "id": "nba-168",
+      "name": "Emryn Coldwater",
+      "description": "2002-03 · Pellhaven Anvils",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Emryn+Coldwater",
+      "position": "SF"
+    },
+    {
+      "id": "nba-169",
+      "name": "Lorne Everline",
+      "description": "2024-25 · Morrow Lanterns",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Lorne+Everline",
+      "position": "PF"
+    },
+    {
+      "id": "nba-170",
+      "name": "Yorn Glasshill",
+      "description": "2014-15 · Vantor Harriers",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Yorn+Glasshill",
+      "position": "C"
+    },
+    {
+      "id": "nba-171",
+      "name": "Vane Ironmere",
+      "description": "2001-02 · Gale End Wardens",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Vane+Ironmere",
+      "position": "PG"
+    },
+    {
+      "id": "nba-172",
+      "name": "Jarek Undercliff",
+      "description": "2020-21 · Kesh Lanterns",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Jarek+Undercliff",
+      "position": "SG"
+    },
+    {
+      "id": "nba-173",
+      "name": "Bram Kestrelly",
+      "description": "2017-18 · Corvane Anvils",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Bram+Kestrelly",
+      "position": "SF"
+    },
+    {
+      "id": "nba-174",
+      "name": "Bram Larkspur",
+      "description": "2021-22 · Morrow Beacons",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Bram+Larkspur",
+      "position": "PF"
+    },
+    {
+      "id": "nba-175",
+      "name": "Sten Duskmoor",
+      "description": "2008-09 · Pellhaven Lanterns",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Sten+Duskmoor",
+      "position": "C"
+    },
+    {
+      "id": "nba-176",
+      "name": "Ulric Oakhurst",
+      "description": "2024-25 · Aldreth Harriers",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Ulric+Oakhurst",
+      "position": "PG"
+    },
+    {
+      "id": "nba-177",
+      "name": "Bram Varden",
+      "description": "2009-10 · Gale End Wolves",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Bram+Varden",
+      "position": "SG"
+    },
+    {
+      "id": "nba-178",
+      "name": "Ivor Pinebank",
+      "description": "2018-19 · Vantor Beacons",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Ivor+Pinebank",
+      "position": "SF"
+    },
+    {
+      "id": "nba-179",
+      "name": "Sten Glasshill",
+      "description": "2009-10 · Pellhaven Foxes",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Sten+Glasshill",
+      "position": "PF"
+    },
+    {
+      "id": "nba-180",
+      "name": "Ulric Farrowick",
+      "description": "2005-06 · Fenmark Cinders",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Ulric+Farrowick",
+      "position": "C"
+    },
+    {
+      "id": "nba-181",
+      "name": "Ade Quarrow",
+      "description": "2010-11 · Drybank Cinders",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Ade+Quarrow",
+      "position": "PG"
+    },
+    {
+      "id": "nba-182",
+      "name": "Bram Varden",
+      "description": "2001-02 · Aldreth Mariners",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Bram+Varden",
+      "position": "SG"
+    },
+    {
+      "id": "nba-183",
+      "name": "Wick Glasshill",
+      "description": "2009-10 · Drybank Thornbacks",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Wick+Glasshill",
+      "position": "SF"
+    },
+    {
+      "id": "nba-184",
+      "name": "Doran Hollowfen",
+      "description": "2008-09 · Vantor Wolves",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Doran+Hollowfen",
+      "position": "PF"
+    },
+    {
+      "id": "nba-185",
+      "name": "Tam Duskmoor",
+      "description": "2001-02 · Aldreth Wardens",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Tam+Duskmoor",
+      "position": "C"
+    },
+    {
+      "id": "nba-186",
+      "name": "Casti Stonemarch",
+      "description": "2000-01 · Vantor Harriers",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Casti+Stonemarch",
+      "position": "PG"
+    },
+    {
+      "id": "nba-187",
+      "name": "Vane Kestrelly",
+      "description": "2018-19 · Irondale Anvils",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Vane+Kestrelly",
+      "position": "SG"
+    },
+    {
+      "id": "nba-188",
+      "name": "Falk Ashcroft",
+      "description": "2022-23 · Corvane Thornbacks",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Falk+Ashcroft",
+      "position": "SF"
+    },
+    {
+      "id": "nba-189",
+      "name": "Casti Oakhurst",
+      "description": "2004-05 · Hallowdeep Wardens",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Casti+Oakhurst",
+      "position": "PF"
+    },
+    {
+      "id": "nba-190",
+      "name": "Orin Marrowgate",
+      "description": "2008-09 · Morrow Harriers",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Orin+Marrowgate",
+      "position": "C"
+    },
+    {
+      "id": "nba-191",
+      "name": "Bram Oakhurst",
+      "description": "2011-12 · Aldreth Foxes",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Bram+Oakhurst",
+      "position": "PG"
+    },
+    {
+      "id": "nba-192",
+      "name": "Tam Glasshill",
+      "description": "2005-06 · Vantor Harriers",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Tam+Glasshill",
+      "position": "SG"
+    },
+    {
+      "id": "nba-193",
+      "name": "Mabry Westergale",
+      "description": "2001-02 · Ellwater Harriers",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Mabry+Westergale",
+      "position": "SF"
+    },
+    {
+      "id": "nba-194",
+      "name": "Zev Junewood",
+      "description": "2020-21 · Fenmark Foxes",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Zev+Junewood",
+      "position": "PF"
+    },
+    {
+      "id": "nba-195",
+      "name": "Ivor Undercliff",
+      "description": "2017-18 · Kesh Foxes",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Ivor+Undercliff",
+      "position": "C"
+    },
+    {
+      "id": "nba-196",
+      "name": "Ade Thistlewaite",
+      "description": "2000-01 · Kesh Cinders",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Ade+Thistlewaite",
+      "position": "PG"
+    },
+    {
+      "id": "nba-197",
+      "name": "Pell Pinebank",
+      "description": "2011-12 · Ellwater Anvils",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Pell+Pinebank",
+      "position": "SG"
+    },
+    {
+      "id": "nba-198",
+      "name": "Wick Yarrowfield",
+      "description": "2016-17 · Aldreth Mariners",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Wick+Yarrowfield",
+      "position": "SF"
+    },
+    {
+      "id": "nba-199",
+      "name": "Falk Hollowfen",
+      "description": "2017-18 · Drybank Cinders",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Falk+Hollowfen",
+      "position": "PF"
+    },
+    {
+      "id": "nba-200",
+      "name": "Ulric Ashcroft",
+      "description": "2014-15 · Hallowdeep Ironmen",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Ulric+Ashcroft",
+      "position": "C"
+    },
+    {
+      "id": "nba-201",
+      "name": "Goran Pinebank",
+      "description": "2007-08 · Drybank Anvils",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Goran+Pinebank",
+      "position": "PG"
+    },
+    {
+      "id": "nba-202",
+      "name": "Nils Marrowgate",
+      "description": "2024-25 · Pellhaven Beacons",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Nils+Marrowgate",
+      "position": "SG"
+    },
+    {
+      "id": "nba-203",
+      "name": "Doran Yarrowfield",
+      "description": "2021-22 · Drybank Kestrels",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Doran+Yarrowfield",
+      "position": "SF"
+    },
+    {
+      "id": "nba-204",
+      "name": "Ivor Everline",
+      "description": "2013-14 · Hallowdeep Harriers",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Ivor+Everline",
+      "position": "PF"
+    },
+    {
+      "id": "nba-205",
+      "name": "Jarek Nettleby",
+      "description": "2010-11 · Drybank Wardens",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Jarek+Nettleby",
+      "position": "C"
+    },
+    {
+      "id": "nba-206",
+      "name": "Tam Ironmere",
+      "description": "2024-25 · Fenmark Beacons",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Tam+Ironmere",
+      "position": "PG"
+    },
+    {
+      "id": "nba-207",
+      "name": "Mabry Hollowfen",
+      "description": "2004-05 · Gale End Beacons",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Mabry+Hollowfen",
+      "position": "SG"
+    },
+    {
+      "id": "nba-208",
+      "name": "Kell Hollowfen",
+      "description": "2013-14 · Drybank Harriers",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Kell+Hollowfen",
+      "position": "SF"
+    },
+    {
+      "id": "nba-209",
+      "name": "Pell Zephyrly",
+      "description": "2015-16 · Irondale Thornbacks",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Pell+Zephyrly",
+      "position": "PF"
+    },
+    {
+      "id": "nba-210",
+      "name": "Goran Ironmere",
+      "description": "2008-09 · Vantor Beacons",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Goran+Ironmere",
+      "position": "C"
+    },
+    {
+      "id": "nba-211",
+      "name": "Ivor Ashcroft",
+      "description": "2014-15 · Aldreth Cinders",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Ivor+Ashcroft",
+      "position": "PG"
+    },
+    {
+      "id": "nba-212",
+      "name": "Yorn Farrowick",
+      "description": "2004-05 · Fenmark Thornbacks",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Yorn+Farrowick",
+      "position": "SG"
+    },
+    {
+      "id": "nba-213",
+      "name": "Wick Yarrowfield",
+      "description": "2023-24 · Kesh Harriers",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Wick+Yarrowfield",
+      "position": "SF"
+    },
+    {
+      "id": "nba-214",
+      "name": "Hale Everline",
+      "description": "2006-07 · Pellhaven Mariners",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Hale+Everline",
+      "position": "PF"
+    },
+    {
+      "id": "nba-215",
+      "name": "Casti Varden",
+      "description": "2004-05 · Drybank Lanterns",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Casti+Varden",
+      "position": "C"
+    },
+    {
+      "id": "nba-216",
+      "name": "Ulric Brambleton",
+      "description": "2002-03 · Irondale Anvils",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Ulric+Brambleton",
+      "position": "PG"
+    },
+    {
+      "id": "nba-217",
+      "name": "Bram Duskmoor",
+      "description": "2024-25 · Drybank Beacons",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Bram+Duskmoor",
+      "position": "SG"
+    },
+    {
+      "id": "nba-218",
+      "name": "Tam Glasshill",
+      "description": "2002-03 · Corvane Cinders",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Tam+Glasshill",
+      "position": "SF"
+    },
+    {
+      "id": "nba-219",
+      "name": "Zev Pinebank",
+      "description": "2014-15 · Fenmark Foxes",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Zev+Pinebank",
+      "position": "PF"
+    },
+    {
+      "id": "nba-220",
+      "name": "Bram Zephyrly",
+      "description": "2000-01 · Hallowdeep Lanterns",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Bram+Zephyrly",
+      "position": "C"
+    },
+    {
+      "id": "nba-221",
+      "name": "Vane Ashcroft",
+      "description": "2006-07 · Drybank Kestrels",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Vane+Ashcroft",
+      "position": "PG"
+    },
+    {
+      "id": "nba-222",
+      "name": "Sten Thistlewaite",
+      "description": "2007-08 · Corvane Beacons",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Sten+Thistlewaite",
+      "position": "SG"
+    },
+    {
+      "id": "nba-223",
+      "name": "Orin Farrowick",
+      "description": "2016-17 · Drybank Wardens",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Orin+Farrowick",
+      "position": "SF"
+    },
+    {
+      "id": "nba-224",
+      "name": "Kell Nettleby",
+      "description": "2001-02 · Kesh Wardens",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Kell+Nettleby",
+      "position": "PF"
+    },
+    {
+      "id": "nba-225",
+      "name": "Mabry Ravensford",
+      "description": "2010-11 · Fenmark Foxes",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Mabry+Ravensford",
+      "position": "C"
+    },
+    {
+      "id": "nba-226",
+      "name": "Mabry Pinebank",
+      "description": "2012-13 · Drybank Foxes",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Mabry+Pinebank",
+      "position": "PG"
+    },
+    {
+      "id": "nba-227",
+      "name": "Doran Westergale",
+      "description": "2004-05 · Fenmark Harriers",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Doran+Westergale",
+      "position": "SG"
+    },
+    {
+      "id": "nba-228",
+      "name": "Bram Kestrelly",
+      "description": "2008-09 · Aldreth Mariners",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Bram+Kestrelly",
+      "position": "SF"
+    },
+    {
+      "id": "nba-229",
+      "name": "Falk Marrowgate",
+      "description": "2005-06 · Corvane Ironmen",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Falk+Marrowgate",
+      "position": "PF"
+    },
+    {
+      "id": "nba-230",
+      "name": "Ulric Larkspur",
+      "description": "2024-25 · Drybank Cinders",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Ulric+Larkspur",
+      "position": "C"
+    },
+    {
+      "id": "nba-231",
+      "name": "Doran Oakhurst",
+      "description": "2006-07 · Ellwater Kestrels",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Doran+Oakhurst",
+      "position": "PG"
+    },
+    {
+      "id": "nba-232",
+      "name": "Ade Larkspur",
+      "description": "2009-10 · Gale End Foxes",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Ade+Larkspur",
+      "position": "SG"
+    },
+    {
+      "id": "nba-233",
+      "name": "Rask Marrowgate",
+      "description": "2015-16 · Ellwater Kestrels",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Rask+Marrowgate",
+      "position": "SF"
+    },
+    {
+      "id": "nba-234",
+      "name": "Zev Pinebank",
+      "description": "2011-12 · Kesh Mariners",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Zev+Pinebank",
+      "position": "PF"
+    },
+    {
+      "id": "nba-235",
+      "name": "Orin Thistlewaite",
+      "description": "2007-08 · Pellhaven Beacons",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Orin+Thistlewaite",
+      "position": "C"
+    },
+    {
+      "id": "nba-236",
+      "name": "Nils Larkspur",
+      "description": "2008-09 · Aldreth Ironmen",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Nils+Larkspur",
+      "position": "PG"
+    },
+    {
+      "id": "nba-237",
+      "name": "Yorn Everline",
+      "description": "2000-01 · Morrow Mariners",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Yorn+Everline",
+      "position": "SG"
+    },
+    {
+      "id": "nba-238",
+      "name": "Mabry Ashcroft",
+      "description": "2016-17 · Corvane Kestrels",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Mabry+Ashcroft",
+      "position": "SF"
+    },
+    {
+      "id": "nba-239",
+      "name": "Ulric Quarrow",
+      "description": "2004-05 · Ellwater Wolves",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Ulric+Quarrow",
+      "position": "PF"
+    },
+    {
+      "id": "nba-240",
+      "name": "Ulric Marrowgate",
+      "description": "2022-23 · Pellhaven Wardens",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Ulric+Marrowgate",
+      "position": "C"
+    },
+    {
+      "id": "nba-241",
+      "name": "Ivor Hollowfen",
+      "description": "2002-03 · Ellwater Harriers",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Ivor+Hollowfen",
+      "position": "PG"
+    },
+    {
+      "id": "nba-242",
+      "name": "Vane Marrowgate",
+      "description": "2019-20 · Drybank Foxes",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Vane+Marrowgate",
+      "position": "SG"
+    },
+    {
+      "id": "nba-243",
+      "name": "Ade Farrowick",
+      "description": "2007-08 · Ellwater Harriers",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Ade+Farrowick",
+      "position": "SF"
+    },
+    {
+      "id": "nba-244",
+      "name": "Quill Nettleby",
+      "description": "2015-16 · Drybank Harriers",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Quill+Nettleby",
+      "position": "PF"
+    },
+    {
+      "id": "nba-245",
+      "name": "Bram Ironmere",
+      "description": "2001-02 · Irondale Wolves",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Bram+Ironmere",
+      "position": "C"
+    },
+    {
+      "id": "nba-246",
+      "name": "Goran Thistlewaite",
+      "description": "2010-11 · Drybank Anvils",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Goran+Thistlewaite",
+      "position": "PG"
+    },
+    {
+      "id": "nba-247",
+      "name": "Emryn Pinebank",
+      "description": "2013-14 · Kesh Anvils",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Emryn+Pinebank",
+      "position": "SG"
+    },
+    {
+      "id": "nba-248",
+      "name": "Sten Undercliff",
+      "description": "2008-09 · Vantor Mariners",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Sten+Undercliff",
+      "position": "SF"
+    },
+    {
+      "id": "nba-249",
+      "name": "Emryn Glasshill",
+      "description": "2000-01 · Morrow Lanterns",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Emryn+Glasshill",
+      "position": "PF"
+    },
+    {
+      "id": "nba-250",
+      "name": "Goran Coldwater",
+      "description": "2020-21 · Hallowdeep Thornbacks",
+      "art": "https://placehold.co/1040x760/1d4ed8/eff6ff.png?text=Goran+Coldwater",
+      "position": "C"
+    }
+  ]
+}

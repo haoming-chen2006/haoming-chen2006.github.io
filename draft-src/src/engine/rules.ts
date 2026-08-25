@@ -6,7 +6,8 @@
 // is the server's clock and nothing else, which is why browsers with skewed
 // clocks cannot resolve a round early.
 
-import type { Action, Result, RoomState, Seat } from './state'
+import { MODES } from './card'
+import type { Action, BankCard, Result, RoomState, Round, Seat } from './state'
 import { MIN_SEATS, isFull, maxBid } from './state'
 
 const no = (reason: string): Result => ({ ok: false, reason })
@@ -18,12 +19,14 @@ export function apply(state: RoomState, action: Action, now: number): Result {
       return start(state, action.bank, now)
     case 'bid':
       return bid(state, action.seat, action.amount, now)
+    case 'resolve':
+      return resolve(state, now)
     default:
       return no(`${action.type} is not handled yet`)
   }
 }
 
-function start(state: RoomState, bank: string[], now: number): Result {
+function start(state: RoomState, bank: BankCard[], now: number): Result {
   if (state.phase !== 'lobby') return no('the draft has already started')
   if (state.seats.length < MIN_SEATS) return no(`a draft needs at least ${MIN_SEATS} drafters`)
 
@@ -73,19 +76,69 @@ function bid(state: RoomState, seatIndex: number, amount: number, now: number): 
   })
 }
 
+/** Nobody is awake to fire a timer, so every browser sends `resolve` when its own
+ *  clock passes the deadline. Only the server's clock is consulted here, so an
+ *  early one does nothing, the first on-time one does the work, and the rest land
+ *  on a round that is already gone and do nothing either. Skewed clocks across
+ *  browsers cannot move the outcome. */
+function resolve(state: RoomState, now: number): Result {
+  const round = state.round
+  if (state.phase !== 'auction' || round === null) return yes(state)
+  if (now < Date.parse(round.deadline)) return yes(state)
+
+  // No bid: the card is unsold. It already left the bank when it was drawn.
+  const settled = round.high === null ? state : award(state, round, round.high)
+  return yes(closeOrDraw(settled, now))
+}
+
+function award(state: RoomState, round: Round, high: { seat: number; amount: number }): RoomState {
+  const slots = MODES[state.mode].slots
+  return {
+    ...state,
+    seats: state.seats.map((seat, i) =>
+      i === high.seat
+        ? {
+            ...seat,
+            budget: seat.budget - high.amount,
+            slots: place(seat, round.card, slots),
+            paid: { ...seat.paid, [round.card.id]: high.amount },
+          }
+        : seat,
+    ),
+  }
+}
+
+/** A won card takes an open slot of its own position where there is one, and the
+ *  first open slot otherwise — which is how an NBA centre ends up as the 6th man. */
+function place(seat: Seat, card: BankCard, slots: string[]): (string | null)[] {
+  const matching = slots.findIndex((label, i) => seat.slots[i] === null && label === card.position)
+  const target = matching >= 0 ? matching : seat.slots.findIndex((c) => c === null)
+  if (target < 0) return seat.slots // unreachable: a full roster cannot bid
+  return seat.slots.map((c, i) => (i === target ? card.id : c))
+}
+
+/** The draft closes when every roster is full, and not one round earlier — a
+ *  drafter who fills up early simply stops bidding while the others finish. */
+function closeOrDraw(state: RoomState, now: number): RoomState {
+  if (state.seats.every(isFull)) return { ...state, phase: 'judging', round: null }
+  // Only reachable if the bank runs dry, which `start` sizes against. Closing
+  // beats stalling forever on a card that will never come.
+  return openRound(state, now) ?? { ...state, phase: 'judging', round: null }
+}
+
 /** Draw the next card off the front of the bank and start its round. A drawn card
  *  has left the bank whatever happens to it, so an unsold card is simply gone.
  *  Returns null when there is nothing left to draw. */
 function openRound(state: RoomState, now: number): RoomState | null {
-  const cardId = state.bank[0]
-  if (cardId === undefined) return null
+  const card = state.bank[0]
+  if (card === undefined) return null
 
   return {
     ...state,
     bank: state.bank.slice(1),
     roundIndex: state.roundIndex + 1,
     round: {
-      cardId,
+      card,
       // Rotates one seat per round, so the right of first refusal goes around.
       openerSeat: state.roundIndex % state.seats.length,
       exclusiveUntil: new Date(now + state.config.openerMs).toISOString(),

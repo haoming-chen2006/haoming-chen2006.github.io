@@ -8,6 +8,12 @@ import { MODES, type CardId, type ModeId } from './card'
 
 export type Phase = 'lobby' | 'auction' | 'judging' | 'done'
 
+/** The only two things the rules need to know about a card. Name, art, description
+ *  and stats are none of the engine's business — and keeping the hidden half out
+ *  of the room row is exactly how stats stay hidden. Position has to be here
+ *  because auto-assign is a rule: a won card looks for a slot of its own name. */
+export type BankCard = { id: CardId; position: string }
+
 export type Seat = {
   /** Random token, kept in the browser's localStorage. Never leaves the seat's owner. */
   id: string
@@ -15,10 +21,13 @@ export type Seat = {
   budget: number
   /** One entry per slot in the mode's roster, in the mode's slot order. */
   slots: (CardId | null)[]
+  /** What each won card cost. The results screen reads it; nothing else can
+   *  recover it once the budget has been debited. */
+  paid: Record<CardId, number>
 }
 
 export type Round = {
-  cardId: CardId
+  card: BankCard
   /** Index into `seats`. Rotates one seat per round. */
   openerSeat: number
   /** Until this moment only the opener may bid. */
@@ -49,7 +58,7 @@ export type RoomState = {
   config: Config
   seats: Seat[]
   /** Shuffled at `start`, drawn from the front. A drawn card is off the bank. */
-  bank: CardId[]
+  bank: BankCard[]
   /** Rounds begun so far. Drives the opener rotation. */
   roundIndex: number
   round: Round | null
@@ -64,7 +73,7 @@ export type RoomState = {
 export type Action =
   | { type: 'join'; seatId: string; name: string }
   /** Carries the shuffled bank, so the rules need no randomness of their own. */
-  | { type: 'start'; bank: CardId[] }
+  | { type: 'start'; bank: BankCard[] }
   | { type: 'bid'; seat: number; amount: number }
   /** Sent by whichever browser notices the deadline first. Late is fine, early is a no-op. */
   | { type: 'resolve' }
@@ -101,6 +110,7 @@ export const newSeat = (id: string, name: string, config: Config): Seat => ({
   name,
   budget: config.budget,
   slots: Array<CardId | null>(config.rosterSize).fill(null),
+  paid: {},
 })
 
 export const emptySlots = (seat: Seat): number => seat.slots.filter((c) => c === null).length

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import type { CardId, ModeId } from './card'
+import { MODES, type ModeId } from './card'
 import { apply } from './rules'
-import { type Config, type Result, type RoomState, newRoom, newSeat } from './state'
+import { type BankCard, type Config, type Result, type RoomState, newRoom, newSeat } from './state'
 
 const T0 = Date.parse('2026-01-01T00:00:00.000Z')
 
@@ -23,8 +23,15 @@ function lobby(mode: ModeId, names: string[], config: Partial<Config> = {}): Roo
   return { ...room, seats: names.map((name, i) => newSeat(`token-${i}`, name, room.config)) }
 }
 
-const ids = (mode: ModeId, n: number): CardId[] =>
-  Array.from({ length: n }, (_, i) => `${mode}-${String(i + 1).padStart(3, '0')}`)
+/** A pretend shuffled bank. Positions cycle through the mode's, so a test can say
+ *  "the third card" and know what it is. */
+function ids(mode: ModeId, n: number): BankCard[] {
+  const positions = MODES[mode].positions
+  return Array.from({ length: n }, (_, i) => ({
+    id: `${mode}-${String(i + 1).padStart(3, '0')}`,
+    position: positions[i % positions.length]!,
+  }))
+}
 
 /** A room mid-auction on its first card, drawn at T0. */
 function auction(mode: ModeId, names: string[], config: Partial<Config> = {}): RoomState {
@@ -46,7 +53,7 @@ describe('start', () => {
     const state = ok(apply(lobby('nba', ['Ada', 'Bo']), { type: 'start', bank: ids('nba', 40) }, T0))
 
     expect(state.phase).toBe('auction')
-    expect(state.round?.cardId).toBe('nba-001')
+    expect(state.round?.card.id).toBe('nba-001')
     expect(state.round?.openerSeat).toBe(0)
     expect(state.round?.high).toBeNull()
     expect(state.roundIndex).toBe(1)
@@ -57,7 +64,7 @@ describe('start', () => {
     const state = ok(apply(lobby('nba', ['Ada', 'Bo']), { type: 'start', bank }, T0))
 
     expect(state.bank).toHaveLength(39)
-    expect(state.bank).not.toContain('nba-001')
+    expect(state.bank.map((c) => c.id)).not.toContain('nba-001')
   })
 
   it('sets the opener window inside the round, both off the caller’s clock', () => {
@@ -193,5 +200,66 @@ describe('bidding', () => {
       /whole number of dollars/,
     )
     expect(why(apply(state, { type: 'bid', seat: 9, amount: 1 }, DURING_WINDOW))).toMatch(/no seat 9/)
+  })
+})
+
+describe('resolving a round', () => {
+  const OPENER = 0
+  const OTHER = 1
+
+  /** Ada opens at $5 one second in, so the round now runs to T0+9s. */
+  function bidPlaced() {
+    const state = ok(apply(auction('nba', ['Ada', 'Bo']), { type: 'bid', seat: OPENER, amount: 5 }, T0 + 1_000))
+    return { state, deadline: Date.parse(state.round!.deadline) }
+  }
+
+  it('does nothing a millisecond before the deadline', () => {
+    const { state, deadline } = bidPlaced()
+
+    expect(ok(apply(state, { type: 'resolve' }, deadline - 1))).toEqual(state)
+  })
+
+  it('awards the card and charges the exact bid a millisecond after', () => {
+    const { state, deadline } = bidPlaced()
+    const after = ok(apply(state, { type: 'resolve' }, deadline + 1))
+    const ada = after.seats[OPENER]!
+
+    expect(ada.budget).toBe(15)
+    expect(ada.slots).toContain('nba-001')
+    expect(ada.paid).toEqual({ 'nba-001': 5 })
+    expect(after.seats[OTHER]!.budget).toBe(20)
+  })
+
+  it('charges nobody else and moves straight on to the next card', () => {
+    const { state, deadline } = bidPlaced()
+    const after = ok(apply(state, { type: 'resolve' }, deadline + 1))
+
+    expect(after.phase).toBe('auction')
+    expect(after.round?.card.id).toBe('nba-002')
+    expect(after.round?.high).toBeNull()
+    expect(after.roundIndex).toBe(2)
+    // The right of first refusal has moved one seat along.
+    expect(after.round?.openerSeat).toBe(1)
+  })
+
+  it('drops an unsold card and draws the next one', () => {
+    const state = auction('nba', ['Ada', 'Bo'])
+    const after = ok(apply(state, { type: 'resolve' }, T0 + 8_001))
+
+    expect(after.seats.every((s) => s.slots.every((c) => c === null))).toBe(true)
+    expect(after.seats.every((s) => s.budget === 20)).toBe(true)
+    expect(after.round?.card.id).toBe('nba-002')
+    // Drawn is gone: nba-001 is neither on a roster nor back in the bank.
+    expect(after.bank.map((c) => c.id)).not.toContain('nba-001')
+  })
+
+  it('is harmless when a second browser sends it late', () => {
+    const { state, deadline } = bidPlaced()
+    const once = ok(apply(state, { type: 'resolve' }, deadline + 1))
+    const twice = ok(apply(once, { type: 'resolve' }, deadline + 2))
+
+    // The second lands on the new round, which is nowhere near its own deadline.
+    expect(twice).toEqual(once)
+    expect(twice.seats[OPENER]!.budget).toBe(15)
   })
 })

@@ -2,7 +2,8 @@
 // is told. Adding a fourth means adding a file here and a bank — the engine does
 // not change.
 
-import type { Bank, Mode, ModeId } from '../engine/card'
+import type { Bank, Card, CardId, Mode, ModeId } from '../engine/card'
+import type { BankCard } from '../engine/state'
 import { hok } from './hok'
 import { nba } from './nba'
 import { soccer } from './soccer'
@@ -45,3 +46,20 @@ export async function loadBank(id: ModeId): Promise<Bank> {
   if (bank.mode !== id) throw new Error(`${chosen.key} says it is "${bank.mode}", not "${id}"`)
   return bank
 }
+
+/** The draw order for one draft: every card in the bank, shuffled, carrying only
+ *  the id and position the rules are allowed to know. The shuffle lives out here
+ *  because the rules are pure — whoever starts a draft decides the order, and in
+ *  production that is the Edge Function, once, for everybody. */
+export function shuffledBank(bank: Bank, random: () => number = Math.random): BankCard[] {
+  const order: BankCard[] = bank.cards.map((c) => ({ id: c.id, position: c.position }))
+  for (let i = order.length - 1; i > 0; i--) {
+    const j = Math.floor(random() * (i + 1))
+    ;[order[i], order[j]] = [order[j]!, order[i]!]
+  }
+  return order
+}
+
+/** Cards by id, for turning a roster of ids back into something to look at. */
+export const byId = (bank: Bank): Map<CardId, Card> =>
+  new Map(bank.cards.map((card) => [card.id, card]))

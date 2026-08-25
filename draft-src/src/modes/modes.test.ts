@@ -47,7 +47,11 @@ describe('choosing between the real bank and the stand-in', () => {
     expect(chooseBank('soccer', [], [])).toBeNull()
   })
 
-  it('is on stand-in data today, which is what makes E19 a swap and nothing more', () => {
-    for (const mode of modeList) expect(bankSource(mode.id)).toBe('fixtures')
+  it('has taken Agent 2’s real nba and hok banks, and still stands in for soccer', () => {
+    // The swap is per mode, so soccer keeps playing on stand-in data until its
+    // art gaps are filled. Nothing else in the app notices either way.
+    expect(bankSource('nba')).toBe('real')
+    expect(bankSource('hok')).toBe('real')
+    expect(bankSource('soccer')).toBe('fixtures')
   })
 })

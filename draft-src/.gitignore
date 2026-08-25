@@ -2,3 +2,14 @@ node_modules/
 dist/
 .env
 .env.local
+
+# The hidden half stays out of git ON PURPOSE. This repo is public and it is the
+# Pages site itself, so anything committed here is served: draft-src/data/hidden/
+# would sit at haoming-chen2006.github.io/draft-src/data/hidden/nba.json and any
+# drafter could read every card's numbers in a second tab, which is the one thing
+# the whole game rests on not being possible.
+#
+# It is not a build problem — vite only emits what the app imports, and the app
+# never imports it — purely a "committing source to a public site" problem. The
+# judge Edge Function reads it at deploy time from the working copy.
+data/hidden/

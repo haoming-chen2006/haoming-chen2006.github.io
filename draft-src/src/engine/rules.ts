@@ -6,8 +6,8 @@
 // is the server's clock and nothing else, which is why browsers with skewed
 // clocks cannot resolve a round early.
 
-import type { Action, Result, RoomState } from './state'
-import { MIN_SEATS } from './state'
+import type { Action, Result, RoomState, Seat } from './state'
+import { MIN_SEATS, isFull, maxBid } from './state'
 
 const no = (reason: string): Result => ({ ok: false, reason })
 const yes = (state: RoomState): Result => ({ ok: true, state })
@@ -16,6 +16,8 @@ export function apply(state: RoomState, action: Action, now: number): Result {
   switch (action.type) {
     case 'start':
       return start(state, action.bank, now)
+    case 'bid':
+      return bid(state, action.seat, action.amount, now)
     default:
       return no(`${action.type} is not handled yet`)
   }
@@ -31,6 +33,44 @@ function start(state: RoomState, bank: string[], now: number): Result {
 
   const opened = openRound({ ...state, phase: 'auction', bank }, now)
   return opened ? yes(opened) : no('the bank is empty')
+}
+
+function bid(state: RoomState, seatIndex: number, amount: number, now: number): Result {
+  const round = state.round
+  if (state.phase !== 'auction' || round === null) return no('no card is up for auction')
+
+  const seat: Seat | undefined = state.seats[seatIndex]
+  if (seat === undefined) return no(`there is no seat ${seatIndex}`)
+
+  if (now >= Date.parse(round.deadline)) return no('too late — the round has closed')
+  if (now < Date.parse(round.exclusiveUntil) && seatIndex !== round.openerSeat)
+    return no('the opener has the first bid on this card')
+
+  if (isFull(seat)) return no('your roster is full')
+  if (!Number.isInteger(amount)) return no('a bid is a whole number of dollars')
+
+  const floor = round.high === null ? 1 : round.high.amount + 1
+  if (amount < floor)
+    return no(round.high === null ? 'the opening bid is $1' : `the next bid is $${floor}`)
+
+  // Raising yourself only costs money and pushes the deadline back, so it is a
+  // stalling move rather than a bid. The UI disables it; the rules refuse it.
+  if (round.high?.seat === seatIndex) return no('you already hold the high bid')
+
+  const ceiling = maxBid(seat)
+  if (amount > ceiling)
+    return no(`$${ceiling} is your limit — you must keep a dollar for every other empty slot`)
+
+  return yes({
+    ...state,
+    round: {
+      ...round,
+      high: { seat: seatIndex, amount },
+      // Every accepted bid restarts the full countdown. The opener window is not
+      // extended: it is a head start on the card, not on the clock.
+      deadline: new Date(now + state.config.bidMs).toISOString(),
+    },
+  })
 }
 
 /** Draw the next card off the front of the bank and start its round. A drawn card

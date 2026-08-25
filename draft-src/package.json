@@ -9,11 +9,15 @@
     "preview": "vite preview --host 0.0.0.0",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
+    "sync": "node scripts/sync-engine.mjs",
+    "check:functions": "deno check supabase/functions/action/index.ts supabase/functions/judge/index.ts",
+    "deploy:functions": "npm run sync && supabase functions deploy action && supabase functions deploy judge",
     "fixtures": "node --experimental-strip-types scripts/make-fixtures.mjs",
     "validate": "node --experimental-strip-types scripts/validate-bank.mjs all",
     "validate:fixtures": "node --experimental-strip-types scripts/validate-bank.mjs all --bank-dir fixtures/banks --hidden-dir fixtures/hidden"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.112.4",
     "react": "^19.1.0",
     "react-dom": "^19.1.0"
   },

@@ -1,0 +1,7 @@
+project_id = "draft"
+
+[functions.action]
+verify_jwt = false
+
+[functions.judge]
+verify_jwt = false

@@ -228,3 +228,36 @@ h2 { margin: 28px 0 10px; font-size: 13px; text-transform: uppercase;
 .tag.out { background: var(--bad); color: #23090a; }
 .roster.out, .sheet.out { opacity: 0.6; border-color: var(--bad); }
 .sub.warn { color: var(--warn); }
+
+/* ---- rooms ---- */
+.code-badge { display: inline-flex; align-items: baseline; gap: 8px; margin: 8px 0;
+  padding: 6px 14px; border: 1px solid var(--good); border-radius: 10px; }
+.code-badge span { font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--dim); }
+.code-badge b { font-size: 24px; letter-spacing: 0.22em; color: var(--good); }
+.code-tab { position: fixed; top: 10px; right: 14px; z-index: 5;
+  padding: 4px 12px; border: 1px solid var(--line); border-radius: 8px;
+  background: var(--panel); color: var(--dim); font-size: 13px; letter-spacing: 0.2em; }
+.code-in { width: 140px; padding: 10px 14px; text-align: center;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+  color: var(--ink); font: 600 22px/1 ui-monospace, monospace; letter-spacing: 0.2em; }
+.name-in { flex: 1; max-width: 320px; padding: 10px 14px;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+  color: var(--ink); font: inherit; }
+.mode.on { border-color: var(--good); background: #10261a; }
+.mode:disabled { opacity: 0.45; cursor: not-allowed; }
+.bidder.mine { border-color: var(--good); }
+
+/* ---- judging and the verdict ---- */
+.judging { margin: 24px 0; max-width: 620px; }
+.fill.sweep { width: 40%; animation: sweep 1.4s ease-in-out infinite; background: var(--warn); }
+@keyframes sweep { 0% { margin-left: 0 } 50% { margin-left: 60% } 100% { margin-left: 0 } }
+.verdict { margin: 20px 0 8px; padding: 18px 22px; max-width: 780px;
+  background: var(--panel); border: 1px solid var(--good); border-radius: 14px; }
+.verdict h2 { margin: 0 0 8px; font-size: 22px; text-transform: none; letter-spacing: -0.01em; color: var(--good); }
+.reasoning { margin: 0; white-space: pre-wrap; }
+.place { font-size: 12px; font-weight: 700; color: var(--good); font-variant-numeric: tabular-nums; }
+.summary { margin: 0 0 10px; font-size: 13px; color: var(--dim); }
+.stats { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 4px 10px; margin-top: 4px; }
+.stats em { display: inline-flex; gap: 5px; font-style: normal; font-size: 11px;
+  font-variant-numeric: tabular-nums; color: var(--good); }
+.stats em span { color: var(--dim); }

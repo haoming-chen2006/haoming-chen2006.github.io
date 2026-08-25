@@ -4,7 +4,7 @@
 // Times are ISO strings because this crosses the wire and lands in jsonb. Only
 // the server's clock is ever compared against them — see rules.ts.
 
-import { MODES, type CardId, type HiddenStats, type ModeId } from './card'
+import { MODES, type CardId, type HiddenStats, type ModeId } from './card.ts'
 
 export type Phase = 'lobby' | 'auction' | 'judging' | 'done'
 

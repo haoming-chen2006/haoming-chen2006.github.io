@@ -13,3 +13,7 @@ dist/
 # never imports it — purely a "committing source to a public site" problem. The
 # judge Edge Function reads it at deploy time from the working copy.
 data/hidden/
+
+# Generated into the function bundle by `npm run sync`. The hidden half must never
+# be committed — this repo is public and it is the website.
+supabase/functions/judge/hidden/

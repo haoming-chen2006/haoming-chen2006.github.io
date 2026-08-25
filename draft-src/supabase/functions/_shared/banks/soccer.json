@@ -1,0 +1,1755 @@
+{
+  "mode": "soccer",
+  "cards": [
+    {
+      "id": "soccer-001",
+      "name": "Bram Pinebank",
+      "description": "2009-10 · Corvane Foxes",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Bram+Pinebank",
+      "position": "GK"
+    },
+    {
+      "id": "soccer-002",
+      "name": "Pell Brambleton",
+      "description": "2009-10 · Irondale Wolves",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Pell+Brambleton",
+      "position": "DEF"
+    },
+    {
+      "id": "soccer-003",
+      "name": "Goran Ironmere",
+      "description": "2011-12 · Ellwater Lanterns",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Goran+Ironmere",
+      "position": "DEF"
+    },
+    {
+      "id": "soccer-004",
+      "name": "Emryn Ashcroft",
+      "description": "2011-12 · Gale End Ironmen",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Emryn+Ashcroft",
+      "position": "MID"
+    },
+    {
+      "id": "soccer-005",
+      "name": "Jarek Kestrelly",
+      "description": "2024-25 · Pellhaven Anvils",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Jarek+Kestrelly",
+      "position": "MID"
+    },
+    {
+      "id": "soccer-006",
+      "name": "Nils Kestrelly",
+      "description": "2012-13 · Fenmark Cinders",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Nils+Kestrelly",
+      "position": "FWD"
+    },
+    {
+      "id": "soccer-007",
+      "name": "Quill Marrowgate",
+      "description": "2016-17 · Gale End Lanterns",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Quill+Marrowgate",
+      "position": "GK"
+    },
+    {
+      "id": "soccer-008",
+      "name": "Yorn Hollowfen",
+      "description": "2011-12 · Aldreth Thornbacks",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Yorn+Hollowfen",
+      "position": "DEF"
+    },
+    {
+      "id": "soccer-009",
+      "name": "Ade Zephyrly",
+      "description": "2016-17 · Ellwater Wardens",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Ade+Zephyrly",
+      "position": "DEF"
+    },
+    {
+      "id": "soccer-010",
+      "name": "Emryn Junewood",
+      "description": "2016-17 · Irondale Cinders",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Emryn+Junewood",
+      "position": "MID"
+    },
+    {
+      "id": "soccer-011",
+      "name": "Ade Nettleby",
+      "description": "2010-11 · Pellhaven Ironmen",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Ade+Nettleby",
+      "position": "MID"
+    },
+    {
+      "id": "soccer-012",
+      "name": "Falk Pinebank",
+      "description": "2019-20 · Fenmark Lanterns",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Falk+Pinebank",
+      "position": "FWD"
+    },
+    {
+      "id": "soccer-013",
+      "name": "Hale Everline",
+      "description": "2020-21 · Vantor Mariners",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Hale+Everline",
+      "position": "GK"
+    },
+    {
+      "id": "soccer-014",
+      "name": "Doran Coldwater",
+      "description": "1999-00 · Vantor Thornbacks",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Doran+Coldwater",
+      "position": "DEF"
+    },
+    {
+      "id": "soccer-015",
+      "name": "Casti Larkspur",
+      "description": "2024-25 · Vantor Anvils",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Casti+Larkspur",
+      "position": "DEF"
+    },
+    {
+      "id": "soccer-016",
+      "name": "Hale Farrowick",
+      "description": "2024-25 · Gale End Ironmen",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Hale+Farrowick",
+      "position": "MID"
+    },
+    {
+      "id": "soccer-017",
+      "name": "Kell Thistlewaite",
+      "description": "1998-99 · Vantor Wardens",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Kell+Thistlewaite",
+      "position": "MID"
+    },
+    {
+      "id": "soccer-018",
+      "name": "Lorne Ravensford",
+      "description": "2021-22 · Morrow Thornbacks",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Lorne+Ravensford",
+      "position": "FWD"
+    },
+    {
+      "id": "soccer-019",
+      "name": "Jarek Thistlewaite",
+      "description": "2022-23 · Vantor Cinders",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Jarek+Thistlewaite",
+      "position": "GK"
+    },
+    {
+      "id": "soccer-020",
+      "name": "Wick Ironmere",
+      "description": "2013-14 · Hallowdeep Harriers",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Wick+Ironmere",
+      "position": "DEF"
+    },
+    {
+      "id": "soccer-021",
+      "name": "Falk Junewood",
+      "description": "2011-12 · Ellwater Mariners",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Falk+Junewood",
+      "position": "DEF"
+    },
+    {
+      "id": "soccer-022",
+      "name": "Hale Hollowfen",
+      "description": "2004-05 · Vantor Wolves",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Hale+Hollowfen",
+      "position": "MID"
+    },
+    {
+      "id": "soccer-023",
+      "name": "Goran Undercliff",
+      "description": "1998-99 · Irondale Anvils",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Goran+Undercliff",
+      "position": "MID"
+    },
+    {
+      "id": "soccer-024",
+      "name": "Jarek Stonemarch",
+      "description": "2020-21 · Drybank Anvils",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Jarek+Stonemarch",
+      "position": "FWD"
+    },
+    {
+      "id": "soccer-025",
+      "name": "Bram Ironmere",
+      "description": "2017-18 · Morrow Harriers",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Bram+Ironmere",
+      "position": "GK"
+    },
+    {
+      "id": "soccer-026",
+      "name": "Yorn Hollowfen",
+      "description": "1999-00 · Pellhaven Thornbacks",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Yorn+Hollowfen",
+      "position": "DEF"
+    },
+    {
+      "id": "soccer-027",
+      "name": "Vane Glasshill",
+      "description": "2003-04 · Ellwater Kestrels",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Vane+Glasshill",
+      "position": "DEF"
+    },
+    {
+      "id": "soccer-028",
+      "name": "Sten Everline",
+      "description": "2016-17 · Morrow Wardens",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Sten+Everline",
+      "position": "MID"
+    },
+    {
+      "id": "soccer-029",
+      "name": "Pell Undercliff",
+      "description": "2005-06 · Hallowdeep Mariners",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Pell+Undercliff",
+      "position": "MID"
+    },
+    {
+      "id": "soccer-030",
+      "name": "Lorne Everline",
+      "description": "2006-07 · Irondale Thornbacks",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Lorne+Everline",
+      "position": "FWD"
+    },
+    {
+      "id": "soccer-031",
+      "name": "Vane Ravensford",
+      "description": "1998-99 · Pellhaven Harriers",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Vane+Ravensford",
+      "position": "GK"
+    },
+    {
+      "id": "soccer-032",
+      "name": "Ivor Pinebank",
+      "description": "2019-20 · Gale End Kestrels",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Ivor+Pinebank",
+      "position": "DEF"
+    },
+    {
+      "id": "soccer-033",
+      "name": "Goran Westergale",
+      "description": "2002-03 · Ellwater Mariners",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Goran+Westergale",
+      "position": "DEF"
+    },
+    {
+      "id": "soccer-034",
+      "name": "Bram Zephyrly",
+      "description": "2003-04 · Irondale Lanterns",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Bram+Zephyrly",
+      "position": "MID"
+    },
+    {
+      "id": "soccer-035",
+      "name": "Orin Kestrelly",
+      "description": "2016-17 · Vantor Beacons",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Orin+Kestrelly",
+      "position": "MID"
+    },
+    {
+      "id": "soccer-036",
+      "name": "Pell Hollowfen",
+      "description": "1998-99 · Irondale Ironmen",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Pell+Hollowfen",
+      "position": "FWD"
+    },
+    {
+      "id": "soccer-037",
+      "name": "Kell Everline",
+      "description": "2005-06 · Morrow Mariners",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Kell+Everline",
+      "position": "GK"
+    },
+    {
+      "id": "soccer-038",
+      "name": "Ulric Everline",
+      "description": "2024-25 · Kesh Ironmen",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Ulric+Everline",
+      "position": "DEF"
+    },
+    {
+      "id": "soccer-039",
+      "name": "Sten Glasshill",
+      "description": "2007-08 · Fenmark Wardens",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Sten+Glasshill",
+      "position": "DEF"
+    },
+    {
+      "id": "soccer-040",
+      "name": "Sten Ravensford",
+      "description": "2014-15 · Irondale Harriers",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Sten+Ravensford",
+      "position": "MID"
+    },
+    {
+      "id": "soccer-041",
+      "name": "Vane Glasshill",
+      "description": "2014-15 · Morrow Foxes",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Vane+Glasshill",
+      "position": "MID"
+    },
+    {
+      "id": "soccer-042",
+      "name": "Vane Glasshill",
+      "description": "2020-21 · Hallowdeep Wolves",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Vane+Glasshill",
+      "position": "FWD"
+    },
+    {
+      "id": "soccer-043",
+      "name": "Zev Junewood",
+      "description": "1999-00 · Drybank Anvils",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Zev+Junewood",
+      "position": "GK"
+    },
+    {
+      "id": "soccer-044",
+      "name": "Emryn Oakhurst",
+      "description": "2012-13 · Corvane Ironmen",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Emryn+Oakhurst",
+      "position": "DEF"
+    },
+    {
+      "id": "soccer-045",
+      "name": "Zev Marrowgate",
+      "description": "2016-17 · Pellhaven Harriers",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Zev+Marrowgate",
+      "position": "DEF"
+    },
+    {
+      "id": "soccer-046",
+      "name": "Nils Farrowick",
+      "description": "2015-16 · Kesh Lanterns",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Nils+Farrowick",
+      "position": "MID"
+    },
+    {
+      "id": "soccer-047",
+      "name": "Rask Kestrelly",
+      "description": "2002-03 · Fenmark Thornbacks",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Rask+Kestrelly",
+      "position": "MID"
+    },
+    {
+      "id": "soccer-048",
+      "name": "Wick Nettleby",
+      "description": "1999-00 · Corvane Wardens",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Wick+Nettleby",
+      "position": "FWD"
+    },
+    {
+      "id": "soccer-049",
+      "name": "Ulric Farrowick",
+      "description": "2022-23 · Pellhaven Kestrels",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Ulric+Farrowick",
+      "position": "GK"
+    },
+    {
+      "id": "soccer-050",
+      "name": "Yorn Thistlewaite",
+      "description": "2021-22 · Pellhaven Beacons",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Yorn+Thistlewaite",
+      "position": "DEF"
+    },
+    {
+      "id": "soccer-051",
+      "name": "Wick Thistlewaite",
+      "description": "2014-15 · Vantor Cinders",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Wick+Thistlewaite",
+      "position": "DEF"
+    },
+    {
+      "id": "soccer-052",
+      "name": "Ulric Nettleby",
+      "description": "2000-01 · Corvane Beacons",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Ulric+Nettleby",
+      "position": "MID"
+    },
+    {
+      "id": "soccer-053",
+      "name": "Tam Marrowgate",
+      "description": "2015-16 · Pellhaven Wardens",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Tam+Marrowgate",
+      "position": "MID"
+    },
+    {
+      "id": "soccer-054",
+      "name": "Zev Varden",
+      "description": "2005-06 · Kesh Wardens",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Zev+Varden",
+      "position": "FWD"
+    },
+    {
+      "id": "soccer-055",
+      "name": "Doran Marrowgate",
+      "description": "2019-20 · Aldreth Harriers",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Doran+Marrowgate",
+      "position": "GK"
+    },
+    {
+      "id": "soccer-056",
+      "name": "Bram Ashcroft",
+      "description": "2008-09 · Ellwater Lanterns",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Bram+Ashcroft",
+      "position": "DEF"
+    },
+    {
+      "id": "soccer-057",
+      "name": "Vane Glasshill",
+      "description": "2000-01 · Aldreth Lanterns",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Vane+Glasshill",
+      "position": "DEF"
+    },
+    {
+      "id": "soccer-058",
+      "name": "Orin Pinebank",
+      "description": "2011-12 · Irondale Ironmen",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Orin+Pinebank",
+      "position": "MID"
+    },
+    {
+      "id": "soccer-059",
+      "name": "Ivor Zephyrly",
+      "description": "2017-18 · Gale End Anvils",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Ivor+Zephyrly",
+      "position": "MID"
+    },
+    {
+      "id": "soccer-060",
+      "name": "Yorn Yarrowfield",
+      "description": "2009-10 · Ellwater Thornbacks",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Yorn+Yarrowfield",
+      "position": "FWD"
+    },
+    {
+      "id": "soccer-061",
+      "name": "Goran Undercliff",
+      "description": "2012-13 · Morrow Cinders",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Goran+Undercliff",
+      "position": "GK"
+    },
+    {
+      "id": "soccer-062",
+      "name": "Ade Nettleby",
+      "description": "2023-24 · Irondale Cinders",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Ade+Nettleby",
+      "position": "DEF"
+    },
+    {
+      "id": "soccer-063",
+      "name": "Quill Coldwater",
+      "description": "2016-17 · Corvane Cinders",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Quill+Coldwater",
+      "position": "DEF"
+    },
+    {
+      "id": "soccer-064",
+      "name": "Zev Everline",
+      "description": "2008-09 · Hallowdeep Anvils",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Zev+Everline",
+      "position": "MID"
+    },
+    {
+      "id": "soccer-065",
+      "name": "Mabry Ironmere",
+      "description": "2012-13 · Corvane Mariners",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Mabry+Ironmere",
+      "position": "MID"
+    },
+    {
+      "id": "soccer-066",
+      "name": "Zev Westergale",
+      "description": "2001-02 · Fenmark Beacons",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Zev+Westergale",
+      "position": "FWD"
+    },
+    {
+      "id": "soccer-067",
+      "name": "Quill Kestrelly",
+      "description": "2017-18 · Vantor Lanterns",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Quill+Kestrelly",
+      "position": "GK"
+    },
+    {
+      "id": "soccer-068",
+      "name": "Kell Kestrelly",
+      "description": "2016-17 · Ellwater Wolves",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Kell+Kestrelly",
+      "position": "DEF"
+    },
+    {
+      "id": "soccer-069",
+      "name": "Ade Brambleton",
+      "description": "2003-04 · Gale End Wardens",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Ade+Brambleton",
+      "position": "DEF"
+    },
+    {
+      "id": "soccer-070",
+      "name": "Pell Duskmoor",
+      "description": "2010-11 · Drybank Wolves",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Pell+Duskmoor",
+      "position": "MID"
+    },
+    {
+      "id": "soccer-071",
+      "name": "Zev Ironmere",
+      "description": "2001-02 · Fenmark Wolves",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Zev+Ironmere",
+      "position": "MID"
+    },
+    {
+      "id": "soccer-072",
+      "name": "Zev Yarrowfield",
+      "description": "2012-13 · Drybank Foxes",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Zev+Yarrowfield",
+      "position": "FWD"
+    },
+    {
+      "id": "soccer-073",
+      "name": "Sten Kestrelly",
+      "description": "2019-20 · Ellwater Foxes",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Sten+Kestrelly",
+      "position": "GK"
+    },
+    {
+      "id": "soccer-074",
+      "name": "Hale Thistlewaite",
+      "description": "2014-15 · Hallowdeep Foxes",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Hale+Thistlewaite",
+      "position": "DEF"
+    },
+    {
+      "id": "soccer-075",
+      "name": "Pell Stonemarch",
+      "description": "2013-14 · Pellhaven Anvils",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Pell+Stonemarch",
+      "position": "DEF"
+    },
+    {
+      "id": "soccer-076",
+      "name": "Pell Westergale",
+      "description": "1999-00 · Drybank Lanterns",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Pell+Westergale",
+      "position": "MID"
+    },
+    {
+      "id": "soccer-077",
+      "name": "Vane Glasshill",
+      "description": "2012-13 · Ellwater Lanterns",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Vane+Glasshill",
+      "position": "MID"
+    },
+    {
+      "id": "soccer-078",
+      "name": "Falk Westergale",
+      "description": "2014-15 · Kesh Anvils",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Falk+Westergale",
+      "position": "FWD"
+    },
+    {
+      "id": "soccer-079",
+      "name": "Tam Larkspur",
+      "description": "2002-03 · Vantor Harriers",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Tam+Larkspur",
+      "position": "GK"
+    },
+    {
+      "id": "soccer-080",
+      "name": "Pell Varden",
+      "description": "2016-17 · Morrow Mariners",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Pell+Varden",
+      "position": "DEF"
+    },
+    {
+      "id": "soccer-081",
+      "name": "Ade Thistlewaite",
+      "description": "1999-00 · Fenmark Thornbacks",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Ade+Thistlewaite",
+      "position": "DEF"
+    },
+    {
+      "id": "soccer-082",
+      "name": "Bram Quarrow",
+      "description": "2011-12 · Vantor Wardens",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Bram+Quarrow",
+      "position": "MID"
+    },
+    {
+      "id": "soccer-083",
+      "name": "Doran Nettleby",
+      "description": "2012-13 · Corvane Kestrels",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Doran+Nettleby",
+      "position": "MID"
+    },
+    {
+      "id": "soccer-084",
+      "name": "Pell Pinebank",
+      "description": "2010-11 · Vantor Foxes",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Pell+Pinebank",
+      "position": "FWD"
+    },
+    {
+      "id": "soccer-085",
+      "name": "Mabry Marrowgate",
+      "description": "2004-05 · Vantor Mariners",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Mabry+Marrowgate",
+      "position": "GK"
+    },
+    {
+      "id": "soccer-086",
+      "name": "Emryn Everline",
+      "description": "2019-20 · Hallowdeep Ironmen",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Emryn+Everline",
+      "position": "DEF"
+    },
+    {
+      "id": "soccer-087",
+      "name": "Lorne Ravensford",
+      "description": "2002-03 · Morrow Ironmen",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Lorne+Ravensford",
+      "position": "DEF"
+    },
+    {
+      "id": "soccer-088",
+      "name": "Bram Oakhurst",
+      "description": "2023-24 · Vantor Harriers",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Bram+Oakhurst",
+      "position": "MID"
+    },
+    {
+      "id": "soccer-089",
+      "name": "Zev Oakhurst",
+      "description": "2020-21 · Corvane Beacons",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Zev+Oakhurst",
+      "position": "MID"
+    },
+    {
+      "id": "soccer-090",
+      "name": "Rask Varden",
+      "description": "2017-18 · Kesh Wardens",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Rask+Varden",
+      "position": "FWD"
+    },
+    {
+      "id": "soccer-091",
+      "name": "Ade Farrowick",
+      "description": "2019-20 · Ellwater Mariners",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Ade+Farrowick",
+      "position": "GK"
+    },
+    {
+      "id": "soccer-092",
+      "name": "Mabry Glasshill",
+      "description": "2017-18 · Irondale Ironmen",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Mabry+Glasshill",
+      "position": "DEF"
+    },
+    {
+      "id": "soccer-093",
+      "name": "Hale Nettleby",
+      "description": "2018-19 · Kesh Lanterns",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Hale+Nettleby",
+      "position": "DEF"
+    },
+    {
+      "id": "soccer-094",
+      "name": "Tam Westergale",
+      "description": "2011-12 · Vantor Ironmen",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Tam+Westergale",
+      "position": "MID"
+    },
+    {
+      "id": "soccer-095",
+      "name": "Rask Ravensford",
+      "description": "2004-05 · Vantor Beacons",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Rask+Ravensford",
+      "position": "MID"
+    },
+    {
+      "id": "soccer-096",
+      "name": "Tam Kestrelly",
+      "description": "2004-05 · Fenmark Foxes",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Tam+Kestrelly",
+      "position": "FWD"
+    },
+    {
+      "id": "soccer-097",
+      "name": "Yorn Thistlewaite",
+      "description": "1999-00 · Hallowdeep Kestrels",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Yorn+Thistlewaite",
+      "position": "GK"
+    },
+    {
+      "id": "soccer-098",
+      "name": "Ade Ashcroft",
+      "description": "2003-04 · Pellhaven Ironmen",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Ade+Ashcroft",
+      "position": "DEF"
+    },
+    {
+      "id": "soccer-099",
+      "name": "Wick Farrowick",
+      "description": "2021-22 · Hallowdeep Anvils",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Wick+Farrowick",
+      "position": "DEF"
+    },
+    {
+      "id": "soccer-100",
+      "name": "Lorne Pinebank",
+      "description": "2000-01 · Fenmark Kestrels",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Lorne+Pinebank",
+      "position": "MID"
+    },
+    {
+      "id": "soccer-101",
+      "name": "Kell Stonemarch",
+      "description": "2019-20 · Kesh Beacons",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Kell+Stonemarch",
+      "position": "MID"
+    },
+    {
+      "id": "soccer-102",
+      "name": "Hale Coldwater",
+      "description": "2012-13 · Pellhaven Beacons",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Hale+Coldwater",
+      "position": "FWD"
+    },
+    {
+      "id": "soccer-103",
+      "name": "Casti Larkspur",
+      "description": "2006-07 · Vantor Anvils",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Casti+Larkspur",
+      "position": "GK"
+    },
+    {
+      "id": "soccer-104",
+      "name": "Emryn Undercliff",
+      "description": "1998-99 · Fenmark Thornbacks",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Emryn+Undercliff",
+      "position": "DEF"
+    },
+    {
+      "id": "soccer-105",
+      "name": "Goran Farrowick",
+      "description": "2000-01 · Drybank Kestrels",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Goran+Farrowick",
+      "position": "DEF"
+    },
+    {
+      "id": "soccer-106",
+      "name": "Goran Duskmoor",
+      "description": "2015-16 · Irondale Wardens",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Goran+Duskmoor",
+      "position": "MID"
+    },
+    {
+      "id": "soccer-107",
+      "name": "Pell Quarrow",
+      "description": "2019-20 · Aldreth Wardens",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Pell+Quarrow",
+      "position": "MID"
+    },
+    {
+      "id": "soccer-108",
+      "name": "Doran Quarrow",
+      "description": "2006-07 · Corvane Foxes",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Doran+Quarrow",
+      "position": "FWD"
+    },
+    {
+      "id": "soccer-109",
+      "name": "Lorne Oakhurst",
+      "description": "2018-19 · Gale End Lanterns",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Lorne+Oakhurst",
+      "position": "GK"
+    },
+    {
+      "id": "soccer-110",
+      "name": "Zev Undercliff",
+      "description": "2021-22 · Fenmark Mariners",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Zev+Undercliff",
+      "position": "DEF"
+    },
+    {
+      "id": "soccer-111",
+      "name": "Ulric Larkspur",
+      "description": "2016-17 · Ellwater Harriers",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Ulric+Larkspur",
+      "position": "DEF"
+    },
+    {
+      "id": "soccer-112",
+      "name": "Nils Stonemarch",
+      "description": "2007-08 · Drybank Anvils",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Nils+Stonemarch",
+      "position": "MID"
+    },
+    {
+      "id": "soccer-113",
+      "name": "Wick Oakhurst",
+      "description": "2008-09 · Pellhaven Lanterns",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Wick+Oakhurst",
+      "position": "MID"
+    },
+    {
+      "id": "soccer-114",
+      "name": "Goran Yarrowfield",
+      "description": "2020-21 · Pellhaven Foxes",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Goran+Yarrowfield",
+      "position": "FWD"
+    },
+    {
+      "id": "soccer-115",
+      "name": "Sten Ashcroft",
+      "description": "2024-25 · Ellwater Kestrels",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Sten+Ashcroft",
+      "position": "GK"
+    },
+    {
+      "id": "soccer-116",
+      "name": "Nils Hollowfen",
+      "description": "2020-21 · Corvane Ironmen",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Nils+Hollowfen",
+      "position": "DEF"
+    },
+    {
+      "id": "soccer-117",
+      "name": "Ulric Hollowfen",
+      "description": "2002-03 · Pellhaven Ironmen",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Ulric+Hollowfen",
+      "position": "DEF"
+    },
+    {
+      "id": "soccer-118",
+      "name": "Casti Oakhurst",
+      "description": "2004-05 · Fenmark Foxes",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Casti+Oakhurst",
+      "position": "MID"
+    },
+    {
+      "id": "soccer-119",
+      "name": "Tam Ashcroft",
+      "description": "2003-04 · Vantor Lanterns",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Tam+Ashcroft",
+      "position": "MID"
+    },
+    {
+      "id": "soccer-120",
+      "name": "Kell Pinebank",
+      "description": "2022-23 · Gale End Kestrels",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Kell+Pinebank",
+      "position": "FWD"
+    },
+    {
+      "id": "soccer-121",
+      "name": "Lorne Yarrowfield",
+      "description": "2004-05 · Aldreth Mariners",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Lorne+Yarrowfield",
+      "position": "GK"
+    },
+    {
+      "id": "soccer-122",
+      "name": "Rask Nettleby",
+      "description": "1999-00 · Hallowdeep Lanterns",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Rask+Nettleby",
+      "position": "DEF"
+    },
+    {
+      "id": "soccer-123",
+      "name": "Goran Hollowfen",
+      "description": "2024-25 · Kesh Lanterns",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Goran+Hollowfen",
+      "position": "DEF"
+    },
+    {
+      "id": "soccer-124",
+      "name": "Yorn Farrowick",
+      "description": "2014-15 · Morrow Beacons",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Yorn+Farrowick",
+      "position": "MID"
+    },
+    {
+      "id": "soccer-125",
+      "name": "Yorn Ironmere",
+      "description": "2007-08 · Vantor Beacons",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Yorn+Ironmere",
+      "position": "MID"
+    },
+    {
+      "id": "soccer-126",
+      "name": "Orin Pinebank",
+      "description": "2018-19 · Ellwater Cinders",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Orin+Pinebank",
+      "position": "FWD"
+    },
+    {
+      "id": "soccer-127",
+      "name": "Wick Junewood",
+      "description": "2010-11 · Irondale Wardens",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Wick+Junewood",
+      "position": "GK"
+    },
+    {
+      "id": "soccer-128",
+      "name": "Wick Everline",
+      "description": "2024-25 · Kesh Mariners",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Wick+Everline",
+      "position": "DEF"
+    },
+    {
+      "id": "soccer-129",
+      "name": "Vane Oakhurst",
+      "description": "2007-08 · Irondale Kestrels",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Vane+Oakhurst",
+      "position": "DEF"
+    },
+    {
+      "id": "soccer-130",
+      "name": "Casti Junewood",
+      "description": "2021-22 · Hallowdeep Wolves",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Casti+Junewood",
+      "position": "MID"
+    },
+    {
+      "id": "soccer-131",
+      "name": "Ivor Ashcroft",
+      "description": "2018-19 · Irondale Thornbacks",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Ivor+Ashcroft",
+      "position": "MID"
+    },
+    {
+      "id": "soccer-132",
+      "name": "Sten Zephyrly",
+      "description": "2010-11 · Drybank Foxes",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Sten+Zephyrly",
+      "position": "FWD"
+    },
+    {
+      "id": "soccer-133",
+      "name": "Emryn Quarrow",
+      "description": "2014-15 · Vantor Mariners",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Emryn+Quarrow",
+      "position": "GK"
+    },
+    {
+      "id": "soccer-134",
+      "name": "Zev Ravensford",
+      "description": "2001-02 · Hallowdeep Harriers",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Zev+Ravensford",
+      "position": "DEF"
+    },
+    {
+      "id": "soccer-135",
+      "name": "Goran Pinebank",
+      "description": "2013-14 · Gale End Wolves",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Goran+Pinebank",
+      "position": "DEF"
+    },
+    {
+      "id": "soccer-136",
+      "name": "Ivor Kestrelly",
+      "description": "2000-01 · Irondale Foxes",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Ivor+Kestrelly",
+      "position": "MID"
+    },
+    {
+      "id": "soccer-137",
+      "name": "Goran Coldwater",
+      "description": "1999-00 · Corvane Wardens",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Goran+Coldwater",
+      "position": "MID"
+    },
+    {
+      "id": "soccer-138",
+      "name": "Ade Ravensford",
+      "description": "2024-25 · Vantor Lanterns",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Ade+Ravensford",
+      "position": "FWD"
+    },
+    {
+      "id": "soccer-139",
+      "name": "Nils Coldwater",
+      "description": "2008-09 · Kesh Thornbacks",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Nils+Coldwater",
+      "position": "GK"
+    },
+    {
+      "id": "soccer-140",
+      "name": "Vane Westergale",
+      "description": "2010-11 · Aldreth Ironmen",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Vane+Westergale",
+      "position": "DEF"
+    },
+    {
+      "id": "soccer-141",
+      "name": "Wick Thistlewaite",
+      "description": "2006-07 · Kesh Kestrels",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Wick+Thistlewaite",
+      "position": "DEF"
+    },
+    {
+      "id": "soccer-142",
+      "name": "Casti Zephyrly",
+      "description": "2016-17 · Vantor Harriers",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Casti+Zephyrly",
+      "position": "MID"
+    },
+    {
+      "id": "soccer-143",
+      "name": "Rask Oakhurst",
+      "description": "2014-15 · Hallowdeep Anvils",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Rask+Oakhurst",
+      "position": "MID"
+    },
+    {
+      "id": "soccer-144",
+      "name": "Orin Ironmere",
+      "description": "2013-14 · Drybank Foxes",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Orin+Ironmere",
+      "position": "FWD"
+    },
+    {
+      "id": "soccer-145",
+      "name": "Zev Ravensford",
+      "description": "2024-25 · Pellhaven Mariners",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Zev+Ravensford",
+      "position": "GK"
+    },
+    {
+      "id": "soccer-146",
+      "name": "Emryn Duskmoor",
+      "description": "2006-07 · Gale End Mariners",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Emryn+Duskmoor",
+      "position": "DEF"
+    },
+    {
+      "id": "soccer-147",
+      "name": "Bram Yarrowfield",
+      "description": "2012-13 · Aldreth Anvils",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Bram+Yarrowfield",
+      "position": "DEF"
+    },
+    {
+      "id": "soccer-148",
+      "name": "Lorne Junewood",
+      "description": "2024-25 · Corvane Foxes",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Lorne+Junewood",
+      "position": "MID"
+    },
+    {
+      "id": "soccer-149",
+      "name": "Kell Coldwater",
+      "description": "2009-10 · Fenmark Cinders",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Kell+Coldwater",
+      "position": "MID"
+    },
+    {
+      "id": "soccer-150",
+      "name": "Lorne Pinebank",
+      "description": "2006-07 · Hallowdeep Lanterns",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Lorne+Pinebank",
+      "position": "FWD"
+    },
+    {
+      "id": "soccer-151",
+      "name": "Quill Quarrow",
+      "description": "2001-02 · Vantor Mariners",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Quill+Quarrow",
+      "position": "GK"
+    },
+    {
+      "id": "soccer-152",
+      "name": "Yorn Zephyrly",
+      "description": "1998-99 · Pellhaven Wardens",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Yorn+Zephyrly",
+      "position": "DEF"
+    },
+    {
+      "id": "soccer-153",
+      "name": "Rask Duskmoor",
+      "description": "2003-04 · Aldreth Lanterns",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Rask+Duskmoor",
+      "position": "DEF"
+    },
+    {
+      "id": "soccer-154",
+      "name": "Lorne Brambleton",
+      "description": "2022-23 · Pellhaven Wolves",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Lorne+Brambleton",
+      "position": "MID"
+    },
+    {
+      "id": "soccer-155",
+      "name": "Falk Pinebank",
+      "description": "1999-00 · Ellwater Thornbacks",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Falk+Pinebank",
+      "position": "MID"
+    },
+    {
+      "id": "soccer-156",
+      "name": "Orin Farrowick",
+      "description": "2001-02 · Pellhaven Kestrels",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Orin+Farrowick",
+      "position": "FWD"
+    },
+    {
+      "id": "soccer-157",
+      "name": "Jarek Duskmoor",
+      "description": "2022-23 · Gale End Anvils",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Jarek+Duskmoor",
+      "position": "GK"
+    },
+    {
+      "id": "soccer-158",
+      "name": "Casti Zephyrly",
+      "description": "2019-20 · Gale End Harriers",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Casti+Zephyrly",
+      "position": "DEF"
+    },
+    {
+      "id": "soccer-159",
+      "name": "Casti Brambleton",
+      "description": "2019-20 · Gale End Beacons",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Casti+Brambleton",
+      "position": "DEF"
+    },
+    {
+      "id": "soccer-160",
+      "name": "Vane Ironmere",
+      "description": "2023-24 · Corvane Foxes",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Vane+Ironmere",
+      "position": "MID"
+    },
+    {
+      "id": "soccer-161",
+      "name": "Ivor Larkspur",
+      "description": "2000-01 · Morrow Ironmen",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Ivor+Larkspur",
+      "position": "MID"
+    },
+    {
+      "id": "soccer-162",
+      "name": "Yorn Ironmere",
+      "description": "2000-01 · Pellhaven Anvils",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Yorn+Ironmere",
+      "position": "FWD"
+    },
+    {
+      "id": "soccer-163",
+      "name": "Jarek Stonemarch",
+      "description": "2014-15 · Gale End Foxes",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Jarek+Stonemarch",
+      "position": "GK"
+    },
+    {
+      "id": "soccer-164",
+      "name": "Pell Duskmoor",
+      "description": "2010-11 · Morrow Thornbacks",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Pell+Duskmoor",
+      "position": "DEF"
+    },
+    {
+      "id": "soccer-165",
+      "name": "Nils Duskmoor",
+      "description": "2014-15 · Gale End Foxes",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Nils+Duskmoor",
+      "position": "DEF"
+    },
+    {
+      "id": "soccer-166",
+      "name": "Nils Farrowick",
+      "description": "2020-21 · Aldreth Beacons",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Nils+Farrowick",
+      "position": "MID"
+    },
+    {
+      "id": "soccer-167",
+      "name": "Goran Ravensford",
+      "description": "2007-08 · Vantor Cinders",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Goran+Ravensford",
+      "position": "MID"
+    },
+    {
+      "id": "soccer-168",
+      "name": "Mabry Kestrelly",
+      "description": "2006-07 · Corvane Wolves",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Mabry+Kestrelly",
+      "position": "FWD"
+    },
+    {
+      "id": "soccer-169",
+      "name": "Sten Stonemarch",
+      "description": "2001-02 · Corvane Lanterns",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Sten+Stonemarch",
+      "position": "GK"
+    },
+    {
+      "id": "soccer-170",
+      "name": "Nils Everline",
+      "description": "2007-08 · Vantor Anvils",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Nils+Everline",
+      "position": "DEF"
+    },
+    {
+      "id": "soccer-171",
+      "name": "Falk Kestrelly",
+      "description": "2010-11 · Vantor Mariners",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Falk+Kestrelly",
+      "position": "DEF"
+    },
+    {
+      "id": "soccer-172",
+      "name": "Jarek Larkspur",
+      "description": "2016-17 · Kesh Thornbacks",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Jarek+Larkspur",
+      "position": "MID"
+    },
+    {
+      "id": "soccer-173",
+      "name": "Rask Pinebank",
+      "description": "2018-19 · Ellwater Ironmen",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Rask+Pinebank",
+      "position": "MID"
+    },
+    {
+      "id": "soccer-174",
+      "name": "Doran Ravensford",
+      "description": "2013-14 · Kesh Beacons",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Doran+Ravensford",
+      "position": "FWD"
+    },
+    {
+      "id": "soccer-175",
+      "name": "Falk Coldwater",
+      "description": "2013-14 · Ellwater Mariners",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Falk+Coldwater",
+      "position": "GK"
+    },
+    {
+      "id": "soccer-176",
+      "name": "Pell Coldwater",
+      "description": "2020-21 · Drybank Foxes",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Pell+Coldwater",
+      "position": "DEF"
+    },
+    {
+      "id": "soccer-177",
+      "name": "Mabry Marrowgate",
+      "description": "2006-07 · Kesh Ironmen",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Mabry+Marrowgate",
+      "position": "DEF"
+    },
+    {
+      "id": "soccer-178",
+      "name": "Falk Larkspur",
+      "description": "2023-24 · Drybank Cinders",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Falk+Larkspur",
+      "position": "MID"
+    },
+    {
+      "id": "soccer-179",
+      "name": "Mabry Zephyrly",
+      "description": "1998-99 · Irondale Ironmen",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Mabry+Zephyrly",
+      "position": "MID"
+    },
+    {
+      "id": "soccer-180",
+      "name": "Ivor Ravensford",
+      "description": "2009-10 · Morrow Beacons",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Ivor+Ravensford",
+      "position": "FWD"
+    },
+    {
+      "id": "soccer-181",
+      "name": "Sten Glasshill",
+      "description": "2013-14 · Hallowdeep Anvils",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Sten+Glasshill",
+      "position": "GK"
+    },
+    {
+      "id": "soccer-182",
+      "name": "Orin Ashcroft",
+      "description": "2010-11 · Vantor Beacons",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Orin+Ashcroft",
+      "position": "DEF"
+    },
+    {
+      "id": "soccer-183",
+      "name": "Falk Everline",
+      "description": "2007-08 · Corvane Foxes",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Falk+Everline",
+      "position": "DEF"
+    },
+    {
+      "id": "soccer-184",
+      "name": "Kell Coldwater",
+      "description": "2010-11 · Fenmark Ironmen",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Kell+Coldwater",
+      "position": "MID"
+    },
+    {
+      "id": "soccer-185",
+      "name": "Pell Kestrelly",
+      "description": "2008-09 · Gale End Foxes",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Pell+Kestrelly",
+      "position": "MID"
+    },
+    {
+      "id": "soccer-186",
+      "name": "Zev Ashcroft",
+      "description": "2007-08 · Drybank Wolves",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Zev+Ashcroft",
+      "position": "FWD"
+    },
+    {
+      "id": "soccer-187",
+      "name": "Kell Yarrowfield",
+      "description": "2024-25 · Aldreth Wardens",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Kell+Yarrowfield",
+      "position": "GK"
+    },
+    {
+      "id": "soccer-188",
+      "name": "Falk Marrowgate",
+      "description": "2002-03 · Drybank Mariners",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Falk+Marrowgate",
+      "position": "DEF"
+    },
+    {
+      "id": "soccer-189",
+      "name": "Doran Thistlewaite",
+      "description": "2012-13 · Ellwater Anvils",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Doran+Thistlewaite",
+      "position": "DEF"
+    },
+    {
+      "id": "soccer-190",
+      "name": "Rask Hollowfen",
+      "description": "2020-21 · Ellwater Beacons",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Rask+Hollowfen",
+      "position": "MID"
+    },
+    {
+      "id": "soccer-191",
+      "name": "Ivor Ashcroft",
+      "description": "2019-20 · Aldreth Mariners",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Ivor+Ashcroft",
+      "position": "MID"
+    },
+    {
+      "id": "soccer-192",
+      "name": "Bram Ashcroft",
+      "description": "2014-15 · Fenmark Anvils",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Bram+Ashcroft",
+      "position": "FWD"
+    },
+    {
+      "id": "soccer-193",
+      "name": "Casti Junewood",
+      "description": "2001-02 · Corvane Lanterns",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Casti+Junewood",
+      "position": "GK"
+    },
+    {
+      "id": "soccer-194",
+      "name": "Doran Ashcroft",
+      "description": "2023-24 · Morrow Thornbacks",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Doran+Ashcroft",
+      "position": "DEF"
+    },
+    {
+      "id": "soccer-195",
+      "name": "Nils Oakhurst",
+      "description": "2014-15 · Corvane Harriers",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Nils+Oakhurst",
+      "position": "DEF"
+    },
+    {
+      "id": "soccer-196",
+      "name": "Goran Everline",
+      "description": "2011-12 · Fenmark Foxes",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Goran+Everline",
+      "position": "MID"
+    },
+    {
+      "id": "soccer-197",
+      "name": "Casti Duskmoor",
+      "description": "2023-24 · Morrow Foxes",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Casti+Duskmoor",
+      "position": "MID"
+    },
+    {
+      "id": "soccer-198",
+      "name": "Nils Nettleby",
+      "description": "2017-18 · Aldreth Thornbacks",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Nils+Nettleby",
+      "position": "FWD"
+    },
+    {
+      "id": "soccer-199",
+      "name": "Kell Coldwater",
+      "description": "2011-12 · Irondale Wardens",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Kell+Coldwater",
+      "position": "GK"
+    },
+    {
+      "id": "soccer-200",
+      "name": "Tam Farrowick",
+      "description": "2004-05 · Vantor Ironmen",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Tam+Farrowick",
+      "position": "DEF"
+    },
+    {
+      "id": "soccer-201",
+      "name": "Mabry Coldwater",
+      "description": "2001-02 · Gale End Cinders",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Mabry+Coldwater",
+      "position": "DEF"
+    },
+    {
+      "id": "soccer-202",
+      "name": "Pell Undercliff",
+      "description": "2000-01 · Kesh Cinders",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Pell+Undercliff",
+      "position": "MID"
+    },
+    {
+      "id": "soccer-203",
+      "name": "Vane Coldwater",
+      "description": "2012-13 · Pellhaven Wolves",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Vane+Coldwater",
+      "position": "MID"
+    },
+    {
+      "id": "soccer-204",
+      "name": "Ulric Zephyrly",
+      "description": "2004-05 · Aldreth Thornbacks",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Ulric+Zephyrly",
+      "position": "FWD"
+    },
+    {
+      "id": "soccer-205",
+      "name": "Doran Coldwater",
+      "description": "2021-22 · Morrow Harriers",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Doran+Coldwater",
+      "position": "GK"
+    },
+    {
+      "id": "soccer-206",
+      "name": "Yorn Junewood",
+      "description": "2020-21 · Hallowdeep Anvils",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Yorn+Junewood",
+      "position": "DEF"
+    },
+    {
+      "id": "soccer-207",
+      "name": "Sten Farrowick",
+      "description": "2021-22 · Morrow Beacons",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Sten+Farrowick",
+      "position": "DEF"
+    },
+    {
+      "id": "soccer-208",
+      "name": "Casti Stonemarch",
+      "description": "2012-13 · Gale End Mariners",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Casti+Stonemarch",
+      "position": "MID"
+    },
+    {
+      "id": "soccer-209",
+      "name": "Yorn Yarrowfield",
+      "description": "2013-14 · Aldreth Thornbacks",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Yorn+Yarrowfield",
+      "position": "MID"
+    },
+    {
+      "id": "soccer-210",
+      "name": "Falk Zephyrly",
+      "description": "2012-13 · Morrow Wardens",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Falk+Zephyrly",
+      "position": "FWD"
+    },
+    {
+      "id": "soccer-211",
+      "name": "Bram Westergale",
+      "description": "2011-12 · Corvane Mariners",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Bram+Westergale",
+      "position": "GK"
+    },
+    {
+      "id": "soccer-212",
+      "name": "Hale Junewood",
+      "description": "1999-00 · Irondale Kestrels",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Hale+Junewood",
+      "position": "DEF"
+    },
+    {
+      "id": "soccer-213",
+      "name": "Sten Yarrowfield",
+      "description": "2021-22 · Gale End Beacons",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Sten+Yarrowfield",
+      "position": "DEF"
+    },
+    {
+      "id": "soccer-214",
+      "name": "Doran Undercliff",
+      "description": "2016-17 · Irondale Harriers",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Doran+Undercliff",
+      "position": "MID"
+    },
+    {
+      "id": "soccer-215",
+      "name": "Zev Ravensford",
+      "description": "2004-05 · Hallowdeep Thornbacks",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Zev+Ravensford",
+      "position": "MID"
+    },
+    {
+      "id": "soccer-216",
+      "name": "Yorn Quarrow",
+      "description": "2016-17 · Ellwater Wardens",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Yorn+Quarrow",
+      "position": "FWD"
+    },
+    {
+      "id": "soccer-217",
+      "name": "Ivor Quarrow",
+      "description": "2005-06 · Corvane Anvils",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Ivor+Quarrow",
+      "position": "GK"
+    },
+    {
+      "id": "soccer-218",
+      "name": "Quill Marrowgate",
+      "description": "2006-07 · Corvane Thornbacks",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Quill+Marrowgate",
+      "position": "DEF"
+    },
+    {
+      "id": "soccer-219",
+      "name": "Ulric Brambleton",
+      "description": "2022-23 · Kesh Harriers",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Ulric+Brambleton",
+      "position": "DEF"
+    },
+    {
+      "id": "soccer-220",
+      "name": "Doran Oakhurst",
+      "description": "2009-10 · Irondale Beacons",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Doran+Oakhurst",
+      "position": "MID"
+    },
+    {
+      "id": "soccer-221",
+      "name": "Goran Thistlewaite",
+      "description": "2018-19 · Aldreth Lanterns",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Goran+Thistlewaite",
+      "position": "MID"
+    },
+    {
+      "id": "soccer-222",
+      "name": "Tam Thistlewaite",
+      "description": "2013-14 · Irondale Ironmen",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Tam+Thistlewaite",
+      "position": "FWD"
+    },
+    {
+      "id": "soccer-223",
+      "name": "Wick Junewood",
+      "description": "2000-01 · Vantor Mariners",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Wick+Junewood",
+      "position": "GK"
+    },
+    {
+      "id": "soccer-224",
+      "name": "Bram Varden",
+      "description": "2013-14 · Morrow Harriers",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Bram+Varden",
+      "position": "DEF"
+    },
+    {
+      "id": "soccer-225",
+      "name": "Casti Pinebank",
+      "description": "2023-24 · Ellwater Ironmen",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Casti+Pinebank",
+      "position": "DEF"
+    },
+    {
+      "id": "soccer-226",
+      "name": "Bram Westergale",
+      "description": "2013-14 · Morrow Kestrels",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Bram+Westergale",
+      "position": "MID"
+    },
+    {
+      "id": "soccer-227",
+      "name": "Hale Westergale",
+      "description": "2016-17 · Irondale Ironmen",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Hale+Westergale",
+      "position": "MID"
+    },
+    {
+      "id": "soccer-228",
+      "name": "Zev Varden",
+      "description": "2020-21 · Pellhaven Thornbacks",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Zev+Varden",
+      "position": "FWD"
+    },
+    {
+      "id": "soccer-229",
+      "name": "Ulric Larkspur",
+      "description": "2024-25 · Fenmark Ironmen",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Ulric+Larkspur",
+      "position": "GK"
+    },
+    {
+      "id": "soccer-230",
+      "name": "Falk Farrowick",
+      "description": "2014-15 · Gale End Lanterns",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Falk+Farrowick",
+      "position": "DEF"
+    },
+    {
+      "id": "soccer-231",
+      "name": "Quill Glasshill",
+      "description": "2004-05 · Kesh Cinders",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Quill+Glasshill",
+      "position": "DEF"
+    },
+    {
+      "id": "soccer-232",
+      "name": "Pell Zephyrly",
+      "description": "2008-09 · Morrow Foxes",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Pell+Zephyrly",
+      "position": "MID"
+    },
+    {
+      "id": "soccer-233",
+      "name": "Goran Larkspur",
+      "description": "2020-21 · Ellwater Beacons",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Goran+Larkspur",
+      "position": "MID"
+    },
+    {
+      "id": "soccer-234",
+      "name": "Ulric Westergale",
+      "description": "1999-00 · Ellwater Beacons",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Ulric+Westergale",
+      "position": "FWD"
+    },
+    {
+      "id": "soccer-235",
+      "name": "Ivor Coldwater",
+      "description": "2004-05 · Irondale Cinders",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Ivor+Coldwater",
+      "position": "GK"
+    },
+    {
+      "id": "soccer-236",
+      "name": "Zev Duskmoor",
+      "description": "2005-06 · Drybank Wolves",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Zev+Duskmoor",
+      "position": "DEF"
+    },
+    {
+      "id": "soccer-237",
+      "name": "Yorn Nettleby",
+      "description": "2000-01 · Vantor Cinders",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Yorn+Nettleby",
+      "position": "DEF"
+    },
+    {
+      "id": "soccer-238",
+      "name": "Ivor Oakhurst",
+      "description": "2023-24 · Ellwater Beacons",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Ivor+Oakhurst",
+      "position": "MID"
+    },
+    {
+      "id": "soccer-239",
+      "name": "Ivor Ashcroft",
+      "description": "1998-99 · Morrow Cinders",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Ivor+Ashcroft",
+      "position": "MID"
+    },
+    {
+      "id": "soccer-240",
+      "name": "Tam Undercliff",
+      "description": "2015-16 · Kesh Kestrels",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Tam+Undercliff",
+      "position": "FWD"
+    },
+    {
+      "id": "soccer-241",
+      "name": "Kell Farrowick",
+      "description": "2018-19 · Corvane Ironmen",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Kell+Farrowick",
+      "position": "GK"
+    },
+    {
+      "id": "soccer-242",
+      "name": "Quill Duskmoor",
+      "description": "2018-19 · Gale End Beacons",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Quill+Duskmoor",
+      "position": "DEF"
+    },
+    {
+      "id": "soccer-243",
+      "name": "Quill Thistlewaite",
+      "description": "2023-24 · Ellwater Wardens",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Quill+Thistlewaite",
+      "position": "DEF"
+    },
+    {
+      "id": "soccer-244",
+      "name": "Sten Yarrowfield",
+      "description": "2017-18 · Ellwater Foxes",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Sten+Yarrowfield",
+      "position": "MID"
+    },
+    {
+      "id": "soccer-245",
+      "name": "Zev Thistlewaite",
+      "description": "2019-20 · Ellwater Kestrels",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Zev+Thistlewaite",
+      "position": "MID"
+    },
+    {
+      "id": "soccer-246",
+      "name": "Yorn Ravensford",
+      "description": "2003-04 · Drybank Cinders",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Yorn+Ravensford",
+      "position": "FWD"
+    },
+    {
+      "id": "soccer-247",
+      "name": "Quill Glasshill",
+      "description": "2010-11 · Aldreth Wolves",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Quill+Glasshill",
+      "position": "GK"
+    },
+    {
+      "id": "soccer-248",
+      "name": "Ulric Stonemarch",
+      "description": "2002-03 · Fenmark Kestrels",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Ulric+Stonemarch",
+      "position": "DEF"
+    },
+    {
+      "id": "soccer-249",
+      "name": "Hale Pinebank",
+      "description": "2017-18 · Vantor Thornbacks",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Hale+Pinebank",
+      "position": "DEF"
+    },
+    {
+      "id": "soccer-250",
+      "name": "Mabry Larkspur",
+      "description": "1998-99 · Corvane Cinders",
+      "art": "https://placehold.co/1040x760/15803d/f0fdf4.png?text=Mabry+Larkspur",
+      "position": "MID"
+    }
+  ]
+}

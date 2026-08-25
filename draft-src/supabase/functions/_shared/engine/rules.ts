@@ -6,8 +6,8 @@
 // is the server's clock and nothing else, which is why browsers with skewed
 // clocks cannot resolve a round early.
 
-import { MODES } from './card'
-import type { Action, BankCard, PowerId, Result, RoomState, Round, Seat } from './state'
+import { MODES } from './card.ts'
+import type { Action, BankCard, PowerId, Result, RoomState, Round, Seat } from './state.ts'
 import {
   MAX_SEATS,
   MIN_SEATS,
@@ -20,7 +20,7 @@ import {
   maxBid,
   newSeat,
   spend,
-} from './state'
+} from './state.ts'
 
 const no = (reason: string): Result => ({ ok: false, reason })
 const yes = (state: RoomState): Result => ({ ok: true, state })

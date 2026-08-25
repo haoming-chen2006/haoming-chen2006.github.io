@@ -504,3 +504,48 @@ describe('powers', () => {
     ).toMatch(/poach someone else/)
   })
 })
+
+describe('joining a room', () => {
+  const empty = () => newRoom('nba')
+  const join = (state: RoomState, id: string, name: string, powers: PowerId[] = ['scout', 'veto']) =>
+    apply(state, { type: 'join', seatId: id, name, powers }, T0)
+
+  it('seats a drafter with the powers they picked', () => {
+    const state = ok(join(empty(), 'tok-1', 'Ada'))
+
+    expect(state.seats).toHaveLength(1)
+    expect(state.seats[0]!.name).toBe('Ada')
+    expect(state.seats[0]!.powers).toEqual([
+      { id: 'scout', used: false },
+      { id: 'veto', used: false },
+    ])
+  })
+
+  it('treats a returning token as a reconnect, not a second seat', () => {
+    const once = ok(join(empty(), 'tok-1', 'Ada'))
+    const again = ok(join(once, 'tok-1', 'Ada'))
+
+    expect(again).toEqual(once)
+    expect(again.seats).toHaveLength(1)
+  })
+
+  it('insists on a name nobody else is using, and exactly two powers', () => {
+    const one = ok(join(empty(), 'tok-1', 'Ada'))
+
+    expect(why(join(one, 'tok-2', '  '))).toMatch(/pick a name/)
+    expect(why(join(one, 'tok-2', 'ada'))).toMatch(/already called ada/)
+    expect(why(join(one, 'tok-2', 'Bo', ['scout']))).toMatch(/exactly 2 powers/)
+    expect(why(join(one, 'tok-2', 'Bo', ['scout', 'scout']))).toMatch(/exactly 2 powers/)
+  })
+
+  it('turns away a seventh drafter and anyone arriving after the start', () => {
+    let state = empty()
+    for (const [i, name] of ['Ada', 'Bo', 'Cy', 'Di', 'Eli', 'Fay'].entries())
+      state = ok(join(state, `tok-${i}`, name))
+
+    expect(why(join(state, 'tok-7', 'Gus'))).toMatch(/holds 6 drafters/)
+
+    const running = ok(apply(state, { type: 'start', bank: ids('nba', 200) }, T0))
+    expect(why(join(running, 'tok-8', 'Gus'))).toMatch(/already started/)
+  })
+})

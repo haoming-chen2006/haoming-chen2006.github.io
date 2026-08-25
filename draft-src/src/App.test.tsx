@@ -4,7 +4,6 @@ import { describe, expect, it } from 'vitest'
 import { App } from './App'
 import { apply } from './engine/rules'
 import { type RoomState, newRoom, newSeat } from './engine/state'
-import { modeList } from './modes'
 import { Auction } from './ui/Auction'
 import { Rosters } from './ui/Roster'
 
@@ -40,11 +39,12 @@ function started() {
 // Effects do not run in a server render, so these are first paints. Enough to
 // catch a broken import, bad JSX, or a prop that is not what the screen expects.
 describe('the screens', () => {
-  it('opens on the mode picker', () => {
+  it('opens on the front door, offering both ways to play', () => {
     const html = render(<App />)
 
     expect(html).toContain('<h1>Draft</h1>')
-    for (const mode of modeList) expect(html).toContain(mode.label)
+    expect(html).toContain('Hot seat')
+    expect(html).toContain('Play with friends')
   })
 
   it('puts a card up, open to everyone, and counts the pool down', () => {
@@ -62,6 +62,7 @@ describe('the screens', () => {
         cards={new Map([['x0', card]])}
         now={T0 + 2_000}
         poaching={null}
+        youSeat={null}
         onBid={() => {}}
         onPower={() => {}}
       />,

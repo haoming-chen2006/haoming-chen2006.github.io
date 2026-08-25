@@ -8,6 +8,7 @@ export function Auction({
   cards,
   now,
   poaching,
+  youSeat,
   onBid,
   onPower,
 }: {
@@ -16,6 +17,8 @@ export function Auction({
   cards: Map<CardId, Card>
   now: number
   poaching: number | null
+  /** null in a hot seat: everybody round the keyboard may act for anybody. */
+  youSeat: number | null
   onBid: (seat: number, amount: number) => void
   onPower: (seat: number, power: PowerId) => void
 }) {
@@ -76,7 +79,9 @@ export function Auction({
           const floor = round.high === null ? 1 : round.high.amount + 1
           const squeezed = round.squeezedBy !== null && round.squeezedBy !== i
           const ceiling = maxBid(seat) - (squeezed ? 4 : 0)
-          const blocked = isFull(seat)
+          const blocked = youSeat !== null && youSeat !== i
+            ? null
+            : isFull(seat)
             ? 'roster full'
             : round.high?.seat === i
               ? 'high bid'
@@ -86,7 +91,10 @@ export function Auction({
           const jump = Math.min(floor + 4, ceiling)
 
           return (
-            <div key={seat.id} className={`bidder${blocked ? ' off' : ''}`}>
+            <div
+              key={seat.id}
+              className={`bidder${blocked ? ' off' : ''}${youSeat === i ? ' mine' : ''}`}
+            >
               <div className="who">
                 <span className="key">{i + 1}</span>
                 <b>{seat.name}</b>
@@ -96,7 +104,7 @@ export function Auction({
                 </span>
               </div>
 
-              {blocked ? (
+              {youSeat !== null && youSeat !== i ? null : blocked ? (
                 <span className="blocked">{blocked}</span>
               ) : (
                 <div className="row">
@@ -112,7 +120,7 @@ export function Auction({
               )}
 
               <div className="powers">
-                {seat.powers.map((held) =>
+                {(youSeat === null || youSeat === i) && seat.powers.map((held) =>
                   held.id === 'insurance' ? (
                     <span key={held.id} className={`power passive${held.used ? ' spent' : ''}`}>
                       🛡 {held.used ? 'insurance used' : 'insured'}
@@ -136,8 +144,11 @@ export function Auction({
       </div>
 
       <p className="hint">
-        Press 1–{room.seats.length} to bid the minimum. Bidding is open the instant a card lands —
-        no turns. {poaching !== null && <b>Poaching: click one of your cards, then a rival’s.</b>}
+        {youSeat === null
+          ? `Press 1–${room.seats.length} to bid the minimum.`
+          : 'Press space or your own number to bid the minimum.'}{' '}
+        Bidding is open the instant a card lands — no turns.{' '}
+        {poaching !== null && <b>Poaching: click one of your cards, then a rival’s.</b>}
       </p>
     </section>
   )

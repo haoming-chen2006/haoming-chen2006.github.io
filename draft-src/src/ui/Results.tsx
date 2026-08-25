@@ -8,6 +8,7 @@ export function Results({
   mode,
   cards,
   judging,
+  canJudge,
   error,
   onRetry,
   onAgain,
@@ -16,6 +17,8 @@ export function Results({
   mode: Mode
   cards: Map<CardId, Card>
   judging: boolean
+  /** The judge lives in an Edge Function, so a hot seat has nobody to ask. */
+  canJudge: boolean
   error: string | null
   onRetry: () => void
   onAgain: () => void
@@ -29,7 +32,12 @@ export function Results({
 
       {verdict === null ? (
         <div className="judging">
-          {judging ? (
+          {!canJudge ? (
+            <p className="sub">
+              No verdict in a hot seat — the judge holds the API key and lives on the server, so it
+              only rules on rooms. Here is what everyone bought.
+            </p>
+          ) : judging ? (
             <>
               <p className="sub">
                 The judge is reading the numbers you never saw — every roster, every price.

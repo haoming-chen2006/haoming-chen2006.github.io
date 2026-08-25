@@ -279,6 +279,7 @@ export function App() {
           mode={mode}
           cards={cards}
           judging={judging}
+          canJudge={code !== null}
           error={judgeError}
           onRetry={callJudge}
           onAgain={leave}

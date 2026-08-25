@@ -1,3 +1,4 @@
+import type React from 'react'
 import { renderToString } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 import { App } from './App'
@@ -9,58 +10,90 @@ import { Rosters } from './ui/Roster'
 
 const T0 = Date.parse('2026-01-01T00:00:00.000Z')
 
+/** React separates adjacent text nodes with an empty comment, which turns
+ *  "10 cards left" into "10<!-- --> card<!-- -->s<!-- --> left". Strip them so
+ *  the assertions can read like the copy actually does on screen. */
+const render = (node: React.ReactElement): string =>
+  renderToString(node).replaceAll('<!-- -->', '')
+
+function started() {
+  const base = newRoom('nba', { budget: 20, bidMs: 8_000, poolSize: 10 })
+  const seated: RoomState = {
+    ...base,
+    seats: [
+      newSeat('seat-0', 'Ada', base.config, ['scout', 'veto']),
+      newSeat('seat-1', 'Bo', base.config, ['insurance', 'squeeze']),
+    ],
+  }
+  const result = apply(
+    seated,
+    {
+      type: 'start',
+      bank: Array.from({ length: 30 }, (_, i) => ({ id: `x${i}`, position: 'PG' })),
+    },
+    T0,
+  )
+  if (!result.ok) throw new Error(result.reason)
+  return result.state
+}
+
 // Effects do not run in a server render, so these are first paints. Enough to
 // catch a broken import, bad JSX, or a prop that is not what the screen expects.
 describe('the screens', () => {
   it('opens on the mode picker', () => {
-    const html = renderToString(<App />)
+    const html = render(<App />)
 
     expect(html).toContain('<h1>Draft</h1>')
     for (const mode of modeList) expect(html).toContain(mode.label)
   })
 
-  it('puts a card on the block with a bid button for every drafter', () => {
-    const base = newRoom('nba', { budget: 20, bidMs: 8_000, openerMs: 6_000 })
-    const seated: RoomState = {
-      ...base,
-      seats: ['Ada', 'Bo'].map((n, i) => newSeat(`seat-${i}`, n, base.config)),
+  it('puts a card up, open to everyone, and counts the pool down', () => {
+    const card = {
+      id: 'x0',
+      name: 'Someone Familiar',
+      description: '2015-16 · A Team',
+      art: 'https://x/y.png',
+      position: 'PG',
     }
-    const started = apply(seated, {
-      type: 'start',
-      bank: [
-        { id: 'x1', position: 'PG' },
-        { id: 'x2', position: 'SG' },
-        ...Array.from({ length: 20 }, (_, i) => ({ id: `f${i}`, position: 'C' })),
-      ],
-    }, T0)
-    if (!started.ok) throw new Error(started.reason)
-
-    const card = { id: 'x1', name: 'Someone Familiar', description: '2015-16 · A Team', art: 'https://x/y.png', position: 'PG' }
-    const html = renderToString(
-      <Auction room={started.state} card={card} now={T0 + 2_000} onBid={() => {}} />,
+    const html = render(
+      <Auction
+        room={started()}
+        card={card}
+        cards={new Map([['x0', card]])}
+        now={T0 + 2_000}
+        poaching={null}
+        onBid={() => {}}
+        onPower={() => {}}
+      />,
     )
 
-    // The card shows a name, a line and a picture — and no position or number.
     expect(html).toContain('Someone Familiar')
     expect(html).toContain('2015-16 · A Team')
     expect(html).toContain('no bid yet')
-    // React splits adjacent text nodes, so match the pieces, not the sentence.
-    expect(html).toMatch(/Ada.{0,20}alone/)
-    expect(html).toContain('waiting') // ...while Bo sits out the opener window
-    expect(html).not.toContain('"PG"') // no position on the card
+    // Nobody is locked out of the first bid any more — no opener, no waiting.
+    expect(html).not.toContain('waiting')
+    expect(html).not.toContain('alone')
+    // Ten in the pool, one of them on the block.
+    expect(html).toMatch(/10.{0,30}cards left/)
+    // Both drafters can act, and their powers are on the table.
+    expect(html).toContain('Scout')
+    expect(html).toContain('Squeeze')
+    expect(html).toContain('insured')
     // Three quarters of an eight second round left after two seconds.
     expect(html).toContain('width:75%')
   })
 
-  it('draws every slot of every roster, empty ones included', () => {
+  it('draws every slot of every roster and flags anyone knocked out', () => {
     const base = newRoom('hok')
-    const seats = ['Ada', 'Bo'].map((n, i) => newSeat(`seat-${i}`, n, base.config))
-    const html = renderToString(
+    const seats = [
+      newSeat('seat-0', 'Ada', base.config, ['scout', 'veto']),
+      { ...newSeat('seat-1', 'Bo', base.config, ['poach', 'insurance']), eliminated: true },
+    ]
+    const html = render(
       <Rosters
         seats={seats}
-        slots={base.config ? ['Clash', 'Jungle', 'Mid', 'Farm', 'Roam'] : []}
+        slots={['Clash', 'Jungle', 'Mid', 'Farm', 'Roam']}
         cards={new Map()}
-        openerSeat={0}
         highSeat={undefined}
         picked={null}
         onPick={() => {}}
@@ -69,6 +102,7 @@ describe('the screens', () => {
 
     expect(html).toContain('Clash')
     expect(html).toContain('Roam')
-    expect(html).toContain('opens')
+    expect(html).toContain('out')
+    expect(html).toContain('2 powers')
   })
 })

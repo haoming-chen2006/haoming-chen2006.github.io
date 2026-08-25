@@ -7,8 +7,8 @@
 // clocks cannot resolve a round early.
 
 import { MODES } from './card'
-import type { Action, BankCard, Result, RoomState, Round, Seat } from './state'
-import { MIN_SEATS, isFull, maxBid } from './state'
+import type { Action, BankCard, PowerId, Result, RoomState, Round, Seat } from './state'
+import { MIN_SEATS, OVERDRAFT, SQUEEZE, holds, isFull, maxBid, spend } from './state'
 
 const no = (reason: string): Result => ({ ok: false, reason })
 const yes = (state: RoomState): Result => ({ ok: true, state })
@@ -23,6 +23,10 @@ export function apply(state: RoomState, action: Action, now: number): Result {
       return resolve(state, now)
     case 'swap':
       return swap(state, action.seat, action.a, action.b)
+    case 'power':
+      return usePower(state, action.seat, action.power, now)
+    case 'poach':
+      return poach(state, action.seat, action.slot, action.target, action.targetSlot)
     default:
       return no(`${action.type} is not handled yet`)
   }
@@ -32,12 +36,24 @@ function start(state: RoomState, bank: BankCard[], now: number): Result {
   if (state.phase !== 'lobby') return no('the draft has already started')
   if (state.seats.length < MIN_SEATS) return no(`a draft needs at least ${MIN_SEATS} drafters`)
 
-  const needed = state.seats.length * state.config.rosterSize
-  if (bank.length < needed)
-    return no(`the bank holds ${bank.length} cards and this draft needs ${needed}`)
+  // The pool is cut here rather than by the caller, so poolSize means one thing
+  // and the rules are the ones enforcing scarcity.
+  const pool = bank.slice(0, state.config.poolSize)
 
-  const opened = openRound({ ...state, phase: 'auction', bank }, now)
-  return opened ? yes(opened) : no('the bank is empty')
+  // Only one roster's worth is required. A pool too small for everyone is not a
+  // mistake any more — it is the game, and somebody is going home empty-handed.
+  if (pool.length < state.config.rosterSize)
+    return no(`the pool holds ${pool.length} cards and a roster needs ${state.config.rosterSize}`)
+
+  const opened = openRound({ ...state, phase: 'auction', bank: pool }, now)
+  return opened ? yes(opened) : no('the pool is empty')
+}
+
+/** What this seat may bid right now: its own limit, less any squeeze against it. */
+function capFor(state: RoomState, seatIndex: number, seat: Seat): number {
+  const squeezed = state.round?.squeezedBy
+  const under = squeezed !== null && squeezed !== undefined && squeezed !== seatIndex
+  return maxBid(seat) - (under ? SQUEEZE : 0)
 }
 
 function bid(state: RoomState, seatIndex: number, amount: number, now: number): Result {
@@ -47,9 +63,9 @@ function bid(state: RoomState, seatIndex: number, amount: number, now: number): 
   const seat: Seat | undefined = state.seats[seatIndex]
   if (seat === undefined) return no(`there is no seat ${seatIndex}`)
 
+  // Open from the first millisecond: no opener, no turns. Highest bid wins and a
+  // tie goes to whoever got here first, which the standing bid already settles.
   if (now >= Date.parse(round.deadline)) return no('too late — the round has closed')
-  if (now < Date.parse(round.exclusiveUntil) && seatIndex !== round.openerSeat)
-    return no('the opener has the first bid on this card')
 
   if (isFull(seat)) return no('your roster is full')
   if (!Number.isInteger(amount)) return no('a bid is a whole number of dollars')
@@ -62,17 +78,20 @@ function bid(state: RoomState, seatIndex: number, amount: number, now: number): 
   // stalling move rather than a bid. The UI disables it; the rules refuse it.
   if (round.high?.seat === seatIndex) return no('you already hold the high bid')
 
-  const ceiling = maxBid(seat)
+  const ceiling = capFor(state, seatIndex, seat)
   if (amount > ceiling)
-    return no(`$${ceiling} is your limit — you must keep a dollar for every other empty slot`)
+    return no(
+      round.squeezedBy !== null && round.squeezedBy !== seatIndex
+        ? `squeezed — $${ceiling} is your limit this round`
+        : `$${ceiling} is your limit — you must keep a dollar for every other empty slot`,
+    )
 
   return yes({
     ...state,
     round: {
       ...round,
       high: { seat: seatIndex, amount },
-      // Every accepted bid restarts the full countdown. The opener window is not
-      // extended: it is a head start on the card, not on the clock.
+      // Every accepted bid restarts the full countdown.
       deadline: new Date(now + state.config.bidMs).toISOString(),
     },
   })
@@ -107,29 +126,35 @@ function swap(state: RoomState, seatIndex: number, a: number, b: number): Result
 /** Nobody is awake to fire a timer, so every browser sends `resolve` when its own
  *  clock passes the deadline. Only the server's clock is consulted here, so an
  *  early one does nothing, the first on-time one does the work, and the rest land
- *  on a round that is already gone and do nothing either. Skewed clocks across
- *  browsers cannot move the outcome. */
+ *  on a round that is already gone and do nothing either. */
 function resolve(state: RoomState, now: number): Result {
   const round = state.round
   if (state.phase !== 'auction' || round === null) return yes(state)
   if (now < Date.parse(round.deadline)) return yes(state)
 
-  // No bid: the card is unsold. It already left the bank when it was drawn.
+  // No bid: the card is unsold. It already left the pool when it was drawn, and
+  // with a finite pool that is a card nobody will ever get.
   const settled = round.high === null ? state : award(state, round, round.high)
   return yes(closeOrDraw(settled, now))
 }
 
 function award(state: RoomState, round: Round, high: { seat: number; amount: number }): RoomState {
   const slots = MODES[state.mode].slots
+  const winner = state.seats[high.seat]!
+  // Overdraft comes off here, so the bidding stays honest and only the bill changes.
+  const price = Math.max(1, high.amount - winner.discount)
+
   return {
     ...state,
+    lastSale: { cardId: round.card.id, seat: high.seat, amount: price, roundIndex: state.roundIndex },
     seats: state.seats.map((seat, i) =>
       i === high.seat
         ? {
             ...seat,
-            budget: seat.budget - high.amount,
+            budget: seat.budget - price,
             slots: place(seat, round.card, slots),
-            paid: { ...seat.paid, [round.card.id]: high.amount },
+            paid: { ...seat.paid, [round.card.id]: price },
+            discount: 0,
           }
         : seat,
     ),
@@ -145,18 +170,33 @@ function place(seat: Seat, card: BankCard, slots: string[]): (string | null)[] {
   return seat.slots.map((c, i) => (i === target ? card.id : c))
 }
 
-/** The draft closes when every roster is full, and not one round earlier — a
- *  drafter who fills up early simply stops bidding while the others finish. */
+/** The draft ends when every roster is full or the pool runs dry, whichever comes
+ *  first. Anyone still holding an empty slot when the cards run out is eliminated,
+ *  unless they had the sense to bring Insurance. */
 function closeOrDraw(state: RoomState, now: number): RoomState {
-  if (state.seats.every(isFull)) return { ...state, phase: 'judging', round: null }
-  // Only reachable if the bank runs dry, which `start` sizes against. Closing
-  // beats stalling forever on a card that will never come.
-  return openRound(state, now) ?? { ...state, phase: 'judging', round: null }
+  if (state.seats.every(isFull)) return close(state)
+  return openRound(state, now) ?? close(state)
 }
 
-/** Draw the next card off the front of the bank and start its round. A drawn card
- *  has left the bank whatever happens to it, so an unsold card is simply gone.
- *  Returns null when there is nothing left to draw. */
+function close(state: RoomState): RoomState {
+  return {
+    ...state,
+    phase: 'judging',
+    round: null,
+    seats: state.seats.map((seat) => {
+      const gaps = seat.slots.filter((c) => c === null).length
+      const forgiven = holds(seat, 'insurance') ? 1 : 0
+      return {
+        ...seat,
+        eliminated: gaps > forgiven,
+        powers: gaps > 0 && forgiven > 0 ? spend(seat, 'insurance') : seat.powers,
+      }
+    }),
+  }
+}
+
+/** Draw the next card off the front of the pool and start its round. A drawn card
+ *  has left the pool whatever happens to it. Returns null when it is empty. */
 function openRound(state: RoomState, now: number): RoomState | null {
   const card = state.bank[0]
   if (card === undefined) return null
@@ -167,11 +207,148 @@ function openRound(state: RoomState, now: number): RoomState | null {
     roundIndex: state.roundIndex + 1,
     round: {
       card,
-      // Rotates one seat per round, so the right of first refusal goes around.
-      openerSeat: state.roundIndex % state.seats.length,
-      exclusiveUntil: new Date(now + state.config.openerMs).toISOString(),
       deadline: new Date(now + state.config.bidMs).toISOString(),
       high: null,
+      scoutedBy: [],
+      squeezedBy: null,
     },
   }
+}
+
+// ---------------------------------------------------------------- powers
+
+function usePower(
+  state: RoomState,
+  seatIndex: number,
+  power: Exclude<PowerId, 'poach' | 'insurance'>,
+  now: number,
+): Result {
+  const seat: Seat | undefined = state.seats[seatIndex]
+  if (seat === undefined) return no(`there is no seat ${seatIndex}`)
+  if (!holds(seat, power)) return no('you do not have that one to spend')
+
+  const round = state.round
+  if (state.phase !== 'auction' || round === null) return no('there is no card on the block')
+
+  const used = (next: Partial<RoomState>): Result =>
+    yes({
+      ...state,
+      ...next,
+      seats: (next.seats ?? state.seats).map((s, i) =>
+        i === seatIndex ? { ...s, powers: spend(s, power) } : s,
+      ),
+    })
+
+  switch (power) {
+    case 'scout':
+      // The pool ahead is only shown to whoever paid for it.
+      return used({ round: { ...round, scoutedBy: [...round.scoutedBy, seatIndex] } })
+
+    case 'overdraft':
+      return used({
+        seats: state.seats.map((s, i) => (i === seatIndex ? { ...s, discount: OVERDRAFT } : s)),
+      })
+
+    case 'squeeze':
+      if (round.squeezedBy !== null) return no('someone has already squeezed this round')
+      return used({ round: { ...round, squeezedBy: seatIndex } })
+
+    case 'veto': {
+      // The card is binned unsold and the next one comes straight up. It has
+      // already left the pool, so with a finite pool this is a card destroyed.
+      const binned: RoomState = { ...state, round: null }
+      const next = openRound(binned, now) ?? close(binned)
+      return used({ ...next, seats: next.seats })
+    }
+
+    case 'counterbid': {
+      const sale = state.lastSale
+      // One round of grace: take it while the ink is wet or not at all.
+      if (sale === null || sale.roundIndex !== state.roundIndex - 1)
+        return no('nothing has just sold')
+      if (sale.seat === seatIndex) return no('you bought that one yourself')
+      if (isFull(seat)) return no('your roster is full')
+
+      const price = sale.amount + 1
+      if (price > maxBid(seat)) return no(`taking it costs $${price}, past your limit`)
+
+      const slots = MODES[state.mode].slots
+      return used({
+        lastSale: null,
+        seats: state.seats.map((s, i) => {
+          if (i === sale.seat) {
+            // The original buyer is made whole and loses the card.
+            const { [sale.cardId]: _refunded, ...paid } = s.paid
+            return {
+              ...s,
+              budget: s.budget + sale.amount,
+              slots: s.slots.map((c) => (c === sale.cardId ? null : c)),
+              paid,
+            }
+          }
+          if (i === seatIndex)
+            return {
+              ...s,
+              budget: s.budget - price,
+              slots: place(s, { id: sale.cardId, position: cardPosition(state, sale.cardId) }, slots),
+              paid: { ...s.paid, [sale.cardId]: price },
+            }
+          return s
+        }),
+      })
+    }
+  }
+}
+
+/** Counterbid moves a card that has already left the pool, so its position has to
+ *  come from the slot it is sitting in on the buyer's roster. */
+function cardPosition(state: RoomState, cardId: string): string {
+  const slots = MODES[state.mode].slots
+  for (const seat of state.seats) {
+    const at = seat.slots.indexOf(cardId)
+    if (at >= 0) return slots[at] ?? ''
+  }
+  return ''
+}
+
+/** Trade one of your cards for a rival's, slot for slot. Both keep what they paid,
+ *  because the point is the player, not a refund. */
+function poach(
+  state: RoomState,
+  seatIndex: number,
+  slot: number,
+  target: number,
+  targetSlot: number,
+): Result {
+  if (state.phase !== 'auction') return no('too late to poach')
+
+  const seat: Seat | undefined = state.seats[seatIndex]
+  const victim: Seat | undefined = state.seats[target]
+  if (seat === undefined || victim === undefined) return no('no such seat')
+  if (!holds(seat, 'poach')) return no('you do not have that one to spend')
+  if (target === seatIndex) return no('poach someone else')
+
+  const mine = seat.slots[slot] ?? null
+  const theirs = victim.slots[targetSlot] ?? null
+  if (mine === null || theirs === null) return no('both of you have to be holding a card')
+
+  return yes({
+    ...state,
+    seats: state.seats.map((s, i) => {
+      if (i === seatIndex)
+        return {
+          ...s,
+          powers: spend(s, 'poach'),
+          slots: s.slots.map((c, j) => (j === slot ? theirs : c)),
+          paid: { ...s.paid, [theirs]: victim.paid[theirs] ?? 0 },
+        }
+      if (i === target)
+        return {
+          ...s,
+          slots: s.slots.map((c, j) => (j === targetSlot ? mine : c)),
+          paid: { ...s.paid, [mine]: seat.paid[mine] ?? 0 },
+        }
+      return s
+    }),
+  })
 }

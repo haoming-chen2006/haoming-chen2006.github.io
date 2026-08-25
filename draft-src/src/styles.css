@@ -186,3 +186,45 @@ h2 { margin: 28px 0 10px; font-size: 13px; text-transform: uppercase;
   padding: 6px 0; border-top: 1px solid var(--line); }
 .sheet .desc { grid-column: 2 / 3; font-size: 11px; color: var(--dim); }
 .sheet footer { margin-top: 10px; font-size: 12px; color: var(--dim); }
+
+/* ---- powers ---- */
+.power-picker { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 10px; }
+.power-card {
+  display: grid; gap: 4px; text-align: left; padding: 12px 14px;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 11px; color: var(--ink);
+}
+.power-card:hover { border-color: var(--dim); }
+.power-card.on { border-color: var(--good); background: #10261a; }
+.power-card b { font-size: 14px; }
+.power-card span { font-size: 12px; color: var(--dim); }
+.power-card em { font-size: 11px; color: var(--warn); font-style: normal; }
+
+.powers { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
+.power {
+  padding: 3px 9px; border-radius: 999px; font-size: 11px; font-weight: 600;
+  border: 1px solid var(--warn); background: none; color: var(--warn);
+}
+.power:hover:not(:disabled) { background: var(--warn); color: #241a02; }
+.power.arming { background: var(--warn); color: #241a02; }
+.power.spent { border-color: var(--line); color: var(--dim); text-decoration: line-through; cursor: not-allowed; }
+.power.passive { border-color: var(--line); color: var(--dim); }
+
+.scouted {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px;
+  margin-top: 12px; padding: 8px 14px;
+  border: 1px dashed var(--warn); border-radius: 10px; font-size: 13px;
+}
+.scouted .label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--warn); }
+.scouted .peek { font-weight: 600; }
+.scouted .who { margin-left: auto; font-size: 11px; color: var(--dim); }
+
+.seats-setup label.on { border-color: var(--good); }
+.seats-setup .count { font-size: 11px; color: var(--dim); font-variant-numeric: tabular-nums; }
+
+.round.scarce { color: var(--bad); font-weight: 700; }
+.purse em { font-style: normal; color: var(--good); }
+
+.tag.quiet { background: var(--line); color: var(--dim); }
+.tag.out { background: var(--bad); color: #23090a; }
+.roster.out, .sheet.out { opacity: 0.6; border-color: var(--bad); }
+.sub.warn { color: var(--warn); }

@@ -1,28 +1,31 @@
 import { useState } from 'react'
-import type { Card } from '../engine/card'
-import { type RoomState, isFull, maxBid } from '../engine/state'
+import type { Card, CardId } from '../engine/card'
+import { POWERS, type PowerId, type RoomState, isFull, maxBid } from '../engine/state'
 
 export function Auction({
   room,
   card,
+  cards,
   now,
+  poaching,
   onBid,
+  onPower,
 }: {
   room: RoomState
   card: Card | undefined
+  cards: Map<CardId, Card>
   now: number
+  poaching: number | null
   onBid: (seat: number, amount: number) => void
+  onPower: (seat: number, power: PowerId) => void
 }) {
   const round = room.round
   if (round === null) return null
 
-  const deadline = Date.parse(round.deadline)
-  const exclusiveUntil = Date.parse(round.exclusiveUntil)
-  const exclusive = now < exclusiveUntil
-  const left = Math.max(0, deadline - now)
+  const left = Math.max(0, Date.parse(round.deadline) - now)
   const fraction = Math.max(0, Math.min(1, left / room.config.bidMs))
-
-  const opener = room.seats[round.openerSeat]
+  // The pool is the pressure: everything still to come, plus the one on the block.
+  const remaining = room.bank.length + 1
 
   return (
     <section className="auction">
@@ -32,16 +35,31 @@ export function Auction({
         </div>
         <div className="clock-line">
           <span className="secs">{(left / 1000).toFixed(1)}s</span>
-          {exclusive ? (
-            <span className="excl">{opener?.name} alone — {((exclusiveUntil - now) / 1000).toFixed(1)}s</span>
-          ) : (
-            <span className="open">open to everyone</span>
+          {round.squeezedBy !== null && (
+            <span className="excl">{room.seats[round.squeezedBy]?.name} squeezed the table</span>
           )}
-          <span className="round">card {room.roundIndex}</span>
+          <span className={`round${remaining <= 5 ? ' scarce' : ''}`}>
+            {remaining} card{remaining === 1 ? '' : 's'} left in the pool
+          </span>
         </div>
       </div>
 
       <CardFace card={card} />
+
+      {round.scoutedBy.length > 0 && (
+        <div className="scouted">
+          <span className="label">next up</span>
+          {room.bank.slice(0, 2).map((next) => (
+            <span key={next.id} className="peek">
+              {cards.get(next.id)?.name ?? next.id}
+            </span>
+          ))}
+          {room.bank.length === 0 && <span className="peek">nothing — this is the last card</span>}
+          <span className="who">
+            scouted by {round.scoutedBy.map((s) => room.seats[s]?.name).join(', ')}
+          </span>
+        </div>
+      )}
 
       <div className="standing">
         {round.high === null ? (
@@ -56,16 +74,15 @@ export function Auction({
       <div className="bidders">
         {room.seats.map((seat, i) => {
           const floor = round.high === null ? 1 : round.high.amount + 1
-          const ceiling = maxBid(seat)
+          const squeezed = round.squeezedBy !== null && round.squeezedBy !== i
+          const ceiling = maxBid(seat) - (squeezed ? 4 : 0)
           const blocked = isFull(seat)
             ? 'roster full'
-            : exclusive && i !== round.openerSeat
-              ? 'waiting'
-              : round.high?.seat === i
-                ? 'high bid'
-                : floor > ceiling
-                  ? `can only go to $${ceiling}`
-                  : null
+            : round.high?.seat === i
+              ? 'high bid'
+              : floor > ceiling
+                ? `limit $${ceiling}`
+                : null
           const jump = Math.min(floor + 4, ceiling)
 
           return (
@@ -73,8 +90,12 @@ export function Auction({
               <div className="who">
                 <span className="key">{i + 1}</span>
                 <b>{seat.name}</b>
-                <span className="purse">${seat.budget}</span>
+                <span className="purse">
+                  ${seat.budget}
+                  {seat.discount > 0 && <em title="Overdraft armed"> −${seat.discount}</em>}
+                </span>
               </div>
+
               {blocked ? (
                 <span className="blocked">{blocked}</span>
               ) : (
@@ -89,11 +110,35 @@ export function Auction({
                   )}
                 </div>
               )}
+
+              <div className="powers">
+                {seat.powers.map((held) =>
+                  held.id === 'insurance' ? (
+                    <span key={held.id} className={`power passive${held.used ? ' spent' : ''}`}>
+                      🛡 {held.used ? 'insurance used' : 'insured'}
+                    </span>
+                  ) : (
+                    <button
+                      key={held.id}
+                      className={`power${held.used ? ' spent' : ''}${poaching === i && held.id === 'poach' ? ' arming' : ''}`}
+                      disabled={held.used}
+                      title={`${POWERS[held.id].blurb} (${POWERS[held.id].when})`}
+                      onClick={() => onPower(i, held.id)}
+                    >
+                      {POWERS[held.id].label}
+                    </button>
+                  ),
+                )}
+              </div>
             </div>
           )
         })}
       </div>
-      <p className="hint">Press 1–{room.seats.length} to bid the minimum. The clock resets on every bid.</p>
+
+      <p className="hint">
+        Press 1–{room.seats.length} to bid the minimum. Bidding is open the instant a card lands —
+        no turns. {poaching !== null && <b>Poaching: click one of your cards, then a rival’s.</b>}
+      </p>
     </section>
   )
 }

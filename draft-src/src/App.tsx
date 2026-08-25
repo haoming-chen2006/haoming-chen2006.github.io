@@ -5,7 +5,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { Bank, ModeId } from './engine/card'
 import { apply } from './engine/rules'
-import { type Action, type Config, type RoomState, newRoom, newSeat } from './engine/state'
+import {
+  type Action,
+  type Config,
+  type PowerId,
+  type RoomState,
+  newRoom,
+  newSeat,
+} from './engine/state'
 import { byId, loadBank, modeList, shuffledBank } from './modes'
 import { Auction } from './ui/Auction'
 import { BankBrowser } from './ui/BankBrowser'
@@ -22,6 +29,8 @@ export function App() {
   const [flash, setFlash] = useState<string | null>(null)
   const [picked, setPicked] = useState<Picked>(null)
   const [browsing, setBrowsing] = useState(false)
+  // Poach needs two clicks across two rosters, so it arms rather than fires.
+  const [poaching, setPoaching] = useState<number | null>(null)
 
   // The interval and the key handler outlive the render that made them, so they
   // read the room through a ref rather than a stale closure.
@@ -88,12 +97,12 @@ export function App() {
   const cards = useMemo(() => (bank === null ? new Map() : byId(bank)), [bank])
   const mode = modeList.find((m) => m.id === modeId)
 
-  function begin(names: string[], config: Partial<Config>) {
+  function begin(drafters: { name: string; powers: PowerId[] }[], config: Partial<Config>) {
     if (bank === null || modeId === null) return
     const base = newRoom(modeId, config)
     const seated: RoomState = {
       ...base,
-      seats: names.map((name, i) => newSeat(`seat-${i}`, name, base.config)),
+      seats: drafters.map((d, i) => newSeat(`seat-${i}`, d.name, base.config, d.powers)),
     }
     const started = apply(seated, { type: 'start', bank: shuffledBank(bank) }, Date.now())
     if (!started.ok) {
@@ -104,12 +113,37 @@ export function App() {
     setNow(Date.now())
   }
 
-  /** Click one slot then another to trade them. Clicking the same one lets go. */
+  /** Two clicks. Normally that trades two of your own slots; while Poach is armed
+   *  the second click lands on a rival instead and takes their card. */
   function pickSlot(seat: number, slot: number) {
+    if (poaching !== null) {
+      if (picked === null) return setPicked({ seat, slot })
+      if (picked.seat === seat) return setPicked({ seat, slot })
+      dispatch({
+        type: 'poach',
+        seat: poaching,
+        slot: picked.seat === poaching ? picked.slot : slot,
+        target: picked.seat === poaching ? seat : picked.seat,
+        targetSlot: picked.seat === poaching ? slot : picked.slot,
+      })
+      setPicked(null)
+      setPoaching(null)
+      return
+    }
     if (picked === null || picked.seat !== seat) return setPicked({ seat, slot })
     if (picked.slot === slot) return setPicked(null)
     dispatch({ type: 'swap', seat, a: picked.slot, b: slot })
     setPicked(null)
+  }
+
+  function usePower(seat: number, power: PowerId) {
+    if (power === 'insurance') return
+    if (power === 'poach') {
+      setPoaching((was) => (was === seat ? null : seat))
+      setPicked(null)
+      return
+    }
+    dispatch({ type: 'power', seat, power })
   }
 
   if (browsing) return <BankBrowser onBack={() => setBrowsing(false)} />
@@ -130,6 +164,7 @@ export function App() {
         <Lobby
           mode={mode}
           cardCount={bank?.cards.length ?? 0}
+          defaultPool={newRoom(mode.id).config.poolSize}
           onStart={begin}
           onBack={() => {
             setModeId(null)
@@ -146,14 +181,16 @@ export function App() {
         <Auction
           room={room}
           card={room.round === null ? undefined : cards.get(room.round.card.id)}
+          cards={cards}
           now={now}
+          poaching={poaching}
           onBid={(seat, amount) => dispatch({ type: 'bid', seat, amount })}
+          onPower={usePower}
         />
         <Rosters
           seats={room.seats}
           slots={mode.slots}
           cards={cards}
-          openerSeat={room.round?.openerSeat}
           highSeat={room.round?.high?.seat}
           picked={picked}
           onPick={pickSlot}
@@ -170,6 +207,7 @@ export function App() {
         onAgain={() => {
           setRoom(null)
           setPicked(null)
+          setPoaching(null)
         }}
       />
     </main>

@@ -7,7 +7,6 @@ export function Rosters({
   seats,
   slots,
   cards,
-  openerSeat,
   highSeat,
   picked,
   onPick,
@@ -15,7 +14,6 @@ export function Rosters({
   seats: Seat[]
   slots: string[]
   cards: Map<CardId, Card>
-  openerSeat: number | undefined
   highSeat: number | undefined
   picked: Picked
   onPick: (seat: number, slot: number) => void
@@ -23,10 +21,19 @@ export function Rosters({
   return (
     <section className="rosters">
       {seats.map((seat, i) => (
-        <div key={seat.id} className={`roster${i === highSeat ? ' leading' : ''}`}>
+        <div
+          key={seat.id}
+          className={`roster${i === highSeat ? ' leading' : ''}${seat.eliminated ? ' out' : ''}`}
+        >
           <header>
             <b>{seat.name}</b>
-            {i === openerSeat && <span className="tag">opens</span>}
+            {seat.eliminated && <span className="tag out">out</span>}
+            {seat.powers.some((p) => !p.used) && (
+              <span className="tag quiet">
+                {seat.powers.filter((p) => !p.used).length} power
+                {seat.powers.filter((p) => !p.used).length === 1 ? '' : 's'}
+              </span>
+            )}
             <span className="purse">${seat.budget}</span>
           </header>
           <ol>

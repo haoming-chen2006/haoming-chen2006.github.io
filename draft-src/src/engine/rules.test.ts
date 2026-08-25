@@ -1,7 +1,16 @@
 import { describe, expect, it } from 'vitest'
 import { MODES, type ModeId } from './card'
 import { apply } from './rules'
-import { type BankCard, type Config, type Result, type RoomState, newRoom, newSeat } from './state'
+import {
+  type BankCard,
+  type Config,
+  type Result,
+  type RoomState,
+  isFull,
+  maxBid,
+  newRoom,
+  newSeat,
+} from './state'
 
 const T0 = Date.parse('2026-01-01T00:00:00.000Z')
 
@@ -38,15 +47,20 @@ function auction(mode: ModeId, names: string[], config: Partial<Config> = {}): R
   return ok(apply(lobby(mode, names, config), { type: 'start', bank: ids(mode, 60) }, T0))
 }
 
-/** Same room, but that seat's roster is already full. */
-function withFullRoster(state: RoomState, seatIndex: number): RoomState {
+/** Same room, but that seat has `filled` of its slots already taken. */
+function withFilled(state: RoomState, seatIndex: number, filled: number): RoomState {
   return {
     ...state,
     seats: state.seats.map((seat, i) =>
-      i === seatIndex ? { ...seat, slots: seat.slots.map((_, s) => `filler-${s}`) } : seat,
+      i === seatIndex
+        ? { ...seat, slots: seat.slots.map((c, s) => (s < filled ? `filler-${seatIndex}-${s}` : c)) }
+        : seat,
     ),
   }
 }
+
+const withFullRoster = (state: RoomState, seatIndex: number): RoomState =>
+  withFilled(state, seatIndex, state.config.rosterSize)
 
 describe('start', () => {
   it('moves a two-seat lobby into the auction and draws a card', () => {
@@ -261,5 +275,96 @@ describe('resolving a round', () => {
     // The second lands on the new round, which is nowhere near its own deadline.
     expect(twice).toEqual(once)
     expect(twice.seats[OPENER]!.budget).toBe(15)
+  })
+})
+
+describe('the end of the draft', () => {
+  /** Play a whole draft: whoever still has a slot open takes the card for $1.
+   *  Returns the finished room and how many rounds it took. */
+  function playOut(mode: ModeId, names: string[]) {
+    let state = ok(apply(lobby(mode, names), { type: 'start', bank: ids(mode, 80) }, T0))
+    let rounds = 0
+
+    while (state.phase === 'auction' && rounds++ < 200) {
+      // Everyone with an empty roster slot is still full and unfinished, so the
+      // draft must not have closed on us.
+      if (state.seats.some((seat) => !isFull(seat))) expect(state.phase).toBe('auction')
+
+      const buyer = state.seats.findIndex((seat) => !isFull(seat))
+      const openToAll = Date.parse(state.round!.exclusiveUntil)
+      const bid = apply(state, { type: 'bid', seat: buyer, amount: 1 }, openToAll)
+      if (bid.ok) state = bid.state
+
+      state = ok(apply(state, { type: 'resolve' }, Date.parse(state.round!.deadline) + 1))
+    }
+
+    return { state, rounds }
+  }
+
+  it('ends a four-seat draft with four full rosters and nobody in the red', () => {
+    const { state, rounds } = playOut('nba', ['Ada', 'Bo', 'Cy', 'Di'])
+
+    expect(state.phase).toBe('judging')
+    expect(state.round).toBeNull()
+    expect(state.seats).toHaveLength(4)
+    for (const seat of state.seats) {
+      expect(seat.slots.filter((c) => c !== null)).toHaveLength(6)
+      expect(seat.budget).toBeGreaterThanOrEqual(0)
+    }
+    // 4 seats x 6 slots, one card each round, nothing wasted.
+    expect(rounds).toBe(24)
+  })
+
+  it('ends a five-slot Honor of Kings draft the same way', () => {
+    const { state } = playOut('hok', ['Ada', 'Bo', 'Cy'])
+
+    expect(state.phase).toBe('judging')
+    for (const seat of state.seats) expect(seat.slots.filter((c) => c !== null)).toHaveLength(5)
+  })
+
+  it('cannot lock anyone out, even when every drafter bids the most they legally can', () => {
+    // The whole point of the budget - (emptySlots - 1) cap. If it were wrong,
+    // someone would run out of money with slots still to fill and the draft
+    // could never close.
+    let state = ok(apply(lobby('nba', ['Ada', 'Bo', 'Cy', 'Di']), { type: 'start', bank: ids('nba', 80) }, T0))
+    let rounds = 0
+
+    while (state.phase === 'auction' && rounds++ < 200) {
+      const openToAll = Date.parse(state.round!.exclusiveUntil)
+      // Every seat with room shoves its entire legal limit in, in turn.
+      for (const [i, seat] of state.seats.entries()) {
+        if (isFull(seat)) continue
+        const bid = apply(state, { type: 'bid', seat: i, amount: maxBid(seat) }, openToAll)
+        if (bid.ok) state = bid.state
+      }
+      state = ok(apply(state, { type: 'resolve' }, Date.parse(state.round!.deadline) + 1))
+    }
+
+    expect(state.phase).toBe('judging')
+    for (const seat of state.seats) {
+      expect(seat.slots.filter((c) => c !== null)).toHaveLength(6)
+      expect(seat.budget).toBeGreaterThanOrEqual(0)
+    }
+  })
+
+  it('stays open while one drafter still has a slot to fill', () => {
+    // Ada is done, Bo needs two more. Bo takes one; the draft carries on.
+    const started = auction('hok', ['Ada', 'Bo'])
+    const state = withFilled(withFullRoster(started, 0), 1, 3)
+    const bid = ok(apply(state, { type: 'bid', seat: 1, amount: 1 }, T0 + 6_500))
+    const after = ok(apply(bid, { type: 'resolve' }, Date.parse(bid.round!.deadline) + 1))
+
+    expect(after.phase).toBe('auction')
+    expect(after.round).not.toBeNull()
+  })
+
+  it('closes the moment the last slot is filled', () => {
+    const started = auction('hok', ['Ada', 'Bo'])
+    const state = withFilled(withFullRoster(started, 0), 1, 4)
+    const bid = ok(apply(state, { type: 'bid', seat: 1, amount: 1 }, T0 + 6_500))
+    const after = ok(apply(bid, { type: 'resolve' }, Date.parse(bid.round!.deadline) + 1))
+
+    expect(after.phase).toBe('judging')
+    expect(after.round).toBeNull()
   })
 })

@@ -1,0 +1,1 @@
+{"version":1,"bundleSha256_16":"26e3ccee4348ef44","mountRoot":"/fk","entry":"lua/freekill.lua","overlay":["web/fkhost.lua","web/boot.lua","web/canon.lua","web/fkclient.lua"],"files":299,"sourceBytes":1641639,"packages":["standard","standard_cards","maneuvering","test"]}

@@ -1,0 +1,69 @@
+:root { color-scheme: dark; }
+html, body, #root { height: 100%; margin: 0; }
+
+.hz {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  height: 100%;
+  background: #0d0f0d;
+  color: #ddd6c9;
+  font: 13px/1.4 ui-sans-serif, system-ui, sans-serif;
+}
+
+.hz__bar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  padding: 6px 10px;
+  background: #17191a;
+  border-bottom: 1px solid #333;
+}
+
+.hz__bar button, .hz__bar select, .hz__bar input {
+  font: inherit;
+  padding: 3px 8px;
+  color: inherit;
+  background: #24282a;
+  border: 1px solid #3b4145;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.hz__bar button.on { border-color: #d8b26a; color: #ffe7a8; }
+.hz__bar input[type="range"] { padding: 0; cursor: pointer; }
+.hz__base { min-width: 250px; cursor: text; }
+.hz__spacer { flex: 1 1 12px; }
+.hz__dim { color: #8b8579; font-size: 12px; }
+
+.hz__body { display: grid; grid-template-columns: 1fr minmax(280px, 380px); min-height: 0; }
+.hz__room { min-height: 0; min-width: 0; }
+.hz__side { display: flex; flex-direction: column; min-height: 0; border-left: 1px solid #333; background: #131515; }
+.hz__tabs { display: flex; gap: 4px; padding: 6px; border-bottom: 1px solid #333; }
+.hz__tabs button {
+  font: inherit; padding: 3px 10px; color: inherit; background: #24282a;
+  border: 1px solid #3b4145; border-radius: 4px; cursor: pointer;
+}
+.hz__tabs button.on { border-color: #d8b26a; color: #ffe7a8; }
+
+.hz__panel { overflow: auto; padding: 8px 10px; min-height: 0; }
+.hz__panel h4 { margin: 10px 0 4px; font-size: 12px; color: #d8b26a; text-transform: uppercase; letter-spacing: 0.06em; }
+.hz__panel pre { margin: 0; padding: 6px; font-size: 11px; white-space: pre-wrap; word-break: break-all; background: #1c1f20; border-radius: 4px; }
+.hz__frames { margin: 0; padding-left: 20px; font-size: 11px; }
+.hz__frames li { margin-bottom: 1px; }
+.hz__frames li.req { color: #ffd76a; }
+.hz__frames code { color: #9fd7f5; }
+.hz__table { width: 100%; font-size: 11px; border-collapse: collapse; }
+.hz__table td { padding: 1px 4px; border-bottom: 1px solid #232626; }
+.hz__table td:last-child { text-align: right; color: #d8b26a; }
+
+.hz__inject {
+  font: inherit;
+  font-size: 11px;
+  padding: 0 6px;
+  color: #ffe7a8;
+  background: #2c2519;
+  border: 1px solid #6c5b41;
+  border-radius: 3px;
+  cursor: pointer;
+}

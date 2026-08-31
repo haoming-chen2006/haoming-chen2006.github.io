@@ -1,0 +1,231 @@
+== 0.5  all-bot 8-player standard 身份局 ==
+  mount 59ms | engine load 89ms | game 4815ms
+  resumes 298 | decisions 328 | messages 9591
+  lua heap after game: 15.1 MiB
+  GameOver winner: rebel+rebel_chief+civilian
+== 0.6  determinism: same seed twice ==
+  command logs byte-identical: true (25336 bytes)
+  per-step digests identical:  true (328 steps)
+  full message stream digest:  true (f9c0a6b539f78fd7)
+  different seed differs:      true
+== 0.7  replay from seed + logged replies ==
+  boundaries compared: 328 of 328
+  first divergence:    none
+  final state digest:  1d5b5c16c71c0a52 vs 1d5b5c16c71c0a52
+  replay ran the AI?   no (every reply came from the log)
+== 0.8  wire volume for one full game ==
+  1 human + 7 bots : 9591 msgs, 140487 B, 601 flush batches
+  8 humans         : 64680 msgs, 897833 B, 2696 flush batches
+  client VM at seat 1: 2286 notifyUI, 60 UpdateRequestUI, 0 errors
+== 0.9  fixtures ==
+  seat-command-stream.json     886 KiB
+  ui-notify-stream.json        245 KiB
+  request-ui-scenes.json       2 KiB
+  request-payloads.json        2 KiB
+  distinct request commands: AskForAG, AskForCardChosen, AskForGeneral, AskForGuanxing, AskForResponseCard, AskForSkillInvoke, AskForUseActiveSkill, AskForUseCard, PlayCard
+  command-log.json             31 KiB
+  command-log.lua              25 KiB
+  lua-manifest.json            0 KiB
+== done ==
+{
+  "seed": 20260828,
+  "engineRoot": "/Users/haoming/FreeKill",
+  "bundleHash": "26e3ccee4348ef44",
+  "luaFiles": 299,
+  "game": {
+    "mountMs": 58.6,
+    "engineLoadMs": 88.9,
+    "gameMs": 4815,
+    "resumes": 298,
+    "decisions": 328,
+    "messages": 9591,
+    "luaHeapMiB": 15.06,
+    "winner": "rebel+rebel_chief+civilian"
+  },
+  "determinism": {
+    "logsIdentical": true,
+    "stepsIdentical": true,
+    "streamIdentical": true,
+    "logBytes": 25336,
+    "steps": 328,
+    "differentSeedDiffers": true
+  },
+  "replay": {
+    "boundaries": 328,
+    "matchedAll": true,
+    "firstMismatch": null,
+    "finalDigestMatch": true,
+    "divergenceNote": null
+  },
+  "wire": {
+    "oneHumanSevenBots": {
+      "messages": 9591,
+      "cborBytes": 140487,
+      "flushBatches": 601,
+      "humanSeat": {
+        "batches": 36,
+        "bytes": 1204,
+        "n": 36,
+        "requests": 35
+      }
+    },
+    "eightHumans": {
+      "messages": 64680,
+      "cborBytes": 897833,
+      "flushBatches": 2696,
+      "perSeat": [
+        {
+          "batches": 337,
+          "bytes": 111711,
+          "n": 8084,
+          "requests": 33
+        },
+        {
+          "batches": 337,
+          "bytes": 113285,
+          "n": 8085,
+          "requests": 35
+        },
+        {
+          "batches": 337,
+          "bytes": 110894,
+          "n": 8075,
+          "requests": 24
+        },
+        {
+          "batches": 337,
+          "bytes": 111297,
+          "n": 8075,
+          "requests": 25
+        },
+        {
+          "batches": 337,
+          "bytes": 113358,
+          "n": 8094,
+          "requests": 46
+        },
+        {
+          "batches": 337,
+          "bytes": 111006,
+          "n": 8076,
+          "requests": 25
+        },
+        {
+          "batches": 337,
+          "bytes": 115164,
+          "n": 8111,
+          "requests": 61
+        },
+        {
+          "batches": 337,
+          "bytes": 111118,
+          "n": 8080,
+          "requests": 29
+        }
+      ]
+    },
+    "byCommandTop": [
+      {
+        "command": "SetCardUseHistory",
+        "n": 15040,
+        "bytes": 75200
+      },
+      {
+        "command": "SetSkillBranchUseHistory",
+        "n": 15040,
+        "bytes": 90240
+      },
+      {
+        "command": "SetSkillUseHistory",
+        "n": 15040,
+        "bytes": 75200
+      },
+      {
+        "command": "PropertyUpdate",
+        "n": 4701,
+        "bytes": 44488
+      },
+      {
+        "command": "GameLog",
+        "n": 2176,
+        "bytes": 82096
+      },
+      {
+        "command": "MoveCards",
+        "n": 2064,
+        "bytes": 263920
+      },
+      {
+        "command": "MoveFocus",
+        "n": 1832,
+        "bytes": 32264
+      },
+      {
+        "command": "DestroyTableCardByEvent",
+        "n": 1672,
+        "bytes": 4568
+      },
+      {
+        "command": "Animate",
+        "n": 1256,
+        "bytes": 42512
+      },
+      {
+        "command": "LogEvent",
+        "n": 1096,
+        "bytes": 66448
+      },
+      {
+        "command": "SetPlayerMark",
+        "n": 760,
+        "bytes": 16904
+      },
+      {
+        "command": "SetCardFootnote",
+        "n": 744,
+        "bytes": 26432
+      }
+    ]
+  },
+  "clientVm": {
+    "notifyUI": 2286,
+    "updateRequestUI": 60,
+    "errors": 0
+  },
+  "fixtures": {
+    "requestCommands": [
+      "AskForAG",
+      "AskForCardChosen",
+      "AskForGeneral",
+      "AskForGuanxing",
+      "AskForResponseCard",
+      "AskForSkillInvoke",
+      "AskForUseActiveSkill",
+      "AskForUseCard",
+      "PlayCard"
+    ],
+    "sceneTypes": [
+      "Room"
+    ]
+  },
+  "luaManifest": {
+    "version": 1,
+    "bundleSha256_16": "26e3ccee4348ef44",
+    "mountRoot": "/fk",
+    "entry": "lua/freekill.lua",
+    "overlay": [
+      "web/fkhost.lua",
+      "web/boot.lua",
+      "web/canon.lua",
+      "web/fkclient.lua"
+    ],
+    "files": 299,
+    "sourceBytes": 1641639,
+    "packages": [
+      "standard",
+      "standard_cards",
+      "maneuvering",
+      "test"
+    ]
+  }
+}

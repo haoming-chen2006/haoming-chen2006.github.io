@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="description" content="新月杀 · 打开链接就能玩的三国杀，无需安装、无需同步扩展包、无需服务器地址。" />
+    <title>新月杀 FreeKill</title>
+    <link rel="preload" href="/freekill/fonts/lxgwwenkai.woff2" as="font" type="font/woff2" crossorigin />
+    <style>
+      /* The three TTFs in the Qt client are Founder / Stone Co. proprietary faces
+         and cannot ship. This is 霞鹜文楷 (LXGW WenKai), OFL 1.1, subset to the
+         1,443 Han the standard pack uses. License: /freekill/fonts/*.OFL.txt */
+      @font-face {
+        font-family: 'FKHan';
+        src: url('/freekill/fonts/lxgwwenkai.woff2') format('woff2');
+        font-weight: 400;
+        font-display: swap;
+      }
+      html, body, #root { height: 100%; margin: 0; }
+      body { background: #14110f; color: #e8e0d4; }
+      /* First paint before React: the splash the loader replaces. */
+      #boot {
+        position: fixed; inset: 0; display: grid; place-content: center; gap: 18px;
+        justify-items: center; font-family: 'FKHan', 'PingFang SC', system-ui, sans-serif;
+      }
+      #boot h1 { margin: 0; font-size: 46px; letter-spacing: 12px; font-weight: 400; color: #d9c9a3; }
+      #boot p { margin: 0; color: #8b8073; font-size: 14px; letter-spacing: 2px; }
+    </style>
+    <script type="module" crossorigin src="/freekill/assets/index-uwbwfRGf.js"></script>
+    <link rel="stylesheet" crossorigin href="/freekill/assets/index-MQKiExno.css">
+  </head>
+  <body>
+    <div id="root"></div>
+    <div id="boot"><h1>新月杀</h1><p>正在载入</p></div>
+  </body>
+</html>

@@ -1,0 +1,267 @@
+{
+  "seed": 20260828,
+  "engineRoot": "/Users/haoming/FreeKill",
+  "bundleHash": "26e3ccee4348ef44",
+  "luaFiles": 299,
+  "game": {
+    "mountMs": 58.6,
+    "engineLoadMs": 88.9,
+    "gameMs": 4815,
+    "resumes": 298,
+    "decisions": 328,
+    "messages": 9591,
+    "luaHeapMiB": 15.06,
+    "winner": "rebel+rebel_chief+civilian"
+  },
+  "determinism": {
+    "logsIdentical": true,
+    "stepsIdentical": true,
+    "streamIdentical": true,
+    "logBytes": 25336,
+    "steps": 328,
+    "differentSeedDiffers": true
+  },
+  "replay": {
+    "boundaries": 328,
+    "matchedAll": true,
+    "firstMismatch": null,
+    "finalDigestMatch": true,
+    "divergenceNote": null
+  },
+  "wire": {
+    "oneHumanSevenBots": {
+      "messages": 9591,
+      "cborBytes": 140487,
+      "flushBatches": 601,
+      "humanSeat": {
+        "batches": 36,
+        "bytes": 1204,
+        "n": 36,
+        "requests": 35
+      }
+    },
+    "eightHumans": {
+      "messages": 64680,
+      "cborBytes": 897833,
+      "flushBatches": 2696,
+      "perSeat": [
+        {
+          "batches": 337,
+          "bytes": 111711,
+          "n": 8084,
+          "requests": 33
+        },
+        {
+          "batches": 337,
+          "bytes": 113285,
+          "n": 8085,
+          "requests": 35
+        },
+        {
+          "batches": 337,
+          "bytes": 110894,
+          "n": 8075,
+          "requests": 24
+        },
+        {
+          "batches": 337,
+          "bytes": 111297,
+          "n": 8075,
+          "requests": 25
+        },
+        {
+          "batches": 337,
+          "bytes": 113358,
+          "n": 8094,
+          "requests": 46
+        },
+        {
+          "batches": 337,
+          "bytes": 111006,
+          "n": 8076,
+          "requests": 25
+        },
+        {
+          "batches": 337,
+          "bytes": 115164,
+          "n": 8111,
+          "requests": 61
+        },
+        {
+          "batches": 337,
+          "bytes": 111118,
+          "n": 8080,
+          "requests": 29
+        }
+      ]
+    },
+    "byCommandTop": [
+      {
+        "command": "SetCardUseHistory",
+        "n": 15040,
+        "bytes": 75200
+      },
+      {
+        "command": "SetSkillBranchUseHistory",
+        "n": 15040,
+        "bytes": 90240
+      },
+      {
+        "command": "SetSkillUseHistory",
+        "n": 15040,
+        "bytes": 75200
+      },
+      {
+        "command": "PropertyUpdate",
+        "n": 4701,
+        "bytes": 44488
+      },
+      {
+        "command": "GameLog",
+        "n": 2176,
+        "bytes": 82096
+      },
+      {
+        "command": "MoveCards",
+        "n": 2064,
+        "bytes": 263920
+      },
+      {
+        "command": "MoveFocus",
+        "n": 1832,
+        "bytes": 32264
+      },
+      {
+        "command": "DestroyTableCardByEvent",
+        "n": 1672,
+        "bytes": 4568
+      },
+      {
+        "command": "Animate",
+        "n": 1256,
+        "bytes": 42512
+      },
+      {
+        "command": "LogEvent",
+        "n": 1096,
+        "bytes": 66448
+      },
+      {
+        "command": "SetPlayerMark",
+        "n": 760,
+        "bytes": 16904
+      },
+      {
+        "command": "SetCardFootnote",
+        "n": 744,
+        "bytes": 26432
+      }
+    ]
+  },
+  "clientVm": {
+    "notifyUI": 2286,
+    "updateRequestUI": 60,
+    "errors": 0
+  },
+  "fixtures": {
+    "requestCommands": [
+      "AskForAG",
+      "AskForCardChosen",
+      "AskForGeneral",
+      "AskForGuanxing",
+      "AskForResponseCard",
+      "AskForSkillInvoke",
+      "AskForUseActiveSkill",
+      "AskForUseCard",
+      "PlayCard"
+    ],
+    "sceneTypes": [
+      "Room"
+    ]
+  },
+  "luaManifest": {
+    "version": 1,
+    "bundleSha256_16": "26e3ccee4348ef44",
+    "mountRoot": "/fk",
+    "entry": "lua/freekill.lua",
+    "overlay": [
+      "web/fkhost.lua",
+      "web/boot.lua",
+      "web/canon.lua",
+      "web/fkclient.lua"
+    ],
+    "files": 299,
+    "sourceBytes": 1641639,
+    "packages": [
+      "standard",
+      "standard_cards",
+      "maneuvering",
+      "test"
+    ]
+  },
+  "crossHost": {
+    "note": "Same seed, same bundle, two different JS hosts (node 22 / Chrome headless).",
+    "withoutIterationPin": {
+      "node": {
+        "pairsHead": "liubei,daqiao,zhangfei,caocao,zhangliao,huanggai",
+        "resumes": 298,
+        "messages": 9591,
+        "decisions": 328
+      },
+      "chrome": {
+        "pairsHead": "anjiang,zhaoyun,sunquan,luxun,caocao,huangyueying",
+        "resumes": 572,
+        "messages": 20349,
+        "decisions": 550
+      },
+      "verdict": "completely different games"
+    },
+    "withIterationPin": {
+      "node": {
+        "resumes": 365,
+        "messages": 10193,
+        "decisions": 363,
+        "commandLogHash": "aa14e000a2b1da2c",
+        "commandLogBytes": 28184,
+        "stateDigest": "aff7daeaf3e47b99"
+      },
+      "chrome": {
+        "resumes": 365,
+        "messages": 10193,
+        "decisions": 363,
+        "commandLogHash": "aa14e000a2b1da2c",
+        "commandLogBytes": 28184,
+        "stateDigest": "496e2d8024e8f9d9"
+      },
+      "verdict": "byte-identical command logs; state digests differ only because the digest itself serialises a pairs-ordered CBOR blob"
+    }
+  },
+  "browser": {
+    "engine": "Chrome headless (new), same wasm and same bundle as node",
+    "luaHeapAfterLoadMiB": 3.1,
+    "luaHeapAfterGameMiB": 16.3,
+    "peakJsHeapMiB": 11.5,
+    "processWallClockLoadOnlyMs": [
+      2612,
+      2709,
+      2496
+    ],
+    "processWallClockFullGameMs": [
+      11859,
+      12013,
+      8306
+    ],
+    "caveat": "in-page performance.now() is virtualised by --virtual-time-budget and unusable; wall clock includes Chrome process startup"
+  },
+  "coldPayload": {
+    "luaBundleJsonBytes": 1730799,
+    "luaBundleGzipBytes": 392674,
+    "glueWasmBytes": 271581,
+    "glueWasmGzipBytes": 110647,
+    "appJsBytes": 311873,
+    "appJsGzipBytes": 98814,
+    "totalRawBytes": 2314588,
+    "totalGzipBytes": 602337,
+    "transferSecondsAt10Mbps": 0.48
+  }
+}

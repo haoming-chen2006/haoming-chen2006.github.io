@@ -781,7 +781,9 @@
 /* -------------------------------------------------------------- overlays */
 
 .fk-indicators { position: absolute; inset: 0; pointer-events: none; z-index: 5; }
-.fk-indicators line { stroke: #dfc27a; stroke-width: 2.5; opacity: 0.85; }
+/* No `opacity` here: the arrows fade over their lifetime and `Indicators.tsx`
+   sets that per line. A rule here would override it. */
+.fk-indicators line { stroke: #dfc27a; stroke-width: 2.5; }
 .fk-indicators circle { fill: #dfc27a; }
 
 .fk-effect {

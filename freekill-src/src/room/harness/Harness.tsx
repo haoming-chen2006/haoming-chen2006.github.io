@@ -28,6 +28,21 @@ const SPEEDS = [1, 4, 16, 64, 256];
 type Panel = 'frames' | 'interactions' | 'coverage' | 'scenes';
 
 /**
+ * Put the room into a recorded request state.
+ *
+ * A harvested diff is only half of a request: whether the room is *asking*
+ * anything is carried by the request command, not by the diff (see
+ * `applySceneChange`). The engine always sends both, in this order; the
+ * harness has to as well, or the injected scene renders as a dead board.
+ * `PlayCard` is the generic "you may act" ask, which is what these diffs are.
+ */
+function injectScene(client: FixtureLuaClient, diff: unknown): void {
+  client.inject('CancelRequest', undefined);
+  client.inject('PlayCard', null);
+  client.inject('UpdateRequestUI', diff);
+}
+
+/**
  * Start position from the URL, so a particular frame can be linked, scripted or
  * screenshotted: `?at=1400&lang=en_US&assets=http://localhost:8123/&mode=replay`.
  */
@@ -123,7 +138,7 @@ export function Harness() {
     if (URL_OPTS.scene == null) return;
     const sc = recordedScenes[URL_OPTS.scene];
     if (!sc) return;
-    const t = setTimeout(() => client.inject('UpdateRequestUI', sc), 60);
+    const t = setTimeout(() => injectScene(client, sc), 60);
     return () => clearTimeout(t);
   }, [client]);
 
@@ -310,7 +325,7 @@ export function Harness() {
               <ol className="hz__frames">
                 {recordedScenes.map((sc, i) => (
                   <li key={i}>
-                    <button type="button" className="hz__inject" onClick={() => client.inject('UpdateRequestUI', sc)}>
+                    <button type="button" className="hz__inject" onClick={() => injectScene(client, sc)}>
                       inject #{i}
                     </button>{' '}
                     {describeScene(sc)}

@@ -159,8 +159,29 @@ export async function startHostRunner(spec: HostRunnerSpec): Promise<HostRunner>
   const inbox: { playerId: number; reply: unknown }[] = [];
   const seatIds = new Set(seats.map((s) => s.playerId));
 
+  /**
+   * The question each seat is being asked right now, and nothing else.
+   *
+   * Two jobs, both of which need the same fact. A resync has to carry the
+   * outstanding request, because a room snapshot does not contain one: a player
+   * who missed their own 选将 and is handed a beautiful table with no dialog
+   * sits there until the request times out. And a reply may only be forwarded
+   * while its question is still open — `waitForReply` pops whatever is queued
+   * for that connection (`lua/web/fkhost.lua`), so a reply that arrives after
+   * its request ended is not discarded by the engine, it becomes the answer to
+   * that seat's *next* question, which the player never saw. A click already in
+   * flight when the timer expired is enough to do that.
+   *
+   * Filled from the requests the engine emits, emptied by the `CancelRequest`
+   * it emits when it stops waiting on a seat. Both edges come from the engine,
+   * so this is a record rather than a guess.
+   */
+  let lastBatch = 0;
+  const outstanding = new Map<number, WirePayloadMessage>();
+
   const submit = (playerId: number, reply: unknown): void => {
     if (stopped || !seatIds.has(playerId)) return;
+    if (!outstanding.has(playerId)) return;
     inbox.push({ playerId, reply });
     wake?.();
   };
@@ -180,20 +201,21 @@ export async function startHostRunner(spec: HostRunnerSpec): Promise<HostRunner>
     });
   };
 
-  // What a resync has to be able to reproduce.
-  //
-  // `lastBatch` stamps the snapshot so a client can tell which buffered
-  // envelopes it predates, and `outstanding` is the one thing a room snapshot
-  // does NOT contain: the question the engine is currently asking that seat.
-  // A player who missed their own 选将 request and is then handed a snapshot
-  // gets a perfectly rendered table and no dialog, and sits there until the
-  // request times out — which is exactly the failure this pair fixes.
-  let lastBatch = 0;
-  const outstanding = new Map<number, WirePayloadMessage>();
-
+  // `lastBatch` stamps a resync snapshot, so its recipient can tell which of
+  // its buffered envelopes the snapshot already contains. `outstanding` is
+  // declared with `submit`, above.
   const offOutput = host.onOutput((env) => {
     if (env.batch > lastBatch) lastBatch = env.batch;
     for (const m of env.messages) {
+      // `CancelRequest` is the engine saying "that seat is no longer being
+      // asked". Forgetting the question there — rather than only checking
+      // `pendingInput()` when a resync is served — means a seat can never be
+      // handed a dialog it has already answered, however the two are timed.
+      if (m.command === 'CancelRequest') {
+        if (env.to === null) outstanding.clear();
+        else outstanding.delete(env.to);
+        continue;
+      }
       if (m.kind !== 'request') continue;
       const msg = m as WirePayloadMessage;
       if (env.to === null) for (const s of seatIds) outstanding.set(s, msg);

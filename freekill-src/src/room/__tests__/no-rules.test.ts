@@ -15,6 +15,7 @@ import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
+import { skillsOf } from '../components/Dashboard';
 import { LtkLua } from '../ltk/LtkLua';
 
 const ROOM = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -109,6 +110,25 @@ describe('no game rules in the room', () => {
       for (const m of body.matchAll(WRITE)) hits.push(`${f.slice(ROOM.length + 1)}: ${m[0].trim()}`);
     }
     expect(hits).toEqual([]);
+  });
+
+  it('asks the engine which skills the viewer has, rather than reading their names', () => {
+    // Which of a player's skills are visible is `s.visible` in the engine
+    // (`client_util.lua:392`, `GetMySkills`), not a property of the name. The
+    // room used to approximate it with a shape rule that dropped every name
+    // containing `__` or ending in `&` — which is `mobile__lianzhu`,
+    // `changshi__kuiji`, and `spear_skill&`, the 丈八蛇矛 view-as skill that ships
+    // in `standard_cards` and is therefore in this build. Each of those gets a
+    // `SkillButton` in the scene; a dashboard that does not list them is a
+    // dashboard with no way to press them.
+    const engine = { getMySkills: () => ['zhiheng', 'spear_skill&', 'mobile__lianzhu'] };
+    expect(skillsOf(engine, ['zhiheng'])).toEqual(['zhiheng', 'spear_skill&', 'mobile__lianzhu']);
+
+    // With no VM to ask — a replay, the fixture harness — the notify stream's
+    // own list stands in rather than the dashboard going blank.
+    const noVm = { getMySkills: (): string[] => { throw new Error('no client VM'); } };
+    expect(skillsOf(noVm, ['zhiheng', 'yiji'])).toEqual(['zhiheng', 'yiji']);
+    expect(skillsOf({ getMySkills: () => [] }, ['zhiheng'])).toEqual(['zhiheng']);
   });
 
   it('lets the scene be the only source of the OK button state', () => {

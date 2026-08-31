@@ -46,10 +46,18 @@ export function RoomView(props: RoomViewProps) {
     const publish = () => { queued = false; store.commit(); };
     const off = client.onNotifyUI((command, data) => {
       store.applyNotify(command as string, data);
+      // `Room.qml`'s transition to `notactive` ends with `Ltk.finishRequestUI()`,
+      // and answering is one of the three things that triggers it. Without it
+      // the client VM keeps the answered handler as `current_request_handler`
+      // and any later `UpdateRequestUI` — a stray click, a re-press of OK —
+      // runs `doOKButton` on it again and sends the host a second reply.
+      if (command === 'ReplyToServer') {
+        try { services.lua.finishRequestUI(); } catch { /* engine gone */ }
+      }
       if (!queued) { queued = true; queueMicrotask(publish); }
     });
     return () => { off(); };
-  }, [client, store]);
+  }, [client, store, services]);
 
   // `Room.qml`'s 200 ms `statusSkillTimer`. `RefreshStatusSkills` is what emits
   // MaxCard, role visibility, UpdateDrawPile and UpdateSkill; nothing else does.
@@ -88,9 +96,19 @@ function RoomBody(
     lua.interact('Photo', pid, 'click', { selected, autoTarget: false });
   }, [lua]);
 
+  /**
+   * Answer a dialog-shaped request.
+   *
+   * A dialog reply never comes back through the notify stream — the client VM
+   * puts it straight on the wire — so nothing else would take the dialog down.
+   * `RoomLogic.js:141` closes the same loop: reply, then `notactive`. Leaving it
+   * open let a player answer the same question twice.
+   */
   const reply = useCallback((value: unknown) => {
     lua.replyToServer(value);
     store.outbound.push({ command: 'reply', payload: value });
+    store.closeRequest();
+    try { lua.finishRequestUI(); } catch { /* engine gone */ }
     store.commit();
   }, [lua, store]);
 

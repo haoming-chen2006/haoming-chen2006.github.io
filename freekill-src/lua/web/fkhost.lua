@@ -145,7 +145,33 @@ local _ServerPlayer_MT = {
     end,
 
     thinking = function(t) return t._thinking end,
-    setThinking = function(t, v) t._thinking = v end,
+
+    -- 询问结束时，主动把对端的询问框关掉。
+    --
+    -- Qt 版里关框是纯客户端行为，线路上根本没有这条消息：点了确定，
+    -- RoomLogic.js:142 自己把 roomScene.state 置成 notactive；倒计时条烧完，
+    -- Room.qml 的动画结束再置一次。服务端只对「输掉竞速」的人补一条
+    -- CancelRequest（request.lua:354），答完的人和超时的人都收不到。
+    --
+    -- 浏览器版没有那层 QML，也没有那根本地倒计时，于是那两种情况下框根本不会消失。
+    -- 两个人同时选将时这就是一个必现的卡死：先选完的人一直盯着自己的选将框，
+    -- 直到下一次轮到他被问才被顶掉；而没赶上超时的人发出去的回复没人要，
+    -- 框就永远留在那儿。
+    --
+    -- 权威房间自己知道答案，用不着客户端猜：thinking 从 true 变 false 的那一刻，
+    -- 就是这个座位不再被等待的那一刻。引擎里改它只有四处
+    -- （lua/server/request.lua 的 116 / 154 / 216 / 351 行）：发出询问、收到回复、
+    -- 开始新一轮询问、询问收尾。后三处都该关框，所以补在这个状态位上一次就够，
+    -- 不用去枚举「询问有多少种结束方式」——那正是漏掉超时的原因。
+    --
+    -- 只发给真人。机器人也会被 setThinking，但那边没有屏幕。
+    setThinking = function(t, v)
+      v = v and true or false
+      if t._thinking and not v and t.state == fk.Player_Online then
+        emit("notify", t.connId, "CancelRequest", "")
+      end
+      t._thinking = v
+    end,
     setDied = function(t, v) t._died = v end,
     emitKick = function() end,
 

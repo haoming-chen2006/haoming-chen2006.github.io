@@ -22,6 +22,8 @@
     "smoke:live": "node scripts/smoke.mjs https://haoming-chen2006.github.io/freekill/",
     "smoke:two": "node scripts/smoke-two.mjs",
     "smoke:two:live": "node scripts/smoke-two.mjs https://haoming-chen2006.github.io/freekill/",
+    "audit": "node scripts/audit/run.mjs",
+    "audit:live": "node scripts/audit/run.mjs --live",
     "measure": "node scripts/measure-load.mjs"
   },
   "dependencies": {

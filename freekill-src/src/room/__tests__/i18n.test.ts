@@ -54,6 +54,18 @@ describe('translation keys', () => {
     }
   });
 
+  it('can name what a promptless request is asking for', () => {
+    // `Dashboard` builds these keys from `PendingRequest.command`, so the regex
+    // above cannot see them. They are the fallback prompt for the three scene
+    // requests that routinely arrive with none of their own — `ReqInvoke` never
+    // sets one, and "play a Jink" arrives with `prompt == ""` — and each takes
+    // the skill or card name in `%1`, filled by `fillArgs`.
+    for (const key of ['#AskForSkillInvoke', '#AskForUseCard', '#AskForResponseCard']) {
+      expect(zh, key).toHaveProperty([key]);
+      expect(zh[key], key).toContain('%1');
+    }
+  });
+
   it('carries the inline artist credits the packages ship', () => {
     const credits = Object.entries(zh).filter(([k]) => k.startsWith('illustrator:'));
     expect(credits.length).toBeGreaterThanOrEqual(25);

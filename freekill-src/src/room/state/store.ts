@@ -130,6 +130,22 @@ export class RoomStore {
     this.commit();
   }
 
+  /**
+   * Leave the interactive state — `Room.qml`'s transition to `notactive`
+   * (`Room.qml:64-99`), which disables every card and skill, un-highlights every
+   * seat, hides OK/Cancel and clears the prompt.
+   *
+   * Three things end a request and all three land here: `CancelRequest`,
+   * `GameOver`, and — the one that was missing — the room answering. The engine
+   * emits `CancelRequest` only *before* the next `AskFor*`, so between a reply
+   * and the next question there is nothing at all to switch the board off:
+   * `RoomLogic.js:141` does it in `replyToServer` and this is the same line.
+   */
+  closeRequest(): void {
+    this.state.request = { kind: 'none' };
+    this.scene = EMPTY_SCENE;
+  }
+
   /* --------------------------------------------------------- helpers */
 
   private player(id: number): PlayerState {
@@ -253,6 +269,17 @@ export class RoomStore {
       default:
         return;
     }
+  }
+
+  /** One arrow, source to targets. `doIndicate` skips a self-pointing leg
+   *  rather than the whole line (`RoomLogic.js:568`). */
+  private indicate(from: number, to: readonly number[]): void {
+    const targets = to.filter((x) => typeof x === 'number' && x !== from);
+    if (!targets.length) return;
+    this.effectSeq += 1;
+    this.state.indicators = [...this.state.indicators.slice(-6), {
+      id: this.effectSeq, from, to: targets, at: Date.now(),
+    }];
   }
 
   /** Drop table cards the engine has finished with. Called by the renderer once
@@ -527,12 +554,16 @@ export class RoomStore {
           emotion?: string; name?: string;
         };
         if (d.type === 'Indicate' && d.from != null) {
-          const targets = (d.to ?? []).map((t) => t[0]).filter((x) => x !== d.from);
-          if (targets.length) {
-            this.effectSeq += 1;
-            s.indicators = [...s.indicators.slice(-6), {
-              id: this.effectSeq, from: d.from, to: targets, at: Date.now(),
-            }];
+          // `to` is a list of CHAINS, not of targets: each entry is
+          // `[target, ...subTargets]` and draws two hops — source to target,
+          // then target to its own sub-targets (`RoomLogic.js:1313`, and
+          // `events/usecard.lua:79` which builds it from `getSubTos`). Collateral
+          // is the everyday case: 借刀杀人 points A at B, and B at the victim C.
+          // Reading only `t[0]` drew the first hop and silently lost the second.
+          for (const chain of d.to ?? []) {
+            if (!Array.isArray(chain) || chain.length === 0) continue;
+            this.indicate(d.from, [chain[0]]);
+            if (chain.length > 1) this.indicate(chain[0], chain.slice(1));
           }
         } else if (d.type === 'Emotion' && d.player != null) {
           this.effectSeq += 1;
@@ -585,8 +616,7 @@ export class RoomStore {
 
       /* ---------------------------------------------------------- requests */
       case 'CancelRequest': {
-        s.request = { kind: 'none' };
-        this.scene = EMPTY_SCENE;
+        this.closeRequest();
         return;
       }
       case 'UpdateRequestUI': {
@@ -595,18 +625,21 @@ export class RoomStore {
       }
       case 'GameOver': {
         s.gameOver = String(data);
-        s.request = { kind: 'none' };
-        this.scene = EMPTY_SCENE;
+        this.closeRequest();
         return;
       }
       case 'ReplyToServer': {
+        // `doOKButton` does not send anything itself: it pushes this, and
+        // `lua/web/client.lua` puts it on the wire. Seeing it is the room's
+        // signal that the question it was answering is over.
         this.outbound.push({ command: 'ReplyToServer', payload: data });
+        this.closeRequest();
         return;
       }
       default: {
         if (NO_UI_COMMANDS.has(command)) return;
         if (SCENE_COMMANDS.has(command)) {
-          s.request = { kind: 'scene', command };
+          s.request = { kind: 'scene', command, promptArg: promptArgOf(command, data) };
           this.scene = { ...this.scene, active: true };
           return;
         }
@@ -624,6 +657,24 @@ export class RoomStore {
 }
 
 /**
+ * What a scene request names in `data[0]`: the skill it is offering, or the
+ * card it wants used or played.
+ *
+ * `ReqInvoke` never calls `setPrompt` at all, and `ReqResponseCard` sets
+ * whatever the server sent — which is `""` for every ordinary "play a Jink".
+ * The scene therefore carries no prompt for the two commonest questions in the
+ * game, and the QML client fills the gap from the payload rather than from the
+ * scene (`RoomLogic.js:825`, `:1233`, `:1266`). This is that payload field; the
+ * dashboard puts it into `%1` of `#<command>` when the scene has nothing.
+ */
+function promptArgOf(command: string, data: unknown): string | undefined {
+  if (command !== 'AskForSkillInvoke' && command !== 'AskForUseCard'
+    && command !== 'AskForResponseCard') return undefined;
+  const first = Array.isArray(data) ? data[0] : undefined;
+  return typeof first === 'string' && first !== '' ? first : undefined;
+}
+
+/**
  * Apply one `UpdateRequestUI` diff to the held scene.
  *
  * The payload is a diff, never a snapshot (`lua/ui_emu/base.lua` accumulates
@@ -635,14 +686,19 @@ export function applySceneChange(prev: SceneState, change: SceneChange): SceneSt
   for (const [k, v] of Object.entries(prev.items)) items[k] = { ...v };
   const uiData: Record<string, Record<string, unknown>> = {};
   for (const [k, v] of Object.entries(prev.uiData)) uiData[k] = { ...v };
+  const created: Record<string, string[]> = {};
+  for (const [k, v] of Object.entries(prev.created)) created[k] = [...v];
 
   for (const entry of change._new ?? []) {
     const t = entry.type;
+    const id = String(entry.data.id);
     items[t] = items[t] ?? {};
-    items[t][String(entry.data.id)] = { ...entry.data };
+    items[t][id] = { ...entry.data };
+    created[t] = created[t] ?? [];
+    if (!created[t].includes(id)) created[t].push(id);
     if (entry.ui_data !== undefined) {
       uiData[t] = uiData[t] ?? {};
-      uiData[t][String(entry.data.id)] = entry.ui_data;
+      uiData[t][id] = entry.ui_data;
     }
   }
 
@@ -659,8 +715,10 @@ export function applySceneChange(prev: SceneState, change: SceneChange): SceneSt
 
   for (const entry of change._delete ?? []) {
     const t = entry.type;
-    if (items[t]) delete items[t][String(entry.id)];
-    if (uiData[t]) delete uiData[t][String(entry.id)];
+    const id = String(entry.id);
+    if (items[t]) delete items[t][id];
+    if (uiData[t]) delete uiData[t][id];
+    if (created[t]) created[t] = created[t].filter((x) => x !== id);
   }
 
   return {
@@ -668,6 +726,11 @@ export function applySceneChange(prev: SceneState, change: SceneChange): SceneSt
     prompt: change._prompt ?? prev.prompt,
     items,
     uiData,
-    active: true,
+    created,
+    // Whether a request is open is the request's business, not the diff's. The
+    // engine sends one last empty `{_type = "Room"}` after every reply
+    // (`RequestHandler:_finish`), and a diff that re-armed the board would undo
+    // the `notactive` the reply just put it in.
+    active: prev.active,
   };
 }

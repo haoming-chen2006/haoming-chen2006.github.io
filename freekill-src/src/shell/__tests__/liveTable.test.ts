@@ -21,7 +21,9 @@ import { LtkLua } from '../../room/ltk/LtkLua.ts';
 import { RoomStore } from '../../room/state/store.ts';
 import { retainNotifications, type RetainingClient } from '../retainingClient.ts';
 import { loopbackTransport, type CommandRow, type GameTransport } from '../api/transport.ts';
-import { seatSpecs, startHostRunner, type HostRunner, type HostSeat } from '../hostRunner.ts';
+import {
+  seatSpecs, startHostRunner, type GameHost, type HostRunner, type HostSeat,
+} from '../hostRunner.ts';
 
 const LONG = 300_000;
 
@@ -538,3 +540,151 @@ describe('a seat that finishes joining after the deal', () => {
   }, LONG);
 });
 
+
+/**
+ * The other half of "who is being asked": telling a seat when it is not.
+ *
+ * The Qt client closes its own dialog. `RoomLogic.js:142` sets
+ * `roomScene.state = "notactive"` the instant you press 确定, and `Room.qml`'s
+ * countdown sets it again when the bar burns out. Neither is a message; the
+ * only `CancelRequest` on the wire goes to whoever *lost a race*
+ * (`lua/server/request.lua:354`), which in a 选将 — where every seat is a
+ * winner — is nobody.
+ *
+ * A browser has neither of those halves. So the two normal ways a request ends
+ * were invisible to the player: answer it and the dialog stays up; run out of
+ * time and it stays up forever, because the next thing that clears it is the
+ * next question you happen to be asked, which may be minutes away or never. Two
+ * humans choosing generals at the same time hit both at once — one sits on a
+ * dead dialog while the other is still choosing, and a seat that missed the
+ * timeout is stuck for good, sending answers nobody wants.
+ *
+ * The host knows. `fk.ServerPlayer:setThinking` is the engine's own record of
+ * whether a seat is being waited on, and `lua/web/fkhost.lua` turns its
+ * true -> false edge into a `CancelRequest` for that seat. This asserts both
+ * edges, from the player's side: the store the room renders.
+ */
+describe('a seat the engine has stopped waiting on', () => {
+  it('is told so — whether it answered or ran out of time', async () => {
+    const host = await InProcessLuaHost.create(bundle(), {});
+    const transport = loopbackTransport('room-cancel');
+
+    const seats: HostSeat[] = [
+      { seat: 1, displayName: '房主', avatar: 'caocao', isBot: false, connection: 'online' },
+      { seat: 2, displayName: '客人', avatar: 'liubei', isBot: false, connection: 'online' },
+      ...Array.from({ length: 6 }, (_, i) => ({
+        seat: i + 3, displayName: `机器人 ${i + 3}`, avatar: 'guojia',
+        isBot: true, connection: 'online' as const,
+      })),
+    ];
+
+    interface Seat {
+      vm: MainThreadLuaClient;
+      lua: LtkLua;
+      store: RoomStore;
+      commands: string[];
+    }
+    const mk = async (id: number, name: string): Promise<Seat> => {
+      const vm = await MainThreadLuaClient.create(bundle(), { playerId: id, screenName: name });
+      const s: Seat = { vm, lua: new LtkLua(vm), store: new RoomStore(id), commands: [] };
+      vm.onNotifyUI((command, data) => {
+        s.commands.push(command as string);
+        s.store.applyNotify(command as string, data);
+      });
+      return s;
+    };
+    const me = await mk(1, '房主');
+    const you = await mk(2, '客人');
+
+    /** What the room would be drawing for this seat right now. */
+    const request = (s: Seat) => { s.store.commit(); return s.store.state.request; };
+    const asking = (s: Seat) =>
+      request(s).kind === 'dialog' && (request(s) as { command: string }).command === 'AskForGeneral';
+    const hand = (s: Seat, id: number) => s.vm.call<number[]>('GetPlayerHandcards', id).length;
+
+    // Seat 2 is subscribed before the room exists, so it sees the opening the
+    // same way the host's own seat does. This test is about what the host
+    // *emits*; the resync path has its own test above.
+    transport.onEnvelope(2, (env) => you.vm.deliverEnvelope(env));
+
+    // Everything the driver decided was worth handing to the engine. The
+    // engine's own reply queue keeps whatever is pushed into it until the next
+    // `waitForReply` pops it, so "was it forwarded" is the only place a reply
+    // to a question that is over can still be stopped.
+    const forwarded: number[] = [];
+    const spy: GameHost = {
+      createRoom: (s) => host.createRoom(s),
+      advance: (o) => host.advance(o),
+      submitReply: (p, r) => { forwarded.push(p); return host.submitReply(p, r); },
+      onOutput: (h) => host.onOutput(h),
+      onDecision: (h) => host.onDecision(h),
+      joinPreamble: (p) => host.joinPreamble(p),
+      resyncPayload: (p) => host.resyncPayload(p),
+      pendingInput: () => host.pendingInput(),
+      dispose: () => host.dispose(),
+    };
+
+    const faults: string[] = [];
+    const runner = await startHostRunner({
+      roomId: 'room-cancel',
+      seats,
+      hostSeat: 1,
+      // 20 seconds, which the driver burns in real time: long enough that the
+      // first half cannot be an accident of the ask ending on its own, short
+      // enough that the second half does not dominate the suite.
+      settings: { gameMode: 'aaa_role_mode', generalNum: 3, generalTimeout: 20 },
+      timeout: 20,
+      transport,
+      createHost: async () => spy,
+      onLocalEnvelope: (e) => me.vm.deliverEnvelope(e),
+      onFault: (m, fatal) => faults.push(`${fatal ? 'fatal' : 'warn'}: ${m}`),
+    });
+    me.vm.onReply((_c, reply) => runner.submit(1, reply));
+    you.vm.onReply((_c, reply) => runner.submit(2, reply));
+
+    try {
+      expect(await until(() => asking(me) && asking(you), 120_000, () => {})).toBe(true);
+
+      // Seat 1 answers. Seat 2 deliberately does not.
+      const [generals, n] = (request(me) as { data: unknown }).data as [string[], number];
+      me.lua.replyToServer(generals.slice(0, n ?? 1));
+
+      // Released on its own answer, while the room is still waiting on seat 2 —
+      // which is what makes this an answer to "my question is over" rather than
+      // to "everybody's question is over".
+      expect(await until(() => request(me).kind === 'none', 5_000, () => {})).toBe(true);
+      expect(asking(you)).toBe(true);
+      expect(me.commands).toContain('CancelRequest');
+      expect(hand(me, 1)).toBe(0);
+
+      // The engine got seat 1's one answer, and will not get a second. The room
+      // is parked on seat 2's ask — nothing is being asked of seat 1 — so a
+      // click landing here (a double press, or one already in flight when the
+      // question closed) has no question to answer. Forwarding it anyway would
+      // leave it in the engine's reply queue, which `waitForReply` pops
+      // blindly, and it would become the answer to whatever seat 1 is asked
+      // next.
+      expect(forwarded).toContain(1);
+      const forwardedSoFar = forwarded.length;
+      runner.submit(1, ['zhugeliang']);
+      await new Promise((r) => setTimeout(r, 1_000));
+      expect(forwarded.length).toBe(forwardedSoFar);
+      expect(asking(you)).toBe(true);
+
+      // Seat 2 never answers. The engine gives up on it, the AI chooses, and the
+      // room deals — and seat 2 has to learn that the question it is still
+      // looking at is gone. Asserted the moment the cards land, because from
+      // there the next thing seat 2 is asked would clear the dialog anyway and
+      // prove nothing.
+      expect(await until(() => hand(you, 2) >= 4, 180_000, () => {})).toBe(true);
+      expect(request(you).kind).toBe('none');
+      expect(faults.filter((f) => f.startsWith('fatal'))).toEqual([]);
+      expect(you.vm.errors()).toEqual([]);
+    } finally {
+      runner.stop();
+      me.vm.dispose();
+      you.vm.dispose();
+      host.dispose();
+    }
+  }, LONG);
+});

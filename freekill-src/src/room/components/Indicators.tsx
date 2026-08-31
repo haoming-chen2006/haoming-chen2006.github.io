@@ -47,9 +47,12 @@ export const Indicators = memo(function Indicators(
         return ind.to.flatMap((to) => {
           const p = centre(to);
           if (!p) return [];
+          // Inline, not the `opacity` attribute: a presentation attribute loses
+          // to any stylesheet rule, and `.fk-indicators line` sets one — so the
+          // arrows held full strength for their whole life and then blinked out.
           return [
-            <line key={`${ind.id}-${to}`} x1={from[0]} y1={from[1]} x2={p[0]} y2={p[1]} opacity={1 - age} />,
-            <circle key={`${ind.id}-${to}-d`} cx={p[0]} cy={p[1]} r={4} opacity={1 - age} />,
+            <line key={`${ind.id}-${to}`} x1={from[0]} y1={from[1]} x2={p[0]} y2={p[1]} style={{ opacity: 1 - age }} />,
+            <circle key={`${ind.id}-${to}-d`} cx={p[0]} cy={p[1]} r={4} style={{ opacity: 1 - age }} />,
           ];
         });
       })}

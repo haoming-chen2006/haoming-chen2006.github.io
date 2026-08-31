@@ -118,7 +118,19 @@ export interface SeatEffect {
 
 export type PendingRequest =
   | { readonly kind: 'none' }
-  | { readonly kind: 'scene'; readonly command: string }
+  | {
+      readonly kind: 'scene';
+      readonly command: string;
+      /**
+       * What the request is asking for — a skill name or a card name — taken
+       * from `data[0]`. Three scene requests carry no prompt of their own more
+       * often than not (`ReqInvoke` never sets one at all; `AskForUseCard` and
+       * `AskForResponseCard` arrive with `prompt == ""` for every "play a Jink"),
+       * and the QML client fills the gap by putting this into `%1` of
+       * `#<command>` — `RoomLogic.js:825`, `:1233`, `:1266`.
+       */
+      readonly promptArg?: string;
+    }
   | { readonly kind: 'dialog'; readonly command: string; readonly data: unknown };
 
 export interface RoomState {
@@ -173,10 +185,21 @@ export interface SceneState {
   readonly items: Readonly<Record<string, Readonly<Record<string, ItemData>>>>;
   /** `_new` entries keep their `ui_data` render hints (footnote, reason). */
   readonly uiData: Readonly<Record<string, Readonly<Record<string, unknown>>>>;
-  /** True between `PlayCard`/`AskFor*` and `CancelRequest`. */
+  /**
+   * elemType -> ids the request created after the scene was built (`_new`),
+   * minus the ones it has since retracted (`_delete`).
+   *
+   * For `CardItem` this is precisely the expanded piles. `RoomScene:initialize`
+   * builds the hand's items before `RequestHandler.change` exists, so they are
+   * never announced as `_new`; the only thing that adds a card to a *live*
+   * scene is `ReqActiveSkill:expandPile`. `Dashboard.qml:155-179` keys off
+   * exactly this to add and remove the cards it shows beside the hand.
+   */
+  readonly created: Readonly<Record<string, readonly string[]>>;
+  /** True between `PlayCard`/`AskFor*` and the reply or `CancelRequest`. */
   readonly active: boolean;
 }
 
 export const EMPTY_SCENE: SceneState = {
-  type: 'Room', prompt: '', items: {}, uiData: {}, active: false,
+  type: 'Room', prompt: '', items: {}, uiData: {}, created: {}, active: false,
 };

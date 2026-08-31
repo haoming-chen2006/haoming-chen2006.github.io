@@ -125,9 +125,13 @@ try {
     await b.waitFor(`document.querySelectorAll('.general-card').length === 25`, 30000);
     const n = await b.evaluate(`document.querySelectorAll('.general-card').length`);
     if (n !== 25) throw new Error(`expected 25 generals, saw ${n}`);
-    const withArt = await b.evaluate(
-      `[...document.querySelectorAll('.general-card img')].filter(i => i.naturalWidth > 0).length`);
-    if (withArt < 20) throw new Error(`only ${withArt}/25 portraits loaded`);
+    // The portraits are loading="lazy", so naturalWidth is 0 until the browser
+    // gets round to them. Over a real CDN that is not instant; asserting
+    // immediately measured the network, not the page.
+    const loaded = `[...document.querySelectorAll('.general-card img')].filter(i => i.naturalWidth > 0).length`;
+    await b.waitFor(`${loaded} >= 20`, 30000).catch(async () => {
+      throw new Error(`only ${await b.evaluate(loaded)}/25 portraits loaded within 30s`);
+    });
   });
 
   await step('general search filters against the real Lua data', async () => {

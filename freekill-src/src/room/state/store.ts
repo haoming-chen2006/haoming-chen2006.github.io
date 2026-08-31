@@ -16,6 +16,7 @@
  */
 import type { SceneChange, ItemData } from '../../contract/scene';
 import { CARD_AREA, type CardArea } from '../ltk/types';
+import { asLocalized, type Localized } from '../../i18n/localized';
 import type {
   AgState, CardState, LogLine, PlayerState, RoomState, SceneState,
 } from './types';
@@ -160,7 +161,7 @@ export class RoomStore {
     this.state.cards = { ...this.state.cards, [cid]: c };
   }
 
-  private appendLog(html: string): void {
+  private appendLog(html: Localized): void {
     this.logSeq += 1;
     const line: LogLine = { id: this.logSeq, html };
     // 400 lines is well past a full game's 389; the cap is a safety valve.
@@ -442,7 +443,8 @@ export class RoomStore {
         return;
       }
       case 'SetCardFootnote': {
-        const [cid, note] = data as [number, string, boolean];
+        const [cid, raw] = data as [number, unknown, boolean];
+        const note = asLocalized(raw);
         this.patchCard(cid, { footnote: note });
         s.table = s.table.map((c) => (c.cid === cid ? { ...c, footnote: note } : c));
         return;
@@ -457,9 +459,10 @@ export class RoomStore {
         // `[card_data, playerid, footnote, event_id]`. `card_data` entries are
         // TaggedRef/opaque objects; the room shows them as face-down proxies
         // carrying the footnote until the caller resolves them.
-        const [cardData, , footnote, eventId] = data as [unknown[], number, string, number];
+        const [cardData, , footnote, eventId] = data as [unknown[], number, unknown, number];
+        const note = footnote == null ? undefined : asLocalized(footnote);
         const cards: CardState[] = (cardData ?? []).map((_, i) => ({
-          cid: -1 - i, known: true, virtual: true, footnote, eventId: Number(eventId ?? 0),
+          cid: -1 - i, known: true, virtual: true, footnote: note, eventId: Number(eventId ?? 0),
         }));
         s.table = [...s.table, ...cards];
         return;
@@ -501,7 +504,9 @@ export class RoomStore {
       case 'GameLog': {
         // Already rendered by the engine into colour markup — see
         // `test/lua/lib/ui.lua` for the same conversion on the test side.
-        this.appendLog(String(data));
+        // `lua/web/client.lua` renders it once per language and sends a map;
+        // an older recording sends one string, which normalises to both.
+        this.appendLog(asLocalized(data));
         return;
       }
       case 'LogEvent': {

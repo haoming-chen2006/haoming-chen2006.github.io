@@ -1,0 +1,249 @@
+/**
+ * One tab's connection to a game in progress.
+ *
+ * Every seat runs this. It plugs the tab's client VM into the room's traffic:
+ * envelopes in, replies out. Exactly one of them — the host's — additionally
+ * starts the authoritative engine and becomes the thing everyone else is
+ * talking to.
+ *
+ * The status it reports is the other half of the fix. Before this existed the
+ * room mounted a table, connected a socket, said "已连接" and then showed
+ * nothing forever, because nothing was ever going to arrive. A table with no
+ * game in it is now a state with a name — and if it stays in that state, it
+ * says why.
+ */
+import type { LuaClient } from '../contract/engine';
+import type { Envelope, WireCommand } from '../contract/protocol';
+import { getGameTransport, type GameTransport } from './api/transport';
+import type { RetainingClient } from './retainingClient';
+import { errorText, startHostRunner, type HostRunner, type HostSeat } from './hostRunner';
+import { getLanguage, t } from '../i18n';
+import type { UiKey } from '../i18n';
+
+const tr = (key: UiKey, vars?: Record<string, string | number>) => t(key, getLanguage(), vars);
+
+export type TablePhase = 'connecting' | 'dealing' | 'live' | 'over' | 'failed';
+
+/** Envelopes a joining seat will hold while it waits for its snapshot. */
+const HELD_LIMIT = 2000;
+
+export interface TableStatus {
+  readonly phase: TablePhase;
+  /** What the player is looking at, in a sentence. */
+  readonly note: string;
+  /** Non-fatal problems worth showing even while the game plays. */
+  readonly warnings: readonly string[];
+}
+
+export interface LiveTableSpec {
+  readonly roomId: string;
+  readonly client: LuaClient;
+  /** The seat this tab occupies. `null` for an observer. */
+  readonly mySeat: number | null;
+  readonly isHost: boolean;
+  readonly seats: readonly HostSeat[];
+  readonly settings: Readonly<Record<string, unknown>>;
+  onStatus(status: TableStatus): void;
+}
+
+export interface LiveTable {
+  stop(): void;
+}
+
+export async function startLiveTable(spec: LiveTableSpec): Promise<LiveTable> {
+  const { client, mySeat, roomId } = spec;
+  let stopped = false;
+  let phase: TablePhase = 'connecting';
+  let note = tr(spec.isHost ? 'table.starting' : 'table.waitingForHost');
+  const warnings: string[] = [];
+  const report = () => { if (!stopped) spec.onStatus({ phase, note, warnings: [...warnings] }); };
+  const setPhase = (p: TablePhase, n: string) => {
+    if (phase === 'failed' && p !== 'failed') return;
+    phase = p;
+    note = n;
+    report();
+  };
+  const warn = (text: string) => {
+    if (warnings.includes(text)) return;
+    warnings.push(text);
+    console.warn(`[table] ${text}`);
+    report();
+  };
+  report();
+
+  const transport: GameTransport = await getGameTransport(roomId);
+  if (stopped) { void transport.close(); return { stop() {} }; }
+
+  /**
+   * Broadcast has no history and no delivery guarantee to a channel nobody had
+   * joined yet, so a seat that subscribes a moment after the host's first flush
+   * simply never sees it — and that flush is the entire opening, including that
+   * seat's own 选将 request. Waiting to publish does not help: the host cannot
+   * observe when someone else's channel joins.
+   *
+   * So a joining seat does not try to be early, it asks. Everything that
+   * arrives before the answer is held rather than applied, because feeding a
+   * client VM `StartGame` before its player table exists errors inside Lua
+   * (`clientbase.lua:420`). When the snapshot lands it is applied first, then
+   * the held envelopes that postdate it, in order. The host stamps the snapshot
+   * with the batch it is current as of, which is what makes "postdates it"
+   * answerable.
+   *
+   * The host itself never waits for any of this: its own envelopes are handed
+   * over in-process, in order, and can never be missed.
+   */
+  const resyncs = !spec.isHost && mySeat !== null;
+  const applied = new Set<string>();
+  const held: Envelope[] = [];
+  let resynced = !resyncs;
+  /** The batch the snapshot was current as of. Everything at or below it is in. */
+  let syncedThrough = -1;
+  let dealt = false;
+
+  const readVmErrors = (): readonly string[] => {
+    const read = (client as Partial<RetainingClient>).vmErrors;
+    try { return typeof read === 'function' ? read.call(client) : []; } catch { return []; }
+  };
+  let vmErrorCount = readVmErrors().length;
+
+  const apply = (env: Envelope): void => {
+    // The public channel and this seat's private channel are separate topics
+    // with no ordering guarantee between them, so a flush the snapshot already
+    // contains can still turn up after it. Applying it again would move the
+    // same cards twice.
+    if (env.batch >= 0 && env.batch <= syncedThrough) return;
+    const key = `${env.batch}:${env.to ?? 'all'}`;
+    if (applied.has(key)) return;
+    applied.add(key);
+    try {
+      client.deliverEnvelope(env);
+    } catch (e) {
+      console.error('[table] the client VM rejected an envelope', e);
+      warn(tr('table.warn.batch', { error: errorText(e) }));
+      return;
+    }
+    // The engine's client Lua collects its errors instead of throwing, so a
+    // stream it cannot make sense of produces a frozen table and total silence.
+    // Reading them turns that into something the player and the console can see.
+    const errs = readVmErrors();
+    if (errs.length > vmErrorCount) {
+      const latest = errs[errs.length - 1];
+      vmErrorCount = errs.length;
+      console.error(`[table] the client VM rejected game data: ${latest}`);
+      warn(tr('table.warn.batch', { error: latest }));
+    }
+    if (!dealt && env.messages.length > 0) {
+      dealt = true;
+      setPhase('live', '');
+    }
+  };
+
+  const deliver = (env: Envelope): void => {
+    if (stopped || env.roomId !== roomId) return;
+    if (env.batch >= 0) {
+      if (!resynced) {
+        // Bounded, and the oldest is the right thing to drop: anything the
+        // snapshot predates is discarded on arrival anyway.
+        held.push(env);
+        if (held.length > HELD_LIMIT) held.shift();
+        return;
+      }
+      apply(env);
+      return;
+    }
+    // A resync.
+    //
+    // Only the first one counts. The request is retried until an answer lands,
+    // so a slow answer produces two — and the second is a *newer* snapshot,
+    // which is worse than useless: `Observe` reloads the room wholesale, so
+    // applying it discards the request the first snapshot restored and the
+    // dialog vanishes from under the player. Ignoring duplicates is not an
+    // optimisation, it is the difference between recovering and appearing to.
+    if (resynced) return;
+
+    // `batch === -1 - asOf`.
+    const asOf = -env.batch - 1;
+    apply(env);
+    resynced = true;
+    syncedThrough = Math.max(syncedThrough, asOf);
+    const catchUp = [...held].sort((a, b) => a.batch - b.batch);
+    held.length = 0;
+    for (const e of catchUp) apply(e);
+  };
+
+  const unsubs: (() => void)[] = [];
+  let runner: HostRunner | null = null;
+  const pendingReplies: { command: WireCommand; reply: unknown }[] = [];
+
+  unsubs.push(transport.onEnvelope(mySeat, deliver));
+
+  // Everything this seat decides goes back to whoever is authoritative: the
+  // runner in this very tab if we are the host, the wire otherwise.
+  unsubs.push(client.onReply((command, reply) => {
+    if (stopped || mySeat === null) return;
+    if (spec.isHost) {
+      if (runner) runner.submit(mySeat, reply);
+      else pendingReplies.push({ command, reply });
+      return;
+    }
+    void transport.sendReply({ roomId, playerId: mySeat, command, reply })
+      .catch((e: unknown) => warn(tr('table.warn.play', { error: errorText(e) })));
+  }));
+
+  const stop = (): void => {
+    if (stopped) return;
+    stopped = true;
+    for (const off of unsubs) off();
+    runner?.stop();
+    void transport.close().catch(() => {});
+  };
+
+  if (spec.isHost) {
+    if (mySeat === null) throw new Error(tr('table.error.hostNoSeat'));
+    try {
+      setPhase('dealing', tr('table.dealing'));
+      runner = await startHostRunner({
+        roomId,
+        seats: spec.seats,
+        hostSeat: mySeat,
+        settings: spec.settings,
+        transport,
+        onLocalEnvelope: deliver,
+        onFault: (m, fatal) => {
+          if (fatal) setPhase('failed', m);
+          else warn(m);
+        },
+        onGameOver: () => setPhase('over', ''),
+      });
+      if (stopped) { runner.stop(); return { stop() {} }; }
+      for (const r of pendingReplies) runner.submit(mySeat, r.reply);
+      pendingReplies.length = 0;
+    } catch (e) {
+      setPhase('failed', tr('table.error.start', { error: errorText(e) }));
+      console.error('[table] host runner failed to start', e);
+      return { stop };
+    }
+  } else if (resyncs) {
+    // Ask, and keep asking until the snapshot lands — not merely until *some*
+    // envelope lands. A live envelope arriving first proves the channel works;
+    // it proves nothing about the opening, which is the part that gets missed.
+    void (async () => {
+      await transport.ready(mySeat === null ? [] : [mySeat]).catch((e: unknown) => {
+        warn(tr('table.warn.channel', { error: errorText(e) }));
+      });
+      for (let i = 0; i < 60 && !stopped && !resynced; i++) {
+        if (mySeat !== null) {
+          await transport.requestResync(mySeat).catch((e: unknown) => {
+            warn(tr('table.warn.resync', { error: errorText(e) }));
+          });
+        }
+        await new Promise((r) => setTimeout(r, 1200));
+      }
+      if (!stopped && !resynced) {
+        setPhase('failed', tr('table.error.hostSilent'));
+      }
+    })();
+  }
+
+  return { stop };
+}

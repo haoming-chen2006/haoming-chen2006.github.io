@@ -8,6 +8,7 @@
  */
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
+import { getLanguage, t } from '../i18n';
 import { getApi } from './api';
 import type { Identity, LobbyApi } from './api';
 import type { Loaded } from './boot';
@@ -43,7 +44,7 @@ export function SessionProvider(
   }, [api, identity]);
 
   const signIn = useCallback(async (displayName: string, avatar: string) => {
-    setIdentity(await api.signIn(displayName.trim().slice(0, 24) || '无名氏', avatar));
+    setIdentity(await api.signIn(displayName.trim().slice(0, 24) || t('session.anonymous', getLanguage()), avatar));
   }, [api]);
 
   const signOut = useCallback(async () => {

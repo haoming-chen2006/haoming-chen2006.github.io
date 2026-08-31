@@ -54,6 +54,17 @@ end
 
 local out = { generals = {}, cards = {}, modes = {}, packs = { general = {}, card = {} }, translations = {} }
 
+-- The overview renders engine keys, not baked strings: the page has to be able
+-- to re-render in another language without another build. So every key it looks
+-- up is recorded here with its Chinese value, and the English side comes from
+-- src/i18n/engine at runtime (upstream's own en_US covers barely half the keys).
+-- The title / subtitle / description fields below stay for compatibility.
+local function put(k)
+  if type(k) ~= 'string' or k == '' then return end
+  local v = Fk:translate(k)
+  if v ~= k then out.translations[k] = v end
+end
+
 -- Generals, by package, with the detail payload the overview page shows.
 local gpacks = json.enc  -- silence luacheck
 for _, pack in ipairs(Fk.package_names) do
@@ -80,6 +91,7 @@ for _, pack in ipairs(Fk.package_names) do
           illustrator = Fk:translate('illustrator:' .. g.name),
           skills = skills,
         }
+        put(g.name); put('#' .. g.name); put('illustrator:' .. g.name); put('~' .. g.name)
       end
     end
   end
@@ -91,11 +103,6 @@ for _, g in ipairs(out.generals) do
   for _, sname in ipairs(g.skills) do
     if not seen[sname] then
       seen[sname] = true
-      local s = Fk.skills[sname]
-      local function put(k)
-        local v = Fk:translate(k)
-        if v ~= k then out.translations[k] = v end
-      end
       put(sname); put(':' .. sname); put('#' .. sname)
     end
   end
@@ -123,6 +130,7 @@ for _, c in ipairs(Fk.cards) do
     byname[key] = e
     out.cards[#out.cards + 1] = e
   end
+  put(c.name); put(':' .. c.name)
   e.copies = e.copies + 1
   e.ids[#e.ids + 1] = cid
   e.suits[#e.suits + 1] = { suit = c:getSuitString(), number = c.number }
@@ -143,7 +151,12 @@ for name, mode in pairs(Fk.game_modes) do
     minPlayer = mode.minPlayer,
     maxPlayer = mode.maxPlayer,
   }
+  put(name); put(':' .. name)
 end
+
+-- Kingdoms and the card-type words the filters offer.
+for _, k in ipairs({ 'wei', 'shu', 'wu', 'qun', 'jin', 'god', 'unknown',
+                     'basic', 'trick', 'equip', 'weapon', 'armor', 'treasure' }) do put(k) end
 table.sort(out.modes, function(a, b) return a.name < b.name end)
 table.sort(out.generals, function(a, b) return a.name < b.name end)
 table.sort(out.cards, function(a, b) return a.name < b.name end)

@@ -36,6 +36,22 @@ export interface RoomTransport {
   /** Host only. */
   onReply(fn: (reply: ClientReply) => void): () => void;
 
+  /**
+   * "I just arrived — catch me up." A tab that reloads mid-game, or one that
+   * subscribed after the host had already flushed, has no way to reconstruct
+   * the stream it missed: envelopes are broadcast, and broadcast has no
+   * history. So the newcomer asks, and the host answers with the engine's own
+   * resync (join preamble + one `Observe` snapshot for that seat), which is
+   * exactly what `RoomSession.resyncMessages` produces.
+   *
+   * Without this the room is a race: whoever subscribes late gets an empty
+   * table and no error, which is precisely the failure this whole lane exists
+   * to make impossible.
+   */
+  requestResync(playerId: number): Promise<void>;
+  /** Host only. */
+  onResyncRequest(fn: (playerId: number) => void): () => void;
+
   /** Host only: append accepted decisions. Rejected with 42501 for anyone else. */
   appendCommands(rows: readonly CommandRecord[]): Promise<void>;
   /** Host only: read the log back. Returns [] — not an error — for a non-host. */
@@ -43,26 +59,58 @@ export interface RoomTransport {
   /** Host only. Zero rows for everyone else, which is the whole point. */
   readSeed(): Promise<number | null>;
 
+  /**
+   * Resolves once the room's public channel — and each named seat's private
+   * channel — has actually joined. The host warms every seat up front so the
+   * first flush is not a burst of one-off HTTP posts.
+   */
+  ready(playerIds?: readonly number[]): Promise<void>;
+
   close(): Promise<void>;
 }
 
 export function createRoomTransport(roomId: string, sb: SupabaseClient = fkClient()): RoomTransport {
   const open = new Map<string, RealtimeChannel>();
+  const joined = new Map<string, Promise<void>>();
 
   const channel = (name: string): RealtimeChannel => {
     let ch = open.get(name);
     if (!ch) {
       ch = sb.channel(name, { config: { broadcast: { self: false, ack: false } } });
-      ch.subscribe();
       open.set(name, ch);
+      // A channel that never joins is the quietest possible failure: every
+      // `send` would fall back to HTTP and every `on` would simply never fire.
+      // Keeping the join as a promise lets the host wait for it and lets a
+      // failed join be reported rather than waited on forever.
+      joined.set(name, new Promise<void>((resolve, reject) => {
+        ch!.subscribe((status, err) => {
+          if (status === 'SUBSCRIBED') resolve();
+          else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+            reject(new Error(`realtime channel ${name}: ${status}${err ? ` (${err.message})` : ''}`));
+          }
+        });
+      }));
     }
+    return ch;
+  };
+
+  /**
+   * `send()` on a channel that has not joined yet silently falls back to one
+   * HTTP POST per message. That is correct but it is a request per envelope,
+   * and a game is hundreds of envelopes. Waiting for the join once turns all of
+   * them back into socket frames.
+   */
+  const joinedChannel = async (name: string): Promise<RealtimeChannel> => {
+    const ch = channel(name);
+    await joined.get(name)?.catch(() => undefined);
     return ch;
   };
 
   return {
     async publish(env) {
       const name = env.to === null ? channels.public(roomId) : channels.player(roomId, env.to);
-      await channel(name).send({ type: 'broadcast', event: 'envelope', payload: env });
+      const ch = await joinedChannel(name);
+      await ch.send({ type: 'broadcast', event: 'envelope', payload: env });
     },
 
     onEnvelope(playerId, fn) {
@@ -75,13 +123,27 @@ export function createRoomTransport(roomId: string, sb: SupabaseClient = fkClien
     },
 
     async sendReply(reply) {
-      await channel(channels.public(roomId))
-        .send({ type: 'broadcast', event: 'reply', payload: reply });
+      const ch = await joinedChannel(channels.public(roomId));
+      await ch.send({ type: 'broadcast', event: 'reply', payload: reply });
     },
 
     onReply(fn) {
       const s = channel(channels.public(roomId))
         .on('broadcast', { event: 'reply' }, (m) => fn(m.payload as ClientReply));
+      return () => { void s.unsubscribe(); };
+    },
+
+    async requestResync(playerId) {
+      const ch = await joinedChannel(channels.public(roomId));
+      await ch.send({ type: 'broadcast', event: 'resync', payload: { roomId, playerId } });
+    },
+
+    onResyncRequest(fn) {
+      const s = channel(channels.public(roomId))
+        .on('broadcast', { event: 'resync' }, (m) => {
+          const pid = (m.payload as { playerId?: unknown })?.playerId;
+          if (typeof pid === 'number') fn(pid);
+        });
       return () => { void s.unsubscribe(); };
     },
 
@@ -121,9 +183,16 @@ export function createRoomTransport(roomId: string, sb: SupabaseClient = fkClien
       return (data?.seed as number | undefined) ?? null;
     },
 
+    async ready(playerIds = []) {
+      channel(channels.public(roomId));
+      for (const id of playerIds) channel(channels.player(roomId, id));
+      await Promise.all([...joined.values()]);
+    },
+
     async close() {
       for (const ch of open.values()) await sb.removeChannel(ch);
       open.clear();
+      joined.clear();
     },
   };
 }

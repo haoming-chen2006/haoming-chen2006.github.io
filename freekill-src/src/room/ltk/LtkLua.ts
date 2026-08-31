@@ -236,21 +236,23 @@ export class LtkLua {
   }
 
   /**
-   * Answer a dialog-shaped request.
+   * Answer a dialog-shaped request: choose-general, guanxing, card-chosen,
+   * poxi, amazing grace — everything that does not go through the scene. The
+   * QML client answers exactly these by calling `ClientInstance.replyToServer`
+   * directly (`RoomLogic.js:141`), with an empty command name, and
+   * `contract/engine.ts` grew `replyToServer(command, reply)` to match.
    *
-   * SEAM GAP, reported rather than worked around: `contract/engine.ts` gives
-   * `LuaClient` an `onReply` (client -> app) and an `interact` (scene only), but
-   * no way for the UI to hand a value back for the requests that do NOT go
-   * through the scene — choose-general, guanxing, card-chosen, poxi, amazing
-   * grace. The QML client calls `ClientInstance.replyToServer(...)` directly for
-   * exactly these (`RoomLogic.js:141`). Until the contract grows the method,
-   * this prefers an optional `replyToServer` on the client and otherwise routes
-   * through the generic `call` escape hatch.
+   * The command name is a label: `lua/web/client.lua:208` forwards it and the
+   * host matches a reply to the outstanding request, not to a name. `''` is
+   * what QML sends; `'ReplyToServer'` is what the engine's own human test
+   * sends. Either works — what does NOT work is calling this with one argument,
+   * which lands the *payload* in the command slot and sends `null` as the
+   * answer. That was live for the whole first release: `LuaClient` was mocked on
+   * this side and the room was never run against a real client VM, so the seat
+   * that chose a general appeared to answer and the room waited for it forever.
    */
   replyToServer(value: unknown): void {
-    const maybe = this.client as LuaClient & { replyToServer?: (v: unknown) => void };
-    if (typeof maybe.replyToServer === 'function') { maybe.replyToServer(value); return; }
-    this.client.call('ReplyToServer', value);
+    this.client.replyToServer('ReplyToServer', value);
   }
 
   /* --------------------------------------------------------- results */

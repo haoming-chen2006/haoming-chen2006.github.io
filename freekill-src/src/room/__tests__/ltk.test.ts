@@ -78,12 +78,23 @@ describe('LtkLua', () => {
     ]);
   });
 
-  it('routes a dialog answer through replyToServer when the client offers one', () => {
+  /**
+   * The arity matters, and this test used to hide that it was wrong.
+   *
+   * `contract/engine.ts` declares `replyToServer(command, reply)`. Asserting
+   * `toHaveBeenCalledWith(['zhouyu'])` against a `vi.fn()` accepted a one-arg
+   * call happily — and against the real client VM that put the payload in the
+   * command slot and sent `null` as the answer, so a player who chose a general
+   * silently never answered and the room hung. A mock cannot check an arity its
+   * assertion does not name.
+   */
+  it('answers a dialog through the contract s two-argument replyToServer', () => {
     const replyToServer = vi.fn();
     const call = vi.fn((..._args: unknown[]) => undefined);
     const lua = new LtkLua({ call, replyToServer, interact: vi.fn() } as unknown as LuaClient);
     lua.replyToServer(['zhouyu']);
-    expect(replyToServer).toHaveBeenCalledWith(['zhouyu']);
+    expect(replyToServer).toHaveBeenCalledWith('ReplyToServer', ['zhouyu']);
+    expect(replyToServer.mock.calls[0]).toHaveLength(2);
     expect(call).not.toHaveBeenCalled();
   });
 });

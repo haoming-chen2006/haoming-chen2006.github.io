@@ -8,6 +8,8 @@
  */
 import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import type { ChatLine } from '../../contract/views';
+import { useLanguage } from '../../i18n';
+import { localize } from '../../i18n/localized';
 import { useRoom, useRoomState } from '../RoomContext';
 import { cls } from './CardItem';
 import { sanitizeMarkup } from './markup';
@@ -17,6 +19,7 @@ export const SidePanel = memo(function SidePanel(
 ) {
   const state = useRoomState();
   const { lua } = useRoom();
+  const lang = useLanguage();
   const [tab, setTab] = useState<'log' | 'chat'>('log');
   const logRef = useRef<HTMLDivElement>(null);
   const chatRef = useRef<HTMLDivElement>(null);
@@ -27,9 +30,11 @@ export const SidePanel = memo(function SidePanel(
     if (el) el.scrollTop = el.scrollHeight;
   }, [state.log.length, chat.length, tab]);
 
+  // Keyed on the language too: the engine rendered every line in both, so a
+  // toggle retranslates the whole scrollback rather than only what comes next.
   const lines = useMemo(
-    () => state.log.map((l) => ({ id: l.id, html: sanitizeMarkup(l.html) })),
-    [state.log],
+    () => state.log.map((l) => ({ id: l.id, html: sanitizeMarkup(localize(l.html, lang)) })),
+    [state.log, lang],
   );
 
   return (

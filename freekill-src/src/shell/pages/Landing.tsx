@@ -3,12 +3,14 @@
  * the project. No email, no password, no address, no port.
  */
 import { useState } from 'react';
+import { useT } from '../../i18n';
 import { useSession } from '../session';
 import { generalAvatar } from '../boot';
 
 const AVATARS = ['caocao', 'liubei', 'sunquan', 'diaochan', 'zhugeliang', 'guanyu'];
 
 export function Landing({ onDone }: { onDone: () => void }) {
+  const t = useT();
   const { loaded, identity, signIn } = useSession();
   const [name, setName] = useState(identity?.displayName ?? '');
   const [avatar, setAvatar] = useState(identity?.avatar ?? AVATARS[0]);
@@ -32,10 +34,10 @@ export function Landing({ onDone }: { onDone: () => void }) {
   return (
     <div className="landing">
       <div className="inner">
-        <h1 className="title">新月杀</h1>
+        <h1 className="title">{t('brand.name')}</h1>
         <p className="sub">
-          打开链接就能玩的三国杀。<br />
-          不用装客户端，不用同步扩展包，不用填服务器地址。
+          {t('landing.tagline.1')}<br />
+          {t('landing.tagline.2')}
         </p>
 
         <form onSubmit={submit}>
@@ -43,17 +45,17 @@ export function Landing({ onDone }: { onDone: () => void }) {
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="取个名字"
+            placeholder={t('landing.namePlaceholder')}
             maxLength={24}
             autoFocus
-            aria-label="显示名称"
+            aria-label={t('landing.nameLabel')}
           />
           <button className="btn primary" type="submit" disabled={busy || !name.trim()}>
-            {identity ? '继续' : '进入'}
+            {identity ? t('landing.continue') : t('landing.enter')}
           </button>
         </form>
 
-        <div className="avatars" role="group" aria-label="选择头像">
+        <div className="avatars" role="group" aria-label={t('landing.avatarGroup')}>
           {AVATARS.map((a) => {
             const src = generalAvatar(loaded, a);
             return (

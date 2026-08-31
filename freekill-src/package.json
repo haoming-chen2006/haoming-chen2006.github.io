@@ -19,6 +19,7 @@
     "verify": "node scripts/verify-dist.mjs",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "smoke": "node scripts/smoke.mjs",
+    "smoke:two": "node scripts/smoke-two.mjs",
     "measure": "node scripts/measure-load.mjs"
   },
   "dependencies": {

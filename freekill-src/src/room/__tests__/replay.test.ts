@@ -58,7 +58,10 @@ describe('full fixture replay', () => {
     const { store } = replay();
     // 389 GameLog lines in the recording; the store caps at 600 and never hit it.
     expect(store.state.log.length).toBe(389);
-    expect(store.state.log[0].html).toContain('身份模式');
+    // The recording predates the two-language log, so it carries one rendered
+    // string; `asLocalized` reports it honestly as the same text in both.
+    expect(store.state.log[0].html.zh_CN).toContain('身份模式');
+    expect(store.state.log[0].html.en_US).toContain('身份模式');
   });
 
   it('never lets a card sit in two places at once', () => {

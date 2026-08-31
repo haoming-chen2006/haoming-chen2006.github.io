@@ -7,6 +7,7 @@
  */
 import { useState } from 'react';
 import type { WaitingRoomViewProps } from '../../contract/views';
+import { engineTr, useLanguage, useT } from '../../i18n';
 import { useSession } from '../session';
 import { generalAvatar } from '../boot';
 
@@ -15,9 +16,12 @@ export function WaitingRoomView(props: WaitingRoomViewProps) {
     joinCode, joinUrl, seats, capacity, settings, meId, isHost,
     onStart, onAddBot, onRemoveSeat, onLeave, onChat, chat,
   } = props;
+  const t = useT();
+  const lang = useLanguage();
   const { loaded } = useSession();
-  const modeTitle = loaded.overview.modes.find((m) => m.name === settings.gameMode)?.title
-    ?? String(settings.gameMode ?? '');
+  // The mode is an engine key; the overview payload carries only the Chinese.
+  const modeTitle = engineTr(String(settings.gameMode ?? ''), lang,
+    (k) => loaded.overview.translations[k] ?? k);
   const [copied, setCopied] = useState<'code' | 'link' | null>(null);
   const [draft, setDraft] = useState('');
 
@@ -35,21 +39,21 @@ export function WaitingRoomView(props: WaitingRoomViewProps) {
 
   return (
     <div className="page">
-      <h2>等待中</h2>
+      <h2>{t('waiting.title')}</h2>
       <p className="lede">
-        {modeTitle} · {seats.length}/{capacity} 就座
-        {isHost ? ' · 你是房主' : ''}
+        {modeTitle} · {t('waiting.seated', { seated: seats.length, capacity })}
+        {isHost ? t('waiting.youAreHost') : ''}
       </p>
 
       <div className="sharebar">
-        <span style={{ color: 'var(--paper-faint)', fontSize: 13 }}>房号</span>
+        <span style={{ color: 'var(--paper-faint)', fontSize: 13 }}>{t('waiting.code')}</span>
         <code className="code-big">{joinCode}</code>
         <button className="btn small ghost" onClick={() => copy('code')}>
-          {copied === 'code' ? '已复制' : '复制房号'}
+          {copied === 'code' ? t('waiting.copied') : t('waiting.copyCode')}
         </button>
         <code style={{ flex: 1 }}>{joinUrl}</code>
         <button className="btn small" onClick={() => copy('link')}>
-          {copied === 'link' ? '已复制' : '复制链接'}
+          {copied === 'link' ? t('waiting.copied') : t('waiting.copyLink')}
         </button>
       </div>
 
@@ -60,8 +64,8 @@ export function WaitingRoomView(props: WaitingRoomViewProps) {
             return (
               <div className="seat empty-seat" key={seat}>
                 {onAddBot
-                  ? <button className="btn small ghost" onClick={() => onAddBot(seat)}>＋ 机器人</button>
-                  : <span>空位 {seat}</span>}
+                  ? <button className="btn small ghost" onClick={() => onAddBot(seat)}>{t('waiting.addBot')}</button>
+                  : <span>{t('waiting.emptySeat', { seat })}</span>}
               </div>
             );
           }
@@ -72,14 +76,14 @@ export function WaitingRoomView(props: WaitingRoomViewProps) {
               <div style={{ minWidth: 0 }}>
                 <div className="who-name">{s.displayName}</div>
                 <div className="badges">
-                  {s.isHost ? <span className="badge host">房主</span> : null}
-                  {s.isBot ? <span className="badge bot">机器人</span> : null}
-                  {s.ready && !s.isBot ? <span className="badge ready">准备</span> : null}
-                  {s.connection === 'offline' ? <span className="badge">离线</span> : null}
+                  {s.isHost ? <span className="badge host">{t('waiting.badge.host')}</span> : null}
+                  {s.isBot ? <span className="badge bot">{t('waiting.badge.bot')}</span> : null}
+                  {s.ready && !s.isBot ? <span className="badge ready">{t('waiting.badge.ready')}</span> : null}
+                  {s.connection === 'offline' ? <span className="badge">{t('waiting.badge.offline')}</span> : null}
                 </div>
               </div>
               {onRemoveSeat && s.playerId !== meId
-                ? <button className="btn small ghost" style={{ marginLeft: 'auto' }} onClick={() => onRemoveSeat(seat)}>移除</button>
+                ? <button className="btn small ghost" style={{ marginLeft: 'auto' }} onClick={() => onRemoveSeat(seat)}>{t('waiting.remove')}</button>
                 : null}
             </div>
           );
@@ -87,24 +91,24 @@ export function WaitingRoomView(props: WaitingRoomViewProps) {
       </div>
 
       <div className="row" style={{ marginTop: 22 }}>
-        <button className="btn ghost" onClick={onLeave}>离开房间</button>
+        <button className="btn ghost" onClick={onLeave}>{t('waiting.leave')}</button>
         {onStart
           ? (
             <button className="btn primary" onClick={onStart} disabled={seats.length < 2}>
-              {everyoneReady ? '开始游戏' : '开始游戏（有人未准备）'}
+              {everyoneReady ? t('waiting.start') : t('waiting.startNotReady')}
             </button>
           )
-          : <span style={{ color: 'var(--paper-faint)', fontSize: 13 }}>等房主开始</span>}
+          : <span style={{ color: 'var(--paper-faint)', fontSize: 13 }}>{t('waiting.waitForHost')}</span>}
       </div>
 
       <div className="card" style={{ marginTop: 26 }}>
         <div style={{ maxHeight: 180, overflow: 'auto', marginBottom: 10, fontSize: 13, lineHeight: 1.9 }}>
           {chat.length === 0
-            ? <span style={{ color: 'var(--paper-faint)' }}>还没有人说话。</span>
+            ? <span style={{ color: 'var(--paper-faint)' }}>{t('waiting.noChat')}</span>
             : chat.map((c) => (
               <div key={c.id}>
                 <span style={{ color: 'var(--gold)' }}>{c.displayName}</span>
-                <span style={{ color: 'var(--paper-faint)' }}>：</span>
+                <span style={{ color: 'var(--paper-faint)' }}>{t('punct.nameSep')}</span>
                 {c.text}
               </div>
             ))}
@@ -118,10 +122,10 @@ export function WaitingRoomView(props: WaitingRoomViewProps) {
             style={{ flex: 1 }}
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
-            placeholder="说点什么"
+            placeholder={t('waiting.chatPlaceholder')}
             maxLength={120}
           />
-          <button className="btn small" type="submit">发送</button>
+          <button className="btn small" type="submit">{t('waiting.send')}</button>
         </form>
       </div>
     </div>

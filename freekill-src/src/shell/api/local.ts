@@ -15,6 +15,7 @@ import type {
   CreateRoomInput, Identity, LobbyApi, RoomDetail, RoomMember, RoomSummary,
 } from './types';
 import type { ChatLine } from '../../contract/views';
+import { getLanguage, t } from '../../i18n';
 
 const KEY = 'fk-local-state-v1';
 const ID_KEY = 'fk-identity-v1';
@@ -101,7 +102,7 @@ export function createLocalApi(): LobbyApi {
 
   const seatFor = (r: StoredRoom): number => {
     for (let i = 1; i <= r.capacity; i++) if (!r.members.some((m) => m.seat === i)) return i;
-    throw new Error('房间已满');
+    throw new Error(t('api.error.roomFull', getLanguage()));
   };
 
   const me = (): Identity => {
@@ -172,7 +173,7 @@ export function createLocalApi(): LobbyApi {
       const who = me();
       const s = read();
       const room = Object.values(s.rooms).find((r) => r.code === c.toUpperCase());
-      if (!room) throw new Error(`没有找到房间 ${c}`);
+      if (!room) throw new Error(t('api.error.roomNotFound', getLanguage(), { code: c }));
       join(room, who);
       room.updatedAt = new Date().toISOString();
       write(s, bus);
@@ -220,7 +221,7 @@ export function createLocalApi(): LobbyApi {
       mutate(roomId, (r) => {
         if (r.members.some((m) => m.seat === seat)) return;
         r.members.push({
-          userId: `bot-${seat}-${r.id}`, seat, displayName: `机器人 ${seat}`,
+          userId: `bot-${seat}-${r.id}`, seat, displayName: t('api.botName', getLanguage(), { seat }),
           avatar: 'guojia', connection: 'online', isBot: true, ready: true,
         });
       });

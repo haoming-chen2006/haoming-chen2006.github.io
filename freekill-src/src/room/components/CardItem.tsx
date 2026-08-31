@@ -8,6 +8,8 @@
 import { memo } from 'react';
 import type { ItemData } from '../../contract/scene';
 import { rankText, SUIT_GLYPH, SUIT_IS_RED } from '../assets/assets';
+import { useLanguage } from '../../i18n';
+import { localize, type Localized } from '../../i18n/localized';
 import { useRoom } from '../RoomContext';
 import type { CardState } from '../state/types';
 
@@ -17,7 +19,8 @@ export interface CardItemProps {
   readonly known?: boolean;
   /** The matching `CardItem` in the scene, if the request offers this card. */
   readonly item?: ItemData;
-  readonly footnote?: string;
+  /** Engine-rendered markup, already translated — one string per language. */
+  readonly footnote?: Localized | string;
   readonly virtName?: string;
   readonly expired?: boolean;
   readonly delayedTrick?: boolean;
@@ -27,8 +30,10 @@ export interface CardItemProps {
 }
 
 export const CardItem = memo(function CardItem(props: CardItemProps) {
-  const { cid, known = true, item, footnote, virtName, expired, delayedTrick, onClick, onDoubleClick, title } = props;
+  const { cid, known = true, item, virtName, expired, delayedTrick, onClick, onDoubleClick, title } = props;
   const { lua, assets } = useRoom();
+  const lang = useLanguage();
+  const footnote = localize(props.footnote, lang);
 
   if (!known || cid < 0) {
     return (

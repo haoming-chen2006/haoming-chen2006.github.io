@@ -27,11 +27,31 @@
       #boot h1 { margin: 0; font-size: 46px; letter-spacing: 12px; font-weight: 400; color: #d9c9a3; }
       #boot p { margin: 0; color: #8b8073; font-size: 14px; letter-spacing: 2px; }
     </style>
-    <script type="module" crossorigin src="/freekill/assets/index-uwbwfRGf.js"></script>
+    <script type="module" crossorigin src="/freekill/assets/index-CZOYF0EF.js"></script>
     <link rel="stylesheet" crossorigin href="/freekill/assets/index-MQKiExno.css">
   </head>
   <body>
     <div id="root"></div>
     <div id="boot"><h1>新月杀</h1><p>正在载入</p></div>
+    <script>
+      /* The splash paints before any module runs, so it cannot ask the i18n
+         layer what language to use. It reads the same two inputs the store
+         reads (?lang=, then localStorage 'fk.lang') and swaps the two words it
+         owns. Kept deliberately tiny: React replaces this element as soon as it
+         mounts, and a returning English player should never see a Chinese
+         flash on the way. */
+      (function () {
+        try {
+          var q = new URLSearchParams(location.search).get('lang');
+          var lang = q || localStorage.getItem('fk.lang');
+          if (lang !== 'en_US') return;
+          document.documentElement.lang = 'en-US';
+          var boot = document.getElementById('boot');
+          boot.querySelector('h1').textContent = 'FreeKill';
+          boot.querySelector('h1').style.letterSpacing = '2px';
+          boot.querySelector('p').textContent = 'Loading';
+        } catch (e) { /* private mode, or no storage at all */ }
+      })();
+    </script>
   </body>
 </html>

@@ -7,6 +7,7 @@
 import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { launch } from './cdp.mjs';
+import { chooseGeneral, fillWithBots, tableState, waitForRealGame } from './game-walk.mjs';
 
 const args = process.argv.slice(2);
 const base = (args.find((a) => !a.startsWith('--')) ?? 'http://127.0.0.1:4173/freekill/').replace(/\/$/, '') + '/';
@@ -27,19 +28,25 @@ async function step(name, fn) {
   } catch (e) {
     steps.push({ name, ms: Date.now() - t, ok: false, error: String(e.message ?? e) });
     console.error(`  ✗ ${name}: ${e.message ?? e}`);
+    // A bare "timed out waiting for X" says nothing about what the table was
+    // actually showing when it gave up.
+    try {
+      console.error(`      table: ${JSON.stringify(await tableState(b))}`);
+      console.error(`      generals rendered: ${await b.evaluate(`document.querySelectorAll('.fk-general').length`)}`);
+      const errs = b.errors();
+      if (errs.length) console.error(`      page threw: ${errs[0].split('\n')[0]}`);
+      const warns = b.consoleLines(['warning', 'error']).slice(-3);
+      if (warns.length) console.error(`      console: ${warns.join(' | ')}`);
+    } catch { /* the step error is the real news */ }
     failed ??= name;
     throw e;
   }
 }
 
-const click = (sel) => b.evaluate(`document.querySelector(${JSON.stringify(sel)}).click(), true`);
-const setInput = (sel, value) => b.evaluate(`(() => {
-  const el = document.querySelector(${JSON.stringify(sel)});
-  const setter = Object.getOwnPropertyDescriptor(el.constructor.prototype, 'value').set;
-  setter.call(el, ${JSON.stringify(value)});
-  el.dispatchEvent(new Event('input', { bubbles: true }));
-  return true;
-})()`);
+// Real CDP input, never `element.click()`: a scripted click does not reliably
+// reach this app's React handlers, and when it fails it fails silently.
+const click = (sel, opts) => b.click(sel, opts);
+const setInput = (sel, value) => b.setInput(sel, value);
 
 try {
   await step('cold load reaches the name box', async () => {
@@ -80,17 +87,8 @@ try {
   });
 
   await step('adding bot seats fills the table', async () => {
-    for (let i = 0; i < 7; i++) {
-      const added = await b.evaluate(`(() => {
-        const b = [...document.querySelectorAll('.seat.empty-seat .btn')][0];
-        if (!b) return false;
-        b.click();
-        return true;
-      })()`);
-      if (!added) break;
-      await new Promise((r) => setTimeout(r, 40));
-    }
-    await b.waitFor(`document.querySelectorAll('.seat:not(.empty-seat)').length === 8`);
+    const seated = await fillWithBots(b, 8);
+    if (seated !== 8) throw new Error(`only ${seated}/8 seats filled`);
   });
 
   await step('the join link deep-links into the same room', async () => {
@@ -101,15 +99,30 @@ try {
     if (back !== roomHash) throw new Error(`join link landed on ${back}, expected ${roomHash}`);
   });
 
-  await step('starting the game mounts the table', async () => {
-    await b.evaluate(
-      `[...document.querySelectorAll('.btn')].find(b => b.textContent.includes('开始游戏')).click(), true`);
-    await b.waitFor(`!!document.querySelector('.room-stub, .fk-room')`, 20000);
+  /**
+   * The step that used to be a lie.
+   *
+   * It waited for `.room-stub, .fk-room` to exist — a container div, which an
+   * empty black table satisfies — so it passed green against a build where
+   * pressing 开始游戏 produced no game at all. What it asserts now is what a
+   * player would check: everyone is at the table, I am holding cards, there is
+   * a deck, and the battle log is being written.
+   */
+  await step('starting the game deals a real hand', async () => {
+    await click('.btn', { text: '开始游戏' });
+    await b.waitFor(`!!document.querySelector('.fk-room')`, 180000);
+    await chooseGeneral(b);
+    const t = await waitForRealGame(b, { seats: 8 });
+    console.log(`      ${t.photos} photos, ${t.handCards} cards in hand, `
+      + `${t.drawPile} in the draw pile, ${t.logLines} log lines`);
   });
 
   await step('the generals overview renders real generals', async () => {
     await b.call('Page.navigate', { url: `${base}#/overview/generals` });
-    await b.waitFor(`document.querySelectorAll('.general-card').length > 20`);
+    // Wait for the full set, not "more than twenty": catching the list
+    // mid-render and then asserting it is complete is a false failure, and one
+    // this walk has produced.
+    await b.waitFor(`document.querySelectorAll('.general-card').length === 25`, 30000);
     const n = await b.evaluate(`document.querySelectorAll('.general-card').length`);
     if (n !== 25) throw new Error(`expected 25 generals, saw ${n}`);
     const withArt = await b.evaluate(

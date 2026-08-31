@@ -20,6 +20,10 @@ import type {
 import type { ChatLine } from '../contract/views';
 import type { ConnectionState, RoomStatus } from '../contract/db';
 import { createFkClient, fkClient, type FkClientOptions } from './client';
+import { getLanguage, t } from '../i18n';
+import type { UiKey } from '../i18n';
+
+const tr = (key: UiKey, vars?: Record<string, string | number>) => t(key, getLanguage(), vars);
 
 export { createFkClient, fkClient } from './client';
 export {
@@ -178,7 +182,7 @@ export function createLobbyApi(opts: LobbyApiOptions = {}): LobbyApi {
       });
       if (error) throw new Error(error.message);
       const detail = await fetchDetail(data as string);
-      if (!detail) throw new Error('房间创建失败');
+      if (!detail) throw new Error(tr('api.error.createFailed'));
       return detail;
     },
 
@@ -192,12 +196,12 @@ export function createLobbyApi(opts: LobbyApiOptions = {}): LobbyApi {
         p_avatar: who.avatar,
       });
       if (error) {
-        if (error.message.includes('no such room')) throw new Error(`没有找到房间 ${code}`);
-        if (error.message.includes('room is full')) throw new Error('房间已满');
+        if (error.message.includes('no such room')) throw new Error(tr('api.error.roomNotFound', { code }));
+        if (error.message.includes('room is full')) throw new Error(tr('api.error.roomFull'));
         throw new Error(error.message);
       }
       const detail = await fetchDetail(data as string);
-      if (!detail) throw new Error(`没有找到房间 ${code}`);
+      if (!detail) throw new Error(tr('api.error.roomNotFound', { code }));
       return detail;
     },
 
@@ -247,7 +251,7 @@ export function createLobbyApi(opts: LobbyApiOptions = {}): LobbyApi {
     async addBot(roomId, seat) {
       const { error } = await sb.from('fk_room_players').insert({
         room_id: roomId, user_id: `bot:${roomId}:${seat}`, seat,
-        display_name: `机器人 ${seat}`, avatar: 'guojia', is_bot: true, ready: true,
+        display_name: tr('api.botName', { seat }), avatar: 'guojia', is_bot: true, ready: true,
       });
       // A race for the same seat is not an error worth surfacing; the seat is taken.
       if (error && !error.message.includes('duplicate key')) throw new Error(error.message);

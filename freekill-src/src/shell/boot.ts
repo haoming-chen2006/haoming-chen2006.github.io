@@ -7,6 +7,7 @@
  * playable lobby well inside the 10-second criterion. The bundle is fetched in
  * the background afterwards and is only awaited when a room actually starts.
  */
+import { getLanguage, t } from '../i18n';
 import { AssetManifestSchema, LuaManifestSchema, assetIndex } from '../contract/manifest';
 import type { AssetEntry, AssetManifest, LuaManifest } from '../contract/manifest';
 
@@ -71,16 +72,17 @@ export type Progress = (step: string, done: number, total: number) => void;
 
 export async function loadShell(onProgress: Progress): Promise<Loaded> {
   const steps = 3;
-  onProgress('读取素材清单', 0, steps);
+  const lang = getLanguage();
+  onProgress(t('boot.step.assets', lang), 0, steps);
   const assets = AssetManifestSchema.parse(await getJson('asset-manifest.json'));
 
-  onProgress('读取规则清单', 1, steps);
+  onProgress(t('boot.step.rules', lang), 1, steps);
   const lua = LuaManifestSchema.parse(await getJson('lua-manifest.json'));
 
-  onProgress('读取武将与卡牌', 2, steps);
+  onProgress(t('boot.step.data', lang), 2, steps);
   const overview = (await getJson('overview.json')) as OverviewData;
 
-  onProgress('就绪', steps, steps);
+  onProgress(t('boot.step.ready', lang), steps, steps);
   return { assets, assetsByKey: assetIndex(assets), lua, overview };
 }
 

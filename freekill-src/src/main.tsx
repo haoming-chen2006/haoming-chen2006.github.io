@@ -13,6 +13,7 @@
  */
 import { StrictMode, useCallback, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
+import { LanguageToggle, useT } from './i18n';
 import { App } from './shell/App';
 import { SessionProvider } from './shell/session';
 import { getApi, type Identity, type LobbyApi } from './shell/api';
@@ -28,7 +29,8 @@ interface BootState {
 }
 
 function Boot() {
-  const [state, setState] = useState<BootState>({ step: '启动', done: 0, total: 4 });
+  const t = useT();
+  const [state, setState] = useState<BootState>({ step: '', done: 0, total: 4 });
   const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
@@ -39,13 +41,13 @@ function Boot() {
           if (live) setState((s) => ({ ...s, step, done, total: total + 1 }));
         });
         if (!live) return;
-        setState((s) => ({ ...s, step: '连接' }));
+        setState((s) => ({ ...s, step: t('boot.step.connect') }));
         const api = await getApi();
         const identity = await api.currentIdentity();
         if (!live) return;
         // Warm the engine bundle behind the lobby; nobody waits on it here.
         void prefetchLuaBundle().catch(() => {});
-        setState({ step: '就绪', done: 4, total: 4, ready: { api, loaded, identity } });
+        setState({ step: t('boot.step.ready'), done: 4, total: 4, ready: { api, loaded, identity } });
       } catch (error) {
         if (live) setState((s) => ({ ...s, error }));
       }
@@ -54,7 +56,7 @@ function Boot() {
   }, [attempt]);
 
   const retry = useCallback(() => {
-    setState({ step: '重试', done: 0, total: 4 });
+    setState({ step: t('boot.step.retry'), done: 0, total: 4 });
     setAttempt((n) => n + 1);
   }, []);
 
@@ -66,10 +68,11 @@ function Boot() {
     const message = state.error instanceof Error ? state.error.message : String(state.error);
     return (
       <div className="boot-screen error">
-        <div className="title">没能启动</div>
-        <p className="step">载入失败。这通常是部署不完整，或者被网络拦住了。</p>
+        <LanguageToggle position="fixed" />
+        <div className="title">{t('boot.failed.title')}</div>
+        <p className="step">{t('boot.failed.body')}</p>
         <pre>{message}</pre>
-        <button className="btn" onClick={retry}>重试</button>
+        <button className="btn" onClick={retry}>{t('boot.retry')}</button>
       </div>
     );
   }
@@ -77,9 +80,12 @@ function Boot() {
   if (!state.ready) {
     return (
       <div className="boot-screen">
-        <div className="title">新月杀</div>
+        {/* Before the app exists there is no header to hang it on, so the
+            toggle parks itself in the viewport's top corner instead. */}
+        <LanguageToggle position="fixed" />
+        <div className="title">{t('brand.name')}</div>
         <div className="bar"><i style={{ width: `${(state.done / state.total) * 100}%` }} /></div>
-        <div className="step">{state.step}</div>
+        <div className="step">{state.step || t('boot.step.start')}</div>
       </div>
     );
   }

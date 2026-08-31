@@ -9,10 +9,12 @@
  */
 import { useEffect, useRef, useState } from 'react';
 import type { RoomViewProps } from '../contract/views';
+import { useT } from '../i18n';
 
 interface Line { seq: number; command: string; data: string; }
 
 export function RoomViewStub(props: RoomViewProps) {
+  const t = useT();
   const { seats, meId, client, onLeave, statusSlot, chat, onChat } = props;
   const [lines, setLines] = useState<Line[]>([]);
   const seq = useRef(0);
@@ -35,15 +37,14 @@ export function RoomViewStub(props: RoomViewProps) {
   return (
     <div className="page room-stub">
       <div className="row" style={{ justifyContent: 'space-between' }}>
-        <h2 style={{ margin: 0 }}>牌桌（占位）</h2>
+        <h2 style={{ margin: 0 }}>{t('stub.title')}</h2>
         <div className="row" style={{ gap: 12 }}>
           {statusSlot}
-          <button className="btn small ghost" onClick={onLeave}>离开</button>
+          <button className="btn small ghost" onClick={onLeave}>{t('stub.leave')}</button>
         </div>
       </div>
       <p className="lede">
-        真正的牌桌由 Agent 3 提供，接口是 <code>contract/views.ts</code> 的 <code>RoomViewProps</code>。
-        这里显示的是这间房实际收到的 <code>notifyUI</code> 命令流。
+        {t('stub.lede.1')}<code>contract/views.ts</code>{t('stub.lede.2')}
       </p>
 
       <div className="seats">
@@ -53,10 +54,10 @@ export function RoomViewStub(props: RoomViewProps) {
             <div>
               <div className="who-name">{s.displayName}</div>
               <div className="badges">
-                <span className="badge">座位 {s.seat}</span>
-                {s.isHost ? <span className="badge host">房主</span> : null}
-                {s.isBot ? <span className="badge bot">机器人</span> : null}
-                {s.playerId === meId ? <span className="badge ready">你</span> : null}
+                <span className="badge">{t('stub.seat', { seat: s.seat })}</span>
+                {s.isHost ? <span className="badge host">{t('waiting.badge.host')}</span> : null}
+                {s.isBot ? <span className="badge bot">{t('waiting.badge.bot')}</span> : null}
+                {s.playerId === meId ? <span className="badge ready">{t('waiting.badge.you')}</span> : null}
               </div>
             </div>
           </div>
@@ -65,7 +66,7 @@ export function RoomViewStub(props: RoomViewProps) {
 
       <div className="stream">
         {lines.length === 0
-          ? '（还没有命令。引擎接上之后这里会滚动。）'
+          ? t('stub.noCommands')
           : lines.map((l) => (
             <div key={l.seq}><b>{l.command}</b> {l.data}</div>
           ))}
@@ -75,11 +76,11 @@ export function RoomViewStub(props: RoomViewProps) {
         className="row"
         onSubmit={(e) => { e.preventDefault(); if (draft.trim()) { onChat(draft.trim()); setDraft(''); } }}
       >
-        <input type="text" style={{ flex: 1 }} value={draft} onChange={(e) => setDraft(e.target.value)} placeholder="聊天" />
-        <button className="btn small" type="submit">发送</button>
+        <input type="text" style={{ flex: 1 }} value={draft} onChange={(e) => setDraft(e.target.value)} placeholder={t('stub.chatPlaceholder')} />
+        <button className="btn small" type="submit">{t('stub.send')}</button>
       </form>
       <div style={{ fontSize: 13, color: 'var(--paper-faint)' }}>
-        {chat.map((c) => <div key={c.id}>{c.displayName}：{c.text}</div>)}
+        {chat.map((c) => <div key={c.id}>{c.displayName}{t('punct.nameSep')}{c.text}</div>)}
       </div>
     </div>
   );

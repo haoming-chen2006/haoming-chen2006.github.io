@@ -9,7 +9,9 @@
  * The 25 portraits carry an `illustrator:` credit in the i18n tables naming
  * KayaK, and that credit is the only attribution the art has. It is shown.
  */
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
+import { engineTr, useLanguage, useT } from '../../i18n';
+import type { UiKey } from '../../i18n';
 import { useSession } from '../session';
 import { cardImage, generalImage } from '../boot';
 import type { OverviewCard, OverviewGeneral } from '../boot';
@@ -17,14 +19,46 @@ import { renderMarkdown, renderMarkup } from '../markup';
 
 type Tab = 'generals' | 'cards' | 'modes' | 'skills';
 
-const KINGDOMS: Record<string, string> = { wei: '魏', shu: '蜀', wu: '吴', qun: '群', jin: '晋' };
-const CARD_TYPE: Record<number, string> = { 1: '基本牌', 2: '锦囊牌', 3: '装备牌' };
-const SUITS: Record<string, string> = { spade: '♠', heart: '♥', club: '♣', diamond: '♦', nosuit: '无' };
+/** Kingdom badges want one glyph in Chinese and a short word in English; the
+ *  engine key (`wei`) renders long, so these are UI-dictionary keys. */
+const KINGDOMS: Record<string, UiKey> = {
+  wei: 'kingdom.wei', shu: 'kingdom.shu', wu: 'kingdom.wu', qun: 'kingdom.qun', jin: 'kingdom.jin',
+};
+const CARD_TYPE: Record<number, UiKey> = {
+  1: 'cardType.basic', 2: 'cardType.trick', 3: 'cardType.equip',
+};
+const SUITS: Record<string, string> = { spade: '♠', heart: '♥', club: '♣', diamond: '♦', nosuit: '' };
 const NUMBERS = ['', 'A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
 
-export function Overview({ tab, onTab }: { tab: Tab; onTab: (t: Tab) => void }) {
+/**
+ * Engine keys, resolved for the viewer.
+ *
+ * The overview payload is built from the real Lua tables, but it is built once,
+ * in Chinese. Every name, title, subtitle, rules blurb and mode document on this
+ * page is therefore looked up by its engine key at render time: Chinese out of
+ * the payload's key table, English out of `src/i18n/engine`, which is complete.
+ *
+ * The `baked` argument is the payload's own pre-translated field, and it is the
+ * Chinese fallback. `public/overview.json` is generated and gitignored, so a
+ * checkout that has not rebuilt since the key table grew still has the old
+ * 86-key one — without this the page would quietly render `caocao` instead of
+ * 曹操. Regenerate with `npm run build:overview` to be rid of the fallback.
+ */
+function useEngineText(): (key: string, baked?: string) => string {
   const { loaded } = useSession();
-  const { generals, cards, modes, translations } = loaded.overview;
+  const lang = useLanguage();
+  const zh = loaded.overview.translations;
+  return useCallback(
+    (key: string, baked?: string) => engineTr(key, lang, (k) => zh[k] ?? baked ?? k),
+    [lang, zh],
+  );
+}
+
+export function Overview({ tab, onTab }: { tab: Tab; onTab: (t: Tab) => void }) {
+  const t = useT();
+  const tr = useEngineText();
+  const { loaded } = useSession();
+  const { generals, cards, modes } = loaded.overview;
   const [q, setQ] = useState('');
   const [kingdom, setKingdom] = useState('');
   const [cardType, setCardType] = useState('');
@@ -34,47 +68,47 @@ export function Overview({ tab, onTab }: { tab: Tab; onTab: (t: Tab) => void }) 
     const byName = new Map<string, { name: string; title: string; text: string; owners: string[] }>();
     for (const g of generals) {
       for (const s of g.skills) {
-        const e = byName.get(s) ?? {
-          name: s,
-          title: translations[s] ?? s,
-          text: translations[`:${s}`] ?? '',
-          owners: [],
-        };
-        e.owners.push(g.title || g.name);
+        const e = byName.get(s) ?? { name: s, title: tr(s), text: tr(`:${s}`), owners: [] };
+        e.owners.push(tr(g.name, g.title));
         byName.set(s, e);
       }
     }
     return [...byName.values()].sort((a, b) => a.name.localeCompare(b.name));
-  }, [generals, translations]);
+  }, [generals, tr]);
 
   const needle = q.trim().toLowerCase();
 
   const shownGenerals = useMemo(() => generals.filter((g) => {
     if (kingdom && g.kingdom !== kingdom) return false;
     if (!needle) return true;
-    return [g.name, g.title, g.subtitle, ...g.skills.map((s) => translations[s] ?? s)]
+    // Both languages are searchable: typing 奸雄 or "Villainous Hero" finds Cao
+    // Cao whichever language the page is in.
+    return [g.name, g.title, g.subtitle, tr(g.name, g.title), tr(`#${g.name}`, g.subtitle),
+      ...g.skills.flatMap((s) => [s, tr(s)])]
       .some((f) => f?.toLowerCase().includes(needle));
-  }), [generals, kingdom, needle, translations]);
+  }), [generals, kingdom, needle, tr]);
 
   const shownCards = useMemo(() => cards.filter((c) => {
     if (cardType && String(c.type) !== cardType) return false;
     if (!needle) return true;
-    return [c.name, c.title, c.description].some((f) => f?.toLowerCase().includes(needle));
-  }), [cards, cardType, needle]);
+    return [c.name, c.title, c.description, tr(c.name, c.title), tr(`:${c.name}`, c.description)]
+      .some((f) => f?.toLowerCase().includes(needle));
+  }), [cards, cardType, needle, tr]);
 
   const shownSkills = useMemo(() => skills.filter((s) => !needle
     || [s.name, s.title, s.text, ...s.owners].some((f) => f.toLowerCase().includes(needle))), [skills, needle]);
 
   return (
     <div className="page">
-      <h2>资料</h2>
-      <p className="lede">标准包、标准卡牌包、军争包 —— 与游戏里跑的是同一份数据。</p>
+      <h2>{t('overview.title')}</h2>
+      <p className="lede">{t('overview.lede')}</p>
 
       <div className="tabs" role="tablist">
-        {([['generals', '武将'], ['cards', '卡牌'], ['modes', '模式'], ['skills', '技能']] as const)
-          .map(([id, label]) => (
-            <button key={id} role="tab" aria-selected={tab === id} onClick={() => onTab(id)}>{label}</button>
-          ))}
+        {(['generals', 'cards', 'modes', 'skills'] as const).map((id) => (
+          <button key={id} role="tab" aria-selected={tab === id} onClick={() => onTab(id)}>
+            {t(`overview.tab.${id}`)}
+          </button>
+        ))}
       </div>
 
       {tab !== 'modes' ? (
@@ -83,28 +117,28 @@ export function Overview({ tab, onTab }: { tab: Tab; onTab: (t: Tab) => void }) 
             type="text"
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="搜索名称、称号、技能…"
+            placeholder={t('overview.searchPlaceholder')}
             style={{ minWidth: 260 }}
-            aria-label="搜索"
+            aria-label={t('overview.search')}
           />
           {tab === 'generals' ? (
-            <select value={kingdom} onChange={(e) => setKingdom(e.target.value)} aria-label="势力">
-              <option value="">全部势力</option>
+            <select value={kingdom} onChange={(e) => setKingdom(e.target.value)} aria-label={t('overview.kingdomLabel')}>
+              <option value="">{t('overview.allKingdoms')}</option>
               {Object.entries(KINGDOMS)
                 .filter(([k]) => generals.some((g) => g.kingdom === k))
-                .map(([k, label]) => <option key={k} value={k}>{label}</option>)}
+                .map(([k, label]) => <option key={k} value={k}>{t(label)}</option>)}
             </select>
           ) : null}
           {tab === 'cards' ? (
-            <select value={cardType} onChange={(e) => setCardType(e.target.value)} aria-label="类别">
-              <option value="">全部类别</option>
-              {Object.entries(CARD_TYPE).map(([t, label]) => <option key={t} value={t}>{label}</option>)}
+            <select value={cardType} onChange={(e) => setCardType(e.target.value)} aria-label={t('overview.typeLabel')}>
+              <option value="">{t('overview.allTypes')}</option>
+              {Object.entries(CARD_TYPE).map(([n, label]) => <option key={n} value={n}>{t(label)}</option>)}
             </select>
           ) : null}
           <span className="count">
-            {tab === 'generals' ? `${shownGenerals.length} / ${generals.length} 名武将`
-              : tab === 'cards' ? `${shownCards.length} / ${cards.length} 种牌`
-                : `${shownSkills.length} / ${skills.length} 个技能`}
+            {tab === 'generals' ? t('overview.countGenerals', { shown: shownGenerals.length, total: generals.length })
+              : tab === 'cards' ? t('overview.countCards', { shown: shownCards.length, total: cards.length })
+                : t('overview.countSkills', { shown: shownSkills.length, total: skills.length })}
           </span>
         </div>
       ) : null}
@@ -115,11 +149,13 @@ export function Overview({ tab, onTab }: { tab: Tab; onTab: (t: Tab) => void }) 
             const src = generalImage(loaded, g.name, g.pack);
             return (
               <button className="general-card" key={g.name} onClick={() => setDetail(g)}>
-                {src ? <img src={src} alt={g.title} loading="lazy" /> : <div style={{ aspectRatio: '3/4' }} />}
+                {src ? <img src={src} alt={tr(g.name, g.title)} loading="lazy" /> : <div style={{ aspectRatio: '3/4' }} />}
                 <div className="cap">
-                  <div className="nm">{g.title}</div>
+                  <div className="nm">{tr(g.name, g.title)}</div>
                   <div className="st">
-                    <span className={`tag ${g.kingdom}`}>{KINGDOMS[g.kingdom] ?? g.kingdom}</span>
+                    <span className={`tag ${g.kingdom}`}>
+                      {KINGDOMS[g.kingdom] ? t(KINGDOMS[g.kingdom]) : g.kingdom}
+                    </span>
                     {' '}{g.hp}/{g.maxHp}
                   </div>
                 </div>
@@ -139,7 +175,12 @@ export function Overview({ tab, onTab }: { tab: Tab; onTab: (t: Tab) => void }) 
         <div>
           {shownSkills.map((s) => (
             <div className="skill" key={s.name}>
-              <div className="nm">{s.title}<span style={{ color: 'var(--paper-faint)', fontSize: 12 }}>　{s.owners.join('、')}</span></div>
+              <div className="nm">
+                {s.title}
+                <span style={{ color: 'var(--paper-faint)', fontSize: 12 }}>
+                  {'\u3000'}{s.owners.join(t('punct.listSep'))}
+                </span>
+              </div>
               <div className="tx">{renderMarkup(s.text)}</div>
             </div>
           ))}
@@ -151,10 +192,10 @@ export function Overview({ tab, onTab }: { tab: Tab; onTab: (t: Tab) => void }) 
           {modes.map((m) => (
             <div className="card" key={m.name} style={{ marginBottom: 18 }}>
               <h3 style={{ fontFamily: 'var(--han)', letterSpacing: 3, fontWeight: 400, margin: '0 0 4px' }}>
-                {m.title}
+                {tr(m.name, m.title)}
               </h3>
-              <p className="lede">{m.minPlayer}–{m.maxPlayer} 人</p>
-              {renderMarkdown(m.description)}
+              <p className="lede">{t('overview.playerRange', { min: m.minPlayer, max: m.maxPlayer })}</p>
+              {renderMarkdown(tr(`:${m.name}`, m.description))}
             </div>
           ))}
         </div>
@@ -166,15 +207,17 @@ export function Overview({ tab, onTab }: { tab: Tab; onTab: (t: Tab) => void }) 
 }
 
 function CardTile({ card }: { card: OverviewCard }) {
+  const t = useT();
+  const tr = useEngineText();
   const { loaded } = useSession();
   const src = cardImage(loaded, card);
   return (
     <div className="card-tile">
-      {src ? <img src={src} alt={card.title} loading="lazy" /> : <div style={{ aspectRatio: '3/4' }} />}
+      {src ? <img src={src} alt={tr(card.name, card.title)} loading="lazy" /> : <div style={{ aspectRatio: '3/4' }} />}
       <div className="cap">
-        <div className="nm">{card.title}</div>
+        <div className="nm">{tr(card.name, card.title)}</div>
         <div className="st">
-          {CARD_TYPE[card.type] ?? ''} · {card.copies} 张
+          {CARD_TYPE[card.type] ? t(CARD_TYPE[card.type]) : ''} · {t('overview.copies', { n: card.copies })}
           <div style={{ marginTop: 2 }}>
             {card.suits.slice(0, 6).map((s, i) => (
               <span key={i} style={{ color: s.suit === 'heart' || s.suit === 'diamond' ? '#c9483a' : undefined }}>
@@ -190,28 +233,33 @@ function CardTile({ card }: { card: OverviewCard }) {
 }
 
 function GeneralDetail({ general, onClose }: { general: OverviewGeneral; onClose: () => void }) {
+  const t = useT();
+  const tr = useEngineText();
   const { loaded } = useSession();
-  const { translations } = loaded.overview;
   const src = generalImage(loaded, general.name, general.pack);
   return (
     <div className="detail" onClick={onClose} role="dialog" aria-modal="true">
       <div className="sheet" onClick={(e) => e.stopPropagation()}>
-        <div>{src ? <img src={src} alt={general.title} /> : null}</div>
+        <div>{src ? <img src={src} alt={tr(general.name, general.title)} /> : null}</div>
         <div className="body">
-          <h3>{general.title}</h3>
+          <h3>{tr(general.name, general.title)}</h3>
           <p className="sub">
-            {general.subtitle} · <span className={`tag ${general.kingdom}`}>
-              {KINGDOMS[general.kingdom] ?? general.kingdom}
+            {tr(`#${general.name}`, general.subtitle)} · <span className={`tag ${general.kingdom}`}>
+              {KINGDOMS[general.kingdom] ? t(KINGDOMS[general.kingdom]) : general.kingdom}
             </span> · {general.hp}/{general.maxHp}
           </p>
           {general.skills.map((s) => (
             <div className="skill" key={s}>
-              <div className="nm">{translations[s] ?? s}</div>
-              <div className="tx">{renderMarkup(translations[`:${s}`] ?? '')}</div>
+              <div className="nm">{tr(s)}</div>
+              <div className="tx">{renderMarkup(tr(`:${s}`))}</div>
             </div>
           ))}
-          {general.illustrator ? <p className="credit">画师　{general.illustrator}</p> : null}
-          <button className="btn small ghost" style={{ marginTop: 16 }} onClick={onClose}>关闭</button>
+          {general.illustrator
+            ? <p className="credit">{t('overview.illustrator')}{'\u3000'}{general.illustrator}</p>
+            : null}
+          <button className="btn small ghost" style={{ marginTop: 16 }} onClick={onClose}>
+            {t('overview.close')}
+          </button>
         </div>
       </div>
     </div>

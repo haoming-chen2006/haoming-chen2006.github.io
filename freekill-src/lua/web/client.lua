@@ -7,6 +7,10 @@
 FKClient = {}
 
 local canon, b64
+-- sink 在下面的第 2 节赋值；这里先声明，好让 boot() 也能往里记错。
+local sink
+-- 战报双语的补丁，定义在下面第 2 节末尾；boot() 里要用，先声明。
+local localizeRenderedText
 
 -- ============================================================ 1. 载入引擎（客户端半边）
 function FKClient.boot()
@@ -34,6 +38,33 @@ function FKClient.boot()
   fk.FK_VER = fk.FK_VER or "web"
   dofile("lua/client/client.lua")
 
+  -- 补全 en_US。必须在这儿（包已经加载完）而不是更早：
+  -- skill_skeleton.lua 派生的 #<技能>_<n>_<trig|active|…> 角标是按
+  -- Config.language 注册的，所以上游 en_US 里根本没有；整张覆盖才补得齐。
+  -- 这张表和 JS 侧 src/i18n/engine 是同一份数据，见 scripts/build-i18n-lua.mjs。
+  -- 失败不该拖垮整个 VM —— 大不了战报回落成中文。
+  local ok, tbl = pcall(dofile, "lua/web/i18n_en_US.lua")
+  if ok and type(tbl) == "table" then
+    Fk:loadTranslationTable(tbl, "en_US")
+  else
+    sink.errors[#sink.errors + 1] = "i18n_en_US: " .. tostring(tbl)
+  end
+
+  -- 打在类上，而且必须在 CreateLuaClient 之前。
+  -- ClientBase:initialize 里是 self:addCallback("GameLog", self.appendLog)，
+  -- 也就是在构造的那一刻就把函数值抄进了 self.callbacks；构造完再往实例上挂
+  -- appendLog 是改不动那张表的（clientbase.lua:45、54）。
+  --
+  -- 而且不止一个类要打：全局 Client 是 CreateLuaClient 用的，但进房时
+  -- ClientBase:enterRoom 会拿 Fk:getBoardGame(gameMode).client_klass 重建一遍
+  -- ClientInstance（clientbase.lua:147）。那个类是 lunarltk/init.lua 里
+  -- require 出来的，和 lua/client/client.lua 用 dofile 再求值一次得到的全局
+  -- Client 并不是同一张表 —— 只打全局的话，一进房补丁就没了。
+  localizeRenderedText(Client)
+  for _, game in pairs(Fk.boardgames or Util.DummyTable) do
+    localizeRenderedText(game.client_klass)
+  end
+
   ---@diagnostic disable-next-line
   dbg = Util.DummyFunc
   debug.debug = Util.DummyFunc
@@ -41,7 +72,7 @@ function FKClient.boot()
 end
 
 -- ============================================================ 2. 接线
-local sink = {
+sink = {
   ui = {}, uiCursor = 0,
   out = {}, outCursor = 0,
   errors = {},
@@ -84,6 +115,94 @@ ClientMT.__index = {
     end
   end,
 }
+
+-- ---------------------------------------------------------------- 战报双语
+--
+-- 战报、吐司、卡牌脚注这三样不是按 key 发上来的：Client:parseMsg 在 Lua 里就把
+-- 整条 LogMessage 渲染成了 HTML —— 牌名带花色点数、角色名带座位号消歧、虚拟牌、
+-- 每个 %arg 都在那儿翻好了。等 JS 拿到手，已经没有 key 可查了。
+--
+-- 与其在 TS 里把 parseMsg 重写一遍（那就是给牌名、花色、消歧规则立第二个真相源，
+-- 正是这个代码库一直拒绝的事），不如让引擎自己按两种语言各渲染一遍，两份都发。
+-- 房间侧把两份都留着、渲染时再挑，所以切语言连历史战报一起变。
+--
+-- 代价：每条 log 多一次 parseMsg。它是纯读操作，不动任何游戏状态。
+local LANGS = { "zh_CN", "en_US" }
+
+--- 用每种语言各跑一遍 render，返回 { zh_CN = ..., en_US = ... }。
+---
+--- 中文那一遍不吞异常：渲染不出来就是真的出问题了，照旧往上抛，让
+--- FKClient.feed 的 pcall 记进 sink.errors —— 总比悄悄发一条空 log 强。
+--- 其它语言炸了只回落到中文，不连累这条战报。
+local function eachLanguage(render)
+  local prev = Config.language
+  Config.language = "zh_CN"
+  local ok, zh = pcall(render)
+  if not ok then
+    Config.language = prev
+    error(zh, 0)
+  end
+
+  local out = { zh_CN = zh }
+  for _, lang in ipairs(LANGS) do
+    if lang ~= "zh_CN" then
+      Config.language = lang
+      local okLang, text = pcall(render)
+      out[lang] = okLang and text or zh
+    end
+  end
+  Config.language = prev
+  return out
+end
+
+--- 把三处「Lua 侧已渲染完」的出口改成发双语。
+---
+--- 参数是 Client 这个类本身，不是实例：三处出口都是 addCallback 注册的回调，
+--- 而 addCallback 在构造时就把函数值抄进了 self.callbacks，所以只有在
+--- CreateLuaClient 之前替换类方法才真的生效。
+---@param client table @ 全局的 Client 类
+localizeRenderedText = function(client)
+  if type(client) ~= "table" or type(client.parseMsg) ~= "function" then return end
+
+  client.appendLog = function(self, msg, visible_data)
+    local text = eachLanguage(function() return self:parseMsg(msg, nil, visible_data) end)
+    self:notifyUI("GameLog", text)
+    if msg.toast then self:notifyUI("ShowToast", text) end
+  end
+
+  client.setCardNote = function(self, ids, msg, virtual)
+    local text = eachLanguage(function() return self:parseMsg(msg, true) end)
+    for _, id in ipairs(ids) do
+      if id ~= -1 then self:notifyUI("SetCardFootnote", { id, text, virtual }) end
+    end
+  end
+
+  client.showVirtualCard = function(self, data)
+    local card, playerid, msg, event_id = table.unpack(data)
+    local text = msg and eachLanguage(function() return self:parseMsg(msg, true) end) or nil
+    if type(card) == "table" and card.class and card:isInstanceOf(Card) then
+      card = { card }
+    end
+    self:notifyUI("ShowVirtualCard", { card, playerid, text, event_id })
+  end
+end
+
+--- 切换这个 VM 的渲染语言。
+---
+--- 房间里绝大多数文案是按 key 取的，走 JS 侧的覆盖表（withLanguage 拦掉
+--- Translate），不经过这儿。但有几处询问的提示语是 Lua 自己拼好再返回的
+--- —— 比如选将框的提示，packages/standard/aux_choose_general.lua 的
+--- prompt() 直接 Fk:translate 完拼成整句 —— JS 拿到的已经是成品，没有 key
+--- 可查。让 VM 跟着切语言，这些地方就自然跟上了。
+---
+--- 之所以敢切：完整的 en_US 表已经在 boot 里灌进来了（含 skill_skeleton
+--- 派生的角标），所以 en_US 不会掉回原文 key。Config.language 只影响翻译，
+--- 不参与任何规则判定，权威房间那个 VM 也完全不受影响。
+---@param lang string
+function FkWebSetLanguage(lang)
+  if type(lang) == "string" and lang ~= "" then Config.language = lang end
+  return Config.language
+end
 
 --- 把这个 VM 绑到某个座位上。
 ---@param specJson string { id, name, avatar, observing?, replaying? }

@@ -8,6 +8,7 @@
  */
 import { createContext, useContext, useSyncExternalStore } from 'react';
 import type { ReactNode } from 'react';
+import { useLanguage } from '../i18n';
 import type { RoomMode } from '../contract/views';
 import type { Assets } from './assets/assets';
 import type { LtkLua } from './ltk/LtkLua';
@@ -30,8 +31,21 @@ export function RoomProvider({ value, children }: { value: RoomServices; childre
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
 
+/**
+ * The room's services — and, deliberately, a subscription to the language.
+ *
+ * Every component in the room calls this to reach `lua`, and almost every
+ * string it draws goes through `lua.tr`. `LuaClient` is wrapped once, at the
+ * seam in `RoomPage`, by a translator that reads the language at call time
+ * (`withLanguage(client, getLanguage)`) — stable identity, so `RoomView`'s
+ * `useMemo(..., [client])` does not throw the table away on a toggle. The one
+ * thing a stable wrapper cannot do is tell React that the answers changed.
+ * `useLanguage()` here is that missing edge: one line, and all 84 `tr` call
+ * sites across the room repaint.
+ */
 export function useRoom(): RoomServices {
   const v = useContext(Ctx);
+  useLanguage();
   if (!v) throw new Error('useRoom outside <RoomProvider>');
   return v;
 }

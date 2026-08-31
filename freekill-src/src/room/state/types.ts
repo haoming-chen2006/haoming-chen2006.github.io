@@ -6,6 +6,7 @@
  * player may be targeted and whether OK is pressable all live in `SceneState`,
  * which is a straight copy of the Lua `ui_emu` scene.
  */
+import type { Localized } from '../../i18n/localized';
 import type { ItemData } from '../../contract/scene';
 import type { CardArea } from '../ltk/types';
 
@@ -51,8 +52,12 @@ export interface CardState {
   readonly cid: number;
   /** False while the viewer may not see the face. */
   known: boolean;
-  /** Rendered under the card on the table. Already HTML from the engine. */
-  footnote?: string;
+  /**
+   * Rendered under the card on the table. Already HTML from the engine, which
+   * means it is already translated — so the engine sends one rendering per
+   * language and the renderer picks. See `src/i18n/localized.ts`.
+   */
+  footnote?: Localized;
   /** A filter skill renamed it (`fire__slash` over a `slash`). */
   virtName?: string;
   /** `data.event_id` of the move that put it on the table. */
@@ -83,8 +88,14 @@ export interface FocusState {
 
 export interface LogLine {
   readonly id: number;
-  /** Engine-rendered HTML-ish markup — colours and `<b>` already applied. */
-  readonly html: string;
+  /**
+   * Engine-rendered HTML-ish markup — colours and `<b>` already applied, which
+   * also means already translated. `Client:parseMsg` runs inside the client VM
+   * and leaves no key behind, so `lua/web/client.lua` renders each line once per
+   * language and both are kept: the panel picks at render time, and switching
+   * language retranslates the scrollback rather than only the next line.
+   */
+  readonly html: Localized;
 }
 
 /** A transient arrow between seats (`Animate` / `Indicate`). */

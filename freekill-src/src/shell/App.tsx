@@ -7,6 +7,7 @@
  * the room on the way through sign-in.
  */
 import { useCallback, useEffect, useState } from 'react';
+import { LanguageToggle, useT } from '../i18n';
 import { href, useRoute } from './router';
 import type { Route } from './router';
 import { useSession } from './session';
@@ -17,6 +18,7 @@ import { RoomPage } from './pages/RoomPage';
 import { Overview } from './pages/Overview';
 
 export function App() {
+  const t = useT();
   const [route, navigate] = useRoute();
   const { api, loaded, identity, signOut } = useSession();
   const [pending, setPending] = useState<Route | null>(null);
@@ -53,22 +55,28 @@ export function App() {
   return (
     <div className="app">
       <header className="topbar">
-        <a className="brand" href={href({ name: 'landing' })}>新月杀</a>
+        <a className="brand" href={href({ name: 'landing' })}>{t('brand.name')}</a>
         <nav>
-          <a href={href({ name: 'lobby' })} aria-current={route.name === 'lobby' ? 'page' : undefined}>大厅</a>
+          <a href={href({ name: 'lobby' })} aria-current={route.name === 'lobby' ? 'page' : undefined}>
+            {t('nav.lobby')}
+          </a>
           <a
             href={href({ name: 'overview', tab: 'generals' })}
             aria-current={route.name === 'overview' ? 'page' : undefined}
           >
-            资料
+            {t('nav.overview')}
           </a>
         </nav>
+        {/* The whole game switches from here, on every page: the header is
+            rendered for all four routes, so the control is always one click
+            away — lobby, waiting room, table and reference alike. */}
+        <LanguageToggle />
         {identity
           ? (
             <div className="who">
               {avatarSrc ? <img className="avatar" src={avatarSrc} alt="" /> : null}
               <span>{identity.displayName}</span>
-              <button className="btn small ghost" onClick={() => void signOut()}>换个名字</button>
+              <button className="btn small ghost" onClick={() => void signOut()}>{t('app.changeName')}</button>
             </div>
           )
           : null}
@@ -82,17 +90,17 @@ export function App() {
       {route.name === 'join'
         ? (
           <div className="page">
-            <h2>正在加入 {route.code}</h2>
+            <h2>{t('app.join.title', { code: route.code })}</h2>
             {joinError
               ? (
                 <>
                   <p className="notice">{joinError}</p>
                   <button className="btn" style={{ marginTop: 14 }} onClick={() => navigate({ name: 'lobby' })}>
-                    回到大厅
+                    {t('app.backToLobby')}
                   </button>
                 </>
               )
-              : <p className="lede">稍等…</p>}
+              : <p className="lede">{t('app.join.wait')}</p>}
           </div>
         )
         : null}

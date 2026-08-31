@@ -6,6 +6,7 @@
  * substitutes `%src` / `%dest` / `%argN`. No game state is decided here — the
  * key itself arrives from the engine, already carrying its arguments.
  */
+import { getLanguage, seatLabel } from '../../i18n';
 import type { LtkLua } from './LtkLua';
 
 export interface PlayerNaming {
@@ -16,10 +17,14 @@ export interface PlayerNaming {
   selfId(): number | null;
 }
 
-const SEAT_CHARS = ['一', '二', '三', '四', '五', '六', '七', '八', '九', '十', '十一', '十二'];
-
+/**
+ * The seat marker on a portrait. Chinese spells it out (一号位 -> 一); English
+ * counts. `seatLabel` in `src/i18n` owns both, so there is one place that knows
+ * how a seat is written; this stays exported because it is the room's name for
+ * the idea and callers should not have to thread a language through.
+ */
 export function seatChar(seat: number): string {
-  return SEAT_CHARS[seat - 1] ?? String(seat);
+  return seatLabel(seat, getLanguage());
 }
 
 /** `RoomLogic.js:596`. */

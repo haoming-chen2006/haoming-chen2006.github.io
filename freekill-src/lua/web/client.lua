@@ -11,6 +11,8 @@ local canon, b64
 local sink
 -- 战报双语的补丁，定义在下面第 2 节末尾；boot() 里要用，先声明。
 local localizeRenderedText
+-- 洗牌播报的补丁，同上。
+local announceDrawPile
 
 -- ============================================================ 1. 载入引擎（客户端半边）
 function FKClient.boot()
@@ -61,8 +63,10 @@ function FKClient.boot()
   -- require 出来的，和 lua/client/client.lua 用 dofile 再求值一次得到的全局
   -- Client 并不是同一张表 —— 只打全局的话，一进房补丁就没了。
   localizeRenderedText(Client)
+  announceDrawPile(Client)
   for _, game in pairs(Fk.boardgames or Util.DummyTable) do
     localizeRenderedText(game.client_klass)
+    announceDrawPile(game.client_klass)
   end
 
   ---@diagnostic disable-next-line
@@ -184,6 +188,55 @@ localizeRenderedText = function(client)
       card = { card }
     end
     self:notifyUI("ShowVirtualCard", { card, playerid, text, event_id })
+  end
+end
+
+-- ---------------------------------------------------------------- 洗牌播报
+--
+-- 洗牌和强制同步是仅有的两条「不经 MoveCards 就把牌挪走」的消息。
+-- Client:handleShuffleDrawPile 在 VM 里把每张牌重新 setCardArea 成 Card.DrawPile
+-- （card_manager.lua:180），然后只 appendLog 一行战报 —— 一条 notifyUI 都不发
+-- （lunarltk/client/client.lua:939）。
+--
+-- QML 客户端不吃亏：它自己不留牌位置的账，photo 和牌堆数都是现问 VM 要的，
+-- 牌堆那个数还有 RefreshStatusSkills 每 200ms 一条 UpdateDrawPile 兜着
+-- （client_util.lua:1257）。可 RoomStore 在 JS 侧留了一份 cardArea，它只认 notify。
+-- 洗完牌不告诉它，那份账就永远停在洗牌前：145 张牌一直挂着 DiscardPile，
+-- countDiscarded 再也不会降，而 drawPileCount 又被 UpdateDrawPile 拉回了真值，
+-- 于是屏幕上出现「牌堆 137 | 弃牌堆 141」—— 160 张牌的牌堆里数出 278 张。
+--
+-- 发的是洗完之后 VM 自己的 draw_pile，也就是这条消息在 VM 里造成的全部后果；
+-- 房间照着把这些 id 标回抽牌堆就行，不必猜洗牌是怎么组成的。
+--
+-- 必须拷贝：notifyUI 只是把引用塞进 sink.ui，而同一批里紧跟着的摸牌会原地
+-- table.remove 这张表，等 drainUI 时读到的就不是洗牌那一刻的牌堆了。
+--
+-- 补的是类方法，理由和 localizeRenderedText 一样：addCallback 在构造时就把
+-- 函数值抄进了 self.callbacks，构造完再改实例是改不动那张表的。
+---@param client table @ 全局的 Client 类
+announceDrawPile = function(client)
+  if type(client) ~= "table" then return end
+
+  local function announce(self)
+    local pile = {}
+    for i, id in ipairs(self.draw_pile or Util.DummyTable) do pile[i] = id end
+    self:notifyUI("SyncDrawPile", pile)
+  end
+
+  local shuffle = client.handleShuffleDrawPile
+  if type(shuffle) == "function" then
+    client.handleShuffleDrawPile = function(self, data)
+      shuffle(self, data)
+      announce(self)
+    end
+  end
+
+  local sync = client.syncDrawPile
+  if type(sync) == "function" then
+    client.syncDrawPile = function(self, data)
+      sync(self, data)
+      announce(self)
+    end
   end
 end
 

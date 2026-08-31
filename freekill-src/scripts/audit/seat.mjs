@@ -51,8 +51,22 @@ export class Seat {
     this.outbox = [];
     /** window.onerror / unhandledrejection, from the page itself. */
     this.pageErrors = [];
-    /** Round-trip time of the cheapest possible evaluate, sampled per call. */
+    /**
+     * Round-trip time of every evaluate, tagged with what was evaluated.
+     *
+     * This used to be an untagged list of numbers that the report published as
+     * "main thread block", and it was not that. `snap()` serialises the whole
+     * table and `actions()` measures a box for every control on screen; timing
+     * those and calling the result the app's freeze charged the app for the
+     * audit's own work. The tag is what lets the two be told apart, and
+     * `blocks` below is the number that actually means what the old one
+     * claimed to.
+     */
     this.pings = [];
+    /** Round-trip of a trivial `1`. Nothing but transport and block time. */
+    this.blocks = [];
+    /** What the page said about its own freezes, drained periodically. */
+    this.perfSamples = [];
     this.closed = false;
   }
 
@@ -63,9 +77,64 @@ export class Seat {
     const t0 = Date.now();
     const v = await bounded(this.b.evaluate(expr), timeoutMs, `${this.id} ${label}`);
     const dt = Date.now() - t0;
-    this.pings.push(dt);
-    if (this.pings.length > 4000) this.pings.splice(0, 2000);
+    this.pings.push({ ms: dt, label, at: t0 });
+    if (this.pings.length > 6000) this.pings.splice(0, 3000);
     return v;
+  }
+
+  /**
+   * The cheapest question there is. Nothing here is the app's work, so what
+   * this measures is transport plus however long the renderer took to get
+   * round to answering — which is the outside view of a main-thread block.
+   *
+   * It is deliberately issued from the driver's own loop rather than from a
+   * timer of its own: a sampler racing the driver's `snap()` would spend most
+   * of its time queued behind it and report the audit's DOM walk as the app's
+   * freeze, which is the mistake this whole split exists to undo.
+   */
+  async blockSample({ timeoutMs = 20000 } = {}) {
+    const t0 = Date.now();
+    await bounded(this.b.evaluate('1'), timeoutMs, `${this.id} ping`);
+    const dt = Date.now() - t0;
+    this.blocks.push({ ms: dt, at: t0 });
+    if (this.blocks.length > 6000) this.blocks.splice(0, 3000);
+    return dt;
+  }
+
+  /**
+   * A real CPU profile of the renderer, for when the stopwatches run out.
+   *
+   * The in-page timers can prove a freeze happened and can charge the part of
+   * it that ran through an instrumented seam. They cannot name what ran in the
+   * rest, and on this page the rest is ninety per cent of it. A sampling
+   * profiler can: it interrupts the thread on a fixed interval and writes down
+   * the stack, so React's reconciler, a layout flush and the Lua VM all show up
+   * under their own names, with no cooperation from the code being measured.
+   *
+   * 200 µs is fine-grained enough to resolve a 100 ms stall into functions and
+   * coarse enough not to distort what it is measuring.
+   */
+  async profileStart({ intervalUs = 200 } = {}) {
+    await this.b.call('Profiler.enable');
+    await this.b.call('Profiler.setSamplingInterval', { interval: intervalUs });
+    await this.b.call('Profiler.start');
+    this.profiling = true;
+  }
+
+  /** Stop, and fold the sample tree into self-time per function. */
+  async profileStop() {
+    if (!this.profiling) return null;
+    this.profiling = false;
+    const { profile } = await bounded(this.b.call('Profiler.stop'), 60000, `${this.id} profile`);
+    await this.b.call('Profiler.disable').catch(() => {});
+    return foldProfile(profile);
+  }
+
+  /** The page's own account of its freezes, since the last call. */
+  async perf(opts) {
+    const p = await this.json('window.__fkAudit.perfDrain()', { label: 'perf', timeoutMs: 30000, ...opts });
+    if (p) this.perfSamples.push(p);
+    return p;
   }
 
   /** JSON round-trip, so nothing in the page's object graph leaks into node. */
@@ -153,6 +222,48 @@ export async function openSeat({ id, name, profileDir, width = 1440, height = 90
   const source = hook ? PROBE_SRC : `${PROBE_SRC};window.__fkAudit.hookEnabled=false;`;
   await browser.call('Page.addScriptToEvaluateOnNewDocument', { source });
   return new Seat(id, name, browser, { width, height, hook });
+}
+
+/**
+ * A V8 sample profile, reduced to "where did the thread's time actually go".
+ *
+ * Self time, not total time: a frame high on the stack is not the thing
+ * costing anything, and a report sorted by total time says `(root)` at the top
+ * and helps nobody. `samples` and `timeDeltas` are parallel arrays — sample
+ * `i` was taken `timeDeltas[i]` microseconds after the previous one — so the
+ * cost of a node is the deltas of the samples that landed on it.
+ *
+ * `(program)`, `(garbage collector)` and `(idle)` are V8's own pseudo-frames.
+ * They are kept rather than filtered: "the freeze was GC" and "the freeze was
+ * the browser doing layout outside JS" are both answers, and dropping them
+ * would leave a hole that looks like missing data.
+ */
+export function foldProfile(profile) {
+  const byId = new Map((profile.nodes ?? []).map((n) => [n.id, n]));
+  const self = new Map();
+  const deltas = profile.timeDeltas ?? [];
+  const samples = profile.samples ?? [];
+  let totalUs = 0;
+  for (let i = 0; i < samples.length; i++) {
+    const dt = deltas[i] ?? 0;
+    if (dt <= 0) continue;
+    totalUs += dt;
+    const n = byId.get(samples[i]);
+    if (!n) continue;
+    const cf = n.callFrame ?? {};
+    const url = String(cf.url ?? '').split('/').pop() || '(inline)';
+    const key = `${cf.functionName || '(anonymous)'} @ ${url}:${cf.lineNumber ?? '?'}`;
+    self.set(key, (self.get(key) ?? 0) + dt);
+  }
+  const rows = [...self.entries()]
+    .map(([name, us]) => ({ name, ms: Math.round(us / 1000), pct: 0 }))
+    .sort((a, b) => b.ms - a.ms);
+  for (const r of rows) r.pct = totalUs ? Math.round((r.ms * 1000 * 1000) / totalUs) / 10 : 0;
+  return {
+    totalMs: Math.round(totalUs / 1000),
+    samples: samples.length,
+    top: rows.slice(0, 30),
+  };
 }
 
 export const profileFor = (cacheDir, id) => join(cacheDir, `seat-${id}`);

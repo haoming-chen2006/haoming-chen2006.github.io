@@ -46,13 +46,27 @@ function shuffled(rng, arr) {
 const of = (a, group) => (a.actions ?? []).filter((x) => x.group === group);
 const clickable = (x) => x.enabled && x.visible && x.box;
 
-/** Every request the driver knows how to answer, for the coverage report. */
-export const KNOWN_REQUESTS = [
-  'PlayCard', 'AskForUseCard', 'AskForResponseCard', 'AskForUseActiveSkill',
-  'AskForSkillInvoke', 'AskForGeneral', 'AskForGuanxing', 'AskForArrangeCards',
-  'AskForExchange', 'AskForCardChosen', 'AskForCardsChosen', 'AskForChoice',
-  'AskForChoices', 'AskForPoxi', 'AskForAG',
-];
+/**
+ * Put the options the campaign still needs at the front of the list.
+ *
+ * This is the whole of the bias, and it is worth being precise about what it
+ * does and does not do. It reorders an array. Every element of that array was
+ * already offered by the app and already passed `clickable`, which reads
+ * `enabled` off the scene; nothing is added, nothing is enabled, nothing is
+ * judged legal here. Preferring an option the app is offering is a player's
+ * privilege. Deciding whether it may be offered is the engine's, and stays there.
+ *
+ * Within each tier the order is still the seeded shuffle, so a seed replays.
+ */
+function preferring(rng, items, wanted, keyOf) {
+  if (!wanted || !wanted.size) return shuffled(rng, items);
+  const want = [];
+  const rest = [];
+  for (const it of shuffled(rng, items)) {
+    (wanted.has(keyOf(it)) ? want : rest).push(it);
+  }
+  return [...want, ...rest];
+}
 
 /**
  * Answer whatever is on screen once.
@@ -64,6 +78,21 @@ export const KNOWN_REQUESTS = [
 export async function answerOnce(seat, ctx, a) {
   const { rng } = ctx;
   const steps = [];
+  /**
+   * The question being answered, captured before anything is clicked.
+   *
+   * `refresh()` reassigns `a`, and every dialog branch below refreshes after
+   * committing its answer — so by the time those branches reported
+   * `a.request.command` they were reading the request that had *replaced* the
+   * one they just answered. Seventeen `AskForCardChosen` dialogs in a nine-game
+   * campaign were answered correctly, on the right control, and every one of
+   * them was filed under `PlayCard`; the coverage report then said
+   * `AskForCardChosen` was "sent by the engine but never answered here", which
+   * reads as a product bug and was a bookkeeping one. It also explains the
+   * tell that was sitting in plain sight — 246 PlayCards answered against 233
+   * sent, a count that cannot happen and nobody had asked about.
+   */
+  const asked = a.request?.command ?? null;
   const say = (what, detail) => { steps.push({ at: Date.now(), what, ...detail }); };
 
   const refresh = async () => { a = await seat.actions(); return a; };
@@ -81,10 +110,27 @@ export async function answerOnce(seat, ctx, a) {
 
   const generals = of(a, 'general');
   if (generals.length) {
+    // The one place a run can decide what the rest of it will be about.
+    //
+    // Which generals are offered is the engine's business and it offers a
+    // handful at random. Which of those is taken is the player's, and taking
+    // whichever came first uniformly means the campaign covers the roster by
+    // coupon collector — 25 generals, three offered a game, and the last one
+    // arrives around never. Preferring one the campaign has never seated turns
+    // that into a sweep. `guanxing` in particular exists on exactly one general
+    // in this build, so "cover zhugeliang" and "cover AskForGuanxing" are the
+    // same task.
+    //
+    // The dialog's own OK is still the only thing that says a pick is legal:
+    // the loop below offers candidates and stops when the app lights OK.
+    const ordered = preferring(rng, generals, ctx.bias?.generals, (g) => g.name);
+    if (ctx.bias?.generals?.size && ordered.length && ctx.bias.generals.has(ordered[0].name)) {
+      say('steering', { group: 'general', id: ordered[0].name, reason: 'never seated in this campaign' });
+    }
     // Selection is a toggle and `ChooseGeneralFilter` may refuse a card, so
     // clicking the first one and pressing OK is not an answer — keep offering
     // candidates until the dialog's own OK says the pick is feasible.
-    for (const g of shuffled(rng, generals)) {
+    for (const g of ordered) {
       const btn = of(await refresh(), 'dialogBtn').find((b) => b.primary);
       if (btn && clickable(btn)) break;
       if (!of(a, 'general').length) break;
@@ -92,9 +138,20 @@ export async function answerOnce(seat, ctx, a) {
       if (!live || !live.box) continue;
       await clickOne(live, 'pick-general');
     }
-    const ok = of(await refresh(), 'dialogBtn').find((b) => b.primary && clickable(b));
-    if (ok) { await clickOne(ok, 'confirm-general'); return { handled: 'AskForGeneral', steps }; }
-    return { handled: 'AskForGeneral', stuck: 'OK never enabled', steps };
+    // Whatever the dialog ended up holding selected is what this seat will
+    // play, and the campaign ledger needs the id — "which generals has a human
+    // seat actually driven" is a different and much smaller set than "which
+    // generals appeared at the table", and only the first one is testing.
+    const picked = of(await refresh(), 'general').filter((x) => x.selected).map((x) => x.name);
+    // Everything the engine put in front of this seat, taken or not. It is the
+    // only way to tell "the bias failed to steer toward zhugeliang" from "the
+    // build has offered zhugeliang to a human seat exactly zero times in
+    // twenty games" — one of those is a harness problem and the other is a
+    // fact about the general pool, and they look identical in a coverage tally.
+    const offered = generals.map((g) => g.name).filter(Boolean);
+    const ok = of(a, 'dialogBtn').find((b) => b.primary && clickable(b));
+    if (ok) { await clickOne(ok, 'confirm-general'); return { handled: 'AskForGeneral', picked, offered, steps }; }
+    return { handled: 'AskForGeneral', picked, offered, stuck: 'OK never enabled', steps };
   }
 
   const ags = of(a, 'ag').filter(clickable);
@@ -108,7 +165,7 @@ export async function answerOnce(seat, ctx, a) {
     await clickOne(pick(rng, choices), 'pick-choice');
     const ok = of(await refresh(), 'dialogBtn').find((b) => b.primary && clickable(b));
     if (ok) await clickOne(ok, 'confirm-choice');
-    return { handled: a.request.command ?? 'AskForChoice', steps };
+    return { handled: asked ?? 'AskForChoice', steps };
   }
 
   const zoneCards = of(a, 'zoneCard');
@@ -124,10 +181,10 @@ export async function answerOnce(seat, ctx, a) {
         await clickOne(pick(rng, live), 'arrange');
       }
       const ok = of(await refresh(), 'dialogBtn').find((b) => b.primary && clickable(b));
-      if (ok) { await clickOne(ok, 'confirm-arrange'); return { handled: a.request.command ?? 'arrange', steps }; }
+      if (ok) { await clickOne(ok, 'confirm-arrange'); return { handled: asked ?? 'arrange', steps }; }
       const any = of(a, 'dialogBtn').find(clickable);
-      if (any) { await clickOne(any, 'dismiss-arrange'); return { handled: a.request.command ?? 'arrange', steps }; }
-      return { handled: a.request.command ?? 'arrange', stuck: 'no enabled dialog button', steps };
+      if (any) { await clickOne(any, 'dismiss-arrange'); return { handled: asked ?? 'arrange', steps }; }
+      return { handled: asked ?? 'arrange', stuck: 'no enabled dialog button', steps };
     }
 
     // Choose-a-card boxes: a single-pick box replies on the click itself, a
@@ -136,7 +193,7 @@ export async function answerOnce(seat, ctx, a) {
     const after = await refresh();
     const ok = of(after, 'dialogBtn').find((b) => b.primary && clickable(b));
     if (ok) await clickOne(ok, 'confirm-card-pick');
-    return { handled: a.request.command ?? 'AskForCardChosen', steps };
+    return { handled: asked ?? 'AskForCardChosen', steps };
   }
 
   /* --------------------------------------------------------- scene answers */
@@ -149,7 +206,7 @@ export async function answerOnce(seat, ctx, a) {
   const dlg = of(a, 'dialogBtn').filter(clickable);
   if (a.request.kind === 'dialog' && dlg.length) {
     await clickOne(pick(rng, dlg), 'dismiss-unknown-dialog');
-    return { handled: a.request.command ?? 'unknown-dialog', unknown: true, steps };
+    return { handled: asked ?? 'unknown-dialog', unknown: true, steps };
   }
 
   return { handled: null, steps };
@@ -170,7 +227,12 @@ async function sceneAnswer(seat, ctx, a, steps, say, clickOne, refresh) {
   // Skill invoke has no card to pick: it is a yes/no, and both answers are
   // worth exercising — declining is a code path too.
   if (cmd === 'AskForSkillInvoke') {
-    const wantYes = rng() < ctx.invokeSkillP;
+    // Declining is a code path, so it stays in the mix — but a skill the
+    // campaign has never once seen fire is not the place to spend a decline.
+    const prompt = String(a.prompt ?? '');
+    const wanted = [...(ctx.bias?.skills ?? [])].find((s) => s && prompt.includes(s));
+    const wantYes = wanted ? true : rng() < ctx.invokeSkillP;
+    if (wanted) say('steering', { group: 'skill', id: wanted, reason: 'never fired in this campaign' });
     const target = (wantYes && btn('OK')) || btn('Cancel') || btn('OK');
     if (target) {
       await clickOne(target, wantYes ? 'invoke-skill' : 'decline-skill');
@@ -194,9 +256,31 @@ async function sceneAnswer(seat, ctx, a, steps, say, clickOne, refresh) {
   // a view-as skill and then reports "no skills broken".
   const cards = of(a, 'card').filter((c) => clickable(c) && !c.selected);
   const skills = of(a, 'skill').filter((s) => clickable(s) && !s.selected);
-  const openers = rng() < ctx.skillFirstP
-    ? [...shuffled(rng, skills), ...shuffled(rng, cards)]
-    : [...shuffled(rng, cards), ...shuffled(rng, skills)];
+
+  // Which of these the campaign still needs. Card ids mean nothing on their
+  // own — "cid 153" is not a coverage fact — so the faces are resolved from
+  // the client VM, the same way the report resolves the ones that reached the
+  // table. Only asked for when there is something left to want, because it
+  // costs a VM round trip per decision.
+  let nameOf = () => null;
+  const wantCards = ctx.bias?.cards;
+  if (wantCards?.size && cards.length) {
+    const cids = cards.map((c) => c.cid).filter((c) => c != null);
+    const info = cids.length ? await seat.cardInfo(cids).catch(() => ({})) : {};
+    nameOf = (c) => info?.[c.cid]?.name ?? null;
+  }
+
+  const bySkill = preferring(rng, skills, ctx.bias?.skills, (s) => s.name);
+  const byCard = preferring(rng, cards, wantCards, nameOf);
+  const skillWanted = bySkill.length && ctx.bias?.skills?.has(bySkill[0].name);
+  const cardWanted = byCard.length && wantCards?.has(nameOf(byCard[0]));
+  // A wanted opener goes first outright rather than waiting on the coin flip
+  // that normally decides cards-vs-skills; a rare path that only shows up 35%
+  // of the time it is available is still mostly luck.
+  const skillFirst = skillWanted ? true : (cardWanted ? false : rng() < ctx.skillFirstP);
+  if (skillWanted) say('steering', { group: 'skill', id: bySkill[0].name, reason: 'never fired in this campaign' });
+  else if (cardWanted) say('steering', { group: 'card', id: nameOf(byCard[0]), reason: 'never played in this campaign' });
+  const openers = skillFirst ? [...bySkill, ...byCard] : [...byCard, ...bySkill];
 
   for (const opener of openers) {
     if (Date.now() > ctx.deadline) break;
@@ -302,11 +386,19 @@ async function attempt(seat, ctx, opener, steps, say, clickOne, refresh) {
 }
 
 /** Defaults tuned to keep games moving while still exercising both branches. */
-export function makeContext({ seed, settle, deadline }) {
+export function makeContext({ seed, settle, deadline, bias }) {
   return {
     rng: rngFrom(seed),
     settle,
     deadline,
+    /**
+     * What the campaign has never covered, as three sets of ids: `generals`,
+     * `skills`, `cards`. Used only to reorder options the app already offered.
+     * Empty sets mean "everything is covered" and the driver goes back to
+     * picking uniformly, which is the right behaviour — a campaign that has
+     * seen everything should be re-rolling the dice, not chasing itself.
+     */
+    bias: bias ?? { generals: new Set(), skills: new Set(), cards: new Set() },
     /** How often a PlayCard request actually plays rather than ending. */
     playCardP: 0.8,
     /** How often a response request (jink/peach/wuxie) is answered with a card. */
@@ -316,8 +408,24 @@ export function makeContext({ seed, settle, deadline }) {
     /** How often a skill is preferred over a card as an opener. */
     skillFirstP: 0.35,
     maxPlaysPerTurn: 6,
-    maxTargetSteps: 6,
-    maxExtraCards: 2,
+    /**
+     * How many add-a-card / add-a-target rounds one attempt gets.
+     *
+     * These were 6 and 2, and 2 is not enough to answer the discard phase. A
+     * seat holding eight cards at its discard step is asked to drop five, and
+     * OK does not light until the fifth is selected — so an attempt capped at
+     * three selections could never light it, backed out, tried every other
+     * opener, backed out of those too, and finally handed the turn to the AI
+     * on the engine's 30-second timeout. Six of those in one campaign, each
+     * costing half a minute of a real game and each logged as an
+     * unanswerable screen, which is what a product bug looks like.
+     *
+     * The loop still stops the instant OK lights or the scene stops enabling
+     * cards, so a higher cap does not mean more clicks in the common case —
+     * it only stops the driver giving up before the app was finished asking.
+     */
+    maxTargetSteps: 16,
+    maxExtraCards: 12,
     playsThisTurn: 0,
   };
 }

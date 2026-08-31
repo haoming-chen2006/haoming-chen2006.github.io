@@ -20,6 +20,7 @@ import { useRingMetrics } from './components/useRingMetrics';
 import { SidePanel } from './components/SidePanel';
 import { TablePile } from './components/TablePile';
 import { DialogHost } from './dialogs/DialogHost';
+import { makeReply } from './dialogs/reply';
 import { LtkLua } from './ltk/LtkLua';
 import { makeNaming, RoomProvider, useRoom, useRoomState, useScene, type RoomServices } from './RoomContext';
 import { RoomStore } from './state/store';
@@ -96,21 +97,8 @@ function RoomBody(
     lua.interact('Photo', pid, 'click', { selected, autoTarget: false });
   }, [lua]);
 
-  /**
-   * Answer a dialog-shaped request.
-   *
-   * A dialog reply never comes back through the notify stream — the client VM
-   * puts it straight on the wire — so nothing else would take the dialog down.
-   * `RoomLogic.js:141` closes the same loop: reply, then `notactive`. Leaving it
-   * open let a player answer the same question twice.
-   */
-  const reply = useCallback((value: unknown) => {
-    lua.replyToServer(value);
-    store.outbound.push({ command: 'reply', payload: value });
-    store.closeRequest();
-    try { lua.finishRequestUI(); } catch { /* engine gone */ }
-    store.commit();
-  }, [lua, store]);
+  /** Answer a dialog-shaped request. See `dialogs/reply.ts`. */
+  const reply = useMemo(() => makeReply(store, lua), [store, lua]);
 
   const order = state.circle.length ? state.circle : Object.keys(state.players).map(Number);
   const bubbles = useChatBubbles(chat);

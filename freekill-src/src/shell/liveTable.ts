@@ -27,6 +27,91 @@ export type TablePhase = 'connecting' | 'dealing' | 'live' | 'over' | 'failed';
 /** Envelopes a joining seat will hold while it waits for its snapshot. */
 const HELD_LIMIT = 2000;
 
+/**
+ * How long an envelope may wait for a sibling on the other topic before it is
+ * released anyway.
+ *
+ * Both topics ride the same websocket and are fanned out by the same Realtime
+ * server, so a flush's two halves land within a millisecond or two of each
+ * other; a frame is generous. What the cap is really for is the case the
+ * watermark cannot rule out and that never resolves — a seat whose private
+ * topic says nothing for a whole round — where waiting for proof would stall
+ * the table instead of ordering it.
+ */
+const ORDER_HOLD_MS = 16;
+
+/** The order the host published in: flush index, then the engine's own counter. */
+const firstSeq = (e: Envelope): number => e.messages[0]?.seq ?? 0;
+const byWireOrder = (a: Envelope, b: Envelope): number =>
+  a.batch - b.batch || firstSeq(a) - firstSeq(b);
+
+export interface Reassembly {
+  /** Take one envelope off the wire. */
+  receive(env: Envelope): void;
+  stop(): void;
+}
+
+/**
+ * Put a seat's two topics back into one ordered stream. See the long note at
+ * its use site for why this is needed at all.
+ *
+ * Exported for its own test: this is ordering logic, and ordering logic that
+ * can only be exercised through a live Realtime connection is ordering logic
+ * nobody checks.
+ */
+export function reassemble(
+  mySeat: number,
+  emit: (env: Envelope) => void,
+  holdMs: number = ORDER_HOLD_MS,
+  now: () => number = () => Date.now(),
+): Reassembly {
+  /** Highest batch seen on each topic. Each topic is FIFO within itself. */
+  let publicThrough = -1;
+  let privateThrough = -1;
+  const queue: { env: Envelope; at: number }[] = [];
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  let stopped = false;
+
+  const drain = (): void => {
+    if (timer !== null) { clearTimeout(timer); timer = null; }
+    if (stopped) return;
+    const t = now();
+    const provable = Math.min(publicThrough, privateThrough);
+    while (queue.length > 0) {
+      const head = queue[0];
+      const waited = t - head.at;
+      if (head.env.batch > provable && waited < holdMs) {
+        timer = setTimeout(drain, holdMs - waited);
+        return;
+      }
+      queue.shift();
+      emit(head.env);
+    }
+  };
+
+  return {
+    receive(env) {
+      if (stopped) return;
+      // A resync carries a negative batch and is the gate the held buffer opens
+      // on, so it is never queued behind anything: `deliver` owns its rules.
+      if (env.batch < 0) { emit(env); return; }
+      if (env.to === null) publicThrough = Math.max(publicThrough, env.batch);
+      else if (env.to === mySeat) privateThrough = Math.max(privateThrough, env.batch);
+      // Insert from the back: envelopes arrive nearly sorted, so this is a
+      // couple of comparisons, and it keeps the queue a plain array.
+      let i = queue.length;
+      while (i > 0 && byWireOrder(queue[i - 1].env, env) > 0) i -= 1;
+      queue.splice(i, 0, { env, at: now() });
+      drain();
+    },
+    stop() {
+      stopped = true;
+      if (timer !== null) { clearTimeout(timer); timer = null; }
+      queue.length = 0;
+    },
+  };
+}
+
 export interface TableStatus {
   readonly phase: TablePhase;
   /** What the player is looking at, in a sentence. */
@@ -166,7 +251,7 @@ export async function startLiveTable(spec: LiveTableSpec): Promise<LiveTable> {
     apply(env);
     resynced = true;
     syncedThrough = Math.max(syncedThrough, asOf);
-    const catchUp = [...held].sort((a, b) => a.batch - b.batch);
+    const catchUp = [...held].sort(byWireOrder);
     held.length = 0;
     for (const e of catchUp) apply(e);
   };
@@ -175,7 +260,54 @@ export async function startLiveTable(spec: LiveTableSpec): Promise<LiveTable> {
   let runner: HostRunner | null = null;
   const pendingReplies: { command: WireCommand; reply: unknown }[] = [];
 
-  unsubs.push(transport.onEnvelope(mySeat, deliver));
+  /**
+   * The wire arrives on two topics; the game is one stream.
+   *
+   * A seated player subscribes `room:<id>` and `room:<id>:p:<seat>`, and those
+   * are separate Realtime topics with no ordering guarantee between them. The
+   * host's own send order is exact — `hostRunner` funnels every publish through
+   * one promise chain for precisely this reason — but order at the sender is
+   * not order at the receiver once two topics are involved.
+   *
+   * The damage is permanent rather than transient. Measured over 38 two-seat
+   * games with the engine's own `event_id` on each move: the host seat, fed
+   * in-process, had 0 inversions in 17,853 moves; the remote seat had 72 in
+   * 17,808, in 21 of the 38 games. One of them, card 80: the truth was
+   * `draw -> hand(2)` (private to seat 2) then `hand(2) -> processing`
+   * (public). Seat 2 received the public one first. `removeFrom` on a card the
+   * hand does not hold yet is a silent no-op, the later `addTo` appends it, and
+   * the card is wedged in that hand for the rest of the game. The same
+   * inversion has left a card in the equip zone and the hand at once.
+   *
+   * Not fixed by making the store idempotent: the same misordering also
+   * reorders the battle log, the animations and the request lifecycle, and a
+   * store that shrugged it off would hide all of those while leaving them
+   * wrong.
+   *
+   * Not fixed by moving everything to one topic either — the private topic is
+   * what keeps one seat's cards out of another seat's socket, which is the
+   * privacy property `routing.ts` exists to guarantee.
+   *
+   * So the receiver reassembles. `batch` is a flush index, strictly increasing
+   * per room, and within a flush `messages[0].seq` orders the public envelope
+   * against this seat's private one — the same key `routing.ts` uses to rebuild
+   * a seat's stream. An envelope is released the moment order is *provable*:
+   * each topic is FIFO in itself, so seeing batch B on a topic proves every
+   * earlier batch on that topic has already arrived, and an envelope at or
+   * below both topics' high-water marks can have nothing outstanding before it.
+   * Only when that cannot be shown does it wait, and then for at most
+   * `ORDER_HOLD_MS` — the two topics ride one websocket and are fanned out by
+   * the same server, so the skew is milliseconds; the cap is what keeps a quiet
+   * private topic from stalling the table rather than a guess at the delay.
+   *
+   * Neither an observer nor the host pays for any of it. An observer has one
+   * topic and no second stream to merge, and the host's own envelopes never
+   * touch the wire at all — `onLocalEnvelope` hands them to `deliver` in the
+   * order the engine produced them.
+   */
+  const inOrder = mySeat === null ? null : reassemble(mySeat, deliver);
+  unsubs.push(() => inOrder?.stop());
+  unsubs.push(transport.onEnvelope(mySeat, inOrder ? inOrder.receive : deliver));
 
   // Everything this seat decides goes back to whoever is authoritative: the
   // runner in this very tab if we are the host, the wire otherwise.

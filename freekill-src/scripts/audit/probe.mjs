@@ -30,7 +30,7 @@
  */
 
 /** Bump when the body changes; a stale tab reinstalls instead of lying. */
-export const PROBE_VERSION = 12;
+export const PROBE_VERSION = 15;
 
 export const PROBE_SRC = String.raw`
 (function () {
@@ -46,6 +46,175 @@ export const PROBE_SRC = String.raw`
   A.startedAt = Date.now();
 
   var MAX_LOG = 60000;
+
+  /* ----------------------------------------------------- the block meter */
+
+  /**
+   * How long the main thread was actually unavailable, measured from inside it.
+   *
+   * The suite's original "main thread block" number was the round-trip of a
+   * CDP evaluate, and a round-trip is main-thread block PLUS the websocket PLUS
+   * whatever node was doing when the answer came back PLUS — the big one — the
+   * cost of the expression itself, since the same counter timed 'snap()' and
+   * 'actions()', which walk the whole DOM. That number cannot tell a frozen
+   * renderer from a busy harness, so it cannot be the evidence for either.
+   *
+   * These three can. A timer that asks to be woken every 50 ms and is woken
+   * late was blocked by exactly the overshoot, and it needs no browser, no
+   * socket and no node — it is the page's own experience of the freeze. rAF
+   * gaps say the same thing in frames, which is what a player sees, but rAF is
+   * throttled in a background tab so the timer is the one that always works.
+   * 'longtask' names the culprit when the browser is willing to attribute it.
+   */
+  A.perf = {
+    startedAt: Date.now(),
+    /** Per-bucket, per-name {n,total,max}: notify, commit, lua, probe. */
+    notify: {}, commit: {}, lua: {}, probe: {}, probeLua: {},
+    /** Individual synchronous stretches at or over 'slowMs'. */
+    slow: [],
+    slowMs: 40,
+    /** setInterval overshoot — the ground truth for "the page was frozen". */
+    beats: [], beatN: 0, maxDrift: 0, driftTotal: 0,
+    /** requestAnimationFrame gaps — the same thing in dropped frames. */
+    frames: [], frameN: 0, maxFrameGap: 0,
+    /** PerformanceObserver longtask entries, when the browser reports them. */
+    longTasks: [], longTaskTotal: 0, observerOk: false, observerErr: null,
+    /** Store publishes; one is one React render of the table. */
+    commits: 0,
+    capped: false,
+  };
+
+  var MAX_PERF = 4000;
+  var perfPush = function (arr, rec) {
+    if (arr.length < MAX_PERF) arr.push(rec); else A.perf.capped = true;
+  };
+
+  /** Cheap enough to sit in front of every Lua facade call. */
+  A.timed = function (bucket, name, ms) {
+    var b = A.perf[bucket];
+    if (!b) { b = A.perf[bucket] = {}; }
+    var e = b[name];
+    if (!e) { e = b[name] = { n: 0, total: 0, max: 0, maxAt: 0 }; }
+    e.n += 1; e.total += ms;
+    if (ms > e.max) { e.max = ms; e.maxAt = Date.now(); }
+    if (ms >= A.perf.slowMs) {
+      perfPush(A.perf.slow, { t: Date.now(), bucket: bucket, what: name, ms: Math.round(ms) });
+    }
+    return ms;
+  };
+
+  /**
+   * What grew while the page was frozen.
+   *
+   * A stall cannot be explained by looking for one slow call, because the work
+   * that freezes this page is not one slow call — it is a hundred and forty
+   * thousand fast ones. So every beat snapshots the running totals, and a beat
+   * that came back late reports the delta: "in the 500 ms you were gone,
+   * lua.tr accumulated 180 ms and notify accumulated 2 ms". Whatever is left
+   * over is work no stopwatch is on, and naming that residue honestly is the
+   * only way to know whether the instrument is looking in the right place.
+   */
+  var BUCKETS = ['lua', 'notify', 'commit', 'probe', 'probeLua'];
+  var totalsOf = function () {
+    var out = {};
+    for (var bi = 0; bi < BUCKETS.length; bi++) {
+      var b = A.perf[BUCKETS[bi]], sum = 0;
+      for (var k in b) sum += b[k].total;
+      out[BUCKETS[bi]] = sum;
+    }
+    return out;
+  };
+  var namesOf = function (bucket) {
+    var b = A.perf[bucket], out = {};
+    for (var k in b) out[k] = b[k].total;
+    return out;
+  };
+  var prevTotals = totalsOf();
+  var prevLua = namesOf('lua');
+
+  var BEAT_MS = 50;
+  var lastBeat = performance.now();
+  A.beatTimer = setInterval(function () {
+    var now = performance.now();
+    var drift = now - lastBeat - BEAT_MS;
+    lastBeat = now;
+    A.perf.beatN += 1;
+    if (drift > 0) A.perf.driftTotal += drift;
+    if (drift > A.perf.maxDrift) A.perf.maxDrift = Math.round(drift);
+    var totals = totalsOf();
+    // 100 ms is the point a click stops feeling instant; below it the page is
+    // merely busy, and logging every one of those buries the real stalls.
+    if (drift >= 100) {
+      var by = {};
+      for (var bi = 0; bi < BUCKETS.length; bi++) {
+        var d = totals[BUCKETS[bi]] - prevTotals[BUCKETS[bi]];
+        if (d >= 1) by[BUCKETS[bi]] = Math.round(d);
+      }
+      var lua = namesOf('lua');
+      var grew = [];
+      for (var k2 in lua) {
+        var g = lua[k2] - (prevLua[k2] || 0);
+        if (g >= 1) grew.push({ name: k2, ms: Math.round(g) });
+      }
+      grew.sort(function (x, y) { return y.ms - x.ms; });
+      perfPush(A.perf.beats, {
+        t: Date.now(), drift: Math.round(drift), by: by, luaGrew: grew.slice(0, 5),
+      });
+    }
+    prevTotals = totals;
+    prevLua = namesOf('lua');
+  }, BEAT_MS);
+
+  var lastFrame = performance.now();
+  var onFrame = function (now) {
+    var gap = now - lastFrame;
+    lastFrame = now;
+    A.perf.frameN += 1;
+    if (gap > A.perf.maxFrameGap) A.perf.maxFrameGap = Math.round(gap);
+    if (gap >= 100) perfPush(A.perf.frames, { t: Date.now(), gap: Math.round(gap) });
+    requestAnimationFrame(onFrame);
+  };
+  requestAnimationFrame(onFrame);
+
+  try {
+    var po = new PerformanceObserver(function (list) {
+      var es = list.getEntries();
+      for (var li = 0; li < es.length; li++) {
+        var e = es[li];
+        A.perf.longTaskTotal += e.duration;
+        var att = [];
+        var ats = e.attribution || [];
+        for (var ai = 0; ai < ats.length; ai++) {
+          att.push(ats[ai].name + '/' + ats[ai].containerType
+            + (ats[ai].containerName ? ':' + ats[ai].containerName : ''));
+        }
+        perfPush(A.perf.longTasks, {
+          t: Math.round(performance.timeOrigin + e.startTime),
+          dur: Math.round(e.duration), att: att.join(','),
+        });
+      }
+    });
+    po.observe({ entryTypes: ['longtask'] });
+    A.perf.observerOk = true;
+  } catch (e) { A.perf.observerErr = String((e && e.message) || e); }
+
+  /** Aggregates now; the arrays are handed over and reset. */
+  A.perfDrain = function () {
+    var p = A.perf;
+    var out = {
+      at: Date.now(), sinceMs: Date.now() - p.startedAt,
+      notify: p.notify, commit: p.commit, lua: p.lua,
+      probe: p.probe, probeLua: p.probeLua, commits: p.commits,
+      beats: p.beats, beatN: p.beatN, maxDrift: p.maxDrift,
+      driftTotal: Math.round(p.driftTotal),
+      frames: p.frames, frameN: p.frameN, maxFrameGap: p.maxFrameGap,
+      longTasks: p.longTasks, longTaskTotal: Math.round(p.longTaskTotal),
+      observerOk: p.observerOk, observerErr: p.observerErr,
+      slow: p.slow, capped: p.capped,
+    };
+    p.beats = []; p.frames = []; p.longTasks = []; p.slow = []; p.capped = false;
+    return out;
+  };
 
   window.addEventListener('error', function (e) {
     A.pageErrors.push({
@@ -182,6 +351,48 @@ export const PROBE_SRC = String.raw`
     A.acts.push({ i: A.seq, t: Date.now(), kind: kind, detail: detail === undefined ? null : trim(detail, 1200) });
   };
 
+  /**
+   * Put a stopwatch around every method of the client-VM facade.
+   *
+   * Own properties and prototype methods both, because a class instance keeps
+   * its methods on the prototype and non-enumerable, where 'for..in' never
+   * looks — a wrapper that only walked own keys would time the arrow-function
+   * fields and silently miss every real method.
+   */
+  A.wrapLua = function (lua) {
+    if (lua.__fkTimed) return;
+    var names = {};
+    var own = Object.getOwnPropertyNames(lua);
+    for (var i = 0; i < own.length; i++) names[own[i]] = 1;
+    var proto = Object.getPrototypeOf(lua);
+    while (proto && proto !== Object.prototype) {
+      var pn = Object.getOwnPropertyNames(proto);
+      for (var j = 0; j < pn.length; j++) names[pn[j]] = 1;
+      proto = Object.getPrototypeOf(proto);
+    }
+    Object.keys(names).forEach(function (name) {
+      if (name === 'constructor') return;
+      var f;
+      try { f = lua[name]; } catch (e) { return; }
+      if (typeof f !== 'function') return;
+      var bound = f.bind(lua);
+      try {
+        lua[name] = function () {
+          if (!A.hookEnabled) return bound.apply(null, arguments);
+          var t0 = performance.now();
+          try { return bound.apply(null, arguments); }
+          // A VM call the probe itself made is the instrument's cost, not the
+          // app's, and mixing the two would let the measurement blame the game
+          // for work only the audit asked for.
+          finally { A.timed(A.inProbe ? 'probeLua' : 'lua', name, performance.now() - t0); }
+        };
+      } catch (e) { /* a read-only accessor; leave it alone */ }
+    });
+    try {
+      Object.defineProperty(lua, '__fkTimed', { value: true, enumerable: false });
+    } catch (e) {}
+  };
+
   /** Wrap the seams. Always calls through; observation only. */
   A.hook = function () {
     var sv = A.services();
@@ -191,13 +402,38 @@ export const PROBE_SRC = String.raw`
     if (!sv.store.__fkHooked) {
       var origNotify = sv.store.applyNotify;
       sv.store.applyNotify = function (cmd, data) {
-        if (A.hookEnabled) { try { A.record(cmd, data); } catch (e) { /* never break the room */ } }
-        return origNotify(cmd, data);
+        if (!A.hookEnabled) return origNotify(cmd, data);
+        // The instrument's own cost is measured separately from the app's, so
+        // "applying notifies is slow" can never turn out to have been "writing
+        // down that a notify happened is slow".
+        var t0 = performance.now();
+        try { A.record(cmd, data); } catch (e) { /* never break the room */ }
+        var t1 = performance.now();
+        var r = origNotify(cmd, data);
+        A.timed('notify', String(cmd), performance.now() - t1);
+        A.timed('probe', 'record', t1 - t0);
+        return r;
+      };
+      // 'commit()' is the publish: it bumps the version and calls every
+      // listener, and RoomView is one of them. Whatever React does
+      // synchronously in response to a store change is inside this number.
+      var origCommit = sv.store.commit.bind(sv.store);
+      sv.store.commit = function () {
+        if (!A.hookEnabled) return origCommit();
+        A.perf.commits += 1;
+        var t0 = performance.now();
+        try { return origCommit(); }
+        finally { A.timed('commit', 'publish', performance.now() - t0); }
       };
       Object.defineProperty(sv.store, '__fkHooked', { value: true, enumerable: false });
     }
 
     if (!sv.lua.__fkHooked) {
+      // Time every function on the client-VM facade before anything else wraps
+      // it. If a freeze is the Lua VM running engine work on the main thread,
+      // it is one of these calls and this says which — and if none of them add
+      // up to the freeze, it was never the VM, which is worth just as much.
+      A.wrapLua(sv.lua);
       var origInteract = sv.lua.interact.bind(sv.lua);
       sv.lua.interact = function (elemType, id, action, data) {
         if (A.hookEnabled) { try { A.note('interact', { elemType: elemType, id: id, action: action, data: data }); } catch (e) {} }
@@ -239,15 +475,44 @@ export const PROBE_SRC = String.raw`
 
   /* ------------------------------------------------------------- geometry */
 
+  /**
+   * Where a control is, and whether a mouse could actually reach it.
+   *
+   * A rectangle is not enough. An element can be enabled, visible, correctly
+   * sized and still completely unclickable because something is drawn over it,
+   * and a driver that only checks the rectangle then dispatches a real click
+   * at that point — which lands on the overlay — sees its press vanish with no
+   * error anywhere. That is indistinguishable in the log from "the app ignored
+   * my reply", and it cost a real investigation: five nullification prompts a
+   * game where Cancel was enabled, was pressed, and produced no interact at
+   * all.
+   *
+   * 'elementFromPoint' answers the only question that matters — if a person
+   * clicked here, what would they hit? — and it is the browser's own hit
+   * testing, so it accounts for stacking, transforms and pointer-events
+   * without this file needing to know about any of them.
+   */
   function boxOf(el) {
     if (!el) return null;
     var r = el.getBoundingClientRect();
     if (r.width <= 0 || r.height <= 0) return null;
-    return {
-      x: Math.round(r.x + r.width / 2), y: Math.round(r.y + r.height / 2),
-      w: Math.round(r.width), h: Math.round(r.height),
-      onScreen: r.bottom > 0 && r.top < innerHeight && r.right > 0 && r.left < innerWidth
-    };
+    var cx = Math.round(r.x + r.width / 2), cy = Math.round(r.y + r.height / 2);
+    var onScreen = r.bottom > 0 && r.top < innerHeight && r.right > 0 && r.left < innerWidth;
+    var box = { x: cx, y: cy, w: Math.round(r.width), h: Math.round(r.height), onScreen: onScreen };
+    if (!onScreen) return box;
+    try {
+      var hit = document.elementFromPoint(cx, cy);
+      // The element itself, or anything inside it, is a hit: a click on a
+      // button's inner span is a click on the button.
+      box.hit = !!hit && (hit === el || el.contains(hit));
+      if (!box.hit && hit) {
+        // Name the thing in the way, so the finding says what to look at.
+        box.over = (hit.tagName || '?').toLowerCase()
+          + (hit.className && typeof hit.className === 'string'
+            ? '.' + hit.className.trim().split(/\s+/).slice(0, 2).join('.') : '');
+      }
+    } catch (e) { box.hit = null; }
+    return box;
   }
 
   /**
@@ -462,11 +727,16 @@ export const PROBE_SRC = String.raw`
     for (var i = 0; i < handEls.length && i < handOrder.length; i++) {
       var cid = handOrder[i];
       var it = cardItems[String(cid)];
+      var cls = handEls[i].className;
       push({
         group: 'card', cid: cid, idx: i,
         offered: it !== undefined,
-        enabled: !!(it && it.enabled === true),
-        selected: !!(it && it.selected === true),
+        // "fk-card--enabled" is the class the renderer puts on exactly the
+        // cards it wired a click handler to, so it is the player's-eye answer.
+        enabled: cls.indexOf('fk-card--enabled') >= 0,
+        sceneEnabled: it !== undefined ? it.enabled === true : null,
+        selected: cls.indexOf('fk-card--selected') >= 0,
+        sceneSelected: it !== undefined ? it.selected === true : null,
         fromPile: i >= hand.length
       }, handEls[i]);
     }
@@ -478,8 +748,10 @@ export const PROBE_SRC = String.raw`
       push({
         group: 'skill', name: sname,
         offered: si !== undefined,
-        enabled: !!(si && si.enabled === true) && !skillEls[s].disabled,
-        selected: !!(si && si.selected === true)
+        enabled: !skillEls[s].disabled,
+        sceneEnabled: si !== undefined ? si.enabled === true : null,
+        selected: skillEls[s].className.indexOf('fk-skill--selected') >= 0,
+        sceneSelected: si !== undefined ? si.selected === true : null
       }, skillEls[s]);
     }
 
@@ -500,19 +772,44 @@ export const PROBE_SRC = String.raw`
       }, photoEl || slotEls[q]);
     }
 
-    // OK / Cancel / End render only when the scene offers them, in that order.
+    // Which of OK / Cancel / End the dashboard draws is a render policy, and it
+    // has changed once already: they used to appear only when the scene
+    // mentioned them, and now OK and Cancel stand there greyed so the row does
+    // not jump. A probe that maps the Nth button element to the Nth scene item
+    // silently mislabels every button the moment that policy moves — and then
+    // reports a perfectly working Cancel as an unanswerable screen. So each
+    // button is identified by its own translated label, which is true under
+    // either policy, and its usability is read off the element the player would
+    // click rather than inferred.
+    var labelId = {};
+    try {
+      labelId[sv.lua.tr('OK')] = 'OK';
+      labelId[sv.lua.tr('Cancel')] = 'Cancel';
+      labelId[sv.lua.tr('End')] = 'End';
+    } catch (e) { /* the VM is busy; fall back to position below */ }
+    var positional = [];
+    if (buttonItems.OK) positional.push('OK');
+    if (buttonItems.Cancel) positional.push('Cancel');
+    if (buttonItems.End) positional.push('End');
+
     var btnEls = [].slice.call(document.querySelectorAll('.fk-controls .fk-buttons .fk-btn'));
-    var wanted = [];
-    if (buttonItems.OK) wanted.push('OK');
-    if (buttonItems.Cancel) wanted.push('Cancel');
-    if (buttonItems.End) wanted.push('End');
-    for (var bi = 0; bi < btnEls.length && bi < wanted.length; bi++) {
-      var bid = wanted[bi];
+    for (var bi = 0; bi < btnEls.length; bi++) {
+      var el = btnEls[bi];
+      var txt = (el.textContent || '').trim();
+      var bid = labelId[txt]
+        || (el.className.indexOf('fk-btn--primary') >= 0 ? 'OK' : null)
+        || positional[bi]
+        || ('button' + bi);
+      var bitem = buttonItems[bid];
       push({
-        group: 'button', id: bid,
-        enabled: buttonItems[bid].enabled === true && !btnEls[bi].disabled,
-        label: (btnEls[bi].textContent || '').trim()
-      }, btnEls[bi]);
+        group: 'button', id: bid, label: txt,
+        offered: bitem !== undefined,
+        // What a player can press. The scene's word is kept beside it so a
+        // disagreement between the two is a finding rather than a silent
+        // difference of opinion.
+        enabled: !el.disabled,
+        sceneEnabled: bitem !== undefined ? bitem.enabled === true : null
+      }, el);
     }
 
     var interWrap = document.querySelectorAll('.fk-controls .fk-interaction');
@@ -621,6 +918,26 @@ export const PROBE_SRC = String.raw`
     }
     return out;
   };
+
+  /**
+   * Time the instrument, and mark the window in which it is running.
+   *
+   * 'snap()' serialises the whole table and 'actions()' measures a box for
+   * every card, seat and button on screen. Both are main-thread work that
+   * exists only because the audit is watching, and both used to be counted in
+   * the same number the report published as the app's freeze. Here they are
+   * their own line, and any VM call made underneath them lands in 'probeLua'.
+   */
+  ['snap', 'actions', 'cardInfo', 'tick'].forEach(function (n) {
+    var f = A[n];
+    A[n] = function () {
+      var wasIn = A.inProbe;
+      A.inProbe = true;
+      var t0 = performance.now();
+      try { return f.apply(A, arguments); }
+      finally { A.inProbe = wasIn; A.timed('probe', n, performance.now() - t0); }
+    };
+  });
 
   window.__fkAudit = A;
   return 'installed';

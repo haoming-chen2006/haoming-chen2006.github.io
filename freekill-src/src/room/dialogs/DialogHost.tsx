@@ -14,19 +14,50 @@
 import { useMemo, useState } from 'react';
 import { useRoom, useRoomState, usePrompt } from '../RoomContext';
 import { CardItem, cls } from '../components/CardItem';
-import { Btn, Dialog, GeneralCard } from './parts';
+import { Btn, Dialog, GeneralCard, Panel } from './parts';
 
 export interface DialogHostProps {
   readonly onReply: (value: unknown) => void;
   readonly interactive: boolean;
 }
 
+/**
+ * The amazing-grace board is not a request, and must not be drawn like one.
+ *
+ * `FillAG` puts it on every seat's screen at once and `CloseAG` only takes it
+ * down when the last player has taken a card — 五谷丰登 asks eight seats in
+ * turn, so the board is up for the whole resolution. In between, the room goes
+ * on asking *this* seat things: a nullification for every one of those eight
+ * targets. Returning it here as the room's only dialog did two things wrong.
+ * It hid whatever else the seat was being asked, and — because `Dialog` is a
+ * full-screen modal — it swallowed every click meant for the board underneath,
+ * so a seat holding a 无懈可击 could not play it, could not decline it, and
+ * spent the request's whole 30-second timeout looking at an amazing-grace box
+ * it had already taken its card from. Measured over one audited game: three
+ * consecutive nullification asks, 29.5s, 30.0s and 30.2s, every click landing
+ * on the overlay.
+ *
+ * QML keeps the two apart by construction: the board is `manualBox`, a floating
+ * `GraphicsBox` (`RoomLogic.js:1453`), and the request dialogs are `popupBox`.
+ * Both are on screen at once when both apply.
+ */
 export function DialogHost({ onReply, interactive }: DialogHostProps) {
   const state = useRoomState();
-  const req = state.request;
-
   if (state.gameOver) return <GameOverBox winner={state.gameOver} />;
-  if (state.ag) return <AgBox onReply={onReply} interactive={interactive} />;
+  // The request first, so the modal is the first `.fk-dialog` in the document
+  // for anything reading "what is this seat being asked" out of the DOM. Which
+  // of the two is on top is settled by `z-index` (40 over 30), not by order.
+  return (
+    <>
+      <RequestDialog onReply={onReply} interactive={interactive} />
+      {state.ag ? <AgBox onReply={onReply} interactive={interactive} /> : null}
+    </>
+  );
+}
+
+function RequestDialog({ onReply, interactive }: DialogHostProps) {
+  const state = useRoomState();
+  const req = state.request;
   if (req.kind !== 'dialog') return null;
 
   switch (req.command) {
@@ -40,9 +71,10 @@ export function DialogHost({ onReply, interactive }: DialogHostProps) {
     case 'AskForChoices': return <ChoiceBox data={req.data} onReply={onReply} interactive={interactive} multi />;
     case 'AskForPoxi': return <PoxiBox data={req.data} onReply={onReply} interactive={interactive} />;
     case 'AskForAG':
-      // Normally `FillAG` has already built `state.ag` and the branch above
-      // catches it; this is the case where the ask arrives without a fill.
-      return <UnknownRequest command={req.command} data={req.data} />;
+      // Normally `FillAG` has already built `state.ag` and `DialogHost` is
+      // drawing the board; this is the case where the ask arrives without a
+      // fill, which leaves the seat nothing to pick from.
+      return state.ag ? null : <UnknownRequest command={req.command} data={req.data} />;
     default:
       return <UnknownRequest command={req.command} data={req.data} />;
   }
@@ -373,20 +405,36 @@ function AgBox({ onReply, interactive }: { onReply: (v: unknown) => void; intera
   const { lua } = useRoom();
   const state = useRoomState();
   const ag = state.ag!;
+  /**
+   * Whether this seat is the one being asked, right now.
+   *
+   * `AG.qml:41` drops `root.interactive` on the click itself, before the server
+   * has said anything back. `state.ag.interactive` cannot do that job on its
+   * own: it is raised by `AskForAG` and only lowered by `TakeAG`, which is the
+   * host's echo of the answer and arrives whenever it arrives — 60 seconds
+   * later in one measured game, all of it spent looking at a board whose cards
+   * still looked pickable. The room's own record of the open request is lowered
+   * on every edge that ends one, the reply included (`RoomStore.closeRequest`),
+   * so asking it is the same question QML asks and gets the same answer sooner.
+   */
+  const asked = state.request.kind === 'dialog' && state.request.command === 'AskForAG';
   return (
-    <Dialog title={lua.tr('Please choose cards')}>
+    <Panel title={lua.tr('Please choose cards')}>
       <div className="fk-ag">
         {ag.ids.map((cid) => {
           const taker = ag.taken[cid];
-          const pickable = interactive && ag.interactive && taker == null && !ag.disabled.includes(cid);
+          const pickable = interactive && asked && ag.interactive
+            && taker == null && !ag.disabled.includes(cid);
           return (
+            /* One handler, on the slot. It used to be on the slot *and* on the
+               card inside it, so every click bubbled through both and sent the
+               answer twice — 70 of 270 replies in an audited run, identical
+               payload, same millisecond, every one of them an `AskForAG`. The
+               slot is the right one of the two to keep: it is the whole click
+               target, footnote included, and it does not depend on `CardItem`
+               finding face data for the id. */
             <div className="fk-ag__slot" key={cid} onClick={pickable ? () => onReply(cid) : undefined}>
-              <CardItem
-                cid={cid}
-                known
-                item={{ id: cid, enabled: pickable, selected: false }}
-                onClick={pickable ? () => onReply(cid) : undefined}
-              />
+              <CardItem cid={cid} known item={{ id: cid, enabled: pickable, selected: false }} />
               {taker != null ? (
                 <span className="fk-ag__taker">{lua.tr(state.players[taker]?.general ?? String(taker))}</span>
               ) : null}
@@ -394,7 +442,7 @@ function AgBox({ onReply, interactive }: { onReply: (v: unknown) => void; intera
           );
         })}
       </div>
-    </Dialog>
+    </Panel>
   );
 }
 

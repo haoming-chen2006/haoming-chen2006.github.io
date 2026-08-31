@@ -522,6 +522,30 @@ export class RoomStore {
         s.drawPileCount = Number(data);
         return;
       }
+      case 'SyncDrawPile': {
+        // The reshuffle, and the only message that moves cards without a
+        // `MoveCards` to justify it.
+        //
+        // `Client:handleShuffleDrawPile` puts every discarded card back in the
+        // draw pile inside the client VM and announces nothing
+        // (`lua/lunarltk/client/client.lua:939`), because the Qt client keeps no
+        // card-location table of its own — it asks the VM. This store does keep
+        // one, so `lua/web/client.lua` forwards the VM's new pile as this
+        // notify. Without it `cardArea` holds ~145 cards on `DiscardPile` for
+        // the rest of the game while `UpdateDrawPile` pulls the pile count back
+        // to the truth, and the room shows 牌堆 137 | 弃牌堆 141 — 278 cards in
+        // a 160-card deck.
+        //
+        // The payload is the pile itself, so the count comes from it rather than
+        // being guessed at: an id list is the one thing that can repair a
+        // per-card table, and a count could not.
+        const ids = (data as readonly number[] | null) ?? [];
+        const area = { ...s.cardArea };
+        for (const cid of ids) area[Number(cid)] = CARD_AREA.DrawPile;
+        s.cardArea = area;
+        s.drawPileCount = ids.length;
+        return;
+      }
       case 'UpdateRoundNum': {
         s.round = Number(data);
         return;

@@ -21,6 +21,7 @@ import { LtkLua } from '../../room/ltk/LtkLua.ts';
 import { RoomStore } from '../../room/state/store.ts';
 import { retainNotifications, type RetainingClient } from '../retainingClient.ts';
 import { loopbackTransport, type CommandRow, type GameTransport } from '../api/transport.ts';
+import { reassemble } from '../liveTable.ts';
 import {
   seatSpecs, startHostRunner, type GameHost, type HostRunner, type HostSeat,
 } from '../hostRunner.ts';
@@ -681,6 +682,364 @@ describe('a seat the engine has stopped waiting on', () => {
       expect(faults.filter((f) => f.startsWith('fatal'))).toEqual([]);
       expect(you.vm.errors()).toEqual([]);
     } finally {
+      runner.stop();
+      me.vm.dispose();
+      you.vm.dispose();
+      host.dispose();
+    }
+  }, LONG);
+});
+
+/**
+ * The half of "your question is over" that a race, not a clock, decides.
+ *
+ * A `Request` ends the instant `n` seats have said yes (`request.lua:281`).
+ * Every other seat it asked is marked `__failed_in_race`, and two things then
+ * happen on the same pass: `_finish` sets each of them un-thinking, and the
+ * losers are sent an explicit `CancelRequest` (`request.lua:344`, `:354`). The
+ * first of those is what reaches a browser seat, through
+ * `fk.ServerPlayer:setThinking`'s true -> false edge; this asserts a loser is
+ * released in milliseconds rather than left holding a live dialog until the
+ * ask's own timeout burns out. That is what 无懈可击 looks like from the losing
+ * seat, and 五谷丰登 asks the whole table once per target — eight races in a
+ * row, thirty seconds each if the losers are never told.
+ *
+ * The race is arranged rather than waited for. The only ask that ships with
+ * `n < #players` is `Room:askToNullification` (`room.lua:2635`), which needs
+ * two seats each holding a 无懈可击 and a trick aimed at the table; that cannot
+ * be arranged from outside the deck, and a test that waits for it is a test
+ * that passes by not running. Turning the opening 选将 — the one ask every game
+ * puts to several seats at once — into an `n = 1` race drives the real
+ * `Request` down the real losing branch, deterministically, on the first
+ * question of the game.
+ *
+ * Three human seats, not two, because exactly one seat is the lord and the lord
+ * chooses alone first (`gamelogic.lua:93`). With three, at least two are always
+ * in the broadcast whichever seat drew the lord.
+ */
+describe('a seat that loses a broadcast race', () => {
+  it('is released when someone else answers, not when the clock runs out', async () => {
+    const host = await InProcessLuaHost.create(bundle(), {});
+    host.lua.doStringSync(`
+      local orig = Request.initialize
+      function Request:initialize(players, command, n)
+        orig(self, players, command, n)
+        if command == "AskForGeneral" and #self.players > 1 then self.n = 1 end
+      end
+    `);
+    const transport = loopbackTransport('room-race');
+
+    const humans = [1, 2, 3];
+    const seats: HostSeat[] = [
+      ...humans.map((seat) => ({
+        seat, displayName: `玩家 ${seat}`, avatar: 'caocao',
+        isBot: false, connection: 'online' as const,
+      })),
+      ...Array.from({ length: 5 }, (_, i) => ({
+        seat: i + 4, displayName: `机器人 ${i + 4}`, avatar: 'guojia',
+        isBot: true, connection: 'online' as const,
+      })),
+    ];
+
+    interface Seat {
+      id: number;
+      vm: MainThreadLuaClient;
+      lua: LtkLua;
+      store: RoomStore;
+      commands: string[];
+    }
+    const mk = async (id: number): Promise<Seat> => {
+      const vm = await MainThreadLuaClient.create(bundle(), { playerId: id, screenName: `玩家 ${id}` });
+      const s: Seat = { id, vm, lua: new LtkLua(vm), store: new RoomStore(id), commands: [] };
+      vm.onNotifyUI((command, data) => {
+        s.commands.push(command as string);
+        s.store.applyNotify(command as string, data);
+      });
+      return s;
+    };
+    const people: Seat[] = [];
+    for (const id of humans) people.push(await mk(id));
+
+    const request = (s: Seat) => { s.store.commit(); return s.store.state.request; };
+    const asking = (s: Seat) =>
+      request(s).kind === 'dialog' && (request(s) as { command: string }).command === 'AskForGeneral';
+    const cancels = (s: Seat) => s.commands.filter((c) => c === 'CancelRequest').length;
+
+    for (const s of people.slice(1)) transport.onEnvelope(s.id, (env) => s.vm.deliverEnvelope(env));
+
+    const faults: string[] = [];
+    const runner = await startHostRunner({
+      roomId: 'room-race',
+      seats,
+      hostSeat: 1,
+      // 30 seconds is the losing seat's own budget. A seat released by the race
+      // is released in milliseconds; a seat released by the clock cannot be.
+      settings: { gameMode: 'aaa_role_mode', generalNum: 3, generalTimeout: 30 },
+      timeout: 30,
+      transport,
+      createHost: async () => host,
+      onLocalEnvelope: (e) => people[0].vm.deliverEnvelope(e),
+      onFault: (m, fatal) => faults.push(`${fatal ? 'fatal' : 'warn'}: ${m}`),
+    });
+    for (const s of people) s.vm.onReply((_c, reply) => runner.submit(s.id, reply));
+
+    const answered = new Set<number>();
+    const answerGeneral = (s: Seat) => {
+      if (answered.has(s.id)) return;
+      answered.add(s.id);
+      const [generals, n] = (request(s) as { data: unknown }).data as [string[], number];
+      s.lua.replyToServer(generals.slice(0, n ?? 1));
+    };
+
+    try {
+      /**
+       * Wait for the moment two seats are looking at the same question. A seat
+       * asked on its own is the lord, and it is answered rather than waited
+       * out — otherwise this test spends the lord's whole 30-second timeout
+       * measuring the wrong edge. The 1.5 s is because the two halves of a
+       * broadcast reach two tabs through two envelopes, so "only one is asking"
+       * is also what the first millisecond of a broadcast looks like.
+       */
+      const waiting = () => people.filter((s) => asking(s) && !answered.has(s.id));
+      let aloneSince: number | null = null;
+      const ready = await until(() => {
+        const a = waiting();
+        if (a.length >= 2) return true;
+        if (a.length === 1) {
+          aloneSince ??= Date.now();
+          if (Date.now() - aloneSince > 1_500) answerGeneral(a[0]);
+        } else {
+          aloneSince = null;
+        }
+        return false;
+      }, 120_000, () => {});
+      if (!ready) {
+        throw new Error('no two seats were ever asked 选将 together: '
+          + people.map((s) => `${s.id}=${JSON.stringify(request(s))}`).join(' ')
+          + ` faults=${JSON.stringify(faults)}`);
+      }
+
+      const [winner, ...losers] = waiting();
+      expect(losers.length).toBeGreaterThan(0);
+      const before = new Map(losers.map((s) => [s.id, cancels(s)]));
+
+      const answeredAt = Date.now();
+      answerGeneral(winner);
+
+      // Every loser's question is over the moment the winner's answer lands.
+      const released = await until(
+        () => losers.every((s) => request(s).kind === 'none'), 5_000, () => {});
+      expect(released).toBe(true);
+      expect(Date.now() - answeredAt).toBeLessThan(5_000);
+      for (const s of losers) expect(cancels(s)).toBeGreaterThan(before.get(s.id)!);
+      expect(faults.filter((f) => f.startsWith('fatal'))).toEqual([]);
+      for (const s of people) expect(s.vm.errors()).toEqual([]);
+    } finally {
+      runner.stop();
+      for (const s of people) s.vm.dispose();
+      host.dispose();
+    }
+  }, LONG);
+});
+
+/**
+ * Two topics, one game.
+ *
+ * A seated player subscribes `room:<id>` and `room:<id>:p:<seat>`. The host's
+ * send order is exact — every publish goes through one promise chain — but two
+ * Realtime topics have no ordering guarantee between them, and the host's own
+ * seat never sees it because its envelopes are handed over in-process.
+ * Measured over 38 two-seat games against the engine's `event_id`: 0 inversions
+ * in 17,853 moves on the host seat, 72 in 17,808 on the remote one, in 21 of
+ * the 38 games.
+ *
+ * The first three cases are the ordering rule on its own. The fourth plays a
+ * real game through a transport that delivers the private topic one publish
+ * late — the measured failure, made deterministic — and asks the question a
+ * player would: do the two tabs still hold the same table?
+ */
+describe('reassembling two topics into one stream', () => {
+  const env = (batch: number, to: number | null, seq: number): Envelope => ({
+    roomId: 'r', batch, to,
+    messages: [{ seq, kind: 'notify', command: 'GameLog', bytes: 1 }],
+  });
+  const label = (e: Envelope) => `${e.batch}:${e.to ?? 'pub'}`;
+  const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+  it('puts a late private envelope back in front of the public one it precedes', async () => {
+    const out: string[] = [];
+    const r = reassemble(2, (e) => out.push(label(e)), 20);
+    // The engine's order was public(1), private(1), public(2). The private
+    // topic runs late and hands its envelope over after public(2) — this is
+    // `draw -> hand(2)` arriving after `hand(2) -> processing`, the inversion
+    // that wedges a card in a hand for the rest of the game.
+    r.receive(env(1, null, 10));
+    r.receive(env(2, null, 30));
+    r.receive(env(1, 2, 20));
+    await wait(60);
+    expect(out).toEqual(['1:pub', '1:2', '2:pub']);
+    r.stop();
+  });
+
+  it('releases without waiting once both topics are current', () => {
+    const out: string[] = [];
+    const r = reassemble(2, (e) => out.push(label(e)), 20);
+    // Each topic is FIFO in itself, so a batch at or below both high-water
+    // marks can have nothing outstanding in front of it. Asserted with no
+    // `await` at all: this is the path almost every envelope takes, and it must
+    // cost nothing.
+    r.receive(env(1, null, 10));
+    r.receive(env(1, 2, 20));
+    expect(out).toEqual(['1:pub', '1:2']);
+    r.stop();
+  });
+
+  it('does not stall the table on a private topic that has nothing to say', async () => {
+    const out: string[] = [];
+    const r = reassemble(2, (e) => out.push(label(e)), 20);
+    // Most batches have no private half at all — 40 to 150 of a game's 600 for
+    // a given seat — so waiting for proof that never comes would be a table
+    // that stops moving. The hold is a cap, not a delay budget to spend.
+    for (let b = 1; b <= 4; b++) r.receive(env(b, null, b * 10));
+    await wait(80);
+    expect(out).toEqual(['1:pub', '2:pub', '3:pub', '4:pub']);
+    r.stop();
+  });
+
+  it('keeps a remote seat holding the same table as the host', async () => {
+    const host = await InProcessLuaHost.create(bundle(), {});
+    const inner = loopbackTransport('room-order');
+
+    /**
+     * The skew: seat 2's own topic runs a few milliseconds behind the public
+     * one, which is what two Realtime topics fanned out by two server-side
+     * processes actually do. Held rather than dropped, and on a timer rather
+     * than on the next publish — a private envelope carries this seat's own
+     * requests, so a skew that waits for more traffic deadlocks the room it is
+     * supposed to be testing.
+     */
+    const SKEW_MS = 30;
+    const inFlight: Envelope[] = [];
+    let inversions = 0;
+    const transport: GameTransport = {
+      ...inner,
+      async publish(e) {
+        if (e.to === 2) {
+          inFlight.push(e);
+          setTimeout(() => {
+            const i = inFlight.indexOf(e);
+            if (i >= 0) inFlight.splice(i, 1);
+            void inner.publish(e);
+          }, SKEW_MS);
+          return;
+        }
+        // A public envelope overtaking a private one still on the wire is the
+        // inversion itself; counting them is how this test proves it exercised
+        // the thing it is about.
+        if (inFlight.length > 0) inversions += 1;
+        await inner.publish(e);
+      },
+    };
+
+    const seats: HostSeat[] = [
+      { seat: 1, displayName: '房主', avatar: 'caocao', isBot: false, connection: 'online' },
+      { seat: 2, displayName: '客人', avatar: 'liubei', isBot: false, connection: 'online' },
+      ...Array.from({ length: 6 }, (_, i) => ({
+        seat: i + 3, displayName: `机器人 ${i + 3}`, avatar: 'guojia',
+        isBot: true, connection: 'online' as const,
+      })),
+    ];
+
+    interface Seat extends Player { vm: MainThreadLuaClient; store: RoomStore }
+    const mk = async (id: number, name: string): Promise<Seat> => {
+      const vm = await MainThreadLuaClient.create(bundle(), { playerId: id, screenName: name });
+      const s: Seat = {
+        vm, client: vm as unknown as RetainingClient, lua: new LtkLua(vm),
+        store: new RoomStore(id), scene: new Scene(), pending: null, commands: [],
+      };
+      vm.onNotifyUI((command, data) => {
+        s.store.applyNotify(command as string, data);
+        if (command === 'UpdateRequestUI') s.scene.apply(data);
+        else if (command === 'CancelRequest') { s.pending = null; s.scene.reset(); }
+        else if (command === 'PlayCard' || (command as string).startsWith('AskFor')) {
+          s.pending = { command: command as string, data };
+        }
+      });
+      return s;
+    };
+    const me = await mk(1, '房主');
+    const you = await mk(2, '客人');
+
+    /**
+     * The order envelopes actually reached the client VM. This is the
+     * assertion with teeth: the engine published in `(batch, seq)` order, and
+     * anything else arriving at the VM is the bug, whether or not this
+     * particular game happened to contain a move that the inversion corrupts.
+     */
+    const applied: { batch: number; seq: number }[] = [];
+    const feed = (e: Envelope) => {
+      applied.push({ batch: e.batch, seq: e.messages[0]?.seq ?? 0 });
+      you.vm.deliverEnvelope(e);
+    };
+    // The hold has to exceed the skew it is reassembling across; in production
+    // that is a frame against a millisecond or two of Realtime jitter, here it
+    // is the same ratio with both numbers scaled up so the test does not
+    // depend on how fast this machine happens to be.
+    const ordered = reassemble(2, feed, SKEW_MS * 5);
+    transport.onEnvelope(2, ordered.receive);
+
+    const faults: string[] = [];
+    const runner = await startHostRunner({
+      roomId: 'room-order',
+      seats,
+      hostSeat: 1,
+      settings: { gameMode: 'aaa_role_mode', generalNum: 3, generalTimeout: 300 },
+      timeout: 300,
+      transport,
+      createHost: async () => host,
+      onLocalEnvelope: (e) => me.vm.deliverEnvelope(e),
+      onFault: (m, fatal) => faults.push(`${fatal ? 'fatal' : 'warn'}: ${m}`),
+    });
+    me.vm.onReply((_c, reply) => runner.submit(1, reply));
+    you.vm.onReply((_c, reply) => runner.submit(2, reply));
+
+    const counts = (s: Seat) => {
+      s.store.commit();
+      const st = s.store.state;
+      return {
+        draw: st.drawPileCount,
+        hands: Object.fromEntries(Object.entries(st.hands).map(([k, v]) => [k, v.length])),
+        equips: Object.fromEntries(Object.entries(st.equips).map(([k, v]) => [k, v.length])),
+      };
+    };
+
+    try {
+      const play = () => { answer(me); answer(you); };
+      // Long enough for the deal, several rounds of play and a good number of
+      // inversions; not so long that the suite pays for a whole game.
+      const deadline = Date.now() + 120_000;
+      while (Date.now() < deadline && !me.store.state.gameOver) {
+        play();
+        await new Promise((r) => setTimeout(r, 25));
+        me.store.commit();
+        if (me.store.state.round >= 3) break;
+      }
+      // Nobody answers anything now, so both tabs drain to the same point.
+      await new Promise((r) => setTimeout(r, 1_500));
+
+      expect(inversions).toBeGreaterThan(10);
+      const outOfOrder = applied.filter((m, i) =>
+        i > 0 && (m.batch < applied[i - 1].batch
+          || (m.batch === applied[i - 1].batch && m.seq < applied[i - 1].seq)));
+      expect({ outOfOrder: outOfOrder.length, of: applied.length })
+        .toEqual({ outOfOrder: 0, of: applied.length });
+      // And the consequence a player would notice: the two tabs hold the same
+      // table.
+      expect(counts(you)).toEqual(counts(me));
+      expect(faults.filter((f) => f.startsWith('fatal'))).toEqual([]);
+      expect(you.vm.errors()).toEqual([]);
+    } finally {
+      ordered.stop();
       runner.stop();
       me.vm.dispose();
       you.vm.dispose();

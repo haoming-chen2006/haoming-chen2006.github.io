@@ -20,7 +20,10 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { loadRoster } from './catalogue.mjs';
 import { playAuditedGame } from './game.mjs';
+import { Ledger } from './ledger.mjs';
+import { mergePerf } from './perf.mjs';
 import { Coverage } from './session.mjs';
 import { renderSummary } from './report.mjs';
 
@@ -46,6 +49,7 @@ const parallel = Math.max(1, Number(flag('parallel', 1)));
 const seed = Number(flag('seed', Date.now() % 100000));
 const gameTimeoutMs = Number(flag('timeout', 15 * 60 * 1000));
 const shots = Boolean(flag('shots', false));
+const profile = Boolean(flag('profile', false));
 const hook = !flag('no-hook', false);
 const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
 const logDir = resolve(String(flag('out', join(ROOT, 'node_modules', '.cache', 'fk-audit', 'runs', stamp))));
@@ -55,8 +59,54 @@ mkdirSync(logDir, { recursive: true });
 const now = () => new Date().toISOString().slice(11, 19);
 const say = (msg) => process.stdout.write(`${now()} ${msg}\n`);
 
+/**
+ * Fail fast on an unreachable URL.
+ *
+ * Without this, a preview server that is not running costs a 60-second
+ * sign-in timeout and then reports itself as a product failure at the front
+ * door — which is exactly the confusion this suite exists to remove.
+ */
+const reachable = await fetch(url, { redirect: 'follow' })
+  .then((r) => r.ok, () => false);
+if (!reachable) {
+  process.stderr.write(`\ncannot reach ${url}\n`
+    + `  start one with:  npm run preview     (serves http://127.0.0.1:4173/freekill/)\n`
+    + `  or audit the deployed site:  npm run audit:live\n\n`);
+  process.exit(2);
+}
+
+/**
+ * The campaign.
+ *
+ * Coverage from a single run answers "what did these games do". The question
+ * worth asking is "what have we still never tested", and that needs a
+ * denominator and a memory: the roster comes out of the build under test, and
+ * what has ever been covered against that build persists between runs. The
+ * same file is what lets the driver prefer a general it has never seated —
+ * without it every run rediscovers the popular half of the roster.
+ */
+const roster = await loadRoster(url);
+const buildKey = Ledger.buildKey(roster);
+const ledgerPath = resolve(String(flag('ledger',
+  join(ROOT, 'node_modules', '.cache', 'fk-audit', 'campaign.json'))));
+const ledger = new Ledger(ledgerPath, buildKey);
+const fresh = Boolean(flag('fresh-campaign', false));
+if (fresh) ledger.data = { ...new Ledger('/dev/null', buildKey).data, buildKey };
+const biasOn = !flag('no-bias', false);
+
 say(`auditing ${url}`);
 say(`${games} game(s) × ${seatCount} human seat(s), ${parallel} at a time, seed ${seed}`);
+say(`build ${buildKey}: ${roster.generals.length} generals, ${roster.cards.length} cards, `
+  + `packs ${[...(roster.packs.general ?? []), ...(roster.packs.card ?? [])].join('+')}`);
+if (ledger.reset) {
+  say(`campaign reset: the ledger was measured against build ${ledger.previous.buildKey}, `
+    + `which shipped a different roster`);
+}
+const gapsBefore = ledger.gaps(roster);
+say(`campaign so far: ${ledger.data.games} game(s); `
+  + `never seated ${gapsBefore.generalsNeverSeated.length}/${roster.generals.length} generals, `
+  + `never fired ${gapsBefore.skills.length}/${roster.skills.length} skills, `
+  + `never played ${gapsBefore.cards.length}/${roster.cards.length} cards`);
 say(`logs → ${logDir}`);
 
 /**
@@ -68,7 +118,23 @@ const cacheFor = (slot) => join(ROOT, 'node_modules', '.cache', 'fk-audit', `slo
 
 const results = [];
 const allFindings = [];
+const allPerf = [];
 const total = new Coverage();
+
+/**
+ * Recomputed per game, so two games in a run do not both go chasing the same
+ * gap while a third is left uncovered. With `--parallel` the games that start
+ * together share a view, which is the honest cost of running them at once.
+ */
+const biasFor = () => {
+  if (!biasOn) return null;
+  const g = ledger.gaps(roster);
+  return {
+    generals: new Set(g.generalsNeverSeated),
+    skills: new Set(g.skills),
+    cards: new Set(g.cards),
+  };
+};
 
 const queue = Array.from({ length: games }, (_, i) => i + 1);
 let nextIndex = 0;
@@ -80,7 +146,9 @@ async function worker(slot) {
     const gameIndex = queue[i];
     const gameSeed = seed + gameIndex * 104729;
     const t0 = Date.now();
-    say(`game ${gameIndex} starting (slot ${slot}, seed ${gameSeed})`);
+    const bias = biasFor();
+    say(`game ${gameIndex} starting (slot ${slot}, seed ${gameSeed}`
+      + `${bias?.generals.size ? `, hunting ${bias.generals.size} unseated general(s)` : ''})`);
     const { result, coverage } = await playAuditedGame({
       base: url,
       seats: seatCount,
@@ -91,14 +159,24 @@ async function worker(slot) {
       gameTimeoutMs,
       shots,
       hook,
+      bias,
+      profile,
       onProgress: (m) => say(`  game ${gameIndex}: ${m}`),
     });
     results.push(result);
     total.merge(coverage);
+    if (result.perf) allPerf.push(result.perf);
+    // Folded in as each game finishes, not at the end: a run that is killed
+    // half way should still leave the campaign knowing what it covered, and
+    // the game after this one should already be hunting a different general.
+    ledger.absorb(result.coverage, { seatedGenerals: result.seatedGenerals ?? [] });
+    ledger.save();
     for (const f of result.findings) allFindings.push({ ...f, game: gameIndex, logPath: result.log });
+    const newlySeated = (result.seatedGenerals ?? []).filter((g) => gapsBefore.generalsNeverSeated.includes(g));
     say(`game ${gameIndex} ${result.passed ? 'PASSED' : 'FAILED'} `
       + `(${result.outcome}, ${Math.round((Date.now() - t0) / 1000)}s, `
-      + `${result.decisions} decisions, ${result.findings.filter((f) => f.severity === 'fail').length} findings)`);
+      + `${result.decisions} decisions, ${result.findings.filter((f) => f.severity === 'fail').length} findings`
+      + `${newlySeated.length ? `, NEW: ${newlySeated.join('+')}` : ''})`);
   }
 }
 
@@ -106,19 +184,38 @@ await Promise.all(Array.from({ length: Math.min(parallel, games) }, (_, k) => wo
 results.sort((a, b) => a.game - b.game);
 
 const latency = mergeLatency(results.map((r) => r.latency));
+ledger.noteSession({
+  at: Date.now(), seed, url, games: results.length, logDir,
+  decisions: results.reduce((n, r) => n + r.decisions, 0),
+  findings: allFindings.filter((f) => f.severity === 'fail').length,
+});
+ledger.save();
+
 const summary = {
   url, seatCount, seed, games: results, coverage: total.toJSON(),
   findings: allFindings, latency, logDir,
+  perf: mergePerf(allPerf),
+  roster, buildKey, ledgerPath,
+  campaign: {
+    games: ledger.data.games, runs: ledger.data.runs, decisions: ledger.data.decisions,
+    gaps: ledger.gaps(roster),
+    generalsSeated: Object.keys(ledger.data.generalsSeated).sort(),
+    skillsFired: Object.keys(ledger.data.skillsFired).sort(),
+    cardsUsed: Object.keys(ledger.data.cardsUsed).sort(),
+    requestsAnswered: ledger.data.requestsAnswered,
+    biased: biasOn,
+  },
 };
 writeFileSync(join(logDir, 'summary.json'), JSON.stringify(summary, null, 2));
 process.stdout.write(renderSummary(summary));
 
 const failed = results.filter((r) => !r.passed).length;
 say(`${results.length - failed}/${results.length} games passed. summary.json in ${logDir}`);
+say(`campaign ledger → ${ledgerPath}`);
 process.exit(failed ? 1 : 0);
 
 function mergeLatency(all) {
-  const keys = ['requestAnswerableMs', 'decisionMs', 'replyToChangeMs', 'mainThreadBlockMs', 'settleMs'];
+  const keys = ['requestAnswerableMs', 'decisionMs', 'replyToChangeMs', 'evalRoundTripMs', 'settleMs'];
   const out = {};
   for (const k of keys) {
     const parts = all.map((a) => a?.[k]).filter(Boolean);

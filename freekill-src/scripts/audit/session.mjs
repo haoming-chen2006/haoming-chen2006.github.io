@@ -49,6 +49,15 @@ const CARD_TYPE_NAME = { 1: 'basic', 2: 'trick', 3: 'equip' };
 export class Coverage {
   constructor() {
     this.generals = new Set();
+    /**
+     * Generals a *human* seat chose, as opposed to every general at the table.
+     * The distinction is the whole coverage story: a bot's zhugeliang answers
+     * its own guanxing inside the engine and the client dialog is never drawn,
+     * so it proves nothing about the UI. Only a seat this suite drives does.
+     */
+    this.generalsSeated = new Set();
+    /** Generals the chooser put in front of a human seat, taken or not. */
+    this.generalsOffered = new Set();
     this.skillsGranted = new Set();
     this.skillsFired = new Map();      // skill -> times seen firing
     this.cardsSeen = new Map();        // card name -> times seen on the table
@@ -131,8 +140,16 @@ export class Coverage {
     this.interactions.set(elemType, (this.interactions.get(elemType) ?? 0) + 1);
   }
 
+  offered(general) {
+    if (general) this.generalsOffered.add(general);
+  }
+
+  seated(general) {
+    if (general) { this.generalsSeated.add(general); this.generals.add(general); }
+  }
+
   merge(other) {
-    for (const k of ['generals', 'skillsGranted', 'cardTypes', 'cardSubtypes', 'suits', 'dialogsRendered', 'sceneTypes', 'unknownRequests']) {
+    for (const k of ['generals', 'generalsSeated', 'generalsOffered', 'skillsGranted', 'cardTypes', 'cardSubtypes', 'suits', 'dialogsRendered', 'sceneTypes', 'unknownRequests']) {
       for (const v of other[k]) this[k].add(v);
     }
     for (const k of ['skillsFired', 'cardsSeen', 'requestsSeen', 'requestsAnswered', 'interactions']) {
@@ -147,6 +164,8 @@ export class Coverage {
     const m = (map) => Object.fromEntries([...map].sort((a, b) => b[1] - a[1]));
     return {
       generals: [...this.generals].sort(),
+      generalsSeated: [...this.generalsSeated].sort(),
+      generalsOffered: [...this.generalsOffered].sort(),
       skillsGranted: [...this.skillsGranted].sort(),
       skillsFired: m(this.skillsFired),
       cardsUsed: m(this.cardsSeen),

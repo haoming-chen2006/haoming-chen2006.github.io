@@ -47,8 +47,19 @@ export const THRESHOLDS = {
   stallMs: 75000,
   /** How long two tabs get to converge before their difference is a desync. */
   settleMs: 10000,
-  /** A main thread blocked longer than this is reported as a delay finding. */
-  blockedMs: 3000,
+  /**
+   * A main thread frozen longer than this is a delay finding.
+   *
+   * It used to be 3 000 ms, which was the right number for the wrong
+   * measurement: the old block figure was a CDP round trip and carried the
+   * transport, node's own busyness and the cost of the audit's own `snap()`,
+   * so the threshold had to be set high enough to clear all that noise. The
+   * number this is now compared against is the page's own timer overshoot,
+   * where 500 ms means the page did nothing at all for half a second and a
+   * click made in that window went nowhere. In a card game that is felt, so it
+   * is reported.
+   */
+  blockedMs: 500,
   /** `.fk-seats` shorter than this cannot be showing a real ring of seats. */
   minSeatsH: 240,
 };
@@ -72,10 +83,12 @@ export class Auditor {
     this.per = Object.fromEntries(seats.map((id) => [id, {
       lastSnap: null,
       deckSize: null,
+      deckCandidate: null,
       request: null,          // { command, openedAt, seq, answerableAt }
       conservationSuspect: null,
       lastHand: null,
       lastHandSeq: 0,
+      lastReply: null,
     }]));
     this.lastFingerprint = null;
     this.lastFingerprintAt = Date.now();
@@ -88,7 +101,7 @@ export class Auditor {
      * for a check it skipped is the failure mode this whole thing exists to
      * avoid.
      */
-    this.ran = { conservation: 0, agreement: 0, retention: 0, geometry: 0, liveness: 0 };
+    this.ran = { conservation: 0, agreement: 0, retention: 0, geometry: 0, liveness: 0, fidelity: 0, reachable: 0, replies: 0 };
   }
 
   /** Record a finding once per (rule, key); repeats become a count. */
@@ -123,7 +136,15 @@ export class Auditor {
     // which packs the room enabled, and a hard 160 would fail a legitimate
     // configuration while telling you nothing about a real leak.
     if (p.deckSize == null) {
-      if (snap.drawPile > 0 && snap.knownCards > 0) p.deckSize = snap.universe;
+      // The baseline has to be confirmed, not taken on sight. `UpdateDrawPile`
+      // sets an absolute number and the `MoveCards` that justifies it is a
+      // separate message, so a single read taken between the two lands a few
+      // cards short — and a baseline that starts low makes every later check
+      // compare against the wrong deck. Two consecutive readings agreeing is
+      // enough, because the number is constant whenever it is not mid-burst.
+      if (!(snap.drawPile > 0 && snap.knownCards > 0)) return;
+      if (p.deckCandidate === snap.universe) p.deckSize = snap.universe;
+      else p.deckCandidate = snap.universe;
       return;
     }
     const want = expectedDeck ?? p.deckSize;
@@ -139,7 +160,10 @@ export class Auditor {
       p.conservationSuspect = { value: snap.universe, at: snap.at, seq: snap.seq };
       return;
     }
-    if (snap.at - p.conservationSuspect.at < 1200) return;
+    // A real leak is permanent, so waiting longer costs nothing and rules out
+    // the one-card blip a flush can show between `UpdateDrawPile` and the move
+    // that justifies it.
+    if (snap.at - p.conservationSuspect.at < 2500) return;
     // One finding per seat, not one per wrong total: the count is the number of
     // decision boundaries the deck was wrong at, and the range is how far it
     // drifted. Thirty near-identical entries bury everything else in the report.
@@ -201,6 +225,99 @@ export class Auditor {
       this.report('render', seatId, `hand holds ${own} cards but ${d.handCards} are drawn`, {
         key: 'handUnderdrawn', model: own, drawn: d.handCards, seq: snap.seq,
       });
+    }
+  }
+
+  /**
+   * The picture and the model must say the same thing about every control.
+   *
+   * `enabled` on a scene item is the engine's ruling on whether a move is
+   * legal; `disabled` on the button and `fk-card--enabled` on the card are what
+   * the player can actually press. When those two disagree the player is either
+   * being offered a move the engine will refuse or denied one it would allow,
+   * and both are invisible to a check that only ever reads one of them.
+   */
+  fidelity(seatId, snap, actions) {
+    if (!actions?.actions?.length) return;
+    this.ran.fidelity += 1;
+    for (const it of actions.actions) {
+      if (it.sceneEnabled == null || !it.offered) continue;
+      if (it.sceneEnabled === it.enabled) continue;
+      const what = `${it.group}:${it.id ?? it.cid ?? it.name}`;
+      this.report('render', seatId,
+        `${what} is ${it.enabled ? 'pressable' : 'greyed'} on screen but the scene says `
+        + `${it.sceneEnabled ? 'enabled' : 'disabled'}`, {
+          key: `fidelity:${it.group}`,
+          control: what, dom: it.enabled, scene: it.sceneEnabled,
+          command: snap.request?.command ?? null, seq: snap.seq,
+        });
+    }
+  }
+
+  /**
+   * A control the app is offering must be one a mouse can actually reach.
+   *
+   * Enabled, visible and correctly sized is not the same as clickable. An
+   * overlay drawn on top absorbs the press, and nothing anywhere reports an
+   * error: the click is delivered, to the overlay, and the button it was aimed
+   * at never hears about it. From the outside this is indistinguishable from
+   * the app ignoring a reply, which is how it survived — five nullification
+   * prompts a game where Cancel was offered, was pressed, and produced no
+   * interact at all.
+   *
+   * The probe asks the browser's own hit testing what is at the control's
+   * centre point. If the answer is something else, a player has the same
+   * problem the driver does.
+   */
+  reachable(seatId, snap, actions) {
+    if (!actions?.actions?.length) return;
+    this.ran.reachable += 1;
+    for (const it of actions.actions) {
+      if (!it.enabled || !it.visible || !it.box) continue;
+      if (it.box.hit !== false) continue;
+      const what = `${it.group}:${it.id ?? it.cid ?? it.name ?? it.idx}`;
+      this.report('obscured', seatId,
+        `${what} is offered and enabled but ${it.box.over ?? 'something'} is drawn `
+        + `on top of it — a click at its centre never reaches it`, {
+          key: `obscured:${it.group}:${it.box.over ?? '?'}`,
+          control: what, over: it.box.over ?? null,
+          at: `${it.box.x},${it.box.y}`,
+          command: snap?.request?.command ?? null,
+          prompt: actions.prompt ?? null,
+          seq: snap?.seq ?? null,
+        });
+    }
+  }
+
+  /**
+   * One answer, one reply on the wire.
+   *
+   * The client calls `replyToServer` once per answer, or it should. Across
+   * five runs of this suite, 70 of 270 replies went out twice with identical
+   * payloads inside a millisecond of each other — a quarter of every answer
+   * this game has ever sent. A duplicate is not obviously harmful on its own,
+   * which is exactly why it survived: the engine takes the first and discards
+   * the second, and nothing anywhere complains. It stops being harmless when
+   * the second arrives after the request has closed, because the seat is then
+   * answering a question that no longer exists.
+   *
+   * Counted off `lua.replyToServer` directly, which is the last thing the
+   * client does before the wire, so there is nowhere for a duplicate to hide.
+   */
+  replyEcho(seatId, entries) {
+    const p = this.per[seatId];
+    for (const e of entries) {
+      if (e.kind !== 'reply') continue;
+      this.ran.replies += 1;
+      const payload = JSON.stringify(e.detail ?? null);
+      const prev = p.lastReply;
+      p.lastReply = { at: e.t, payload };
+      if (!prev || prev.payload !== payload || e.t - prev.at > 50) continue;
+      this.report('duplicate-reply', seatId,
+        `the same reply was sent twice ${e.t - prev.at} ms apart`, {
+          key: 'duplicate-reply', severity: 'warn',
+          payload: payload.slice(0, 60), gapMs: e.t - prev.at,
+        });
     }
   }
 
@@ -370,9 +487,20 @@ export class Auditor {
   }
 
   /**
-   * `resample` re-reads every seat. Skew across tabs is normal for as long as
-   * a flush takes to land; only skew that outlives the settle window is a
-   * desync, and the time it took to converge is itself worth recording.
+   * Shared state, compared across tabs until it settles.
+   *
+   * Two things make this harder than it looks. Tabs are sampled one after the
+   * other, so in a game that is actually moving the two reads are never at the
+   * same instant and SOMETHING always differs — a check that reports the first
+   * difference it sees reports every fast turn as a desync. And a flush landing
+   * on one tab before the other is normal and self-correcting.
+   *
+   * So the rule is: a disagreement counts only if the SAME field holds the SAME
+   * pair of values in every sample across the settle window. Skew moves — the
+   * draw pile that was two behind is four behind and then equal. A desync does
+   * not: one tab is simply wrong, and stays wrong, about one thing. Taking the
+   * intersection over the window is what separates them, and it is why this
+   * check can be trusted enough to act on.
    */
   async agreement(snaps, resample) {
     if (this.seatIds.length < 2) return;
@@ -382,31 +510,48 @@ export class Auditor {
     // desync. Whether the ending reaches every seat is checked on its own.
     if (snaps.some((s) => s.gameOver)) return;
     this.ran.agreement += 1;
-    const started = Date.now();
-    let current = snaps;
-    let diff = Auditor.diffShared(Auditor.shared(current[0]), Auditor.shared(current[1]));
-    for (let i = 2; i < current.length && !diff.length; i++) {
-      diff = Auditor.diffShared(Auditor.shared(current[0]), Auditor.shared(current[i]));
-    }
-    if (!diff.length) { this.settleSamples.push(0); return; }
 
-    while (Date.now() - started < this.t.settleMs) {
-      await new Promise((r) => setTimeout(r, 400));
-      current = await resample();
-      if (!current || current.some((s) => !s || !s.model)) return;
-      diff = [];
-      for (let i = 1; i < current.length; i++) {
-        const d = Auditor.diffShared(Auditor.shared(current[0]), Auditor.shared(current[i]));
-        if (d.length) { diff = d.map((x) => ({ ...x, between: `${this.seatIds[0]}/${this.seatIds[i]}` })); break; }
+    const diffOf = (set) => {
+      const out = [];
+      for (let i = 1; i < set.length; i++) {
+        for (const d of Auditor.diffShared(Auditor.shared(set[0]), Auditor.shared(set[i]))) {
+          out.push({ ...d, between: `${this.seatIds[0]}/${this.seatIds[i]}` });
+        }
       }
-      if (!diff.length) { this.settleSamples.push(Date.now() - started); return; }
+      return out;
+    };
+    const keyOf = (d) => `${d.between} ${d.field} ${d.a}\u2260${d.b}`;
+
+    const started = Date.now();
+    let persistent = null;   // the disagreements present in EVERY sample so far
+    let samples = 0;
+
+    for (;;) {
+      const set = samples === 0 ? snaps : await resample();
+      if (!set || set.some((x) => !x || !x.model)) return;
+      if (set.some((x) => x.gameOver)) return;
+      samples += 1;
+      const found = diffOf(set);
+      if (!found.length) { this.settleSamples.push(Date.now() - started); return; }
+
+      const here = new Map(found.map((d) => [keyOf(d), d]));
+      if (persistent === null) persistent = here;
+      else {
+        for (const k of [...persistent.keys()]) if (!here.has(k)) persistent.delete(k);
+        if (persistent.size === 0) { this.settleSamples.push(Date.now() - started); return; }
+      }
+
+      if (Date.now() - started >= this.t.settleMs) break;
+      await new Promise((r) => setTimeout(r, 500));
     }
 
+    if (!persistent || persistent.size === 0) { this.settleSamples.push(Date.now() - started); return; }
+    const stuck = [...persistent.values()];
     this.report('agreement', 'all',
-      `tabs still disagree after ${this.t.settleMs}ms: ${diff.slice(0, 4).map((d) => `${d.field} ${d.a}≠${d.b}`).join(', ')}`, {
-        key: `desync:${diff.map((d) => d.field).slice(0, 4).join(',')}`,
-        diff: diff.slice(0, 20),
-        round: current[0]?.round, seqs: current.map((s) => s?.seq),
+      `tabs disagree on the same thing in all ${samples} samples over ${this.t.settleMs}ms: `
+      + stuck.slice(0, 4).map((d) => `${d.field} ${d.a}\u2260${d.b}`).join(', '), {
+        key: `desync:${stuck.map((d) => d.field).slice(0, 4).join(',')}`,
+        diff: stuck.slice(0, 20), samples, settleMs: this.t.settleMs,
       });
   }
 
@@ -489,11 +634,4 @@ export class Auditor {
   get failures() { return this.findings.filter((f) => f.severity === 'fail'); }
   get warnings() { return this.findings.filter((f) => f.severity !== 'fail'); }
   get passed() { return this.failures.length === 0; }
-}
-
-/** Percentile of a numeric array, for the latency report. */
-export function pct(values, p) {
-  if (!values.length) return null;
-  const a = [...values].sort((x, y) => x - y);
-  return a[Math.min(a.length - 1, Math.floor((p / 100) * a.length))];
 }

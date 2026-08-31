@@ -15,6 +15,7 @@
  */
 import { join } from 'node:path';
 import { Auditor } from './invariants.mjs';
+import { PerfLedger, outsideView } from './perf.mjs';
 import { answerOnce, makeContext } from './policy.mjs';
 import { SeatTimeout, openSeat, profileFor, sleep } from './seat.mjs';
 import { Coverage, SessionLog } from './session.mjs';
@@ -31,6 +32,9 @@ const COMMITTING = new Set([
   'take-ag', 'pick-choice', 'pick-card-from-zone', 'invoke-skill',
   'decline-skill', 'dismiss-unknown-dialog',
 ]);
+
+/** Log markers that record a decision rather than a press on a control. */
+const NOT_A_CLICK = new Set(['back-out', 'steering']);
 
 /** Trim a snapshot down to what a human reading the log actually needs. */
 function boundarySnapshot(s) {
@@ -55,6 +59,8 @@ export async function playAuditedGame(opts) {
     pollMs = 300,
     shots = false,
     hook = true,
+    bias = null,
+    profile = false,
     onProgress = () => {},
   } = opts;
 
@@ -63,6 +69,11 @@ export async function playAuditedGame(opts) {
   const session = new SessionLog(join(logDir, `game-${gameIndex}.jsonl`));
   const coverage = new Coverage();
   const auditor = new Auditor({ seats: seatIds });
+  const perf = new PerfLedger();
+  /** Generals a human seat actually chose, which is the coverage that counts. */
+  const seatedGenerals = [];
+  /** Generals the engine put in front of a human seat, taken or not. */
+  const offeredGenerals = [];
   const result = {
     game: gameIndex, seed, base, seats: seatCount,
     startedAt: Date.now(), endedAt: null, outcome: 'unknown',
@@ -123,6 +134,10 @@ export async function playAuditedGame(opts) {
     }
     result.tableUpMs = Date.now() - startedAt;
     session.write('start', { tableUpMs: result.tableUpMs });
+    // Profiled from the moment the table exists, on the seat that opened the
+    // room — that tab is the one that also drives the authoritative engine, and
+    // it is where every one of the worst stalls has landed.
+    if (profile) await host.profileStart().catch(() => {});
     onProgress(`table up in ${result.tableUpMs} ms — playing`);
 
     /* ---------------------------------------------------------- the driver */
@@ -152,8 +167,15 @@ export async function playAuditedGame(opts) {
 
     const drive = async (seat) => {
       const st = state[seat.id];
-      st.ctx = makeContext({ seed: seed + seat.id.charCodeAt(1) * 7919, settle: settleFor(seat), deadline });
+      st.ctx = makeContext({
+        seed: seed + seat.id.charCodeAt(1) * 7919, settle: settleFor(seat), deadline, bias,
+      });
       while (!stop && Date.now() < deadline) {
+        // Before the expensive question, not after and not from a timer of its
+        // own: this is the trivial evaluate whose round trip is the outside
+        // view of a main-thread block, and it only means that if nothing the
+        // audit asked for is queued in front of it.
+        await seat.blockSample({ timeoutMs: 25000 }).catch(() => {});
         const snap = await seat.snap({ timeoutMs: 25000 });
         st.lastSnap = snap;
         if (!snap) { await sleep(pollMs); continue; }
@@ -170,7 +192,9 @@ export async function playAuditedGame(opts) {
         // "the engine ignored the UI" — and only this record can tell them
         // apart afterwards.
         if (drained.acts) {
-          session.write('sent', { seat: seat.id, entries: seat.outbox.slice(-drained.acts) });
+          const sent = seat.outbox.slice(-drained.acts);
+          session.write('sent', { seat: seat.id, entries: sent });
+          auditor.replyEcho(seat.id, sent);
         }
         coverage.fromSnapshot(snap);
         auditor.errors(seat.id, seat, snap);
@@ -197,6 +221,8 @@ export async function playAuditedGame(opts) {
 
         const actions = await seat.actions({ timeoutMs: 25000 });
         auditor.liveness(seat.id, snap, actions);
+        auditor.fidelity(seat.id, snap, actions);
+        auditor.reachable(seat.id, snap, actions);
 
         const open = snap.request && snap.request.kind !== 'none';
         const offered = (actions?.actions ?? []).filter((x) => x.enabled && x.visible && x.box);
@@ -273,7 +299,21 @@ export async function playAuditedGame(opts) {
         st.decisions += 1;
         result.decisions += 1;
         coverage.answered(answered.handled ?? snap.request.command, answered.unknown);
-        for (const s of answered.steps) if (s.group) coverage.interacted(s.group);
+        for (const g of answered.picked ?? []) {
+          if (!seatedGenerals.includes(g)) seatedGenerals.push(g);
+          coverage.seated(g);
+        }
+        for (const g of answered.offered ?? []) {
+          if (!offeredGenerals.includes(g)) offeredGenerals.push(g);
+          coverage.offered(g);
+        }
+        // Not every step is a click. `back-out` marks an abandoned attempt and
+        // `steering` records why an option was preferred; both carry a `group`
+        // so they read well in the log, and both would inflate the "elements
+        // driven" tally with moves that never happened.
+        for (const s of answered.steps) {
+          if (s.group && !NOT_A_CLICK.has(s.what)) coverage.interacted(s.group);
+        }
         if (answered.played) st.ctx.playsThisTurn += 1;
 
         const committed = answered.steps.some((s) => COMMITTING.has(s.what));
@@ -331,8 +371,21 @@ export async function playAuditedGame(opts) {
               return out;
             });
           }
-          const p95 = openedSeats.map((s) => Math.max(0, ...s.pings.slice(-40)));
-          p95.forEach((ms, i) => auditor.noteBlocked(openedSeats[i].id, ms, 'play'));
+          // The page's own account of how long it was frozen, drained on the
+          // supervisor's beat rather than the driver's so it is not itself
+          // paid for out of a decision's clock. A finding is raised off the
+          // in-page number, never off the round trip — the round trip includes
+          // node, the socket and the question being asked.
+          for (const s of openedSeats) {
+            const p = await s.perf().catch(() => null);
+            if (!p) continue;
+            perf.add(s.id, p);
+            // The freshly drained stalls only: `maxDrift` is cumulative, so
+            // reporting off it would re-report the same freeze on every beat
+            // for the rest of the game.
+            const worst = Math.max(0, ...(p.beats ?? []).map((b) => b.drift));
+            if (worst >= auditor.t.blockedMs) auditor.noteBlocked(s.id, Math.round(worst), 'play');
+          }
         }
         if (beats % 8 === 0) {
           const s0 = state[seatIds[0]].lastSnap;
@@ -360,8 +413,16 @@ export async function playAuditedGame(opts) {
     for (const s of openedSeats) {
       const tail = await s.drain().catch(() => ({ log: 0 }));
       if (tail.log) coverage.fromStream(s.stream.slice(-tail.log));
+      // The last drain is the one that matters: a stall during the closing
+      // burst is exactly the kind that never gets reported otherwise.
+      const p = await s.perf().catch(() => null);
+      if (p) perf.add(s.id, p);
       auditor.errors(s.id, s, state[s.id].lastSnap);
       if (shots) await s.screenshot(join(logDir, `game-${gameIndex}-${s.id}.png`)).catch(() => {});
+    }
+    if (profile) {
+      result.profile = await openedSeats[0].profileStop().catch(() => null);
+      if (result.profile) session.write('profile', { seat: openedSeats[0].id, ...result.profile });
     }
 
     const overAts = seatIds.map((id) => state[id].overAt).filter((v) => v != null);
@@ -377,6 +438,18 @@ export async function playAuditedGame(opts) {
             perSeat: Object.fromEntries(seatIds.map((id) => [id, state[id].overAt])),
           });
       }
+    }
+
+    // Every seat is looking at one deck. Two seats settling on different
+    // totals means one of them was already miscounting before the first
+    // comparison ran, which would quietly weaken every conservation check that
+    // followed it.
+    const decks = [...new Set(Object.values(auditor.deckSizes).filter((v) => v != null))];
+    if (decks.length > 1) {
+      auditor.report('conservation', 'all',
+        `seats disagree on how many cards are in the deck: ${decks.join(' vs ')}`, {
+          key: 'deckSize', perSeat: auditor.deckSizes,
+        });
     }
 
     const winners = seatIds.map((id) => state[id].over).filter(Boolean);
@@ -396,6 +469,9 @@ export async function playAuditedGame(opts) {
     result.outcome = 'error';
     result.error = e instanceof SeatTimeout ? `page stopped answering: ${e.message}` : String(e.message ?? e);
     auditor.report('setup', 'all', result.error, { key: 'setup', fatal: true });
+    // Completion must not read as a pass just because the run never got far
+    // enough to fail it.
+    auditor.report('completion', 'all', 'the game never started', { key: 'noStart' });
   } finally {
     for (const s of openedSeats) await s.close().catch(() => {});
   }
@@ -403,14 +479,20 @@ export async function playAuditedGame(opts) {
   result.endedAt = Date.now();
   result.durationMs = result.endedAt - result.startedAt;
   result.coverage = coverage.toJSON();
+  result.seatedGenerals = seatedGenerals;
+  result.offeredGenerals = offeredGenerals;
   result.findings = auditor.findings;
   result.checksRun = { ...auditor.ran };
   result.deckSizes = auditor.deckSizes;
   result.latency = summariseLatency(auditor, openedSeats);
+  // Sealed exactly once: `seal()` folds the per-seat cumulative buckets into
+  // the shared one, and folding twice would double every count in the report.
+  result.perf = perf.seal().toJSON();
   result.passed = auditor.passed && result.outcome === 'complete';
+  session.write('perf', result.perf);
   session.write('result', result);
   session.flush();
-  return { result, auditor, coverage };
+  return { result, auditor, coverage, perf: result.perf };
 }
 
 /** The reply counter the room keeps for itself; the only proof it went out. */
@@ -438,15 +520,16 @@ function summariseLatency(auditor, seats) {
       p95: a[Math.floor(a.length * 0.95)], max: a[a.length - 1],
     };
   };
-  const pings = seats.flatMap((s) => s.pings).sort((a, b) => a - b);
   return {
     requestAnswerableMs: stat(auditor.latency.answerable),
     decisionMs: stat(auditor.latency.decision),
     replyToChangeMs: stat(auditor.latency.replyToChange),
-    mainThreadBlockMs: pings.length ? {
-      n: pings.length, p50: pings[Math.floor(pings.length * 0.5)],
-      p95: pings[Math.floor(pings.length * 0.95)], max: pings[pings.length - 1],
-    } : null,
     settleMs: stat(auditor.settleSamples.map((ms) => ({ ms }))),
+    // The outside view, and only the outside view. What used to be published
+    // here as `mainThreadBlockMs` was the round trip of every evaluate the
+    // audit made, `snap()` and `actions()` included, so the app was being
+    // charged for the instrument's DOM walk. The page's own freeze number now
+    // comes from `result.perf.pageBlockMs`, measured inside the tab.
+    ...outsideView(seats),
   };
 }

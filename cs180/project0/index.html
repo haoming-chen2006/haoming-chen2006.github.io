@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Project 0 — Haoming Chen</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="nav-section">
+    <a class="nav-name" href="https://haoming-chen2006.github.io">Haoming Chen</a>
+  </div>
+  <div class="nav-section">
+    <a class="nav-link" href="#part1">Part 1</a>
+    <a class="nav-link" href="#part2">Part 2</a>
+    <a class="nav-link" href="#part3">Part 3</a>
+  </div>
+</nav>
+
+<main>
+
+  <header class="masthead">
+    <h1>Project 0</h1>
+  </header>
+
+
+  <!-- ══════════════════════════════════════════════════════════════
+       PART 1 · SELFIE
+       TODO → reshoot selfie-far.jpg at full resolution (current is 264px)
+       ══════════════════════════════════════════════════════════════ -->
+  <section class="section" id="part1">
+    <h2>Part 1</h2>
+
+    <div class="pair">
+      <figure>
+        <img src="assets/part1/selfie-close.jpg" alt="Close-up selfie, wide angle, heavily distorted">
+        <figcaption>
+          <strong>me when i heard CS&nbsp;180 is offered</strong>
+          <span class="meta">~20 cm &middot; 1&times;, camera tilted up &mdash; nose ~10 cm from the lens, ears ~20 cm</span>
+        </figcaption>
+      </figure>
+
+      <figure>
+        <img src="assets/part1/selfie-far.jpg" alt="Portrait taken from further back with zoom, natural proportions">
+        <figcaption>
+          <strong>me after project 0</strong>
+          <span class="meta">~3 m &middot; zoomed in &mdash; nose ~310 cm, ears ~320 cm. Same face, honest proportions</span>
+        </figcaption>
+      </figure>
+    </div>
+
+    <p class="note">
+      I shot the close one from about 20 cm with the camera tilted upward, which
+      did two things at once. My nose ended up almost directly against the lens
+      &mdash; call it 10 cm &mdash; while my ears sat 20+ cm back. That is close to a
+      2:1 ratio, and the lens renders it at exactly that ratio, so the nose comes
+      out enormous and everything behind it falls away. Then I backed up. My nose
+      is still nearer than my ears, but adding three meters to both turns 10/20
+      into roughly 310/320 &mdash; a ratio of about 1.03 &mdash; and the distortion
+      collapses with it. The zoom contributed nothing to the fix. Zoom only crops;
+      it cannot touch the geometry. Moving the center of projection is what did
+      all the work.
+    </p>
+  </section>
+
+
+  <!-- ══════════════════════════════════════════════════════════════
+       PART 2 · BUILDING
+       TODO → the two photos, and their distance/zoom numbers
+       ══════════════════════════════════════════════════════════════ -->
+  <section class="section" id="part2">
+    <h2>Part 2</h2>
+
+    <div class="pair">
+      <figure>
+        <!-- FILL IN: assets/part2/building-zoom.jpg -->
+        <img src="assets/part2/building-zoom.jpg" alt="Far shot — photo coming soon">
+        <figcaption>
+          <strong>Far away, zoomed in.</strong>
+          <!-- FILL IN: real numbers -->
+          <span class="meta">~90 m &middot; 5&times;</span>
+        </figcaption>
+      </figure>
+
+      <figure>
+        <!-- FILL IN: assets/part2/building-close.jpg -->
+        <img src="assets/part2/building-close.jpg" alt="Near shot — photo coming soon">
+        <figcaption>
+          <strong>Walked up, no zoom.</strong>
+          <!-- FILL IN: real numbers -->
+          <span class="meta">~18 m &middot; 1&times;</span>
+        </figcaption>
+      </figure>
+    </div>
+
+    <p class="note">
+      Exactly the same effect as the face, scaled up to a building. From far away,
+      the near corner of the facade and the far corner differ in distance by only a
+      small fraction of the total, so both walls project at nearly the same scale
+      and the building looks flat. Walking in makes that same gap a large fraction
+      of the distance: like what happens to my nose and ear.
+    </p>
+  </section>
+
+
+  <!-- ══════════════════════════════════════════════════════════════
+       PART 3 · DOLLY ZOOM
+       TODO → reshoot: step BACK as you zoom in so the astronaut stays the
+              same size on screen, then rebuild the GIF (see assets/README.md)
+       ══════════════════════════════════════════════════════════════ -->
+  <section class="section" id="part3">
+    <h2>Part 3</h2>
+
+    <figure class="wide">
+      <img src="assets/part3/dolly-zoom.gif" alt="Animated dolly zoom: subject stays the same size while the background rushes in">
+      <figcaption>
+        <strong>The dolly zoom.</strong>
+        <span class="meta">A toy astronaut a meter from the camera, the kitchen running eight meters back behind it</span>
+      </figcaption>
+    </figure>
+
+    <h3 class="strip-heading">The individual frames</h3>
+    <div class="strip">
+      <figure><img src="assets/part3/still-1.jpg" alt="Dolly zoom frame 1"><figcaption>1</figcaption></figure>
+      <figure><img src="assets/part3/still-2.jpg" alt="Dolly zoom frame 2"><figcaption>2</figcaption></figure>
+      <figure><img src="assets/part3/still-3.jpg" alt="Dolly zoom frame 3"><figcaption>3</figcaption></figure>
+      <figure><img src="assets/part3/still-4.jpg" alt="Dolly zoom frame 4"><figcaption>4</figcaption></figure>
+      <figure><img src="assets/part3/still-5.jpg" alt="Dolly zoom frame 5"><figcaption>5</figcaption></figure>
+    </div>
+
+    <p class="note">
+      Walking backward shrinks near things much faster than far things. Doubling my
+      distance from the astronaut halves it, while the cabinets eight meters off
+      barely change at all. Zooming in then scales everything back up by the same
+      factor. Tune the two against each other so the astronaut cancels out exactly,
+      and the background is left visibly swelling behind it &mdash; the subject holds
+      still while the room rushes forward.
+    </p>
+  </section>
+
+  <footer class="footer">
+    <p>Haoming Chen &middot; CS 180, Fall 2026</p>
+  </footer>
+
+</main>
+
+</body>
+</html>

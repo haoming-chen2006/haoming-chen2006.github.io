@@ -1,0 +1,212 @@
+/* ─────────────────────────────────────────────────────────────
+   Becoming Friends with Your Camera — CS 180 Project 0
+   Palette and type carried over from haoming-chen2006.github.io
+   ───────────────────────────────────────────────────────────── */
+
+:root {
+  --bg:        #fafafa;
+  --ink:       #111827;
+  --body:      #4b5563;
+  --muted:     #6b7280;
+  --rule:      #e5e7eb;
+  --accent:    #3b82f6;
+  --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --serif: Georgia, 'Times New Roman', serif;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--body);
+  font-family: var(--sans);
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+a { color: var(--accent); text-decoration: none; transition: color .15s ease; }
+a:hover { color: #2563eb; }
+::selection { background: rgba(59, 130, 246, .15); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ── Navbar ─────────────────────────────────────────────────── */
+
+.navbar {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 56px;
+  padding: 0 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(250, 250, 250, .85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(0, 0, 0, .06);
+  z-index: 100;
+}
+
+.nav-section { display: flex; align-items: center; gap: .25rem; }
+
+.nav-name {
+  color: var(--ink);
+  font-size: .9rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.nav-link {
+  color: var(--body);
+  font-size: .875rem;
+  font-weight: 500;
+  padding: .4rem .7rem;
+  border-radius: 6px;
+  transition: all .15s ease;
+}
+.nav-link:hover { color: var(--ink); background: #f0f0f0; }
+
+/* ── Layout ─────────────────────────────────────────────────── */
+
+main {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 0 2rem 6rem;
+}
+
+.masthead {
+  padding: 8rem 0 2rem;
+}
+
+.section {
+  padding: 4rem 0;
+  border-bottom: 1px solid var(--rule);
+}
+.section:last-of-type { border-bottom: none; }
+
+/* ── Type ───────────────────────────────────────────────────── */
+
+h1 {
+  font-size: 3rem;
+  line-height: 1.1;
+  letter-spacing: -0.025em;
+  font-weight: 700;
+  color: var(--ink);
+  margin: 0 0 1.25rem;
+}
+
+h2 {
+  font-size: 1.4rem;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+  font-weight: 700;
+  color: var(--ink);
+  margin: 0 0 1.75rem;
+}
+
+h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--ink);
+  margin: 0 0 .5rem;
+}
+
+/* The explanation paragraph under each part's images. */
+.note {
+  max-width: 36em;
+  margin: 2.5rem 0 0;
+  font-size: 1.02rem;
+}
+/* ── Figures ────────────────────────────────────────────────── */
+
+figure { margin: 0; }
+
+figure img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 4px;
+  background: #f0f0f0;
+}
+
+figcaption {
+  margin-top: .75rem;
+  font-size: .85rem;
+  line-height: 1.5;
+  color: var(--muted);
+}
+figcaption strong { color: var(--ink); font-weight: 600; }
+figcaption .meta {
+  display: block;
+  font-variant-numeric: tabular-nums;
+  color: #9ca3af;
+}
+
+/* Side-by-side comparison for Parts 1 and 2. */
+.pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.75rem;
+}
+
+/* Full-width single image — the GIF. */
+.wide { margin-bottom: 3.5rem; }
+
+/* Contact sheet of the individual dolly-zoom frames. */
+.strip-heading {
+  font-size: .75rem;
+  font-weight: 600;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 1rem;
+}
+
+.strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 1rem;
+}
+.strip figcaption {
+  margin-top: .4rem;
+  font-size: .75rem;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Footer ─────────────────────────────────────────────────── */
+
+.footer {
+  padding: 3rem 0 0;
+  border-top: 1px solid var(--rule);
+  font-size: .85rem;
+  color: var(--muted);
+}
+.footer p { margin: 0; }
+
+/* ── Small screens ──────────────────────────────────────────── */
+
+@media (max-width: 720px) {
+  .navbar { padding: 0 1rem; }
+  .nav-link { padding: .4rem .5rem; font-size: .8rem; }
+  main { padding: 0 1.25rem 4rem; }
+  .masthead { padding: 6rem 0 2.5rem; }
+  .section { padding: 3rem 0; }
+  h1 { font-size: 2.25rem; }
+  h2 { font-size: 1.5rem; }
+    .pair { grid-template-columns: 1fr; gap: 2rem; }
+}
+
+/* ── Print (for the Gradescope PDF) ─────────────────────────── */
+
+@media print {
+  .navbar { display: none; }
+  body { background: #fff; }
+  main { max-width: none; padding: 0; }
+  .masthead { padding-top: 0; }
+  .section { padding: 1.5rem 0; break-inside: avoid; }
+  figure { break-inside: avoid; }
+  .pair { gap: 1rem; }
+  a { color: var(--ink); }
+}

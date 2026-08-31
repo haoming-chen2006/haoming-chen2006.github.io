@@ -163,6 +163,16 @@ export function tableState(page) {
         ?? document.querySelector('.page h2')?.textContent ?? null,
       note: document.querySelector('.fk-curtain .lede')?.textContent
         ?? document.querySelector('.page .lede')?.textContent ?? null,
+
+      // Geometry, because counting elements is what let a collapsed board ship:
+      // eight photos existed in the DOM while .fk-seats was 0px tall and the
+      // whole table was clipped to a strip under the topbar.
+      roomH: Math.round(document.querySelector('.fk-room')?.getBoundingClientRect().height ?? 0),
+      seatsH: Math.round(document.querySelector('.fk-seats')?.getBoundingClientRect().height ?? 0),
+      photosOnScreen: [...document.querySelectorAll('.fk-photo')].filter((el) => {
+        const r = el.getBoundingClientRect();
+        return r.width > 0 && r.height > 0 && r.bottom > 0 && r.top < innerHeight;
+      }).length,
     };
   })()`);
 }
@@ -184,7 +194,10 @@ export async function waitForRealGame(page, { seats = 8, timeoutMs = 180000, req
     // room *snapshot*, and a snapshot has no transcript in it. The reloaded tab
     // gets its seats, its hand and the deck back immediately, and starts
     // collecting battle log from the next thing that happens.
+    // A seat that exists but is clipped off-screen is not a seat a player can
+    // click, so the geometry is part of "real game", not a nicety.
     if (last.photos >= seats && last.handCards > 0 && last.drawPile > 0
+        && last.seatsH >= 240 && last.photosOnScreen >= seats
         && (!requireLog || last.logLines > 0)) {
       return last;
     }

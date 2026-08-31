@@ -14,6 +14,7 @@ import { join } from 'node:path';
 import { AssetManifestSchema, LuaManifestSchema } from '../src/contract/manifest';
 import { buildBundle, ENGINE_ROOT } from './build-lua-bundle.mjs';
 import { glyphSet } from './glyphset.mjs';
+import { DIST } from './verify-dist.mjs';
 
 const WEB_ROOT = join(import.meta.dirname, '..');
 const PUBLIC = join(WEB_ROOT, 'public');
@@ -102,6 +103,31 @@ describe('asset manifest (4.5)', () => {
     expect(keys.has('packages/standard_cards/image/card/slash.png')).toBe(true);
     expect(keys.has('image/card/card-back.png')).toBe(true);
     expect(manifest.base).toBe('/freekill/');
+  });
+});
+
+describe('what GitHub Pages will actually serve', () => {
+  /**
+   * Pages runs Jekyll, and Jekyll drops any path segment beginning with an
+   * underscore — silently. The file is in the commit, the push succeeds, the
+   * server answers 404. Vite named a chunk `__vite-browser-external-<hash>.js`
+   * and shipped a build whose engine could not load on the live site while
+   * passing every local check. The build config strips the prefix now; this is
+   * the assertion that says so out loud.
+   */
+  it('publishes no path Jekyll would refuse', () => {
+    const walk = (dir: string, prefix = '', out: string[] = []): string[] => {
+      for (const name of readdirSync(dir)) {
+        const rel = prefix ? `${prefix}/${name}` : name;
+        const abs = join(dir, name);
+        if (statSync(abs).isDirectory()) walk(abs, rel, out);
+        else out.push(rel);
+      }
+      return out;
+    };
+    if (!existsSync(DIST)) return; // nothing published yet; `npm run build` makes one
+    const refused = walk(DIST).filter((f) => f.split('/').some((seg) => seg.startsWith('_')));
+    expect(refused, `GitHub Pages will 404 these: ${refused.join(', ')}`).toEqual([]);
   });
 });
 

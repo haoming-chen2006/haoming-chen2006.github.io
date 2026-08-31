@@ -157,6 +157,13 @@ export const UI = {
   'room.curtain.preparing': { zh_CN: '牌局准备中', en_US: 'Dealing the game' },
   'room.curtain.failed': { zh_CN: '这局开不起来', en_US: 'This game cannot start' },
   'room.banner.dismiss': { zh_CN: '知道了', en_US: 'Got it' },
+  // The engine failing to load is not a table with a problem, it is no table.
+  'room.engineDown.title': { zh_CN: '规则引擎没能启动', en_US: 'The rules engine did not start' },
+  'room.engineDown.body': {
+    zh_CN: '没有规则引擎就没有牌局，所以这里不会给你一张假牌桌。刷新一次通常就好；如果一直这样，多半是这次部署缺了文件。',
+    en_US: 'Without the rules engine there is no game, so this will not show you a table that is not one. A reload usually fixes it; if it keeps happening, this deployment is probably missing a file.',
+  },
+  'room.engineDown.retry': { zh_CN: '重新载入', en_US: 'Reload' },
 
   /* --------------------------------------------------- live table (host/guest) */
   // src/shell/liveTable.ts — phase notes and warnings shown on the curtain.

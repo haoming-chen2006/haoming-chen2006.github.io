@@ -36,6 +36,9 @@ export interface EngineClientSpec {
 
 export async function createEngineClient(spec: EngineClientSpec): Promise<LuaClient | null> {
   const entry = Object.values(engineModules)[0];
+  // No engine lane in this build at all: the caller may legitimately fall back
+  // to the recorded stream. Everything below is a *failure* of an engine that
+  // is supposed to be here, and those throw — see the note on the catch.
   if (!entry) return null;
 
   let inner: PullClient;
@@ -44,7 +47,7 @@ export async function createEngineClient(spec: EngineClientSpec): Promise<LuaCli
     const Klass = mod.MainThreadLuaClient as
       | { create(b: unknown, s: unknown, o?: unknown): Promise<PullClient> }
       | undefined;
-    if (!Klass?.create) return null;
+    if (!Klass?.create) throw new Error('src/engine exports no MainThreadLuaClient');
     inner = await Klass.create(spec.bundle, {
       id: spec.seat, name: spec.name, avatar: spec.avatar, observing: spec.observing ?? false,
     }, { wasmUri: `${import.meta.env.BASE_URL}glue.wasm` });
@@ -55,8 +58,16 @@ export async function createEngineClient(spec: EngineClientSpec): Promise<LuaCli
       return maybe as LuaClient;
     }
   } catch (e) {
-    console.warn('[engine] client VM failed to boot; falling back to fixtures', e);
-    return null;
+    /**
+     * This used to return null, and the caller read null as "no engine in this
+     * build" and mounted the recorded fixture stream instead. That is how a
+     * chunk 404 became a table full of cards nobody could describe: the fixture
+     * client answers every `call` with null, so the first `GetCardData` on the
+     * first card crashed the room. A game that cannot be played must say so,
+     * not act one out. `dropUI`-shaped silence is the bug this whole lane exists
+     * to remove.
+     */
+    throw new Error(`the rules engine could not start: ${e instanceof Error ? e.message : String(e)}`);
   }
 
   /**

@@ -125,6 +125,8 @@ export function RoomPage({ roomId, onLeave }: { roomId: string; onLeave: () => v
   // game into a replay. See `retainingClient.ts`.
   const [client, setClient] = useState<LuaClient | null>(null);
   const [fixtureOnly, setFixtureOnly] = useState(false);
+  /** Set when the engine is supposed to be here and could not start. */
+  const [engineDown, setEngineDown] = useState<string | null>(null);
   const seat = me?.seat;
   const known = room !== undefined;
   useEffect(() => {
@@ -150,15 +152,18 @@ export function RoomPage({ roomId, onLeave }: { roomId: string; onLeave: () => v
       }))
       .then((real) => {
         if (!live) { real?.dispose(); return; }
+        // Null means this build has no engine lane at all, which is the one
+        // case where a recorded stream is an honest stand-in. A *failure* to
+        // start an engine that should be here throws, and lands below.
         if (!real) { fallback(); return; }
         made = retainNotifications(real);
         setFixtureOnly(false);
+        setEngineDown(null);
         setClient(made);
       })
       .catch((e) => {
-        console.error('[room] engine unavailable; falling back to the recorded stream', e);
-        setFault(t('room.fault.engine', { error: errorText(e) }));
-        fallback();
+        console.error('[room] the rules engine could not start', e);
+        if (live) setEngineDown(errorText(e));
       });
     return () => { live = false; made?.dispose(); };
   }, [known, loaded, seat, identity, t]);
@@ -251,6 +256,26 @@ export function RoomPage({ roomId, onLeave }: { roomId: string; onLeave: () => v
           chat={room.chat}
         />
       </>
+    );
+  }
+
+  // No engine means no game. Saying so beats mounting a recorded one and
+  // crashing on the first card it cannot describe, which is what this did.
+  if (engineDown) {
+    return (
+      <div className="page">
+        {banner}
+        <h2>{t('room.engineDown.title')}</h2>
+        <p className="lede">{t('room.engineDown.body')}</p>
+        <pre style={{
+          background: 'var(--ink-2)', border: '1px solid var(--line)', borderRadius: 10,
+          padding: 14, fontSize: 12, overflow: 'auto', color: 'var(--paper-dim)',
+        }}>{engineDown}</pre>
+        <div className="row" style={{ marginTop: 14 }}>
+          <button className="btn" onClick={() => location.reload()}>{t('room.engineDown.retry')}</button>
+          <button className="btn ghost" onClick={onLeave}>{t('app.backToLobby')}</button>
+        </div>
+      </div>
     );
   }
 

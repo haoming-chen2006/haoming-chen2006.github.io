@@ -35,7 +35,12 @@ export const CardItem = memo(function CardItem(props: CardItemProps) {
   const lang = useLanguage();
   const footnote = localize(props.footnote, lang);
 
-  if (!known || cid < 0) {
+  // `known === false` from the engine means the same thing as the caller saying
+  // so: this seat may not see the card's face. A card whose data cannot be
+  // resolved at all lands here too, so an id the client VM has not learned yet
+  // draws a card back instead of throwing in the middle of a render.
+  const data = known && cid >= 0 ? lua.getCardData(cid, true) : null;
+  if (!data || data.known === false) {
     return (
       <div className={cls('fk-card fk-card--back', expired && 'fk-card--expired')} title={title}>
         {virtName ? <span className="fk-card__virt">{lua.tr(virtName)}</span> : null}
@@ -44,7 +49,6 @@ export const CardItem = memo(function CardItem(props: CardItemProps) {
     );
   }
 
-  const data = lua.getCardData(cid, true);
   const name = data.virt_name ?? virtName ?? data.name ?? 'unknown';
   const suit = data.suit ?? 'nosuit';
   const red = SUIT_IS_RED[suit];

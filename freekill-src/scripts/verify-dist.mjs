@@ -19,10 +19,37 @@ function bytes(dir) {
   return n;
 }
 
+/**
+ * Every path under the publish root, relative to it.
+ */
+function walk(dir, prefix = '', out = []) {
+  for (const name of readdirSync(dir)) {
+    const rel = prefix ? `${prefix}/${name}` : name;
+    const p = join(dir, name);
+    if (statSync(p).isDirectory()) walk(p, rel, out);
+    else out.push(rel);
+  }
+  return out;
+}
+
 export function verifyDist(dist = DIST) {
   const problems = [];
   const need = ['index.html', 'asset-manifest.json', 'lua-manifest.json', 'lua-bundle.json', 'overview.json'];
   for (const f of need) if (!existsSync(join(dist, f))) problems.push(`missing ${f}`);
+
+  /**
+   * GitHub Pages runs Jekyll, and Jekyll drops any file or directory whose
+   * name begins with an underscore. It does this silently: the file is in the
+   * commit, `git push` succeeds, and the server answers 404. This shipped once
+   * — Vite named a chunk `__vite-browser-external-<hash>.js` and the engine's
+   * dynamic import of it failed on the live site only, which the room then
+   * "handled" by falling back to a recorded game and crashing on the first
+   * card. A build is not publishable if it contains a name Pages will refuse.
+   */
+  const unpublishable = walk(dist).filter((f) => f.split('/').some((seg) => seg.startsWith('_')));
+  for (const f of unpublishable) {
+    problems.push(`${f} starts with an underscore; GitHub Pages will not serve it`);
+  }
   if (problems.length) return { ok: false, problems, stats: null };
 
   const assets = JSON.parse(readFileSync(join(dist, 'asset-manifest.json'), 'utf8'));

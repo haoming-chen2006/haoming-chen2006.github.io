@@ -36,8 +36,19 @@ export class LtkLua {
 
   /* ----------------------------------------------------------- cards */
 
+  /**
+   * `GetCardData` already answers "I do not know that card" with
+   * `{ cid, known: false }` rather than nil, so a renderer that trusts the
+   * shape is right about the engine — but not about every `LuaClient`. The
+   * fixture client answers every `call` with null, and a null here reached a
+   * `data.virt_name` in `CardItem` and took the whole table down with it.
+   *
+   * A card that cannot be described is a face-down card, which the room
+   * already knows how to draw. One unresolvable card must never cost the game.
+   */
   getCardData(id: number, filterCard = false): CardData {
-    return this.client.call<CardData>('GetCardData', id, filterCard);
+    return this.client.call<CardData | null>('GetCardData', id, filterCard)
+      ?? { cid: id, known: false };
   }
 
   getCardExtensionByName(name: string): string {

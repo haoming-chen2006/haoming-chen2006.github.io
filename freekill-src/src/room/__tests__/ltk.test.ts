@@ -79,6 +79,20 @@ describe('LtkLua', () => {
   });
 
   /**
+   * A client that cannot answer must not be able to crash a render.
+   *
+   * `GetCardData` answers `{ cid, known: false }` for a card it does not know,
+   * so the room was written to trust the shape — and then met a `LuaClient`
+   * that answers every call with null. `data.virt_name` on null took down the
+   * whole table, live, on the first card drawn.
+   */
+  it('turns an unanswerable card into a face-down one rather than a null', () => {
+    const call = vi.fn(() => null);
+    const lua = new LtkLua({ call, interact: vi.fn(), replyToServer: vi.fn() } as unknown as LuaClient);
+    expect(lua.getCardData(7)).toEqual({ cid: 7, known: false });
+  });
+
+  /**
    * The arity matters, and this test used to hide that it was wrong.
    *
    * `contract/engine.ts` declares `replyToServer(command, reply)`. Asserting

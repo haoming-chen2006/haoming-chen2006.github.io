@@ -26,9 +26,9 @@ type Entry = { readonly [L in Language]: string };
 export const UI = {
   /* ------------------------------------------------------------ boot screen */
   // index.html's #boot splash and src/main.tsx's <Boot>.
-  'brand.name': { zh_CN: '新月杀', en_US: 'FreeKill' },
+  'brand.name': { zh_CN: '狗卡杀', en_US: 'Dog Card Kill' },
   'brand.tagline': {
-    zh_CN: '新月杀 · 打开链接就能玩的三国杀，无需安装、无需同步扩展包、无需服务器地址。',
+    zh_CN: '狗卡杀 · 打开链接就能玩的三国杀，无需安装、无需同步扩展包、无需服务器地址。',
     en_US: 'FreeKill — San Guo Sha you can play by opening a link. No install, no package sync, no server address.',
   },
   'boot.loading': { zh_CN: '正在载入', en_US: 'Loading' },

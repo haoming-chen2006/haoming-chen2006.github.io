@@ -46,6 +46,30 @@ export function Lobby({ onEnterRoom }: { onEnterRoom: (roomId: string) => void }
 
   const mode = useMemo(() => modeById(modeId) ?? GAME_MODES[0], [modeId]);
 
+  /**
+   * How many characters each seat is offered to choose from.
+   *
+   * The ceiling is the engine's, not a taste call: `askToChooseGeneral` draws
+   * `#nonlord * generalNum` from `general_pile` in one go, so a roster of N
+   * generals across S seats cannot offer more than N/S each. With the standard
+   * pack alone that was 25/8 = 3, which is why this used to be a fixed [3,4,5].
+   * With a general pack loaded it is far larger, and offering the whole roster
+   * is what "browse and pick" means — so the list is derived, not written down.
+   */
+  const generalNumOptions = useMemo(() => {
+    const pool = loaded.overview.generals.length;
+    const max = Math.max(3, Math.floor(pool / Math.max(1, mode.seats)));
+    const steps = [3, 5, 10, 20, 30, 50, 100, max];
+    return [...new Set(steps.filter((n) => n <= max))].sort((a, b) => a - b);
+  }, [loaded.overview.generals.length, mode.seats]);
+
+  useEffect(() => {
+    // A mode change can lower the ceiling; never send the engine a number it
+    // cannot fill, or the deal throws before anyone sees a card.
+    const max = generalNumOptions[generalNumOptions.length - 1] ?? 3;
+    if (generalNum > max) setGeneralNum(max);
+  }, [generalNumOptions, generalNum]);
+
   async function guard<T>(fn: () => Promise<T>): Promise<T | undefined> {
     setBusy(true);
     setError(null);
@@ -116,7 +140,7 @@ export function Lobby({ onEnterRoom }: { onEnterRoom: (roomId: string) => void }
               <div className="field">
                 <label htmlFor="rgn">{t('lobby.generalNum')}</label>
                 <select id="rgn" value={generalNum} onChange={(e) => setGeneralNum(Number(e.target.value))}>
-                  {[3, 4, 5].map((n) => <option key={n} value={n}>{n}</option>)}
+                  {generalNumOptions.map((n) => <option key={n} value={n}>{n}</option>)}
                 </select>
               </div>
             </div>

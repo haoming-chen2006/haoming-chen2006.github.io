@@ -21,6 +21,7 @@ import { assetIndex, type AssetManifest } from '../../contract/manifest';
 export class Assets {
   private readonly index: ReadonlyMap<string, { href: string }>;
   private readonly base: string;
+  private emojiCache?: readonly string[];
 
   constructor(manifest: AssetManifest) {
     this.index = assetIndex(manifest);
@@ -101,6 +102,27 @@ export class Assets {
   photo(name: string): string | undefined { return this.url(`image/photo/${name}.png`); }
   misc(name: string): string | undefined { return this.url(`image/misc/${name}.png`); }
   tableBackground(): string | undefined { return this.url('image/gamebg.jpg'); }
+
+  /** A chat emoji. `{emoji12}` in a message is `image/emoji/12.png`. */
+  emoji(id: string | number): string | undefined { return this.url(`image/emoji/${id}.png`); }
+
+  /**
+   * Every emoji this build shipped, in numeric order — the picker's contents.
+   *
+   * Read off the manifest rather than counted to a constant, so the offered set
+   * is by construction the set that has artwork behind it. Scanned once and
+   * kept: the manifest is thousands of entries and the answer never changes.
+   */
+  emojiIds(): readonly string[] {
+    if (this.emojiCache) return this.emojiCache;
+    const found: number[] = [];
+    for (const key of this.index.keys()) {
+      const m = /^image\/emoji\/([0-9]+)\.png$/.exec(key);
+      if (m) found.push(Number(m[1]));
+    }
+    this.emojiCache = found.sort((a, b) => a - b).map(String);
+    return this.emojiCache;
+  }
 }
 
 /** `1`..`13` become `A`, `2`… `J`, `Q`, `K` on a card face. */

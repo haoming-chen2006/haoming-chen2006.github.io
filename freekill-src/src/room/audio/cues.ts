@@ -64,6 +64,9 @@ export type SoundName =
   | 'damage' | 'losehp' | 'losemaxhp' | 'death'
   | 'draw' | 'judge' | 'skill'
   | 'chain' | 'recast' | 'gamestart' | 'win' | 'lose'
+  /** A flower or an egg thrown across the table. Not an engine event — see
+   *  `presentCues` below for where it comes from and why it has no sample. */
+  | 'present'
   /** A path the engine sent that parses as none of the above. */
   | 'generic';
 
@@ -212,8 +215,46 @@ export function cueFor(command: string, data: unknown, ctx: CueContext = NO_CONT
       { kind: 'music', scene: 'table' },
     ];
     case 'GameOver': return gameOverCues(data, ctx);
+    case 'Present': return presentCues(data);
     default: return [];
   }
+}
+
+/**
+ * Somebody threw a flower or an egg.
+ *
+ * The one cue here that is not an engine message. A present travels over the
+ * chat channel, not the wire (`components/present.ts`), so `Presents.tsx`
+ * calls `roomAudio.notify('Present', …)` itself — which is why the command name
+ * is not in `OBSERVED_WIRE_COMMANDS` and never will be.
+ *
+ * It carries no `sample`, and that is deliberate rather than an omission. The
+ * engine's own noises for this are `audio/system/{fly,flower,egg}{1,2}.mp3`,
+ * and those six files are exactly the ones carrying an intact
+ * `copyright=绯雨音乐` tag — the evidence that stopped this build shipping any
+ * audio at all (`src/room/assets/audio/build-audio.mjs`). A `sample` path here
+ * would be an invitation to a future build to play a file it has no right to,
+ * so there is none: a present is synthesised or it is silent.
+ *
+ * The seed is what separates the two. `sfx.ts`'s `generic` patch derives its
+ * pitch from it, so a flower rings high and an egg lands low, off the same
+ * three lines of synthesis.
+ */
+export function presentCues(data: unknown): readonly Cue[] {
+  const kind = str((data as Record<string, unknown> | null | undefined)?.kind);
+  if (!kind) return [];
+  const flower = kind === 'Flower';
+  return [{
+    kind: 'sound',
+    sound: 'present',
+    variant: flower ? 'flower' : 'egg',
+    seed: hashName(flower ? 'flower' : 'egg'),
+    // Under the table, not over it. A present is somebody being silly while a
+    // game is going on; it must never be the loudest thing in the room.
+    gain: flower ? 0.32 : 0.4,
+    // Two people throwing at once is one noise. `runtime.ts` collapses by tag.
+    tag: 'present',
+  }];
 }
 
 /** `RoomLogic.js:1374`. The engine's own sound channel, and most of the game. */

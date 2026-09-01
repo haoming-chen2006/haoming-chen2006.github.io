@@ -38,7 +38,7 @@ function emptyPlayer(id: number): PlayerState {
 
 export function initialRoomState(selfId: number | null): RoomState {
   return {
-    selfId, playerNum: 0, started: false, round: 0, currentId: null,
+    selfId, playerNum: 0, settings: {}, started: false, round: 0, currentId: null,
     players: {}, circle: [],
     cardArea: {}, hands: {}, equips: {}, judge: {}, piles: {},
     table: [], cards: {}, drawPileCount: 0, discardCount: 0,
@@ -299,8 +299,16 @@ export class RoomStore {
     switch (command) {
       /* -------------------------------------------------------- room setup */
       case 'EnterRoom': {
-        const [capacity] = data as [number, number, Record<string, unknown>];
+        const [capacity, , settings] = data as [number, number, Record<string, unknown>];
         s.playerNum = capacity;
+        // The third element is the room's settings blob, and it was being
+        // dropped. It is the only place a seat is ever told what kind of room
+        // it is sitting in — the Qt client reads the same values back out of
+        // its own copy via `ClientInstance:getSettings`. Kept, never acted on:
+        // see `RoomState.settings`.
+        if (settings && typeof settings === 'object' && !Array.isArray(settings)) {
+          s.settings = settings as Record<string, unknown>;
+        }
         return;
       }
       case 'AddPlayer': {

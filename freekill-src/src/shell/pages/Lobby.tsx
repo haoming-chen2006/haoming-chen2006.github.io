@@ -41,6 +41,13 @@ export function Lobby({ onEnterRoom }: { onEnterRoom: (roomId: string) => void }
   const [modeId, setModeId] = useState<ModeId>(DEFAULT_MODE_ID);
   const [generalNum, setGeneralNum] = useState(3);
   const [disabled, setDisabled] = useState<readonly string[]>([]);
+  /**
+   * 自由选将. The one room setting that changes what a player may *do* rather
+   * than what the deal looks like, and the only route this build has to "let me
+   * pick my own character" — see `src/room/dialogs/FreeAssign.tsx` for why the
+   * engine supports it by not checking rather than by enforcing.
+   */
+  const [freeAssign, setFreeAssign] = useState(false);
 
   useEffect(() => api.watchLobby(setRooms), [api]);
 
@@ -92,6 +99,7 @@ export function Lobby({ onEnterRoom }: { onEnterRoom: (roomId: string) => void }
         // to know which offer the room was opened as.
         fkMode: mode.id,
         generalNum,
+        enableFreeAssign: freeAssign,
         disabledPack: [...disabled],
       },
       bundleSha: loaded.lua.bundleSha256_16,
@@ -143,6 +151,17 @@ export function Lobby({ onEnterRoom }: { onEnterRoom: (roomId: string) => void }
                   {generalNumOptions.map((n) => <option key={n} value={n}>{n}</option>)}
                 </select>
               </div>
+            </div>
+            <div className="field" style={{ marginTop: 14 }}>
+              <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <input
+                  type="checkbox"
+                  checked={freeAssign}
+                  onChange={(e) => setFreeAssign(e.target.checked)}
+                />
+                {t('lobby.freeAssign')}
+              </label>
+              <p className="lede" style={{ margin: '4px 0 0', fontSize: 12 }}>{t('lobby.freeAssign.help')}</p>
             </div>
             <div className="field" style={{ marginTop: 14 }}>
               <label>{t('lobby.packs')}</label>

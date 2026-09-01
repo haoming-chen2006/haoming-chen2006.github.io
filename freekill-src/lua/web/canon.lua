@@ -51,6 +51,59 @@ local function keyless(a, b)
   return a < b
 end
 
+-- ---------------------------------------------------------------- 活对象
+--
+-- 带 __tocbor 的表有两类，必须分清楚，而且只能按元表身份认，不能按字段形状猜。
+--
+--   * cbor 自己的包装：simple {value,name,cbor} 和 tagged {tag,value}；
+--   * 引擎的活对象：Player / Card / Skill / General，四个类都定义了 __tocbor，
+--     middleclass 会把它抄进每个子类的实例元表，所以 rawget 也找得到。
+--
+-- 原来是按「有没有 name/value/tag 字段」猜的，而 Player 自己就有一个叫 tag 的
+-- 表字段（lua/lunarltk/core/player.lua:107）。于是一个活的 Player 被当成 cbor
+-- tagged，tostring(那张表) 拼进了 JSON：{"__tag":table: 0x…}。JSON.parse 一炸，
+-- drainUI 整批 UI 事件全丢，那个座位从此收不到任何东西 —— 一局里见过 137 次。
+local cbor_mts
+
+--- cbor 的 simple / tagged 元表。cbor 是引擎装的全局，比本文件晚，所以懒取。
+---@return table? simple_mt
+---@return table? tagged_mt
+local function cborMts()
+  if cbor_mts == nil then
+    if type(cbor) ~= "table" or type(cbor.tagged) ~= "function" then return nil, nil end
+    cbor_mts = { getmetatable(cbor.null), getmetatable(cbor.tagged(0, 0)) }
+  end
+  return cbor_mts[1], cbor_mts[2]
+end
+
+-- 解码时把任意语义标签留成 {__tag, value} 的普通数据，而不是让引擎的
+-- tagged_decoders 把它还原成活对象（那正好是我们要摆脱的东西）。
+-- 键是标签号，所以 opts.more 之类的非数字键取到 nil，cbor.decode 的其它约定不受影响。
+local TAG_TO_REF = setmetatable({}, {
+  __index = function(_, tag)
+    if type(tag) ~= "number" then return nil end
+    return function(v) return { __tag = tag, value = v } end
+  end,
+})
+
+--- 活对象按它自己 __tocbor 定义的语义标签发出去，也就是 contract/protocol.ts
+--- 里的 TaggedRef。线路上只留 {__tag, value}，房间拿到再回头问 VM 要数据
+--- （src/engine/luaClient.ts 的 resolve）。
+---
+--- 这比原来那个 "<obj:BasicCard>" 字符串多的不是格式而是内容：那个字符串把
+--- 「是哪一张牌」整个丢了，ShowVirtualCard 每局都在丢。
+---@param x table
+---@param tocbor function
+---@return table? @ {__tag=<int>, value=<any>}，取不到就 nil
+local function taggedRef(x, tocbor)
+  if type(cbor) ~= "table" then return nil end
+  local ok, bytes = pcall(tocbor, x)
+  if not ok or type(bytes) ~= "string" then return nil end
+  local ok2, ref = pcall(cbor.decode, bytes, TAG_TO_REF)
+  if not ok2 or type(ref) ~= "table" or type(rawget(ref, "__tag")) ~= "number" then return nil end
+  return ref
+end
+
 ---@param v any
 ---@return string
 function M.encode(v)
@@ -63,20 +116,33 @@ function M.encode(v)
     if t == "boolean" then return x and "true" or "false" end
     if t == "number" then
       if math.type(x) == "integer" then return tostring(x) end
+      -- JSON 没有 inf / nan，%.14g 会写出 inf、-inf、nan —— 三个不是 JSON 的
+      -- 词。走到线路上就是整批 UI 事件被 JSON.parse 拒掉。按这个文件里已有的
+      -- 惯例（cbor 的 __null / __undefined）标成字符串，revive 认得回去。
+      if x ~= x then return '"__nan"' end
+      if x == math.huge then return '"__inf"' end
+      if x == -math.huge then return '"__-inf"' end
       return string.format("%.14g", x)
     end
     if t == "string" then return quote(x) end
     if t ~= "table" then return quote("<" .. t .. ">") end
 
-    -- cbor 的 simple / tagged 包装：折叠成朴素形式
+    -- cbor 的 simple / tagged 包装：折叠成朴素形式；引擎的活对象：折成 TaggedRef
     local mt = getmetatable(x)
-    if mt and rawget(mt, "__tocbor") then
-      local nm = rawget(x, "name")
-      if nm ~= nil and rawget(x, "value") ~= nil then return quote("__" .. tostring(nm)) end
-      local tg = rawget(x, "tag")
-      if tg ~= nil then
-        return '{"__tag":' .. tostring(tg) .. ',"value":' .. enc(rawget(x, "value"), depth + 1) .. '}'
+    local tocbor = mt and rawget(mt, "__tocbor")
+    if tocbor then
+      local simple_mt, tagged_mt = cborMts()
+      if mt == simple_mt then
+        local nm = rawget(x, "name")
+        if nm ~= nil then return quote("__" .. tostring(nm)) end
+        return quote("__simple:" .. tostring(rawget(x, "value")))
       end
+      if mt == tagged_mt then
+        return '{"__tag":' .. enc(rawget(x, "tag"), depth + 1)
+          .. ',"value":' .. enc(rawget(x, "value"), depth + 1) .. '}'
+      end
+      local ref = taggedRef(x, tocbor)
+      if ref then return enc(ref, depth + 1) end
       return quote("<obj:" .. tostring(rawget(x, "class") and rawget(rawget(x, "class"), "name") or "?") .. ">")
     end
 
@@ -151,17 +217,21 @@ end
 
 --- canon.encode 的逆：把从 JS 那边 JSON.parse 回来的普通数据还原成 Lua 值。
 ---
---- 只处理 encode 会引入的三种失真：
+--- 只处理 encode 会引入的四种失真：
 ---   * "__bytes:<hex>"     —— 非 UTF-8 字节串
+---   * "__inf"/"__nan" 等  —— JSON 表示不了的浮点
 ---   * {__tag=n, value=v}  —— CBOR 语义标签（33001..33005）
 ---   * "1" 之类的数字键    —— encode 把所有键都字符串化了
 --- 浮点会退化成整数（%.14g 写 2.0 是 "2"）；实测的回复里没有浮点，
 --- 若哪天有了，逐边界的摘要比对会立刻叫出来，而不是悄悄漂移。
 ---@param v any
 ---@return any
+local NONFINITE = { ["__inf"] = math.huge, ["__-inf"] = -math.huge, ["__nan"] = 0 / 0 }
 function M.revive(v)
   local t = type(v)
   if t == "string" then
+    local nf = NONFINITE[v]
+    if nf ~= nil then return nf end
     local hex = v:match("^__bytes:(%x*)$")
     if hex then
       return (hex:gsub("%x%x", function(c) return string.char(tonumber(c, 16)) end))

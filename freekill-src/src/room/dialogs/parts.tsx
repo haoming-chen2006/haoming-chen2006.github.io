@@ -104,8 +104,16 @@ export function Btn(
  * and at 319 generals it is the control people reach for most in this dialog.
  */
 export function GeneralCard(
-  { name, selected, disabled, onClick, onDetail }:
-  { name: string; selected?: boolean; disabled?: boolean; onClick?: () => void; onDetail?: () => void },
+  { name, selected, disabled, onClick, onDetail, onSwap }:
+  {
+    name: string; selected?: boolean; disabled?: boolean;
+    onClick?: () => void; onDetail?: () => void;
+    /** Free assign only: swap this slot for any general in the roster. Sits
+     *  opposite the ⓘ badge and for the same reason — the card's own click is
+     *  the answer to the request and cannot be spent on anything else. See
+     *  `dialogs/FreeAssign.tsx` for why it is a badge and not a right-click. */
+    onSwap?: () => void;
+  },
 ) {
   const { lua, assets } = useRoom();
   const data = lua.getGeneralData(name);
@@ -130,6 +138,18 @@ export function GeneralCard(
           onClick={(e) => { e.stopPropagation(); onDetail(); }}
         >
           ⓘ
+        </button>
+      ) : null}
+      {onSwap ? (
+        <button
+          type="button"
+          className="fk-general__swap"
+          style={SWAP_BADGE}
+          title={lua.tr('Enable free assign')}
+          aria-label={lua.tr('Enable free assign')}
+          onClick={(e) => { e.stopPropagation(); onSwap(); }}
+        >
+          ⇄
         </button>
       ) : null}
       <div className="fk-general__cap">
@@ -158,3 +178,7 @@ const INFO_BADGE: CSSProperties = {
   color: 'var(--fk-gold)',
   cursor: 'pointer',
 };
+
+/** The free-assign badge, opposite ⓘ so the two never overlap at any card size
+ *  and neither is near the middle of the card, which is the select target. */
+const SWAP_BADGE: CSSProperties = { ...INFO_BADGE, right: undefined, left: 4 };

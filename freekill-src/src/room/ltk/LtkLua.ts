@@ -228,6 +228,29 @@ export class LtkLua {
   }
 
   /**
+   * Every general the client's own packages loaded, optionally filtered.
+   *
+   * `client_util.lua:173` — the same call `FreeAssign.qml:66` makes for its
+   * search box, and the reason free assign needs no general list of its own.
+   * An empty word is the whole roster, because `SearchGenerals` short-circuits
+   * to `GetGenerals` for one (`client_util.lua:186`).
+   *
+   * TWO THINGS THE ENGINE DECIDES HERE AND WE MUST NOT. The list is filtered on
+   * `total_hidden` — hidden training-dummy generals are not offerable — and the
+   * match runs against `Fk:translate(g.name)`, so searching works in whatever
+   * language the VM is in. Reimplementing either would be a second roster.
+   *
+   * The word reaches Lua's `string.find` as a *pattern*, so `(` or `%` is a
+   * syntax error rather than a search. `FKClient.call` pcalls it and hands back
+   * an error object, which is not an array — hence the guard, not a throw: a
+   * player typing a bracket should get no matches, not a broken dialog.
+   */
+  searchGenerals(word = ''): readonly string[] {
+    const found = this.client.call<string[]>('SearchAllGenerals', word);
+    return Array.isArray(found) ? found : [];
+  }
+
+  /**
    * The artist credit that ships inline in each package's i18n table
    * (`illustrator:<general>` → "KayaK" for 25 standard portraits). The spec
    * asks for these to be surfaced, so they are a first-class lookup.

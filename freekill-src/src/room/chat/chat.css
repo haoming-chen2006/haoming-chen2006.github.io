@@ -1,0 +1,68 @@
+/* Chat emoji — the inline glyph, and the picker that writes one.
+   Kept out of room.css so the chat surface owns its own rules. */
+
+/* Sized in `em`, so one glyph is the same size relative to its text in the
+   12 px side panel and in the bubble over a seat. 1.35em against the panel's
+   12 px is ~16 px, which is the height the Qt client hardcodes in
+   `RoomPage.qml`. The negative baseline shift centres it on the x-height
+   instead of hanging it off the baseline. */
+.fk-emoji {
+  display: inline-block;
+  width: 1.35em;
+  height: 1.35em;
+  vertical-align: -0.28em;
+  object-fit: contain;
+  user-select: none;
+}
+
+/* A token this build has no picture for. It reads as the stand-in it is. */
+.fk-emoji-unknown {
+  opacity: 0.6;
+  font-style: italic;
+  word-break: break-all;
+}
+
+/* ------------------------------------------------------------------ picker */
+
+/* Overriding .fk-btn's `flex: 1` and 64 px floor: this shares a 210 px row with
+   the message input, which needs the space more than the button does. */
+.fk-emoji-toggle {
+  flex: 0 0 auto;
+  min-width: 0;
+  padding: 3px 7px;
+  font-size: 14px;
+  line-height: 1.2;
+}
+
+/* A block in the chat column, between the scrollback and the input — never a
+   floating layer. It is bounded by the panel it sits in, so there is no
+   geometry here that could reach the table or leave the viewport, and nothing
+   that could take a pointer event meant for a card. */
+.fk-emoji-grid {
+  flex: 0 0 auto;
+  max-height: 148px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(30px, 1fr));
+  gap: 2px;
+  margin-bottom: 4px;
+  padding-top: 4px;
+  border-top: 1px solid var(--fk-line);
+}
+
+.fk-emoji-grid__cell {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  padding: 0;
+  font-size: 18px;
+  border: none;
+  border-radius: 3px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.fk-emoji-grid__cell:hover { background: rgba(216, 178, 106, 0.22); }
+.fk-emoji-grid__cell:focus-visible { outline: 1px solid var(--fk-gold); }

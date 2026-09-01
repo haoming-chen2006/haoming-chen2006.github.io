@@ -1,0 +1,286 @@
+/* Flowers and eggs.
+ *
+ * The durations and the geometry arrive as custom properties from
+ * `Presents.tsx`; what lives here is the *shape* of each animation inside them,
+ * because a keyframe stop cannot be a variable. Two shot curves, because the
+ * flower is thrown straight away and the egg is wound up first — the
+ * percentages below are those two timelines, and they are only meaningful
+ * against the `Shape` constants the component sets `--fk-p-shot` from.
+ *
+ * Nothing here takes a pointer except the badge and the picker's buttons. A
+ * present in the air over a seat must never be the reason a click on that seat
+ * did nothing. */
+
+.fk-presents {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  /* Over the seats (`seatStyle` tops out around 22) and over the arrows, under
+     the dialogs. A thrown egg draws across a portrait, which is the point. */
+  z-index: 24;
+}
+
+/* ------------------------------------------------------------------- badge */
+
+.fk-present-badge {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  pointer-events: auto;
+}
+
+.fk-present-badge__btn {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid var(--fk-line);
+  border-radius: 50%;
+  background: rgba(12, 10, 8, 0.62);
+  color: var(--fk-gold);
+  cursor: pointer;
+  /* Quiet by default. The seat below the portrait is where the equipment rows
+     go, so this has to be readable without competing with them. */
+  opacity: 0.42;
+  transition: opacity 140ms ease, transform 140ms ease, background 140ms ease;
+}
+
+.fk-present-badge__btn svg { fill: currentColor; }
+.fk-present-badge__btn .fk-present-badge__ribbon { fill: rgba(12, 10, 8, 0.62); }
+
+.fk-present-badge__btn:hover:not(:disabled),
+.fk-present-badge__btn:focus-visible {
+  opacity: 1;
+  transform: scale(1.15);
+  background: rgba(24, 20, 15, 0.95);
+}
+
+.fk-present-badge__btn--on {
+  opacity: 1;
+  border-color: var(--fk-gold);
+  background: rgba(24, 20, 15, 0.95);
+}
+
+.fk-present-badge__btn:disabled { opacity: 0.16; cursor: default; }
+
+/* ------------------------------------------------------------------ picker */
+
+.fk-present-pick {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 6px);
+  transform: translateX(-50%);
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--fk-line);
+  border-radius: 6px;
+  background: var(--fk-panel-solid);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.55);
+  animation: fk-present-pop 120ms ease-out;
+}
+
+.fk-present-pick__btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  width: 52px;
+  padding: 4px 2px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: none;
+  color: var(--fk-ink);
+  font: inherit;
+  font-size: 11px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.fk-present-pick__btn img { width: 24px; height: 24px; object-fit: contain; }
+.fk-present-pick__btn:hover { border-color: var(--fk-gold); background: rgba(216, 178, 106, 0.14); }
+
+@keyframes fk-present-pop {
+  from { opacity: 0; transform: translateX(-50%) translateY(4px); }
+  to { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+/* ------------------------------------------------------------------ flight */
+
+.fk-present {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.fk-present img {
+  position: absolute;
+  left: 0;
+  top: 0;
+  /* `translate` in px minus 50% of the sprite's own size is what centres it on
+     a measured point without knowing how big the sprite is. */
+  transform-origin: 50% 50%;
+  will-change: transform, opacity;
+}
+
+.fk-present__shot {
+  opacity: 0;
+  animation-duration: var(--fk-p-shot);
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+
+.fk-present--flower .fk-present__shot { animation-name: fk-present-shot-flower; }
+.fk-present--egg .fk-present__shot,
+.fk-present--giant .fk-present__shot { animation-name: fk-present-shot-egg; }
+
+/* Thrown at once, fading out over the last fifth. `Flower.qml:47-79`. */
+@keyframes fk-present-shot-flower {
+  0% {
+    opacity: 1;
+    transform:
+      translate(calc(var(--fk-p-x0) - 50%), calc(var(--fk-p-y0) - 50%))
+      scale(var(--fk-p-s0)) rotate(var(--fk-p-rot));
+  }
+  79% { opacity: 1; }
+  100% {
+    opacity: 0;
+    transform:
+      translate(calc(var(--fk-p-x1) - 50%), calc(var(--fk-p-y1) - 50%))
+      scale(var(--fk-p-s1)) rotate(var(--fk-p-rot1));
+  }
+}
+
+/* Appears, hangs there, then flies spinning. `Egg.qml:34-89`; the stops are
+   the fade-in and the pause as fractions of `--fk-p-shot`. */
+@keyframes fk-present-shot-egg {
+  0% {
+    opacity: 0;
+    transform:
+      translate(calc(var(--fk-p-x0) - 50%), calc(var(--fk-p-y0) - 50%))
+      scale(var(--fk-p-s0)) rotate(var(--fk-p-rot));
+  }
+  27% {
+    opacity: 1;
+    transform:
+      translate(calc(var(--fk-p-x0) - 50%), calc(var(--fk-p-y0) - 50%))
+      scale(var(--fk-p-s0)) rotate(var(--fk-p-rot));
+  }
+  47% {
+    opacity: 1;
+    transform:
+      translate(calc(var(--fk-p-x0) - 50%), calc(var(--fk-p-y0) - 50%))
+      scale(var(--fk-p-s0)) rotate(var(--fk-p-rot));
+  }
+  90% { opacity: 1; }
+  100% {
+    opacity: 0;
+    transform:
+      translate(calc(var(--fk-p-x1) - 50%), calc(var(--fk-p-y1) - 50%))
+      scale(var(--fk-p-s1)) rotate(var(--fk-p-rot1));
+  }
+}
+
+/* ------------------------------------------------------------------ impact */
+
+/* Three drawings hard-swapped, not cross-faded — `whip.idx++` in the QML. Fill
+   is `forwards` rather than `both` on purpose: with `both`, frames two and
+   three would show their opening frame (visible) for the whole flight. */
+.fk-present__hit {
+  opacity: 0;
+  transform:
+    translate(calc(var(--fk-p-x1) - 50%), calc(var(--fk-p-y1) - 50%))
+    scale(var(--fk-p-hs));
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+
+.fk-present__hit--a {
+  animation-name: fk-present-hit-a;
+  animation-duration: var(--fk-p-step);
+  animation-delay: var(--fk-p-d0);
+}
+
+.fk-present__hit--b {
+  animation-name: fk-present-hit-b;
+  animation-duration: var(--fk-p-step);
+  animation-delay: var(--fk-p-d1);
+}
+
+.fk-present__hit--c {
+  animation-name: fk-present-hit-c;
+  animation-duration: var(--fk-p-last);
+  animation-delay: var(--fk-p-d2);
+}
+
+@keyframes fk-present-hit-a { 0% { opacity: 0; } 45%, 99% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes fk-present-hit-b { 0%, 99% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes fk-present-hit-c { 0%, 84% { opacity: 1; } 100% { opacity: 0; } }
+
+/* The two twinkles a flower lands with. `Flower.qml:88-146`. */
+.fk-present__star {
+  opacity: 0;
+  animation-name: fk-present-star;
+  animation-duration: 300ms;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+
+.fk-present__star--a {
+  transform: translate(calc(var(--fk-p-x1) - 25px - 50%), calc(var(--fk-p-y1) - 35px - 50%)) scale(0.7);
+  animation-delay: var(--fk-p-d1);
+}
+
+.fk-present__star--b {
+  transform: translate(calc(var(--fk-p-x1) - 10px - 50%), calc(var(--fk-p-y1) - 20px - 50%)) scale(0.7);
+  animation-delay: var(--fk-p-d2);
+}
+
+@keyframes fk-present-star { 0% { opacity: 0; } 33%, 66% { opacity: 1; } 100% { opacity: 0; } }
+
+/* --------------------------------------------------------------- the label */
+
+/* Who threw what. The arc already says at whom. */
+.fk-present__tag {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: flex;
+  gap: 5px;
+  align-items: baseline;
+  padding: 2px 7px;
+  border: 1px solid var(--fk-line);
+  border-radius: 9px;
+  background: rgba(12, 10, 8, 0.88);
+  font-size: 11px;
+  line-height: 1.5;
+  white-space: nowrap;
+  opacity: 0;
+  transform: translate(calc(var(--fk-p-x1) - 50%), calc(var(--fk-p-y1) - 52px));
+  animation: fk-present-tag var(--fk-p-hold) linear var(--fk-p-shot) forwards;
+}
+
+.fk-present__tag b { color: var(--fk-ink); font-weight: 600; }
+.fk-present__tag span { color: var(--fk-gold); }
+
+@keyframes fk-present-tag { 0% { opacity: 0; } 16%, 78% { opacity: 1; } 100% { opacity: 0; } }
+
+/* --------------------------------------------------------- reduced motion */
+
+/* The throw still happens and is still legible — it simply does not fly. The
+   impact and the label are the part that says what happened to whom. */
+@media (prefers-reduced-motion: reduce) {
+  .fk-present__shot,
+  .fk-present__star { display: none; }
+
+  .fk-present__hit--a,
+  .fk-present__hit--b { display: none; }
+
+  .fk-present__hit--c {
+    animation-duration: var(--fk-p-hold);
+    animation-delay: var(--fk-p-shot);
+  }
+
+  .fk-present-badge__btn { transition: none; }
+  .fk-present-pick { animation: none; }
+}

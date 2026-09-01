@@ -14,6 +14,7 @@
 import { useMemo, useState } from 'react';
 import { useRoom, useRoomState, usePrompt } from '../RoomContext';
 import { CardItem, cls } from '../components/CardItem';
+import { FreeAssign, freeAssignEnabled } from './FreeAssign';
 import { GeneralDetail } from './GeneralDetail';
 import { Btn, Dialog, GeneralCard, Panel } from './parts';
 
@@ -106,6 +107,7 @@ function ChooseGeneralBox(
   { data, onReply, interactive }: { data: unknown; onReply: (v: unknown) => void; interactive: boolean },
 ) {
   const { lua } = useRoom();
+  const state = useRoomState();
   const [generals, n, , heg, rule, extra] = data as [string[], number?, boolean?, boolean?, string?, unknown?];
   const count = n ?? 1;
   const ruleName = rule ?? (heg ? 'heg_general_choose' : 'askForGeneralsChosen');
@@ -113,19 +115,54 @@ function ChooseGeneralBox(
   const [picked, setPicked] = useState<string[]>([]);
   const [detail, setDetail] = useState<string | null>(null);
 
-  const prompt = lua.chooseGeneralPrompt(ruleName, generals, extraData) || '#AskForGeneral';
-  const feasible = lua.chooseGeneralFeasible(ruleName, picked, generals, extraData);
+  /**
+   * The offer, which is normally the engine's and under free assign is the
+   * engine's with slots substituted.
+   *
+   * `FreeAssign.qml:135` does the identical thing by mutating the offered
+   * card's `name` in place, and `ChooseGeneralBox.qml:219` then reads `choices`
+   * back off the *current* names. Holding the offer in state rather than
+   * reading the prop straight through is what lets a substitution behave like
+   * any other card: the same `ChooseGeneralFilter` and `ChooseGeneralFeasible`
+   * see it, and the reply is still the array of names the QML would send.
+   *
+   * Keyed on the wire's own array so a *new* question resets it. Two
+   * `AskForGeneral`s in one game is not hypothetical — 国战 asks again on a
+   * change of generals — and a stale substitution would answer the second
+   * question with the first one's picks.
+   */
+  const [swapped, setSwapped] = useState<{ key: readonly string[]; offer: string[] } | null>(null);
+  const offer = swapped && swapped.key === generals ? swapped.offer : generals;
+  /** Which slot the free-assign box is open for; -1 for closed. */
+  const [assigning, setAssigning] = useState(-1);
+  const freeAssign = freeAssignEnabled(state.settings);
+
+  const prompt = lua.chooseGeneralPrompt(ruleName, offer, extraData) || '#AskForGeneral';
+  const feasible = lua.chooseGeneralFeasible(ruleName, picked, offer, extraData);
 
   const toggle = (g: string) => {
     if (picked.includes(g)) { setPicked(picked.filter((x) => x !== g)); return; }
-    if (!lua.chooseGeneralFilter(ruleName, g, picked, generals, extraData)) return;
+    if (!lua.chooseGeneralFilter(ruleName, g, picked, offer, extraData)) return;
     setPicked(picked.length >= count ? [...picked.slice(1), g] : [...picked, g]);
+  };
+
+  /** Put `g` in slot `i`, and carry the selection across if that slot was
+   *  picked — otherwise choosing your general would silently unpick it. */
+  const assign = (i: number, g: string) => {
+    const was = offer[i];
+    const next = offer.slice();
+    next[i] = g;
+    setSwapped({ key: generals, offer: next });
+    setPicked((p) => (p.includes(was) ? p.map((x) => (x === was ? g : x)) : p));
+    setAssigning(-1);
   };
 
   return (
     <>
       <Dialog
-        title={lua.tr('#AskForGeneral')}
+        // `ChooseGeneralBox.qml:29` appends the same suffix, and it is the only
+        // thing that tells a player this room is not a normal one.
+        title={freeAssign ? `${lua.tr('#AskForGeneral')} (${lua.tr('Enable free assign')})` : lua.tr('#AskForGeneral')}
         prompt={prompt === '#AskForGeneral' ? undefined : lua.tr(prompt)}
         actions={<>
           {/* `ChooseGeneralBox.qml:123` — enabled once something is selected,
@@ -141,9 +178,9 @@ function ChooseGeneralBox(
             of a 319-general pool under free assign. The grid scrolls inside the
             box so a long one cannot push OK off the bottom of the screen. */}
         <div className="fk-generals" style={{ maxHeight: '58vh', overflowY: 'auto' }}>
-          {generals.map((g) => (
+          {offer.map((g, i) => (
             <GeneralCard
-              key={g}
+              key={`${i}:${g}`}
               name={g}
               selected={picked.includes(g)}
               onClick={interactive ? () => toggle(g) : undefined}
@@ -151,14 +188,25 @@ function ChooseGeneralBox(
               // to read a general's skills as much as the seat picking one does,
               // and reading answers nothing.
               onDetail={() => setDetail(g)}
+              // Gated on both the room's setting and on actually holding this
+              // seat: an observer has nothing to assign.
+              onSwap={freeAssign && interactive ? () => setAssigning(i) : undefined}
             />
           ))}
         </div>
       </Dialog>
+      {assigning >= 0 && offer[assigning] !== undefined ? (
+        <FreeAssign
+          current={offer[assigning]}
+          offer={offer}
+          onPick={(g) => assign(assigning, g)}
+          onClose={() => setAssigning(-1)}
+        />
+      ) : null}
       {detail ? (
         <GeneralDetail
           name={detail}
-          pool={generals}
+          pool={offer}
           onShow={setDetail}
           selected={picked.includes(detail)}
           onClose={() => setDetail(null)}
@@ -412,6 +460,26 @@ function PoxiBox({ data, onReply, interactive }: { data: unknown; onReply: (v: u
   const zones = d.data ?? [];
   const [picked, setPicked] = useState<number[]>([]);
 
+  /**
+   * What this seat may actually see.
+   *
+   * `Room:askToChooseCards` writes `visible_data[id] = false` for every card
+   * the chooser cannot see and hands it over inside `extra_data`
+   * (`lua/lunarltk/server/room.lua:1364-1372`). The engine reads the same map
+   * back when it renders a log line (`lunarltk/client/client.lua:158`), the Qt
+   * client reads it to decide `known` (`PoxiBox.qml:77-81`), and
+   * `PlayerCardBox` above reads its own copy of it. This panel did not, and
+   * drew every card face-up.
+   *
+   * It is not a corner: `askToChooseCards` sends `AskForPoxi` with
+   * `poxi_type = "AskForCardsChosen"`, so every multi-card steal in the game
+   * arrives here. A player picking two cards out of an opponent's hand could
+   * read both of them first.
+   */
+  const visible = (typeof d.extra_data === 'object' && d.extra_data !== null
+    ? (d.extra_data as { visible_data?: Record<string, boolean> }).visible_data
+    : undefined);
+
   // Both the prompt and the legality of a pick are the engine's answer.
   const promptText = lua.poxiPrompt(d.type, zones, d.extra_data);
   const feasible = lua.poxiFeasible(d.type, picked, zones, d.extra_data);
@@ -441,7 +509,7 @@ function PoxiBox({ data, onReply, interactive }: { data: unknown; onReply: (v: u
                 className={cls(picked.includes(cid) && 'fk-card--selected')}
                 onClick={interactive ? () => toggle(cid) : undefined}
               >
-                <CardItem cid={cid} known />
+                <CardItem cid={cid} known={visible?.[String(cid)] !== false} />
               </div>
             ))}
           </div>

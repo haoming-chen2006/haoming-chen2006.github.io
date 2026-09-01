@@ -18,7 +18,15 @@ import { cls } from './CardItem';
 interface Spec {
   type?: string;
   choices?: string[];
-  all_choices?: string[];
+  /**
+   * Flat for a combo, a list of *groups* for a card-name box:
+   * `UI.CardNameBox` wraps whatever it was given in one more table
+   * (`lua/ui-util.lua:44-50`) and `CardNamesBox.qml` draws one grid per group.
+   * Read it through `flatChoices`, never directly.
+   */
+  all_choices?: readonly (string | readonly string[])[];
+  /** A card-name box's default; `default` is what every other widget uses. */
+  default_choice?: string;
   detailed?: boolean;
   default?: unknown;
   from?: number;
@@ -56,10 +64,28 @@ export function InteractionWidget({ item }: { item: ItemData }) {
   }
 }
 
+/**
+ * The names a chooser may show, whether the engine grouped them or not.
+ *
+ * `UI.ComboBox` leaves `all_choices` flat; `UI.CardNameBox` nests it one deep.
+ * Both arrive here as the same field, so flattening is the only reading that
+ * is right for both — and reading a nested one flat is what put an *array* in
+ * a button and then sent that array back as the answer.
+ */
+export function flatChoices(all: Spec['all_choices']): string[] {
+  const out: string[] = [];
+  for (const entry of all ?? []) {
+    if (Array.isArray(entry)) out.push(...(entry as readonly string[]).map(String));
+    else if (entry != null) out.push(String(entry));
+  }
+  return out;
+}
+
 function Combo({ spec, send }: { spec: Spec; send: (v: unknown) => void }) {
   const { lua } = useRoom();
   const choices = spec.choices ?? [];
-  const all = spec.all_choices ?? choices;
+  const flat = flatChoices(spec.all_choices);
+  const all = flat.length > 0 ? flat : choices;
   const [value, setValue] = useState<string>(String(spec.default ?? choices[0] ?? ''));
   useEffect(() => { if (value) send(value); /* mirrors SkillCombo's onCompleted clicked() */ }, []);
   return (
@@ -123,17 +149,35 @@ function CheckBoxes({ spec, send }: { spec: Spec; send: (v: unknown) => void }) 
   );
 }
 
+/**
+ * Pick one card name. `SkillCardName.qml` is the reference: `answer` is a
+ * *string*, the enabled set is `choices`, everything in `all_choices` is shown
+ * greyed, and the default comes from `default_choice`.
+ *
+ * All three were wrong here. `all_choices` was read as a flat list of names
+ * when `UI.CardNameBox` had nested it (`lua/ui-util.lua:44-50`), so the room
+ * drew one button per *group*, labelled with the group array, and clicking it
+ * sent that array back as `interaction.data`. Any 泛转化技 that clones the
+ * answer without a type guard then called `Fk:cloneCard(<table>)` inside
+ * `UpdateRequestUI` — 急筹 on mobile__jiangji does exactly that
+ * (`mobile_sp/skills/jichou.lua:37`), and the throw took that seat's UI down
+ * for the rest of the game. Every name was also clickable regardless of
+ * whether the engine allowed it.
+ */
 function CardName({ spec, send }: { spec: Spec; send: (v: unknown) => void }) {
   const { lua } = useRoom();
-  const choices = spec.all_choices ?? spec.choices ?? [];
-  const [value, setValue] = useState<string>(String(spec.default ?? ''));
+  const usable = spec.choices ?? [];
+  const flat = flatChoices(spec.all_choices);
+  const shown = flat.length > 0 ? flat : usable;
+  const [value, setValue] = useState<string>(String(spec.default_choice ?? spec.default ?? ''));
   return (
     <div className="fk-interaction">
-      {choices.map((c) => (
+      {shown.map((c) => (
         <button
           type="button"
           key={c}
           className={cls('fk-chip', c === value && 'fk-chip--on')}
+          disabled={!usable.includes(c)}
           onClick={() => { setValue(c); send(c); }}
         >{lua.tr(c)}</button>
       ))}

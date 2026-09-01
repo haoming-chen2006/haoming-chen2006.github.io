@@ -137,6 +137,21 @@ export interface RoomState {
   /** Seat the viewer occupies. Null for observers and replays. */
   selfId: number | null;
   playerNum: number;
+  /**
+   * The room's settings, as `EnterRoom` sent them.
+   *
+   * `data[2]` of the very first message any seat receives — `gameMode`,
+   * `generalNum`, `generalTimeout`, `enableDeputy`, `enableFreeAssign`,
+   * `disabledPack`, and the rest. The Qt client reads the same values back
+   * through `ClientInstance:getSettings(key)` (`core/roombase.lua:85`) and
+   * gates UI on them; `ChooseGeneralBox.qml:29` and `:176` are two such gates.
+   *
+   * It is a bag of unknowns on purpose. A package may put anything in here, and
+   * nothing in the room is allowed to turn one of these into a rule — the only
+   * legitimate use is deciding what UI to *offer*, which is exactly what the
+   * QML does with it.
+   */
+  settings: Readonly<Record<string, unknown>>;
   started: boolean;
   round: number;
   /** `SetCurrent`-equivalent: the player whose turn it is. Derived from `phase`. */

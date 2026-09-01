@@ -44,6 +44,12 @@ function FKHost.boot()
   -- 顺序，所以两边看到的武将池一致 —— 不一致会直接违反 bundle 哈希的承诺。
   dofile("lua/web/roster.lua").hideIncomplete()
 
+  -- Animate{type="InvokeSkill"} 补上 compulsory，理由见 skillwire.lua。
+  dofile("lua/web/skillwire.lua").installHost()
+
+  -- 包内容 bug 的就地补丁，理由见 skillfix.lua。
+  dofile("lua/web/skillfix.lua").install()
+
   dofile("lua/server/scheduler.lua")
 
   state = dofile("lua/web/state.lua")
@@ -138,23 +144,42 @@ function FKHost.createRoom(specJson)
 end
 
 --- 把进房三连（EnterRoom / AddPlayer×n / RoomOwner）作为普通出站消息发出去。
+---
+--- 三条命令各发一轮，而不是一个座位发完三条再轮下一个。原因在 routing.ts：
+--- EnterRoom 和 RoomOwner 对每个座位是同一串字节，会被识别成广播折成一条公共
+--- 消息，序号取所有收件人里最小的那个；AddPlayer 因人而异，只能私发。按座位发
+--- 的话，二号座位的 AddPlayer 序号排在一号座位的 RoomOwner 后面，于是它先收到
+--- 「房主是 1 号」再收到「1 号是谁」—— 一条按谁都没发生过的顺序拼出来的流。
+---
+--- 按命令分轮之后，所有 EnterRoom 的序号都小于所有 AddPlayer，所有 AddPlayer
+--- 都小于所有 RoomOwner，无论折叠取的是哪个座位的序号，每个座位读到的相对
+--- 顺序都还是引擎发的那个。全机器人房看不出来（那时三条全是私发），
+--- 两个真人以上的房才会踩到。
 ---@param roomId integer
 function FKHost.emitJoinPreamble(roomId)
   local cRoom = fk._rooms[roomId]
   if not cRoom then return false end
   local settings = cbor.decode(cRoom:settings())
   local n = #cRoom.players
+
+  local seated = {}
   for _, me in ipairs(cRoom.players) do
-    if me.state ~= fk.Player_Robot then
-      fk._emit("notify", me.connId, "EnterRoom", cbor.encode { n, cRoom.timeout, settings })
-      for _, p in ipairs(cRoom.players) do
-        if p.id ~= me.id then
-          fk._emit("notify", me.connId, "AddPlayer",
-            cbor.encode { p.id, p:getScreenName(), p:getAvatar(), true, 0 })
-        end
+    if me.state ~= fk.Player_Robot then seated[#seated + 1] = me end
+  end
+
+  for _, me in ipairs(seated) do
+    fk._emit("notify", me.connId, "EnterRoom", cbor.encode { n, cRoom.timeout, settings })
+  end
+  for _, me in ipairs(seated) do
+    for _, p in ipairs(cRoom.players) do
+      if p.id ~= me.id then
+        fk._emit("notify", me.connId, "AddPlayer",
+          cbor.encode { p.id, p:getScreenName(), p:getAvatar(), true, 0 })
       end
-      fk._emit("notify", me.connId, "RoomOwner", cbor.encode { cRoom.ownerId })
     end
+  end
+  for _, me in ipairs(seated) do
+    fk._emit("notify", me.connId, "RoomOwner", cbor.encode { cRoom.ownerId })
   end
   return true
 end

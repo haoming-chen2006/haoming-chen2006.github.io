@@ -20,10 +20,12 @@ import { Dashboard } from './components/Dashboard';
 import { GeneralDetail } from './dialogs/GeneralDetail';
 import { Indicators, type SeatRefs } from './components/Indicators';
 import { Photo } from './components/Photo';
+import { Presents } from './components/Presents';
+import { isPresentText } from './components/present';
 import { seatStyle, tableInset, tableTop } from './components/SeatRing';
 import { useRingMetrics } from './components/useRingMetrics';
 import { SidePanel } from './components/SidePanel';
-import { TablePile } from './components/TablePile';
+import { TableStage } from './table/TableStage';
 import { DialogHost } from './dialogs/DialogHost';
 import { makeReply } from './dialogs/reply';
 import { LtkLua } from './ltk/LtkLua';
@@ -145,7 +147,11 @@ function RoomBody(
   const reply = useMemo(() => makeReply(store, lua), [store, lua]);
 
   const order = state.circle.length ? state.circle : Object.keys(state.players).map(Number);
-  const bubbles = useChatBubbles(chat);
+  // A thrown flower travels as a chat line (`components/present.ts`), so the
+  // raw feed contains messages nobody should ever read as text. `Presents` gets
+  // the whole feed; the log and the bubbles get what was actually said.
+  const spoken = useMemo(() => chat.filter((c) => !isPresentText(c.text)), [chat]);
+  const bubbles = useChatBubbles(spoken);
 
   return (
     <div
@@ -194,12 +200,13 @@ function RoomBody(
             );
           })}
 
-          <TablePile />
+          <TableStage />
           <Indicators seatRefs={refs.current} container={container} />
+          <Presents chat={chat} onChat={onChat} seatRefs={refs.current} container={container} seats={order} />
           {playback ? <PlaybackBar playback={playback} /> : null}
         </div>
 
-        <SidePanel chat={chat} onChat={onChat} />
+        <SidePanel chat={spoken} onChat={onChat} />
         {statusSlot ? <div style={{ position: 'absolute', right: 8, bottom: 8, zIndex: 20 }}>{statusSlot}</div> : null}
       </div>
 

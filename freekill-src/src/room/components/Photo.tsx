@@ -11,6 +11,7 @@
  */
 import { memo, useEffect } from 'react';
 import type { ItemData } from '../../contract/scene';
+import { ChatText, useEmoji } from '../chat';
 import { useRoom } from '../RoomContext';
 import { seatChar } from '../ltk/prompt';
 import { CARD_TYPE, PHASE } from '../ltk/types';
@@ -19,7 +20,7 @@ import type { FocusState, PlayerState } from '../state/types';
 import { seatStage } from './anim/bus';
 import { EffectStage, useAnimBus } from './anim/Stage';
 import { cls } from './CardItem';
-import { HpBar } from './HpBar';
+import { HpReadout } from '../seat/HpReadout';
 
 /**
  * Everything here is a primitive or a reference the store keeps stable across
@@ -44,6 +45,7 @@ export interface PhotoProps {
 export const Photo = memo(function Photo(props: PhotoProps) {
   const { player, equips, judge, item, isCurrent, handCount, focus, bubble, onClick } = props;
   const { lua, assets } = useRoom();
+  const emoji = useEmoji();
   const [skinMode] = useSkinMode();
 
   const general = player.general;
@@ -85,7 +87,7 @@ export const Photo = memo(function Photo(props: PhotoProps) {
         candidate && !enabled && 'fk-seat--disabled',
       )}
     >
-      {bubble ? <div className="fk-bubble">{bubble}</div> : null}
+      {bubble ? <div className="fk-bubble"><ChatText text={bubble} resolve={emoji.resolve} /></div> : null}
       <div
         className={cls(
           'fk-photo',
@@ -115,17 +117,24 @@ export const Photo = memo(function Photo(props: PhotoProps) {
 
         {player.seat ? <span className="fk-photo__seat">{seatChar(player.seat)}</span> : null}
 
-        <HpBar hp={player.hp} maxHp={player.maxHp} shield={player.shield} />
+        <HpReadout hp={player.hp} maxHp={player.maxHp} shield={player.shield} />
 
         <span className="fk-photo__name">
           {displayName}
           <span className="fk-photo__screenname">{player.screenName}</span>
         </span>
 
-        <span className="fk-photo__hand">
-          {player.maxCards > 0 && player.maxCards !== player.hp
-            ? `${handCount}/${player.maxCards < 900 ? player.maxCards : '∞'}`
-            : handCount}
+        {/* How many cards this seat is holding, drawn on a card rather than
+            beside one. See `showsLimit` for why the limit is not drawn next to
+            it except when the seat is over it. */}
+        <span
+          className={cls('fk-photo__hand', showsLimit(handCount, player.maxCards) && 'fk-photo__hand--over')}
+          title={handTitle(handCount, player.maxCards)}
+        >
+          <b className="fk-photo__hand-n">{handCount}</b>
+          {showsLimit(handCount, player.maxCards)
+            ? <span className="fk-photo__hand-max">/{player.maxCards}</span>
+            : null}
         </span>
 
         {player.dead
@@ -156,6 +165,29 @@ export const Photo = memo(function Photo(props: PhotoProps) {
 
 function generalPack(lua: { getGeneralData: (n: string) => { extension?: string } }, name: string): string | undefined {
   try { return lua.getGeneralData(name)?.extension; } catch { return undefined; }
+}
+
+/**
+ * Whether the hand limit is worth drawing under the count.
+ *
+ * This used to be "whenever the limit is not the seat's hp", which sounds rare
+ * and is not: `RefreshStatusSkills` reports `MaxCard` against the seat's
+ * *maximum* hp and whatever skills have done to it, so in a real eight-seat
+ * game almost every portrait carried a second number. Measured on a live table:
+ * 刘璋 3/7, 神孙策 4/5, 星董卓 4/4, 的卢 3/4 — four seats, four limits, none of
+ * them information anyone was going to act on.
+ *
+ * The one moment the limit *is* actionable is when the hand is over it, because
+ * then the seat is going to discard. That is when it appears, and the tooltip
+ * carries it the rest of the time.
+ */
+function showsLimit(handCount: number, maxCards: number): boolean {
+  return maxCards > 0 && maxCards < 900 && handCount > maxCards;
+}
+
+/** Numbers only, so the tooltip needs no translation and no new i18n key. */
+function handTitle(handCount: number, maxCards: number): string {
+  return maxCards > 0 && maxCards < 900 ? `${handCount} / ${maxCards}` : String(handCount);
 }
 
 function EquipRow({ ids = [] }: { ids?: readonly number[] }) {

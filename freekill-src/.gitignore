@@ -14,3 +14,4 @@ public/assets/
 # Local overrides. The publishable key has an inline fallback anyway.
 .env
 .env.local
+.scratch/

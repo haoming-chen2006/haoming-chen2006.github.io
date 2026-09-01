@@ -16,6 +16,37 @@
   --fk-side-w: clamp(210px, 19vw, 320px);
   --fk-card-h: calc(var(--fk-card-w) * 1.36);
 
+  /* THE NUMBERS A PLAYER READS AT A GLANCE.
+   *
+   * One scale rather than a font size chosen per widget, because the two things
+   * a player looks up mid-turn — how much life a seat has left, and how many
+   * cards it is holding — are the same question asked twice and should be the
+   * same size when they are. Both are pinned to `--fk-photo-w`, which is not a
+   * constant: `useRingMetrics` picks the largest photo at which no two seats
+   * collide, so it is ~134px at eight seats and ~168px at three. A fixed 13px
+   * that reads well at three seats is the dim, unreadable thing at eight, which
+   * is the state this table was actually in.
+   *
+   * `--fk-hp-h` is the band the readout occupies across the top of the photo,
+   * and `--fk-hand-w` the width of the card the hand count is drawn on.
+   * Everything that used to sit at `top: 2px` is offset by the first, and the
+   * name's right margin is derived from the second, so neither can collide at
+   * any seat count.
+   *
+   * The floors matter. `useRingMetrics` will go down to an 84px photo before it
+   * gives up, and purely proportional sizes at 84px put a 13px numeral in an
+   * 18px band and a 17px card — both overflow. Below about a 100px photo the
+   * floors take over and the readout stops shrinking; it is the last thing on a
+   * cramped table that should. */
+  --fk-hp-h: max(22px, calc(var(--fk-photo-w) * 0.215));
+  --fk-hand-w: max(20px, calc(var(--fk-photo-w) * 0.205));
+  --fk-seat-num: max(12px, calc(var(--fk-photo-w) * 0.155));
+  --fk-seat-num-sm: max(9px, calc(var(--fk-photo-w) * 0.088));
+  /* The table's own counters and captions. Not seat-scaled: they sit in the
+     middle of the board, where there is no portrait to be proportional to. */
+  --fk-count-fs: 14px;
+  --fk-note-fs: 12px;
+
   --fk-ink: #f0e5da;
   --fk-ink-dim: #b7a894;
   --fk-gold: #d8b26a;
@@ -153,7 +184,10 @@
   position: absolute;
   left: 4px;
   bottom: 3px;
-  right: 34px;
+  /* Derived from the hand card's own width rather than guessed alongside it, so
+     the two cannot drift apart. This was a flat 34px: generous at eight seats,
+     an overlap at three. */
+  right: calc(var(--fk-hand-w) + 6px);
   font-size: clamp(11px, 1.05vw, 15px);
   line-height: 1.15;
   text-shadow: 0 1px 2px #000, 0 0 6px #000;
@@ -168,9 +202,12 @@
   color: var(--fk-ink-dim);
 }
 
+/* The three corner markers hang below the hp band rather than at the very top,
+   so the band owns the full width of the photo and nothing has to be squeezed
+   into the gap between them. */
 .fk-photo__role {
   position: absolute;
-  top: 2px;
+  top: calc(var(--fk-hp-h) + 2px);
   right: 2px;
   width: 26%;
   max-width: 34px;
@@ -179,7 +216,7 @@
 
 .fk-photo__role--text {
   position: absolute;
-  top: 2px;
+  top: calc(var(--fk-hp-h) + 2px);
   right: 2px;
   padding: 1px 4px;
   border-radius: 3px;
@@ -190,7 +227,7 @@
 
 .fk-photo__kingdom {
   position: absolute;
-  top: 2px;
+  top: calc(var(--fk-hp-h) + 2px);
   left: 2px;
   padding: 1px 5px;
   border-radius: 3px;
@@ -203,24 +240,63 @@
 .fk-photo__seat {
   position: absolute;
   left: 3px;
-  top: 22px;
+  top: calc(var(--fk-hp-h) + 22px);
   font-size: 13px;
   color: var(--fk-gold);
   text-shadow: 0 1px 2px #000;
 }
 
+/* HOW MANY CARDS THIS SEAT HOLDS.
+ *
+ * It was a 13px number in a dim bordered box, which at eight seats is the same
+ * size as the kingdom chip and the equipment suit and reads as neither more nor
+ * less important than either. It is now the count drawn *on* a card back, at
+ * the seat scale, which is both bigger and — because the shape says "cards"
+ * without a word — legible before it is read. */
 .fk-photo__hand {
   position: absolute;
   right: 3px;
-  bottom: 2px;
-  min-width: 26px;
-  padding: 0 4px;
-  text-align: center;
-  font-size: 13px;
+  bottom: 3px;
+  width: var(--fk-hand-w);
+  height: calc(var(--fk-hand-w) * 1.36);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
   border-radius: 3px;
-  background: rgba(0, 0, 0, 0.65);
-  border: 1px solid var(--fk-line);
+  border: 1px solid rgba(0, 0, 0, 0.85);
+  /* The same weave the card backs on the table use, so the icon reads as a
+     card and not as a button. */
+  background: repeating-linear-gradient(45deg, #5c4630 0 5px, #4a3826 5px 10px);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 226, 168, 0.22),
+    0 2px 5px rgba(0, 0, 0, 0.7);
 }
+
+.fk-photo__hand-n {
+  font-size: var(--fk-seat-num);
+  font-weight: 700;
+  color: #fff6e4;
+  text-shadow: 0 1px 2px #000, 0 0 5px #000;
+}
+
+/* Only drawn when the seat is over its limit, so it is a warning rather than a
+   label and is coloured like one. */
+.fk-photo__hand-max {
+  font-size: var(--fk-seat-num-sm);
+  color: #ffcf6e;
+  text-shadow: 0 1px 2px #000;
+}
+
+.fk-photo__hand--over {
+  border-color: rgba(255, 207, 110, 0.75);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 207, 110, 0.35),
+    0 2px 6px rgba(0, 0, 0, 0.7);
+}
+
+.fk-photo__hand--over .fk-photo__hand-n { color: #ffcf6e; }
 
 /* state overlays */
 .fk-photo--dead .fk-photo__art { filter: grayscale(1) brightness(0.45); }
@@ -281,18 +357,75 @@
 
 /* --------------------------------------------------------------- hp bar */
 
+/* A BAND ACROSS THE TOP OF THE SEAT, NOT A COLUMN OF BEADS DOWN ITS EDGE.
+ *
+ * The beads alone were 7px tall and had to be counted twice — once for the
+ * filled ones, once for the total — to answer the only question anyone asks of
+ * them, which is whether a 杀 kills. The number answers it without counting.
+ * The beads stay under it because they still show the *shape* of the damage at
+ * a glance, and because a shield is a different colour rather than a different
+ * number.
+ *
+ * The band is a gradient rather than a fill: portraits are `object-position:
+ * top center`, so a solid bar here would mask every general's face. Bold text
+ * over a dark-to-transparent wash keeps both. */
 .fk-hp {
   position: absolute;
-  left: 3px;
-  bottom: 20px;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--fk-hp-h);
   display: flex;
-  flex-direction: column-reverse;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   gap: 1px;
+  padding: 1px 3px 2px;
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.86) 12%, rgba(0, 0, 0, 0.30) 100%);
+  border-radius: 5px 5px 0 0;
+}
+
+.fk-hp__num {
+  display: flex;
+  align-items: baseline;
+  gap: 1px;
+  line-height: 1;
+  font-size: var(--fk-seat-num);
+  font-weight: 700;
+  text-shadow: 0 1px 2px #000, 0 0 6px #000;
+}
+
+/* Current hp carries the colour; the maximum is context, so it stays quiet.
+   The eye lands on the number that changes. */
+.fk-hp--full .fk-hp__num b { color: #96e874; }
+.fk-hp--low .fk-hp__num b { color: #f7d466; }
+.fk-hp--crit .fk-hp__num b { color: #ff8a6a; }
+
+.fk-hp__slash { color: #8d8171; font-weight: 400; font-size: 0.8em; }
+.fk-hp__max { color: #d5c8b6; font-weight: 400; font-size: 0.82em; }
+
+.fk-hp__shield {
+  margin-left: 3px;
+  font-size: 0.72em;
+  font-weight: 700;
+  color: #8fdcff;
+}
+
+/* The beads share the band's width, so eight of them on a 神将 shrink to fit
+   instead of running off the side of the portrait. */
+.fk-hp__pips {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  width: 100%;
+  max-width: calc(var(--fk-photo-w) * 0.82);
 }
 
 .fk-hp__pip {
-  width: 11px;
-  height: 7px;
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: 13px;
+  height: max(3px, calc(var(--fk-photo-w) * 0.028));
   border-radius: 2px;
   border: 1px solid rgba(0, 0, 0, 0.7);
   background: #3d3d3d;
@@ -430,7 +563,47 @@
   align-items: flex-start;
   gap: 4px;
   flex-wrap: wrap;
-  min-height: var(--fk-card-h);
+  /* Room for the footnote under the card, so the strip below does not jump up
+     into the space when the table is between plays. */
+  min-height: calc(var(--fk-card-h) + 18px);
+}
+
+/* WHAT WAS JUST PLAYED, STILL THERE.
+ *
+ * The engine takes a card off the table the moment its event closes, which
+ * measured over the recorded game means 69% of cards are deleted mid-fade and
+ * the processing area is empty for 54% of the game. `table/TableStage.tsx`
+ * keeps drawing the last play until there is a new one; this is what tells the
+ * eye it is looking at the past.
+ *
+ * It recedes rather than dims to nothing: the card stays fully readable — that
+ * is the entire point of holding it — and loses only the presence that says
+ * "this is resolving now". Scale and saturation carry that; opacity alone read
+ * as "about to disappear", which is the thing being fixed. */
+.fk-table__cards--held .fk-card {
+  /* One step along the same gradient the strip below uses — smaller, cooler,
+     sitting lower — so "being played", "just played" and "played a moment ago"
+     are three points on one scale rather than three unrelated treatments. */
+  transform: translateY(5px) scale(0.9);
+  opacity: 0.85;
+  filter: saturate(0.5) brightness(0.78);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.14),
+    0 1px 4px rgba(0, 0, 0, 0.5);
+}
+
+.fk-table__cards--held .fk-card__foot { color: #cbbda9; }
+
+/* The card settles into the held state rather than cutting to it. `TableStage`
+   keeps the same DOM node and the same key across the swap precisely so this
+   can be a transition — a remount would replay `fk-land` and read as the card
+   being played a second time. */
+.fk-table__cards .fk-card {
+  transition:
+    transform 320ms cubic-bezier(0.2, 0.8, 0.3, 1),
+    filter 320ms ease,
+    box-shadow 320ms ease,
+    opacity 320ms ease;
 }
 
 /* The deck, the discard and the round number.
@@ -442,17 +615,92 @@
 .fk-piles {
   display: flex;
   gap: 18px;
-  font-size: 12px;
+  /* Was a flat 12px, which is smaller than the log text beside it and smaller
+     than anything else on the felt. A nudge, not a redesign — the counters are
+     reference, not the thing you watch. */
+  font-size: var(--fk-count-fs);
   letter-spacing: 0.02em;
   color: var(--fk-ink-dim);
   background: rgba(12, 10, 7, 0.72);
   border: 1px solid rgba(216, 178, 106, 0.28);
   border-radius: 999px;
-  padding: 3px 16px;
+  padding: 4px 18px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.45);
 }
 
-.fk-piles b { color: var(--fk-gold); font-weight: 600; }
+/* The number is the part anyone actually reads, so it carries the size and the
+   colour and the label stays quiet next to it. */
+.fk-piles b {
+  color: var(--fk-gold);
+  font-weight: 700;
+  font-size: 1.15em;
+}
+
+/* THE PLAYS BEFORE THIS ONE.
+ *
+ * Holding the last play fixes "I could not read the card". It does not fix "I
+ * looked at my own hand for four seconds and three things happened", which is
+ * the other half of the same complaint and is worse here than in the Qt client
+ * because 274 generals means most skills firing are ones you have never seen.
+ * Three plays back, newest first, each with the engine's footnote saying who
+ * used what on whom.
+ *
+ * Deliberately not a scrollback: the log panel already is one, and a strip that
+ * grows is a strip that eventually covers the table. Three entries is a fixed
+ * height and cannot.
+ *
+ * The cards are drawn at their own scale by re-declaring the two custom
+ * properties `CardItem` sizes itself from, rather than by transforming them —
+ * a `scale()` would leave the full-size layout box behind and reserve twice the
+ * height it uses. `--fk-card-h` has to be redeclared with it, because its value
+ * was already substituted against the full `--fk-card-w` further up. */
+.fk-recent {
+  --fk-card-w: clamp(34px, 3.2vw, 50px);
+  --fk-card-h: calc(var(--fk-card-w) * 1.36);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  /* Wide enough between plays that the 2px between the cards *of* a play reads
+     as "these went down together" without needing a rule or a box to say so. */
+  gap: 26px;
+  margin-top: 16px;
+  max-width: 100%;
+}
+
+.fk-recent__play {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  max-width: calc(var(--fk-card-w) * 3.4);
+  /* Older is quieter, so "which of these is the most recent" needs no label and
+     no reading — the strip has a direction you can see. */
+  opacity: 0.78;
+}
+
+.fk-recent__play:nth-child(2) { opacity: 0.58; }
+.fk-recent__play:nth-child(3) { opacity: 0.40; }
+
+.fk-recent__cards { display: flex; gap: 2px; }
+
+/* One caption per play, not one per card: every card of a play carries the same
+   sentence, and three copies of it is noise. */
+.fk-recent__note {
+  font-size: var(--fk-note-fs);
+  line-height: 1.15;
+  color: #e6d9c6;
+  text-align: center;
+  text-shadow: 0 1px 2px #000, 0 0 5px #000;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+/* A card in the strip is a record, not a stage: no landing animation, and the
+   per-card footnote is folded into the caption above. */
+.fk-recent .fk-card { animation: none; }
+.fk-recent .fk-card__foot { display: none; }
 
 /* ---------------------------------------------------------------- cards */
 
@@ -538,12 +786,31 @@
   overflow: hidden;
 }
 
+/* `SetCardFootnote` is the engine's own "<b>用者</b>对<b>目标</b>" — who used
+   this, on whom. It is the single line that turns a card sitting on the table
+   into a move you can read, and at 10px in a 78px-wide box it was clipping
+   three-character general names. On the table it gets the room it needs. */
+.fk-table__cards .fk-card__foot {
+  left: -16px;
+  right: -16px;
+  bottom: -17px;
+  font-size: var(--fk-note-fs);
+  color: #fdf3e2;
+  text-shadow: 0 1px 3px #000, 0 0 7px #000;
+}
+
 .fk-card--back {
   background: repeating-linear-gradient(45deg, #5c4630 0 6px, #4a3826 6px 12px);
   border-color: #2a2018;
 }
 
-.fk-card--expired { opacity: 0.2; filter: grayscale(0.8); }
+/* An expired card is one the engine has closed the event on. It used to drop to
+   0.2 opacity and 0.8 grayscale, i.e. to unreadable, while still occupying the
+   table — which is most of what "the card just skips" meant. It now recedes to
+   the same place a held card sits, because it is the same thing: something that
+   has happened and can still be read. `TableStage` holds the play after it, so
+   nothing depends on this fading to nothing any more. */
+.fk-card--expired { opacity: 0.72; filter: saturate(0.6) brightness(0.8); }
 
 .fk-card--enabled {
   cursor: pointer;

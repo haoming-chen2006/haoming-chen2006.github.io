@@ -94,6 +94,15 @@ export const UI = {
   'lobby.moreOptions': { zh_CN: '更多设置', en_US: 'More options' },
   'lobby.fewerOptions': { zh_CN: '收起设置', en_US: 'Fewer options' },
   'lobby.generalNum': { zh_CN: '选将数', en_US: 'Characters offered' },
+  // The engine has its own key for this ("Enable free assign" -> 自由选将), but
+  // it lives in the Lua translation tables and the lobby has no client VM to
+  // ask. The label matches the engine's wording so the room's own dialog and
+  // the switch that opened it read the same.
+  'lobby.freeAssign': { zh_CN: '自由选将', en_US: 'Free character choice' },
+  'lobby.freeAssign.help': {
+    zh_CN: '选将时可把任意武将换进候选，点武将牌左上角的 ⇄。开启后本局不计胜率。',
+    en_US: 'Swap any character into the offer while choosing — the ⇄ badge on a character card. Games with it on do not count towards win rates.',
+  },
   'lobby.create': { zh_CN: '创建房间', en_US: 'Create room' },
   'lobby.createIn': { zh_CN: '创建{mode}', en_US: 'Create a {mode} room' },
   'lobby.packs': { zh_CN: '扩展包', en_US: 'Packages' },

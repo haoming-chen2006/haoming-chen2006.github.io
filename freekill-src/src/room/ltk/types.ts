@@ -66,6 +66,14 @@ export interface SkillData {
   readonly extension: string;
   readonly freq: 'active' | 'notactive';
   readonly frequency?: 'limit' | 'wake' | 'quest';
+  /**
+   * 锁定技 — `Skill:hasTag(Skill.Compulsory)`, which is the engine's own
+   * predicate and counts a 觉醒技 as compulsory too (`frequency` tells those
+   * apart). Added by `lua/web/skillwire.lua`; upstream's `GetSkillData` does
+   * not report it, and the only other signal is the prefix of the translated
+   * description, which is prose, not data.
+   */
+  readonly compulsory?: boolean;
   readonly switchSkillName: string;
   readonly isViewAsSkill: boolean;
 }

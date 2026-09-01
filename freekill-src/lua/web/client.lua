@@ -43,8 +43,15 @@ function FKClient.boot()
   -- 和 host.lua 同一份代码、同一个位置：两边的武将池必须字节级一致。
   FKClient.hiddenGenerals = dofile("lua/web/roster.lua").hideIncomplete()
 
+  -- 包内容 bug 的就地补丁，理由见 skillfix.lua。两个 VM 都要装。
+  dofile("lua/web/skillfix.lua").install()
+
   fk.FK_VER = fk.FK_VER or "web"
   dofile("lua/client/client.lua")
+
+  -- GetSkillData 补上 compulsory，理由见 skillwire.lua。必须在 client.lua
+  -- 之后：GetSkillData 是 client_util.lua 定义的全局，那之前还不存在。
+  dofile("lua/web/skillwire.lua").installClient()
 
   -- 补全 en_US。必须在这儿（包已经加载完）而不是更早：
   -- skill_skeleton.lua 派生的 #<技能>_<n>_<trig|active|…> 角标是按

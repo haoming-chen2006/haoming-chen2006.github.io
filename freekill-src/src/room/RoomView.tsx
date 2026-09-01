@@ -10,6 +10,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ChatLine, RoomViewProps } from '../contract/views';
 import { Assets } from './assets/assets';
+import { roomAudio } from './audio';
 import { AnimBus } from './components/anim/bus';
 import { AnimProvider } from './components/anim/Stage';
 import { warmCommonSheets } from './components/anim/sheets';
@@ -54,6 +55,15 @@ export function RoomView(props: RoomViewProps) {
    */
   const anim = useMemo(() => new AnimBus((s: string) => services.lua.tr(s)), [services]);
   useEffect(() => () => anim.dispose(), [anim]);
+
+  /**
+   * The table's sound. `RoomStore.onSound` is the hook the store has carried
+   * since it was written and nothing listened to; `attach` is that hook, plus
+   * the two lookups a cue needs from live state (whose general just died, which
+   * role the viewer is playing). Everything that can make a noise is behind a
+   * dynamic import and is not loaded until the player turns sound on.
+   */
+  useEffect(() => roomAudio.attach(store), [store]);
   useEffect(() => { if (mode === 'play') warmCommonSheets(); }, [mode]);
 
   // Notify messages arrive in bursts between engine yields — 2,286 of them over
@@ -70,6 +80,10 @@ export function RoomView(props: RoomViewProps) {
     const off = client.onNotifyUI((command, data) => {
       store.applyNotify(command as string, data);
       anim.notify(command, data);
+      // Drawing, judging and the two ends of the game are not `LogEvent`s, so
+      // they never reach `onSound`. The bus ignores `LogEvent` here for exactly
+      // that reason: one message must never make two sounds.
+      roomAudio.notify(command, data);
       // `Room.qml`'s transition to `notactive` ends with `Ltk.finishRequestUI()`,
       // and answering is one of the three things that triggers it. Without it
       // the client VM keeps the answered handler as `current_request_handler`

@@ -15,6 +15,7 @@ import { StrictMode, useCallback, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { LanguageToggle, useT } from './i18n';
 import { App } from './shell/App';
+import { GameAudio } from './room/audio';
 import { SessionProvider } from './shell/session';
 import { getApi, type Identity, type LobbyApi } from './shell/api';
 import { loadShell, prefetchLuaBundle, type Loaded } from './shell/boot';
@@ -101,5 +102,11 @@ function Boot() {
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <Boot />
+    {/* Outside <Boot> on purpose: the music has to survive a route change and
+        the control has to exist on the boot screen too, so it is a sibling of
+        the whole app rather than a child of any page. It is silent — and loads
+        nothing that can make a noise — until the player asks. See
+        `src/room/audio/`. */}
+    <GameAudio />
   </StrictMode>,
 );

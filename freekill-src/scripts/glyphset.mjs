@@ -38,7 +38,12 @@ export function sourceFiles() {
   files.push(...walk(join(WEB_ROOT, 'packages'), isLua));
   files.push(join(ENGINE_ROOT, 'lang', 'zh_CN.ts'), join(ENGINE_ROOT, 'lang', 'en_US.ts'));
   files.push(...walk(join(ENGINE_ROOT, 'Fk'), (p) => /\.(qml|js|mjs)$/.test(p)));
-  files.push(...walk(join(WEB_ROOT, 'src'), (p) => /\.(ts|tsx|css|html)$/.test(p)));
+  // `.json` is in the list because a lane put user-visible Chinese labels in a
+  // JSON file to stay out of `src/i18n`, and the harvester silently skipped
+  // them -- safe only by coincidence, since every glyph happened to be in the
+  // corpus already. A label edited later would have gone to tofu with nothing
+  // failing. Anything under `src/` that can reach a screen must be walked.
+  files.push(...walk(join(WEB_ROOT, 'src'), (p) => /\.(ts|tsx|css|html|json)$/.test(p)));
   files.push(join(WEB_ROOT, 'index.html'));
   return files;
 }

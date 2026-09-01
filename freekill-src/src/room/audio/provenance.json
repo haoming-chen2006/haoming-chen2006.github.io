@@ -1,0 +1,85 @@
+{
+  "$comment": [
+    "What this build is allowed to make a noise with, and the evidence behind it.",
+    "Read before adding any audio file to the deployed tree. The rule this encodes:",
+    "nothing ships whose licence this repository can point at.",
+    "",
+    "This file exists because the brief for the audio lane assumed the opposite of",
+    "what turned out to be true. It read: 'BGM and interface/card sound effects are",
+    "the safe, high-value core -- ship those', with only the ~147 general voice and",
+    "death lines flagged. That was checked before shipping, and it does not hold."
+  ],
+  "checked": "2026-08-31",
+  "verdict": "no audio file from the FreeKill checkout is shipped",
+  "sets": [
+    {
+      "path": "audio/system/",
+      "files": 28,
+      "bytes": 1749000,
+      "wasAssumed": "safe -- engine chrome and the game's music, tracked upstream under GPL-3.0",
+      "found": "unsafe",
+      "evidence": [
+        "Seven of the 28 files carry an intact third-party copyright notice in their ID3 tags. `egg1`, `egg2`, `flower1`, `flower2`, `fly1`, `fly2` each read `copyright=绯雨音乐`, `composer=绯雨音乐`, `TOPE=绯雨音乐`, `comment=www.LightRain.com.cn`; `gamestart.mp3` carries `TXXX=www.LightRain.com.cn`. Reproduce with `ffprobe -v error -show_entries format_tags -of default=nw=1 audio/system/egg1.mp3`.",
+        "绯雨音乐 (LightRain Music, lightrain.com.cn) is a commercial Chinese game-audio studio. Its own site lists four years of voice recording for 三国杀OL and the full audio production of 三国杀名将传. These are that studio's work-for-hire recordings with the copyright line still attached.",
+        "`bgm.mp3` carries `ENCODER=Lavc57.107.100 vorbis` with `genre=Blues` -- an Ogg Vorbis stream remuxed to MP3. A transcode chain, with no author named anywhere along it.",
+        "`chain.mp3` carries an Adobe Audition 23.3 (Windows) XMP edit history dated 2023-08-03 and no author.",
+        "The set was added to the repository in the same commits as the voice lines it was supposed to be distinguishable from -- `c6d883ec` 'Standard skills' carries sub-commits titled 'bgm', 'damage sound', 'card audio', 'skill audio' and 'death audio' together, and `851a3873` added `gamestart.mp3` and `ready.mp3` alongside fourteen `fastchat_*` voice lines.",
+        "The repository's GPL-3.0 grant is repository-scoped and its SPDX rollout (upstream issue #109) put `GPL-3.0-or-later` headers on .cpp/.h/.qml/.lua and on nothing else. A GPL grant is only effective from a licensor who holds the copyright; a contributor cannot license a recording they do not own by committing it."
+      ]
+    },
+    {
+      "path": "audio/card/common/",
+      "files": 3,
+      "wasAssumed": "safe -- equip sound effects, not performances",
+      "found": "unknown provenance",
+      "evidence": [
+        "Not voice, but all three carry `encoder=Lavf59.27.100`, byte-identical to the fingerprint on `packages/standard/audio/death/caocao.mp3` and `packages/standard/audio/skill/fankui1.mp3` -- files the earlier audit had already ruled unsafe. Same conversion run, same source act.",
+        "No attribution of any kind anywhere in the tree."
+      ]
+    },
+    {
+      "path": "packages/standard_cards/audio/card/, packages/maneuvering/audio/card/",
+      "files": 58,
+      "wasAssumed": "safe -- card effect sounds",
+      "found": "unsafe",
+      "evidence": [
+        "These are not sound effects. `events/usecard.lua:43` builds the path as `.../audio/card/<male|female>/<card>` and dispatches on `player.gender` -- sound effects do not have a gender. They are ~0.5s recordings of a person saying the card's name, which is the same exposure as a skill line and the same one the earlier audit refused to clear.",
+        "`packages/standard_cards/audio/card/male/peach.mp3` carries `encoder=Lavf59.27.100`: identical to the death and skill lines.",
+        "The eleven non-gendered files at the top level (`blade`, `axe`, `crossbow`, ...) are equipment foley rather than speech, but share the same fingerprint and the same absence of attribution."
+      ]
+    },
+    {
+      "path": "packages/standard/audio/skill/, packages/standard/audio/death/",
+      "files": 147,
+      "wasAssumed": "unsafe -- flagged by the earlier asset audit",
+      "found": "unsafe -- confirmed",
+      "evidence": [
+        "Zero attribution; ID3 tags stripped to a bare `encoder=Lavf59.27.100`; scripts are the official 三国杀 lines verbatim.",
+        "The earlier audit could not establish whether these were re-performances or extractions and declined to guess. Nothing found since changes that, and the 绯雨音乐 notice on the sibling set makes extraction the more likely of the two."
+      ]
+    },
+    {
+      "path": "packages/mobile/audio/",
+      "files": 1773,
+      "bytes": 86000000,
+      "wasAssumed": "unsafe, and too large to ship anyway",
+      "found": "unsafe -- worst of the sets",
+      "evidence": [
+        "887 of the 1773 files carry `album=绯雨音乐`; a further handful carry `artist`, `copyright` or `comment=www.LightRain.com.cn`, plus eleven double-encoded mojibake variants of the same string.",
+        "~887 files carry `encoded_by=Amadeus Pro`, a macOS audio editor -- an extraction toolchain, not a recording one.",
+        "The package names itself: `packages/mobile/pkg/mobile_rare/init.lua:8` reads `[\"mobile\"] = \"手杀\"`, the official Yoka Games mobile 三国杀. Its git history includes commits describing copying official 原画配音 (original art and voice acting).",
+        "Not tracked by FreeKill itself; fetched separately by the in-app package manager."
+      ]
+    }
+  ],
+  "whatShipsInstead": {
+    "summary": "Every sound the deployed site makes is synthesised in the browser at runtime by `src/room/audio/sfx.ts` and `src/room/audio/generative.ts`. No audio file is fetched, and `public/audio/` is empty in the public build.",
+    "licence": "Authored for this repository. Same licence as the rest of the source (GPL-3.0-or-later); no third-party recording is involved, and there is nothing to attribute.",
+    "weight": "0 bytes of audio assets. The synthesiser is source, and it is in the room chunk.",
+    "coverage": "Every engine sound event is answered: card use, equipment, skill invocation, damage in all four elements, hp and max-hp loss, death, drawing, judgement, chain, recast, game start and game over. The engine's own categories choose the patch; within the card category the timbre is derived from the card's name, so a card that does not exist yet still gets a sound and no per-card table is ever written."
+  },
+  "ifYouHaveALicence": {
+    "how": "`node src/room/assets/audio/build-audio.mjs --pack=<dir>` indexes a directory laid out the way the engine names sounds and emits `clips.generated.ts` plus `public/audio/`. Anything in the index is preferred over the synthesised patch at runtime; anything missing falls through to it. This is the same shape as FreeKill's own 资源包 mechanism, which the upstream project gitignores and treats as user-supplied.",
+    "doNot": "Do not point `--pack` at a FreeKill checkout and deploy the result. The evidence above is why."
+  }
+}

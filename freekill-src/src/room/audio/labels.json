@@ -1,0 +1,33 @@
+{
+  "$comment": [
+    "The audio control's own words, in both languages.",
+    "",
+    "These belong in `src/i18n/ui.ts` with the rest of the shell's chrome, and they",
+    "should move there. They are here because the translation lane owns `src/i18n/**`",
+    "and is mid-change: `t()` checks its keys at compile time, so adding four rows to",
+    "`UI` from this lane would be a conflict in the one file that lane is rewriting.",
+    "",
+    "JSON rather than a `.ts` module on purpose. `src/i18n/__tests__/coverage.test.ts`",
+    "fails the suite for a Chinese string literal anywhere under `src/**/*.ts(x)`, and",
+    "it is right to: a hardcoded string is a string the language toggle cannot reach.",
+    "This file is read through the same `useLanguage()` subscription the toggle drives,",
+    "so switching language repaints it like everything else.",
+    "",
+    "To adopt: move each row into `UI` under the same key, delete this file, and swap",
+    "`label(lang, k)` for `t(k)` in GameAudio.tsx. Nothing else changes."
+  ],
+  "audio.title": { "zh_CN": "声音", "en_US": "Sound" },
+  "audio.on": { "zh_CN": "开启声音", "en_US": "Turn sound on" },
+  "audio.off": { "zh_CN": "关闭声音", "en_US": "Turn sound off" },
+  "audio.music": { "zh_CN": "音乐", "en_US": "Music" },
+  "audio.effects": { "zh_CN": "音效", "en_US": "Effects" },
+  "audio.voice": { "zh_CN": "武将语音", "en_US": "Voice lines" },
+  "audio.voice.absent": {
+    "zh_CN": "本站不提供：录音来源与授权无法确认。",
+    "en_US": "Not shipped: the recordings' licence could not be established."
+  },
+  "audio.synth": {
+    "zh_CN": "全部声音均由浏览器实时合成。",
+    "en_US": "Every sound is synthesised in your browser."
+  }
+}

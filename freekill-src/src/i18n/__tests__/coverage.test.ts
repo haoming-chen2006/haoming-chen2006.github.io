@@ -418,6 +418,21 @@ describe('the shell has no Chinese left in its source', () => {
     // anywhere in the shell is now a failure rather than a note.
   ]);
 
+  /**
+   * The one deliberate exception, approved by the user rather than overlooked.
+   *
+   * The animation lane's `spectacle/` authoring layer names its effects and
+   * presets in Chinese. That is allowed: the user was asked and said the
+   * Chinese there is fine. It is exempted as a *directory* because the whole
+   * layer shares the decision -- exempting files one at a time would quietly
+   * grow into an allowlist nobody reviews.
+   *
+   * The cost this does NOT waive: those characters must still be in the font
+   * subset, or they render as tofu. `npm run build:fonts -- --force` after any
+   * change here, and `scripts/build.test.ts` fails if the budget is exceeded.
+   */
+  const CHINESE_BY_DESIGN = ['room/components/anim/spectacle/'];
+
   const SRC = join(HERE, '..', '..');
   const CJK_LITERAL = /[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]/;
 
@@ -452,7 +467,8 @@ describe('the shell has no Chinese left in its source', () => {
     const offenders = sources(SRC)
       .filter((f) => CJK_LITERAL.test(stripComments(readFileSync(f, 'utf8'))))
       .map((f) => f.slice(SRC.length + 1))
-      .filter((f) => !PENDING.has(f));
+      .filter((f) => !PENDING.has(f))
+      .filter((f) => !CHINESE_BY_DESIGN.some((d) => f.startsWith(d)));
     expect(
       offenders,
       `hardcoded Chinese with no dictionary entry: ${offenders.join(', ')}`,

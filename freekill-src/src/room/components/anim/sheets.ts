@@ -154,20 +154,30 @@ function loaded(img: HTMLImageElement): Promise<void> {
 /**
  * The handful of effects a game of any length is certain to play.
  *
- * Not a card-to-art mapping — every effect still resolves by name at play time,
- * and this list changes nothing about what can animate. It is a warm-up: 杀, 闪
- * and 桃 are the three most-played cards in the game and `damage` fires on every
- * point of damage, so fetching them while the browser is idle turns the first
- * one of each from "loads, then plays next time" into "plays".
+ * This list used to be 杀, 闪, 桃 and `damage`, on the reasoning that they are
+ * the most-played cards in the game. They are — and not one of the three card
+ * sheets has ever been drawn. `Room:playCardEmotionAndSound` only sends the
+ * `Emotion` that would play them when `FileIO.exists("./packages/<pkg>/image/
+ * anim/<card>")`, and the web VM's filesystem holds `.lua` files and nothing
+ * else, so that branch has been false since the first build. The warm-up was
+ * fetching 327 kB, at idle, in every played table, for three sheets that could
+ * not be shown; `damage` was real but is now drawn per element in `effects.css`,
+ * which is sharper, tinted, and free.
  *
- * ~330 kB, after first paint, at idle, and only in a table that is actually
- * being played.
+ * What is left is the two that genuinely do play. `Room:setCardEmotion`
+ * (`room.lua:525`) has no existence check on it, so every judgement in the game
+ * lands one of these on the card being judged — 乐不思蜀, 兵粮寸断, 闪电, 铁索,
+ * and every judge skill in the pool. 82 kB, after first paint, at idle, and only
+ * in a table that is being played.
+ *
+ * Not a card-to-art mapping: every effect still resolves by name at play time,
+ * and this list changes nothing about what can animate.
  */
-const WARM = ['slash', 'jink', 'peach', 'damage'];
+const WARM = ['judgegood', 'judgebad'];
 
 export function warmCommonSheets(): void {
   // At `pace=0` nothing will ever be played, and the audit harness plays whole
-  // games that way. Fetching 330 kB it cannot use is not a warm-up.
+  // games that way. Fetching bytes it cannot use is not a warm-up.
   if (animationsOff()) return;
   const idle = (window as unknown as {
     requestIdleCallback?: (fn: () => void, o?: { timeout: number }) => number;

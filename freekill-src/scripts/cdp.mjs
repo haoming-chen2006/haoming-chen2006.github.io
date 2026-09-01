@@ -39,6 +39,13 @@ export async function launch({ width = 1440, height = 900, profileDir } = {}) {
     const proc = spawn(CHROME, [
       '--headless=new', '--remote-debugging-port=0', `--user-data-dir=${profile}`,
       '--no-first-run', '--no-default-browser-check', '--disable-gpu',
+      // Headless Chrome plays audio through the system's default output. A test
+      // run that exercises the game's sound therefore comes out of whoever is
+      // wearing headphones -- which is exactly what happened. Muting the tab is
+      // not enough on its own, so also decline the real audio device: the page
+      // still creates and drives its AudioContext, so anything asserting that a
+      // sound *was played* keeps working, it simply reaches no speaker.
+      '--mute-audio', '--disable-audio-output',
       `--window-size=${width},${height}`, 'about:blank',
     ], { stdio: ['ignore', 'ignore', 'pipe'] });
     return { proc, url: new Promise((resolve, reject) => {

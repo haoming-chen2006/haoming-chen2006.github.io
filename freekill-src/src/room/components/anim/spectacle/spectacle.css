@@ -1,0 +1,1800 @@
+/* ========================================================== the spectacle ==
+ *
+ * Skill invocations and the things that happen to a seat, authored rather than
+ * drawn.
+ *
+ * WHY NOT SPRITES. The engine ships nine `skillInvoke` PNG folders, one per
+ * `skill_type`, and they cost 796 kB packed. They are also, at the size a seat
+ * is drawn here, nine variations on the same golden swirl — which is the whole
+ * problem: the field they encode is the one field that makes a 274-general
+ * roster animate for free, and the art throws the distinction away. Worse, the
+ * pipeline that packs them is a live hazard: those strips are pal8 with `tRNS`
+ * alpha and ffmpeg silently drops that unless the filter chain names
+ * `format=rgba`, which is how every skill banner shipped as an opaque black
+ * square until somebody noticed. Keyframes have no alpha channel to lose, stay
+ * sharp at any seat size from 84 px to 168 px, and weigh what the gzipped text
+ * of this file weighs.
+ *
+ * TWO SURFACES.
+ *
+ *   `.fk-spec-sky`  a layer of the room's own, above the seat ring and below
+ *                   the modal, holding effects positioned over a seat from its
+ *                   measured rectangle. Nothing here is clipped, because
+ *                   `.fk-photo` is `overflow: hidden` and anything drawn inside
+ *                   it loses whatever spills — which is most of the interesting
+ *                   part of every effect below.
+ *
+ *   `[data-fk-spec]`  the portrait itself, for the half that *wants* clipping:
+ *                   a recoil, a corrosion vignette, colour draining out of a
+ *                   frame. An attribute rather than a class because React owns
+ *                   `className` on that element and rewrites it whenever a prop
+ *                   moves — five times a second, on a table that is idle.
+ *
+ * EVERY DURATION IS `--fk-spec-ms`, set per effect from the table's pace. At
+ * `pace=0` nothing is created at all. See `budget.ts`.
+ *
+ * The nine categories are separated by DIRECTION first and colour second. See
+ * the header of `palette.ts` for why, and for the table of which is which.
+ */
+
+/* ------------------------------------------------------------------ layers */
+
+.fk-spec-sky {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  /* Above the seat ring (12) and the dashboard, below `.fk-modal` (40). A
+     dialog must never be drawn under an effect. */
+  z-index: 30;
+  /* Load-bearing, not tidiness. The audit's reachability check asks
+     `document.elementFromPoint` what is at an enabled control's centre; a layer
+     that can be pointed at would answer "me" for every control under it and
+     every click in the room would land here. */
+  pointer-events: none;
+}
+
+.fk-spec {
+  position: absolute;
+  left: var(--fk-spec-x);
+  top: var(--fk-spec-y);
+  width: var(--fk-spec-w);
+  height: var(--fk-spec-h);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  /* The root always animates, whether or not it looks like it: `animationend`
+     on this element is how the node gets removed. The tail also covers any
+     child whose own keyframes run right up to the end. */
+  animation: fk-spec-life var(--fk-spec-ms) linear both;
+}
+
+@keyframes fk-spec-life {
+  0%, 92% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* Every part is an `<i>`; none of them are italic. */
+.fk-spec i {
+  position: absolute;
+  display: block;
+  font-style: normal;
+  pointer-events: none;
+}
+
+.fk-spec__glyph {
+  position: absolute;
+  inset: -6%;
+}
+
+.fk-spec__glyph svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+/* Radial parts share one transform chain: centre on the seat, turn to the
+   part's own angle, then travel outward along that angle. Repeating the whole
+   chain in every keyframe is not redundancy — a keyframe cannot animate one
+   component of `transform` on its own. */
+.fk-spec__spark,
+.fk-spec__plate,
+.fk-spec__pin,
+.fk-spec__shard,
+.fk-spec__ray,
+.fk-spec__leaf,
+.fk-spec__ember,
+.fk-spec__ash,
+.fk-spec__mote,
+.fk-spec__drip,
+.fk-spec__fall,
+.fk-spec__cross,
+.fk-spec__deal,
+.fk-spec__streak {
+  left: 50%;
+  top: 50%;
+}
+
+/* An evenly spread angle, nudged by the part's own stable jitter so a burst
+   reads as a burst and not as a compass rose. `--fk-j` is `-1 .. 1`, hashed
+   from the index in `paint.ts` — deterministic, so it does not shimmer. */
+.fk-spec i {
+  --fk-a: calc(var(--fk-i) * 360deg / var(--fk-n) + var(--fk-j) * 14deg);
+}
+
+/* ============================================================== offensive ==
+ * ACROSS. Three blades sweep over the seat on a fan of angles, a shock ring
+ * punches out behind them, and fourteen sparks are thrown clear. The only
+ * category that leaves the frame in a straight line. */
+
+.fk-spec--offensive .fk-spec__blade {
+  left: 50%;
+  top: 50%;
+  width: calc(var(--fk-spec-w) * 2.3);
+  height: calc(var(--fk-spec-w) * 0.11);
+  --rot: calc(-34deg + var(--fk-i) * 31deg);
+  /* Two layers: a white-hot core one third the height of the blade, and the
+     coloured body around it. One flat gradient washed out against the felt —
+     a blade needs a hard edge to read as a cut rather than as a smear. */
+  background:
+    linear-gradient(90deg, transparent 18%, #fff 50%, transparent 82%) 50% 50% / 100% 34% no-repeat,
+    linear-gradient(90deg,
+      transparent 2%,
+      rgba(var(--fk-spec-rgb), 0.85) 26%,
+      rgba(var(--fk-spec-lit), 1) 50%,
+      rgba(var(--fk-spec-rgb), 0.85) 74%,
+      transparent 98%);
+  filter: drop-shadow(0 0 10px rgba(var(--fk-spec-rgb), 1))
+          drop-shadow(0 0 26px rgba(var(--fk-spec-rgb), 0.7));
+  animation: fk-spec-blade calc(var(--fk-spec-ms) * 0.62) cubic-bezier(0.15, 0.85, 0.2, 1) both;
+  animation-delay: calc(var(--fk-i) * var(--fk-spec-ms) * 0.1);
+}
+
+@keyframes fk-spec-blade {
+  0% { opacity: 0; transform: translate(-50%, -50%) rotate(var(--rot)) translateX(-42%) scaleX(0.25); }
+  20% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, -50%) rotate(var(--rot)) translateX(34%) scaleX(1.1); }
+}
+
+/* Round, and sized off the width alone. `inset` on a portrait-shaped box makes
+   an ellipse, and an ellipse reads as a lozenge sitting on the seat rather than
+   as a wave leaving it. A rim that follows the frame (defensive, equip) is a
+   different thing and keeps its `inset`. */
+.fk-spec--offensive .fk-spec__shock {
+  left: 50%;
+  top: 50%;
+  width: 96%;
+  aspect-ratio: 1;
+  margin: 0;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  border: 3px solid rgba(var(--fk-spec-lit), 1);
+  box-shadow: 0 0 34px rgba(var(--fk-spec-rgb), 1), inset 0 0 26px rgba(var(--fk-spec-rgb), 0.55);
+  animation: fk-spec-shock calc(var(--fk-spec-ms) * 0.7) cubic-bezier(0.1, 0.9, 0.2, 1) both;
+}
+
+@keyframes fk-spec-shock {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.2); }
+  16% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(2.05); }
+}
+
+.fk-spec__spark {
+  width: calc(var(--fk-spec-w) * 0.03);
+  height: calc(var(--fk-spec-w) * 0.18);
+  border-radius: 2px;
+  background: linear-gradient(#fff, rgba(var(--fk-spec-rgb), 0.9) 30%, rgba(var(--fk-spec-rgb), 0));
+  filter: drop-shadow(0 0 9px rgba(var(--fk-spec-rgb), 1));
+  animation: fk-spec-spark calc(var(--fk-spec-ms) * 0.78) cubic-bezier(0.05, 0.7, 0.25, 1) both;
+  animation-delay: calc(var(--fk-i) * var(--fk-spec-ms) * 0.014);
+}
+
+@keyframes fk-spec-spark {
+  0% { opacity: 0; transform: translate(-50%, -50%) rotate(var(--fk-a)) translateY(calc(var(--fk-spec-w) * -0.1)) scaleY(0.4); }
+  18% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, -50%) rotate(var(--fk-a)) translateY(calc(var(--fk-spec-w) * -0.95)) scaleY(1.5); }
+}
+
+/* ============================================================== defensive ==
+ * INWARD, THEN HELD. Eight plates converge on the seat and lock, a hexagon
+ * draws itself shut over them, and the rim lights at the moment of the lock and
+ * stays lit. Deliberately the only category with no particles at all: every
+ * other one scatters, so a guard that does not scatter cannot be mistaken. */
+
+.fk-spec--defensive .fk-spec__plate {
+  width: calc(var(--fk-spec-w) * 0.15);
+  height: calc(var(--fk-spec-w) * 0.26);
+  --fk-a: calc(var(--fk-i) * 360deg / var(--fk-n));
+  background: linear-gradient(180deg, rgba(var(--fk-spec-lit), 0.98), rgba(var(--fk-spec-rgb), 0.42));
+  clip-path: polygon(20% 0, 80% 0, 100% 100%, 0 100%);
+  box-shadow: 0 0 14px rgba(var(--fk-spec-rgb), 0.8);
+  animation: fk-spec-plate var(--fk-spec-ms) cubic-bezier(0.22, 0.9, 0.24, 1) both;
+  animation-delay: calc(var(--fk-i) * var(--fk-spec-ms) * 0.018);
+}
+
+@keyframes fk-spec-plate {
+  0% { opacity: 0; transform: translate(-50%, -50%) rotate(var(--fk-a)) translateY(calc(var(--fk-spec-w) * -1.15)) scale(0.55); }
+  26% { opacity: 1; }
+  /* The lock, with a hair of overshoot — the plates arrive and settle. */
+  56% { opacity: 1; transform: translate(-50%, -50%) rotate(var(--fk-a)) translateY(calc(var(--fk-spec-w) * -0.40)) scale(1.06); }
+  66% { transform: translate(-50%, -50%) rotate(var(--fk-a)) translateY(calc(var(--fk-spec-w) * -0.45)) scale(1); }
+  88% { opacity: 1; transform: translate(-50%, -50%) rotate(var(--fk-a)) translateY(calc(var(--fk-spec-w) * -0.45)) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -50%) rotate(var(--fk-a)) translateY(calc(var(--fk-spec-w) * -0.45)) scale(1); }
+}
+
+.fk-spec-draw {
+  fill: none;
+  stroke: rgba(var(--fk-spec-lit), 0.95);
+  stroke-width: 3;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  /* Longer than any path in `plan.ts`, so one number draws all of them. */
+  stroke-dasharray: 480;
+  stroke-dashoffset: 480;
+  filter: drop-shadow(0 0 8px rgba(var(--fk-spec-rgb), 0.95));
+  animation: fk-spec-draw var(--fk-spec-ms) cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.fk-spec-draw--inner {
+  stroke-width: 2;
+  opacity: 0.75;
+  animation-delay: calc(var(--fk-spec-ms) * 0.12);
+}
+
+@keyframes fk-spec-draw {
+  0% { stroke-dashoffset: 480; opacity: 0; }
+  14% { opacity: 1; }
+  62% { stroke-dashoffset: 0; opacity: 1; }
+  86% { stroke-dashoffset: 0; opacity: 1; }
+  100% { stroke-dashoffset: 0; opacity: 0; }
+}
+
+.fk-spec--defensive .fk-spec__rim {
+  inset: -5%;
+  border-radius: 8px;
+  border: 2px solid rgba(var(--fk-spec-lit), 0.9);
+  box-shadow: 0 0 24px rgba(var(--fk-spec-rgb), 0.85), inset 0 0 20px rgba(var(--fk-spec-rgb), 0.35);
+  animation: fk-spec-rim var(--fk-spec-ms) ease-out both;
+}
+
+/* Nothing until the plates land, then it snaps on and holds — the guard being
+   set, which is the beat this category is about. */
+@keyframes fk-spec-rim {
+  0%, 52% { opacity: 0; transform: scale(1.14); }
+  62% { opacity: 1; transform: scale(1); }
+  90% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1.02); }
+}
+
+/* ================================================================ control ==
+ * AROUND, TIGHTENING. Two dashed rings turn against each other and close, and
+ * six barbs stab inward at the end. The seat is the one thing that does not
+ * move: `SIGNATURE.control.host` is empty on purpose, and a portrait held
+ * perfectly still while everything around it constricts is the effect. */
+
+.fk-spec-ring {
+  fill: none;
+  stroke: rgba(var(--fk-spec-lit), 0.9);
+  stroke-width: 3;
+  stroke-dasharray: 15 11;
+  filter: drop-shadow(0 0 9px rgba(var(--fk-spec-rgb), 0.95));
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.fk-spec--control .fk-spec-ring--out {
+  animation: fk-spec-cinch-cw var(--fk-spec-ms) cubic-bezier(0.25, 0.7, 0.2, 1) both;
+}
+
+.fk-spec--control .fk-spec-ring--in {
+  stroke-dasharray: 9 14;
+  animation: fk-spec-cinch-ccw var(--fk-spec-ms) cubic-bezier(0.25, 0.7, 0.2, 1) both;
+}
+
+@keyframes fk-spec-cinch-cw {
+  0% { opacity: 0; transform: rotate(-70deg) scale(1.75); }
+  22% { opacity: 1; }
+  80% { opacity: 1; transform: rotate(120deg) scale(0.8); }
+  100% { opacity: 0; transform: rotate(134deg) scale(0.84); }
+}
+
+@keyframes fk-spec-cinch-ccw {
+  0% { opacity: 0; transform: rotate(80deg) scale(1.95); }
+  22% { opacity: 1; }
+  80% { opacity: 1; transform: rotate(-110deg) scale(0.86); }
+  100% { opacity: 0; transform: rotate(-124deg) scale(0.9); }
+}
+
+.fk-spec--control .fk-spec__pin {
+  width: calc(var(--fk-spec-w) * 0.024);
+  height: calc(var(--fk-spec-w) * 0.19);
+  --fk-a: calc(var(--fk-i) * 360deg / var(--fk-n) + 22deg);
+  background: linear-gradient(rgba(var(--fk-spec-rgb), 0), rgba(var(--fk-spec-lit), 1) 80%);
+  filter: drop-shadow(0 0 7px rgba(var(--fk-spec-rgb), 1));
+  animation: fk-spec-pin calc(var(--fk-spec-ms) * 0.5) cubic-bezier(0.6, 0, 0.2, 1) both;
+  animation-delay: calc(var(--fk-spec-ms) * 0.42 + var(--fk-i) * var(--fk-spec-ms) * 0.018);
+}
+
+@keyframes fk-spec-pin {
+  0% { opacity: 0; transform: translate(-50%, -50%) rotate(var(--fk-a)) translateY(calc(var(--fk-spec-w) * -0.95)); }
+  35% { opacity: 1; }
+  72% { opacity: 1; transform: translate(-50%, -50%) rotate(var(--fk-a)) translateY(calc(var(--fk-spec-w) * -0.32)); }
+  100% { opacity: 0; transform: translate(-50%, -50%) rotate(var(--fk-a)) translateY(calc(var(--fk-spec-w) * -0.32)); }
+}
+
+/* A band that closes on the seat, not a fill over it.
+   `closest-side` on a portrait-shaped box put full colour in all four corners,
+   which read as a purple card rather than as something tightening. An ellipse
+   sized to the box with a transparent LAST stop leaves the corners empty, so
+   what is drawn is a ring — and a ring is the only shape that can be seen to
+   constrict. */
+.fk-spec--control .fk-spec__grip {
+  inset: -16%;
+  background: radial-gradient(ellipse farthest-side,
+    transparent 54%,
+    rgba(var(--fk-spec-rgb), 0.62) 84%,
+    transparent 100%);
+  animation: fk-spec-grip var(--fk-spec-ms) cubic-bezier(0.25, 0.7, 0.2, 1) both;
+}
+
+@keyframes fk-spec-grip {
+  0% { opacity: 0; transform: scale(1.5); }
+  38% { opacity: 1; }
+  82% { opacity: 1; transform: scale(0.92); }
+  100% { opacity: 0; transform: scale(0.92); }
+}
+
+/* ================================================================ support ==
+ * UPWARD. Sixteen motes lift off the bottom of the frame and drift out of the
+ * top, a bloom warms the seat, and a halo opens overhead. Nothing in this
+ * category moves down. */
+
+.fk-spec--support .fk-spec__mote {
+  width: calc(var(--fk-spec-w) * 0.05);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  --dx: calc(var(--fk-j) * var(--fk-spec-w) * 0.42);
+  background: radial-gradient(circle, rgba(var(--fk-spec-lit), 1) 15%, rgba(var(--fk-spec-rgb), 0.55) 55%, transparent 72%);
+  animation: fk-spec-rise var(--fk-spec-ms) cubic-bezier(0.3, 0.6, 0.3, 1) both;
+  animation-delay: calc(var(--fk-i) * var(--fk-spec-ms) * 0.034);
+}
+
+@keyframes fk-spec-rise {
+  0% { opacity: 0; transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--fk-spec-h) * 0.52)) scale(0.4); }
+  26% { opacity: 1; }
+  100% { opacity: 0; transform: translate(calc(-50% + var(--dx) * 1.6), calc(-50% - var(--fk-spec-h) * 0.6)) scale(1.15); }
+}
+
+.fk-spec--support .fk-spec__halo {
+  left: 50%;
+  top: 6%;
+  width: calc(var(--fk-spec-w) * 1.2);
+  height: calc(var(--fk-spec-w) * 0.44);
+  margin-left: calc(var(--fk-spec-w) * -0.6);
+  border-top: 3px solid rgba(var(--fk-spec-lit), 0.95);
+  border-radius: 50% / 100% 100% 0 0;
+  filter: drop-shadow(0 0 16px rgba(var(--fk-spec-rgb), 0.95));
+  animation: fk-spec-halo var(--fk-spec-ms) cubic-bezier(0.2, 0.8, 0.25, 1) both;
+}
+
+@keyframes fk-spec-halo {
+  0% { opacity: 0; transform: scaleX(0.15) translateY(18%); }
+  32% { opacity: 1; }
+  100% { opacity: 0; transform: scaleX(1.3) translateY(-14%); }
+}
+
+.fk-spec--support .fk-spec__bloom {
+  inset: -18%;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 66%, rgba(var(--fk-spec-lit), 0.5), rgba(var(--fk-spec-rgb), 0.22) 44%, transparent 70%);
+  animation: fk-spec-bloom var(--fk-spec-ms) ease-out both;
+}
+
+@keyframes fk-spec-bloom {
+  0% { opacity: 0; transform: scale(0.6) translateY(12%); }
+  35% { opacity: 1; }
+  100% { opacity: 0; transform: scale(1.25) translateY(-10%); }
+}
+
+/* =============================================================== drawcard ==
+ * INWARD, AND THE THINGS ARE CARDS. Five card shapes arc in from off the table
+ * and fold into the seat. Shape carries this one, not colour: nothing else in
+ * the nine is a rectangle. */
+
+.fk-spec--drawcard .fk-spec__leaf {
+  width: calc(var(--fk-spec-w) * 0.24);
+  height: calc(var(--fk-spec-w) * 0.34);
+  border-radius: calc(var(--fk-spec-w) * 0.025);
+  --fk-a: calc(-56deg + var(--fk-i) * 28deg);
+  background:
+    linear-gradient(150deg, rgba(var(--fk-spec-lit), 0.95), rgba(var(--fk-spec-rgb), 0.7)),
+    repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.18) 0 3px, transparent 3px 6px);
+  box-shadow: 0 0 0 1px rgba(var(--fk-spec-lit), 0.9), 0 0 20px rgba(var(--fk-spec-rgb), 0.85);
+  animation: fk-spec-gather calc(var(--fk-spec-ms) * 0.86) cubic-bezier(0.3, 0.05, 0.2, 1) both;
+  animation-delay: calc(var(--fk-i) * var(--fk-spec-ms) * 0.055);
+}
+
+/* The inner counter-rotation is what keeps a card upright while it travels on
+   a radial path — without it the fan reads as a pinwheel. */
+@keyframes fk-spec-gather {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) rotate(var(--fk-a)) translateY(calc(var(--fk-spec-w) * -1.75))
+      rotate(calc(var(--fk-a) * -1)) rotate(-22deg) scale(0.75);
+  }
+  24% { opacity: 1; }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) rotate(var(--fk-a)) translateY(0)
+      rotate(calc(var(--fk-a) * -1)) rotate(8deg) scale(0.34);
+  }
+}
+
+.fk-spec--drawcard .fk-spec__fan {
+  inset: -10%;
+  border-radius: 50%;
+  background: conic-gradient(from 200deg, transparent 0deg, rgba(var(--fk-spec-rgb), 0.34) 60deg, transparent 140deg);
+  animation: fk-spec-fan var(--fk-spec-ms) cubic-bezier(0.2, 0.7, 0.3, 1) both;
+}
+
+@keyframes fk-spec-fan {
+  0% { opacity: 0; transform: rotate(-40deg) scale(1.3); }
+  30% { opacity: 1; }
+  100% { opacity: 0; transform: rotate(30deg) scale(0.7); }
+}
+
+/* ============================================================== masochism ==
+ * IN, THEN OUT. The only two-beat effect in the nine: ten shards implode onto
+ * the seat, and the seat answers with a burst and a crack. Its colour is not
+ * its own — a masochism skill inherits the element of the damage that provoked
+ * it, which the engine reported on the beat before (see `Spectacle.damage`). */
+
+.fk-spec--masochism .fk-spec__shard {
+  width: calc(var(--fk-spec-w) * 0.026);
+  height: calc(var(--fk-spec-w) * 0.15);
+  background: linear-gradient(rgba(var(--fk-spec-rgb), 0), rgba(var(--fk-spec-lit), 1));
+  filter: drop-shadow(0 0 7px rgba(var(--fk-spec-rgb), 0.95));
+  animation: fk-spec-implode calc(var(--fk-spec-ms) * 0.48) cubic-bezier(0.55, 0, 0.85, 0.4) both;
+  animation-delay: calc(var(--fk-i) * var(--fk-spec-ms) * 0.012);
+}
+
+@keyframes fk-spec-implode {
+  0% { opacity: 0; transform: translate(-50%, -50%) rotate(var(--fk-a)) translateY(calc(var(--fk-spec-w) * -1.25)) scaleY(0.6); }
+  28% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, -50%) rotate(var(--fk-a)) translateY(0) scaleY(1.7); }
+}
+
+.fk-spec--masochism .fk-spec__burst {
+  left: 50%;
+  top: 50%;
+  width: 92%;
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  border: 3px solid rgba(var(--fk-spec-lit), 0.95);
+  box-shadow: 0 0 34px rgba(var(--fk-spec-rgb), 0.95), inset 0 0 30px rgba(var(--fk-spec-rgb), 0.6);
+  /* Beat two starts where beat one ends. */
+  animation: fk-spec-burst calc(var(--fk-spec-ms) * 0.55) cubic-bezier(0.08, 0.9, 0.2, 1) both;
+  animation-delay: calc(var(--fk-spec-ms) * 0.45);
+}
+
+@keyframes fk-spec-burst {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.1); }
+  12% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(2.4); }
+}
+
+.fk-spec--masochism .fk-spec__glyph--crack {
+  animation: fk-spec-hold calc(var(--fk-spec-ms) * 0.55) linear both;
+  animation-delay: calc(var(--fk-spec-ms) * 0.45);
+}
+
+.fk-spec--masochism .fk-spec__glyph--crack .fk-spec-draw {
+  stroke-width: 2;
+  animation-duration: calc(var(--fk-spec-ms) * 0.55);
+  animation-delay: calc(var(--fk-spec-ms) * 0.45);
+}
+
+@keyframes fk-spec-hold {
+  from { opacity: 1; }
+  to { opacity: 1; }
+}
+
+/* =============================================================== negative ==
+ * DOWNWARD. Fourteen drips sink out of the bottom of the frame while a
+ * corrosion closes in from its edges. The only category whose particles fall,
+ * and the portrait wilts with them. */
+
+.fk-spec--negative .fk-spec__drip {
+  width: calc(var(--fk-spec-w) * 0.035);
+  height: calc(var(--fk-spec-w) * 0.09);
+  border-radius: 50% 50% 60% 60%;
+  --dx: calc(var(--fk-j) * var(--fk-spec-w) * 0.44);
+  background: linear-gradient(rgba(var(--fk-spec-lit), 0.9), rgba(var(--fk-spec-rgb), 0.2));
+  filter: blur(0.3px) drop-shadow(0 0 6px rgba(var(--fk-spec-rgb), 0.8));
+  animation: fk-spec-sink var(--fk-spec-ms) cubic-bezier(0.5, 0, 0.75, 0.6) both;
+  animation-delay: calc(var(--fk-i) * var(--fk-spec-ms) * 0.03);
+}
+
+@keyframes fk-spec-sink {
+  0% { opacity: 0; transform: translate(calc(-50% + var(--dx)), calc(-50% - var(--fk-spec-h) * 0.44)) scaleY(0.6); }
+  26% { opacity: 1; }
+  100% { opacity: 0; transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--fk-spec-h) * 0.62)) scaleY(1.8); }
+}
+
+/* Corrosion creeping in from the frame, with the portrait still visible
+   through the middle of it. Same fix as `control`: an ellipse with a
+   transparent last stop, so the corners stay empty and the seat is being eaten
+   into rather than covered over. The dark stop under the green is what makes it
+   read as rot instead of as a glow. */
+.fk-spec--negative .fk-spec__rot {
+  inset: -12%;
+  background: radial-gradient(ellipse farthest-side,
+    transparent 36%,
+    rgba(24, 30, 12, 0.5) 74%,
+    rgba(var(--fk-spec-rgb), 0.66) 90%,
+    transparent 100%);
+  animation: fk-spec-rot var(--fk-spec-ms) cubic-bezier(0.3, 0.6, 0.3, 1) both;
+}
+
+@keyframes fk-spec-rot {
+  0% { opacity: 0; transform: scale(1.5); }
+  34% { opacity: 1; }
+  84% { opacity: 1; transform: scale(0.9); }
+  100% { opacity: 0; transform: scale(0.9); }
+}
+
+/* ================================================================ special ==
+ * ON THE SPOT. A rune seal: two dashed rings turning against each other, eight
+ * spokes, a bright core. Nothing travels. This is also the fallback category —
+ * `skill_type` is absent on a great many skills and `RoomLogic.js` calls that
+ * `special` — so it has to look deliberate rather than like a default. */
+
+.fk-spec--special .fk-spec-ring--out {
+  animation: fk-spec-turn-cw var(--fk-spec-ms) cubic-bezier(0.2, 0.7, 0.3, 1) both;
+}
+
+.fk-spec--special .fk-spec-ring--in {
+  stroke-dasharray: 6 10;
+  animation: fk-spec-turn-ccw var(--fk-spec-ms) cubic-bezier(0.2, 0.7, 0.3, 1) both;
+}
+
+@keyframes fk-spec-turn-cw {
+  0% { opacity: 0; transform: rotate(-90deg) scale(0.5); }
+  22% { opacity: 1; }
+  84% { opacity: 1; transform: rotate(38deg) scale(1); }
+  100% { opacity: 0; transform: rotate(52deg) scale(1.12); }
+}
+
+@keyframes fk-spec-turn-ccw {
+  0% { opacity: 0; transform: rotate(90deg) scale(0.3); }
+  22% { opacity: 1; }
+  84% { opacity: 1; transform: rotate(-46deg) scale(1); }
+  100% { opacity: 0; transform: rotate(-60deg) scale(1.12); }
+}
+
+.fk-spec-spokes path {
+  stroke: rgba(var(--fk-spec-lit), 0.85);
+  stroke-width: 4;
+  stroke-linecap: round;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: fk-spec-spokes var(--fk-spec-ms) ease-out both;
+}
+
+@keyframes fk-spec-spokes {
+  0% { opacity: 0; transform: scale(0.4); }
+  30% { opacity: 1; transform: scale(1); }
+  84% { opacity: 0.9; }
+  100% { opacity: 0; transform: scale(1.18); }
+}
+
+.fk-spec-core {
+  fill: rgba(var(--fk-spec-lit), 0.95);
+  filter: drop-shadow(0 0 14px rgba(var(--fk-spec-rgb), 1));
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: fk-spec-core var(--fk-spec-ms) cubic-bezier(0.2, 0.9, 0.2, 1) both;
+}
+
+@keyframes fk-spec-core {
+  0% { opacity: 0; transform: scale(0) rotate(-45deg); }
+  30% { opacity: 1; transform: scale(1.15) rotate(0deg); }
+  70% { transform: scale(0.92) rotate(0deg); }
+  100% { opacity: 0; transform: scale(1.4) rotate(30deg); }
+}
+
+.fk-spec--special .fk-spec__ray {
+  width: calc(var(--fk-spec-w) * 0.02);
+  height: calc(var(--fk-spec-w) * 0.3);
+  --fk-a: calc(var(--fk-i) * 360deg / var(--fk-n));
+  background: linear-gradient(rgba(var(--fk-spec-lit), 0.9), transparent);
+  animation: fk-spec-ray calc(var(--fk-spec-ms) * 0.6) ease-out both;
+  animation-delay: calc(var(--fk-i) * var(--fk-spec-ms) * 0.03);
+}
+
+@keyframes fk-spec-ray {
+  0% { opacity: 0; transform: translate(-50%, -50%) rotate(var(--fk-a)) translateY(calc(var(--fk-spec-w) * -0.2)) scaleY(0.2); }
+  30% { opacity: 0.95; }
+  100% { opacity: 0; transform: translate(-50%, -50%) rotate(var(--fk-a)) translateY(calc(var(--fk-spec-w) * -0.62)) scaleY(1); }
+}
+
+/* ================================================================= switch ==
+ * SIDEWAYS, AND TWO-TONE. Two halves cross past each other in opposite
+ * directions and in different colours, with a pair of curved arrows turning
+ * over them. The only category that uses `--fk-spec-lit` as a second hue rather
+ * than as a highlight of the first, because a swap needs two things to swap. */
+
+.fk-spec--switch .fk-spec__half {
+  left: 50%;
+  top: 50%;
+  width: calc(var(--fk-spec-w) * 0.85);
+  height: calc(var(--fk-spec-h) * 0.98);
+  filter: blur(1px);
+}
+
+.fk-spec--switch .fk-spec__half--l {
+  background: linear-gradient(90deg, transparent, rgba(var(--fk-spec-rgb), 0.85) 65%, rgba(var(--fk-spec-rgb), 0.1));
+  animation: fk-spec-swap-l var(--fk-spec-ms) cubic-bezier(0.3, 0.75, 0.25, 1) both;
+}
+
+.fk-spec--switch .fk-spec__half--r {
+  background: linear-gradient(270deg, transparent, rgba(var(--fk-spec-lit), 0.8) 65%, rgba(var(--fk-spec-lit), 0.1));
+  animation: fk-spec-swap-r var(--fk-spec-ms) cubic-bezier(0.3, 0.75, 0.25, 1) both;
+}
+
+@keyframes fk-spec-swap-l {
+  0% { opacity: 0; transform: translate(-150%, -50%) skewX(-12deg); }
+  22% { opacity: 1; }
+  100% { opacity: 0; transform: translate(44%, -50%) skewX(-12deg); }
+}
+
+@keyframes fk-spec-swap-r {
+  0% { opacity: 0; transform: translate(44%, -50%) skewX(-12deg); }
+  22% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-150%, -50%) skewX(-12deg); }
+}
+
+.fk-spec-arc {
+  fill: none;
+  stroke-width: 5;
+  stroke-linecap: round;
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+}
+
+.fk-spec-arc--a, .fk-spec-head--a { stroke: rgba(var(--fk-spec-rgb), 0.95); fill: rgba(var(--fk-spec-rgb), 0.95); }
+.fk-spec-arc--b, .fk-spec-head--b { stroke: rgba(var(--fk-spec-lit), 0.95); fill: rgba(var(--fk-spec-lit), 0.95); }
+
+.fk-spec--switch .fk-spec__glyph--swap svg > * {
+  transform-box: view-box;
+  transform-origin: 60px 60px;
+  filter: drop-shadow(0 0 9px rgba(var(--fk-spec-rgb), 0.7));
+  animation: fk-spec-swap-turn var(--fk-spec-ms) cubic-bezier(0.25, 0.8, 0.25, 1) both;
+}
+
+@keyframes fk-spec-swap-turn {
+  0% { opacity: 0; transform: rotate(-60deg) scale(0.6); }
+  26% { opacity: 1; }
+  84% { opacity: 1; transform: rotate(150deg) scale(1); }
+  100% { opacity: 0; transform: rotate(174deg) scale(1.08); }
+}
+
+/* ================================================================= plaque ==
+ * The skill's name, framed in its player's kingdom.
+ *
+ * `SkillInvokeAnimation.qml` slides the name in from the right and holds it,
+ * because the picture says what kind of thing happened and only the text says
+ * which one. The rim colour and the stamped character are the whole of the
+ * kingdom treatment — enough to tell one 蜀 seat's turn from a 魏 seat's at a
+ * glance, deliberately not enough to disturb the category's own colour. */
+
+.fk-spec__plaque {
+  left: 50%;
+  top: calc(50% + var(--fk-spec-h) * 0.34);
+  white-space: nowrap;
+  font-weight: 700;
+  font-size: calc(var(--fk-spec-w) * 0.19);
+  line-height: 1.2;
+  padding: 0.16em 0.62em 0.16em 1.5em;
+  color: #fff6dd;
+  background: linear-gradient(180deg, rgba(32, 26, 17, 0.95), rgba(13, 10, 6, 0.95));
+  border: 1px solid rgba(var(--fk-spec-rim), 0.95);
+  border-radius: 3px;
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.75),
+    0 4px 16px rgba(0, 0, 0, 0.75),
+    0 0 24px rgba(var(--fk-spec-rim), 0.42);
+  text-shadow: 0 1px 0 #000, 0 0 12px rgba(var(--fk-spec-rgb), 0.85);
+  animation: fk-spec-plaque var(--fk-spec-ms) cubic-bezier(0.2, 0.9, 0.22, 1) both;
+}
+
+.fk-spec__plaque::before {
+  content: var(--fk-spec-mark);
+  position: absolute;
+  left: 0.24em;
+  top: 50%;
+  width: 1.05em;
+  height: 1.05em;
+  margin-top: -0.525em;
+  font-size: 0.8em;
+  line-height: 1.05em;
+  text-align: center;
+  color: rgba(var(--fk-spec-rim), 1);
+  background: rgba(var(--fk-spec-seal), 0.95);
+  border: 1px solid rgba(var(--fk-spec-rim), 0.85);
+  border-radius: 2px;
+  text-shadow: none;
+}
+
+@keyframes fk-spec-plaque {
+  0% { opacity: 0; transform: translate(-26%, -50%) scale(0.86); }
+  26% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  82% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1.05); }
+}
+
+/* ==================================================================== ult ==
+ * `InvokeUltSkill`, and the only room-filling effect in the lane.
+ *
+ * It is affordable because the engine has already stopped: `notifySkillInvoked`
+ * follows this message with `self:delay(2000)` (`room.lua:609`), so the table is
+ * doing nothing else for two seconds by the server's own decision. The Qt
+ * client fills that pause with a takeover — the screen dims, forty copies of
+ * the character's voice line scroll past in two counter-moving bands, the
+ * general's card flies in at 3.3x. This is the same shape with the pieces the
+ * web room has: the skill name in the bands, the name itself landing centre,
+ * speed lines, and a shock wave that goes out from the seat that fired it —
+ * `--fk-spec-ox/oy`, which is why a room-filling effect still knows where it
+ * came from. */
+
+.fk-spec--ult {
+  z-index: 2;
+}
+
+.fk-spec__dim {
+  inset: 0;
+  background: radial-gradient(120% 90% at var(--fk-spec-ox) var(--fk-spec-oy),
+    rgba(0, 0, 0, 0.28), rgba(0, 0, 0, 0.66) 70%);
+  animation: fk-spec-dim var(--fk-spec-ms) ease-in-out both;
+}
+
+@keyframes fk-spec-dim {
+  0% { opacity: 0; }
+  16% { opacity: 1; }
+  76% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+.fk-spec__band {
+  left: 0;
+  white-space: nowrap;
+  font-weight: 800;
+  font-size: clamp(18px, 3.2vh, 34px);
+  letter-spacing: 0.4em;
+  color: rgba(var(--fk-spec-lit), 0.16);
+  text-shadow: 0 0 18px rgba(var(--fk-spec-rgb), 0.35);
+  /* One node per copy, laid end to end by the index. */
+  transform: translateX(calc(var(--fk-i) * 9em));
+}
+
+.fk-spec__band--a {
+  top: calc(50% - 3.4em);
+  animation: fk-spec-band-a var(--fk-spec-ms) linear both;
+}
+
+.fk-spec__band--b {
+  top: calc(50% + 2.2em);
+  color: rgba(var(--fk-spec-rgb), 0.18);
+  animation: fk-spec-band-b var(--fk-spec-ms) linear both;
+}
+
+@keyframes fk-spec-band-a {
+  0% { opacity: 0; transform: translateX(calc(var(--fk-i) * 9em)); }
+  18% { opacity: 1; }
+  78% { opacity: 1; }
+  100% { opacity: 0; transform: translateX(calc(var(--fk-i) * 9em - 7em)); }
+}
+
+@keyframes fk-spec-band-b {
+  0% { opacity: 0; transform: translateX(calc(var(--fk-i) * 9em - 5em)); }
+  18% { opacity: 1; }
+  78% { opacity: 1; }
+  100% { opacity: 0; transform: translateX(calc(var(--fk-i) * 9em + 3em)); }
+}
+
+/* Speed lines, radiating from the seat that fired. */
+.fk-spec__streak {
+  left: var(--fk-spec-ox);
+  top: var(--fk-spec-oy);
+  width: 2px;
+  height: 34vmax;
+  background: linear-gradient(rgba(var(--fk-spec-lit), 0.55), transparent 62%);
+  --fk-a: calc(var(--fk-i) * 360deg / var(--fk-n) + var(--fk-j) * 9deg);
+  animation: fk-spec-streak calc(var(--fk-spec-ms) * 0.62) cubic-bezier(0.1, 0.8, 0.2, 1) both;
+  animation-delay: calc(var(--fk-i) * var(--fk-spec-ms) * 0.008);
+}
+
+@keyframes fk-spec-streak {
+  0% { opacity: 0; transform: translate(-50%, -50%) rotate(var(--fk-a)) translateY(-2vmax) scaleY(0.1); }
+  20% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, -50%) rotate(var(--fk-a)) translateY(-26vmax) scaleY(1); }
+}
+
+.fk-spec__wave {
+  left: var(--fk-spec-ox);
+  top: var(--fk-spec-oy);
+  width: 12vmax;
+  height: 12vmax;
+  margin: -6vmax 0 0 -6vmax;
+  border-radius: 50%;
+  border: 3px solid rgba(var(--fk-spec-lit), 0.85);
+  box-shadow: 0 0 40px rgba(var(--fk-spec-rgb), 0.9), inset 0 0 40px rgba(var(--fk-spec-rgb), 0.4);
+  animation: fk-spec-wave calc(var(--fk-spec-ms) * 0.55) cubic-bezier(0.05, 0.85, 0.2, 1) both;
+}
+
+@keyframes fk-spec-wave {
+  0% { opacity: 0; transform: scale(0.05); }
+  14% { opacity: 1; }
+  100% { opacity: 0; transform: scale(5.5); }
+}
+
+.fk-spec__ult-name {
+  left: 50%;
+  top: 50%;
+  white-space: nowrap;
+  font-weight: 900;
+  font-size: clamp(40px, 11vh, 108px);
+  letter-spacing: 0.06em;
+  color: #fffaf0;
+  text-shadow:
+    0 2px 0 #2a1c08, 0 -2px 0 #2a1c08, 2px 0 0 #2a1c08, -2px 0 0 #2a1c08,
+    0 0 34px rgba(var(--fk-spec-rgb), 0.95),
+    0 0 78px rgba(var(--fk-spec-lit), 0.7);
+  animation: fk-spec-ult-name var(--fk-spec-ms) cubic-bezier(0.14, 0.9, 0.2, 1) both;
+}
+
+@keyframes fk-spec-ult-name {
+  0% { opacity: 0; transform: translate(-50%, calc(-50% + 46px)) scale(2.6); filter: blur(14px); }
+  22% { opacity: 1; transform: translate(-50%, -50%) scale(1); filter: blur(0); }
+  /* A long hold: this is the moment the game stopped for. */
+  74% { opacity: 1; transform: translate(-50%, calc(-50% - 10px)) scale(1.02); filter: blur(0); }
+  100% { opacity: 0; transform: translate(-50%, calc(-50% - 46px)) scale(1.1); filter: blur(3px); }
+}
+
+.fk-spec__ult-mark {
+  left: 50%;
+  top: 50%;
+  font-weight: 900;
+  font-size: clamp(160px, 42vh, 420px);
+  line-height: 1;
+  color: rgba(var(--fk-spec-rim), 0.14);
+  animation: fk-spec-ult-mark var(--fk-spec-ms) cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.fk-spec__ult-mark::before { content: var(--fk-spec-mark); }
+
+@keyframes fk-spec-ult-mark {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(1.7) rotate(-8deg); }
+  26% { opacity: 1; transform: translate(-50%, -50%) scale(1) rotate(0deg); }
+  74% { opacity: 1; transform: translate(-50%, -50%) scale(1) rotate(0deg); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1.1) rotate(4deg); }
+}
+
+/* ============================================================ how much ====
+ *
+ * `LogEvent{type="Damage"}` carries `damageType` AND `damageNum`. The card lane
+ * authors the impact from the first — cracks, flame, arcs, frost. Nothing has
+ * ever read the second: the Qt client uses it once, to append "2" to a sound
+ * file name (`RoomLogic.js:1381`).
+ *
+ * So this is the magnitude, and only the magnitude. A second burst on top of a
+ * good one is worse than either alone; a number over the seat is not a second
+ * burst, and at two points or more the table itself reels. */
+
+.fk-spec__pip {
+  left: 50%;
+  top: calc(50% - var(--fk-spec-h) * 0.42);
+  white-space: nowrap;
+  font-weight: 800;
+  font-size: calc(var(--fk-spec-w) * 0.3);
+  letter-spacing: -0.08em;
+  color: rgba(var(--fk-spec-lit), 1);
+  text-shadow: 0 2px 0 #000, 0 0 18px rgba(var(--fk-spec-rgb), 1);
+  animation: fk-spec-pip var(--fk-spec-ms) cubic-bezier(0.1, 0.9, 0.2, 1) both;
+}
+
+/* Three points should not merely be three dashes; it should arrive harder. */
+.fk-spec--w2 .fk-spec__pip { font-size: calc(var(--fk-spec-w) * 0.36); }
+.fk-spec--w3 .fk-spec__pip {
+  font-size: calc(var(--fk-spec-w) * 0.44);
+  text-shadow: 0 2px 0 #000, 0 0 30px rgba(var(--fk-spec-rgb), 1);
+}
+
+@keyframes fk-spec-pip {
+  0% { opacity: 0; transform: translate(-50%, calc(-50% + 40%)) scale(0.6); }
+  22% { opacity: 1; transform: translate(-50%, -50%) scale(1.14); }
+  40% { transform: translate(-50%, -50%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, calc(-50% - 60%)) scale(1); }
+}
+
+/* Sparks, used by the judgement verdict. */
+.fk-spec__ember {
+  width: calc(var(--fk-spec-w) * 0.03);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: rgba(var(--fk-spec-lit), 0.95);
+  box-shadow: 0 0 9px rgba(var(--fk-spec-rgb), 1);
+  animation: fk-spec-ember calc(var(--fk-spec-ms) * 0.85) cubic-bezier(0.1, 0.7, 0.3, 1) both;
+  animation-delay: calc(var(--fk-i) * var(--fk-spec-ms) * 0.01);
+}
+
+@keyframes fk-spec-ember {
+  0% { opacity: 0; transform: translate(-50%, -50%) rotate(var(--fk-a)) translateY(0) scale(1); }
+  16% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, -50%) rotate(var(--fk-a)) translateY(calc(var(--fk-spec-w) * -0.55)) scale(0.2); }
+}
+
+/* ------------------------------------------------------------------ drain */
+/* An hp drop that was not damage: a cost, or 失去体力. It has to read as
+   different from a hit — a hit arrives from outside, this leaves from inside.
+   No shake, no impact, no gash. The light runs down and out of the frame. */
+
+.fk-spec--drain .fk-spec__bleed {
+  inset: 0;
+  border-radius: 6px;
+  background: linear-gradient(180deg, transparent 30%, rgba(var(--fk-spec-rgb), 0.55));
+  animation: fk-spec-bleed var(--fk-spec-ms) ease-in both;
+}
+
+@keyframes fk-spec-bleed {
+  0% { opacity: 0; transform: translateY(-30%); }
+  35% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(34%); }
+}
+
+.fk-spec--drain .fk-spec__fall {
+  width: calc(var(--fk-spec-w) * 0.028);
+  height: calc(var(--fk-spec-w) * 0.11);
+  border-radius: 40%;
+  --dx: calc(var(--fk-j) * var(--fk-spec-w) * 0.38);
+  background: linear-gradient(rgba(var(--fk-spec-lit), 0.9), transparent);
+  animation: fk-spec-sink var(--fk-spec-ms) cubic-bezier(0.5, 0, 0.8, 0.6) both;
+  animation-delay: calc(var(--fk-i) * var(--fk-spec-ms) * 0.04);
+}
+
+/* ------------------------------------------------------------------- mend */
+
+.fk-spec--mend .fk-spec__mend-ring {
+  inset: -4%;
+  border-radius: 8px;
+  border: 2px solid rgba(var(--fk-spec-rgb), 0.95);
+  box-shadow: 0 0 22px rgba(var(--fk-spec-rgb), 0.75), inset 0 0 26px rgba(var(--fk-spec-rgb), 0.35);
+  animation: fk-spec-mend-ring var(--fk-spec-ms) ease-out both;
+}
+
+@keyframes fk-spec-mend-ring {
+  0% { opacity: 0; transform: scale(0.92); }
+  30% { opacity: 1; transform: scale(1.02); }
+  100% { opacity: 0; transform: scale(1.11); }
+}
+
+.fk-spec--mend .fk-spec__cross {
+  width: calc(var(--fk-spec-w) * 0.07);
+  height: calc(var(--fk-spec-w) * 0.07);
+  --dx: calc(var(--fk-j) * var(--fk-spec-w) * 0.4);
+  background:
+    linear-gradient(rgba(var(--fk-spec-lit), 1), rgba(var(--fk-spec-lit), 1)) 50% 50% / 34% 100% no-repeat,
+    linear-gradient(rgba(var(--fk-spec-lit), 1), rgba(var(--fk-spec-lit), 1)) 50% 50% / 100% 34% no-repeat;
+  filter: drop-shadow(0 0 8px rgba(var(--fk-spec-rgb), 1));
+  animation: fk-spec-rise var(--fk-spec-ms) cubic-bezier(0.3, 0.6, 0.3, 1) both;
+  animation-delay: calc(var(--fk-i) * var(--fk-spec-ms) * 0.05);
+}
+
+/* ----------------------------------------------------------- max hp change */
+/* `LogEvent{type="ChangeMaxHp"}` — a wire event with a player and a signed
+   magnitude on it and, until now, no rendering at all. */
+
+.fk-spec--vigour .fk-spec__girth {
+  inset: -4%;
+  border-radius: 8px;
+  border: 2px solid rgba(var(--fk-spec-rgb), 0.9);
+  box-shadow: 0 0 24px rgba(var(--fk-spec-rgb), 0.7);
+  animation: fk-spec-girth var(--fk-spec-ms) cubic-bezier(0.2, 0.9, 0.2, 1) both;
+}
+
+.fk-spec--vigour-up .fk-spec__girth { --from: 0.86; --to: 1.14; }
+.fk-spec--vigour-down .fk-spec__girth { --from: 1.16; --to: 0.9; }
+
+@keyframes fk-spec-girth {
+  0% { opacity: 0; transform: scale(var(--from)); }
+  24% { opacity: 1; }
+  70% { opacity: 1; transform: scale(var(--to)); }
+  100% { opacity: 0; transform: scale(var(--to)); }
+}
+
+
+/* ============================================================== THE SLAY ====
+ *
+ * A player being killed, and the largest thing that happens in a game.
+ *
+ * It runs on the room's own layer, not over one seat, because a kill is not a
+ * seat-sized event. Five beats, in `budget.SLAY_PHASE` so the sound lane can
+ * land a hit on the cut instead of on the wind-up:
+ *
+ *   0%    FLASH    the screen whites out from the victim's seat. The closest
+ *                  thing CSS has to the frame a fighting game stops on.
+ *   6%    CUT      a full-bleed blade crosses the table THROUGH that seat, at
+ *                  the angle of the last indicator line the engine drew at it —
+ *                  so the kill comes in from the direction of the player who
+ *                  was acting. Behind it the room slips apart along the cut and
+ *                  closes again over about four frames.
+ *   14%   SHATTER  the portrait breaks into role-coloured shards that fly
+ *                  clear, and a shockwave leaves the seat.
+ *   28%   SEAL     the role's brush seal slams down and holds — the house idiom
+ *                  from `image/photo/death/*.png`, authored rather than lifted:
+ *                  a vertical stamp with a rough double frame, in the role's
+ *                  colour rather than in one baked red.
+ *   ...   PALL     ash lifts, the light goes out, and the seat is handed over
+ *                  to `.fk-photo--dead` with no seam.
+ *
+ * FOUR ROLES, FOUR SEQUENCES, not four tints. The engine ships eight separate
+ * death stamps, which is its own statement that a death is not one event:
+ *
+ *   sovereign  主公   gold, room-wide, slowest to let go. Losing the lord is
+ *                    usually losing the game and should read like the end of one.
+ *   solemn     忠臣   steel blue, a vertical fall rather than a cut across,
+ *                    fewer pieces, the longest hold on the seal.
+ *   savage     反贼   crimson, fastest, a second blade crossing the first,
+ *                    twenty pieces, the hardest recoil.
+ *   unmasked   内奸   violet, and not a killing at all: the portrait peels away
+ *                    and the seal RESOLVES OUT OF THE DARK instead of slamming.
+ *                    Being found out, not being cut down.
+ */
+
+.fk-spec--slay { z-index: 3; }
+
+/* -- 0%: the flash ------------------------------------------------------- */
+/* Out of the victim's seat, not the middle of the screen. Short and violent;
+   a long white-out is a migraine, not a kill. */
+.fk-spec__whiteout {
+  inset: 0;
+  background: radial-gradient(closest-side at var(--fk-spec-ox) var(--fk-spec-oy),
+    rgba(255, 255, 255, 0.92), rgba(var(--fk-spec-lit), 0.5) 40%, transparent 72%);
+  animation: fk-spec-whiteout calc(var(--fk-spec-ms) * 0.22) cubic-bezier(0, 0.9, 0.3, 1) both;
+}
+
+@keyframes fk-spec-whiteout {
+  0% { opacity: 0; transform: scale(0.3); }
+  9% { opacity: 1; transform: scale(1.6); }
+  100% { opacity: 0; transform: scale(2.6); }
+}
+
+/* The room going dark behind it. A 主公 takes the whole table with it; anyone
+   else darkens only their own neighbourhood. */
+/* The room going dark around the seat that fell.
+ *
+ * MASKED OFF THE BOTTOM OF THE ROOM. The layer is a child of `.fk-room`, which
+ * is the table AND the confirm strip AND the hand — and a player answering a
+ * question while somebody else dies should not have their own cards blacked
+ * out for a second and a half. The mask fades the veil away over the bottom
+ * fifth, so the table dims and the things a player clicks stay lit. The effect
+ * takes no pointer events either way; this is about being able to SEE. */
+.fk-spec__veil {
+  inset: 0;
+  background: radial-gradient(closest-side at var(--fk-spec-ox) var(--fk-spec-oy),
+    transparent 8%, rgba(6, 4, 2, 0.5) 42%, rgba(6, 4, 2, 0.6) 100%);
+  -webkit-mask-image: linear-gradient(to bottom, #000 74%, transparent 94%);
+  mask-image: linear-gradient(to bottom, #000 74%, transparent 94%);
+  animation: fk-spec-veil var(--fk-spec-ms) cubic-bezier(0.2, 0.7, 0.3, 1) both;
+}
+
+/* Only a lord takes the whole room: losing the lord usually ends the game, and
+   nothing else in a game should look like this. */
+.fk-spec--room-wide .fk-spec__veil {
+  background: radial-gradient(140% 120% at var(--fk-spec-ox) var(--fk-spec-oy),
+    rgba(var(--fk-spec-rgb), 0.16) 0%, rgba(4, 3, 1, 0.84) 62%);
+  animation-name: fk-spec-veil-long;
+}
+
+@keyframes fk-spec-veil {
+  0% { opacity: 0; }
+  12% { opacity: 1; }
+  56% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@keyframes fk-spec-veil-long {
+  0% { opacity: 0; }
+  12% { opacity: 1; }
+  74% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+.fk-spec-rite--solemn .fk-spec__veil { animation-timing-function: ease-in-out; }
+
+/* -- 6%: the cut --------------------------------------------------------- */
+/* A blade the width of the room, drawn through the victim's seat at the angle
+   the engine's last indicator line came in on. `--fk-slay-cut` is that angle,
+   in degrees, computed from two seat rectangles in `Spectacle.cutAngle`. */
+
+.fk-spec__blade-cut {
+  left: var(--fk-spec-ox);
+  top: var(--fk-spec-oy);
+  width: 260vmax;
+  height: clamp(3px, 0.5vh, 7px);
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(var(--fk-spec-lit), 0.9) 22%,
+    #fff 50%,
+    rgba(var(--fk-spec-lit), 0.9) 78%,
+    transparent 100%);
+  box-shadow:
+    0 0 18px rgba(var(--fk-spec-lit), 0.95),
+    0 0 60px rgba(var(--fk-spec-rgb), 0.9);
+  animation: fk-spec-cut calc(var(--fk-spec-ms) * 0.38) cubic-bezier(0.1, 0.95, 0.15, 1) both;
+  animation-delay: calc(var(--fk-spec-ms) * 0.06);
+}
+
+@keyframes fk-spec-cut {
+  0% { opacity: 0; transform: translate(-50%, -50%) rotate(var(--fk-slay-cut)) scaleX(0) scaleY(2.4); }
+  16% { opacity: 1; transform: translate(-50%, -50%) rotate(var(--fk-slay-cut)) scaleX(1) scaleY(1.6); }
+  46% { opacity: 1; transform: translate(-50%, -50%) rotate(var(--fk-slay-cut)) scaleX(1) scaleY(1); }
+  100% { opacity: 0; transform: translate(-50%, -50%) rotate(var(--fk-slay-cut)) scaleX(1) scaleY(0.25); }
+}
+
+/* One blade for most deaths. 反贼 gets a second one crossing it — the only
+   role that is cut twice. */
+.fk-spec__blade-cut--second { display: none; }
+
+.fk-spec-rite--savage .fk-spec__blade-cut--second {
+  display: block;
+  --fk-slay-cut: calc(var(--fk-slay-cut) + 74deg);
+  animation-delay: calc(var(--fk-spec-ms) * 0.13);
+}
+
+/* The room slipping apart along the cut and closing again. Four frames of
+   offset is all it takes to read as "that went through the table". */
+.fk-spec__rift {
+  left: var(--fk-spec-ox);
+  top: var(--fk-spec-oy);
+  width: 260vmax;
+  height: 34vmax;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.55), transparent 26%, transparent 74%, rgba(0, 0, 0, 0.55));
+  animation: fk-spec-rift calc(var(--fk-spec-ms) * 0.3) cubic-bezier(0.1, 0.9, 0.2, 1) both;
+  animation-delay: calc(var(--fk-spec-ms) * 0.09);
+}
+
+@keyframes fk-spec-rift {
+  0% { opacity: 0; transform: translate(-50%, -50%) rotate(var(--fk-slay-cut)) scaleY(0); }
+  22% { opacity: 1; transform: translate(-50%, -50%) rotate(var(--fk-slay-cut)) scaleY(0.06); }
+  55% { opacity: 0.7; transform: translate(-50%, -50%) rotate(var(--fk-slay-cut)) scaleY(0.03); }
+  100% { opacity: 0; transform: translate(-50%, -50%) rotate(var(--fk-slay-cut)) scaleY(0); }
+}
+
+/* 内奸 is not cut. It is uncovered: no blade, no rift — the veil opens instead. */
+.fk-spec-rite--unmasked .fk-spec__blade-cut,
+.fk-spec-rite--unmasked .fk-spec__rift { display: none; }
+
+/* -- 14%: the shatter ---------------------------------------------------- */
+
+.fk-spec--slay .fk-spec__wave {
+  left: var(--fk-spec-ox);
+  top: var(--fk-spec-oy);
+  width: 10vmax;
+  height: 10vmax;
+  margin: -5vmax 0 0 -5vmax;
+  border-radius: 50%;
+  border: 3px solid rgba(var(--fk-spec-lit), 0.9);
+  box-shadow: 0 0 50px rgba(var(--fk-spec-rgb), 0.95), inset 0 0 50px rgba(var(--fk-spec-rgb), 0.45);
+  animation: fk-spec-wave calc(var(--fk-spec-ms) * 0.44) cubic-bezier(0.05, 0.9, 0.2, 1) both;
+  animation-delay: calc(var(--fk-spec-ms) * 0.14);
+}
+
+.fk-spec--room-wide .fk-spec__wave { animation-duration: calc(var(--fk-spec-ms) * 0.6); }
+
+/* Pieces of the portrait, flung clear. Role-coloured, because the shards are
+   the only part of the sequence that is on screen long enough to be read as a
+   colour at all. */
+.fk-spec__shatter {
+  left: var(--fk-spec-ox);
+  top: var(--fk-spec-oy);
+  width: calc(var(--fk-spec-sw) * 0.16);
+  height: calc(var(--fk-spec-sw) * 0.2);
+  --fk-a: calc(var(--fk-i) * 360deg / var(--fk-n) + var(--fk-j) * 20deg);
+  --fk-far: calc(var(--fk-spec-sw) * (1.6 + 0.9 * var(--fk-i) / var(--fk-n)));
+  background: linear-gradient(140deg, rgba(var(--fk-spec-lit), 0.95), rgba(var(--fk-spec-rgb), 0.55));
+  clip-path: polygon(50% 0, 100% 38%, 74% 100%, 16% 86%, 0 34%);
+  box-shadow: 0 0 14px rgba(var(--fk-spec-rgb), 0.9);
+  animation: fk-spec-shatter calc(var(--fk-spec-ms) * 0.62) cubic-bezier(0.08, 0.7, 0.3, 1) both;
+  animation-delay: calc(var(--fk-spec-ms) * 0.14 + var(--fk-i) * var(--fk-spec-ms) * 0.006);
+}
+
+@keyframes fk-spec-shatter {
+  0% { opacity: 0; transform: translate(-50%, -50%) rotate(var(--fk-a)) translateY(0) rotate(0deg) scale(1.1); }
+  10% { opacity: 1; }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) rotate(var(--fk-a)) translateY(calc(var(--fk-far) * -1))
+      rotate(calc(var(--fk-j) * 220deg)) scale(0.25);
+  }
+}
+
+/* 忠臣 does not explode outward. It falls. */
+.fk-spec-rite--solemn .fk-spec__shatter {
+  animation-name: fk-spec-shatter-fall;
+  animation-timing-function: cubic-bezier(0.4, 0, 0.7, 1);
+}
+
+@keyframes fk-spec-shatter-fall {
+  0% { opacity: 0; transform: translate(-50%, -50%) translateY(0) rotate(0deg) scale(1); }
+  14% { opacity: 1; }
+  100% {
+    opacity: 0;
+    transform: translate(calc(-50% + var(--fk-j) * var(--fk-spec-sw) * 0.7), calc(-50% + var(--fk-spec-sw) * 1.9))
+      rotate(calc(var(--fk-j) * 90deg)) scale(0.5);
+  }
+}
+
+/* 内奸's portrait peels rather than breaks — the pieces drift, they do not fly. */
+.fk-spec-rite--unmasked .fk-spec__shatter {
+  animation-duration: calc(var(--fk-spec-ms) * 0.8);
+  animation-timing-function: cubic-bezier(0.3, 0.1, 0.2, 1);
+  clip-path: polygon(0 0, 100% 8%, 92% 100%, 8% 92%);
+}
+
+/* -- 28%: the seal ------------------------------------------------------- */
+/* `image/photo/death/lord.png` is a red vertical brush seal reading 「主公阵亡」
+   inside a rough double frame. This is that shape, authored: the role's own
+   name from `tr()` so it is right in every language the room ships, in the
+   role's own colour rather than one baked red, at any size, on top of the seat
+   that just fell. */
+
+.fk-spec__seal-stamp {
+  /* On the seat that fell, but never off the table.
+     A top-row seat sits a seat-height from the edge of the room and the seal is
+     taller than that, so centring it on the seat put half of it outside
+     `.fk-spec-sky`'s `overflow: hidden` — the single most important thing in the
+     sequence, clipped, on exactly the seats a player watches most. `em` here
+     resolves against this element's own font size, so the inset tracks the seal
+     at every viewport size. */
+  left: clamp(2.4em, var(--fk-spec-ox), calc(100% - 2.4em));
+  top: clamp(1.9em, var(--fk-spec-oy), calc(100% - 1.9em));
+  padding: 0.42em 0.3em;
+  font-weight: 900;
+  font-size: clamp(30px, 6.4vh, 74px);
+  line-height: 1.06;
+  letter-spacing: 0.06em;
+  color: rgba(var(--fk-spec-lit), 1);
+  background: rgba(10, 6, 4, 0.55);
+  /* The rough double frame. Two borders and a hard shadow rather than an
+     image, so it recolours per role and stays crisp at any seat size. */
+  border: 3px solid rgba(var(--fk-spec-rgb), 0.95);
+  outline: 1px solid rgba(var(--fk-spec-rgb), 0.55);
+  outline-offset: 4px;
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.85),
+    0 0 44px rgba(var(--fk-spec-rgb), 0.9),
+    inset 0 0 30px rgba(var(--fk-spec-rgb), 0.35);
+  text-shadow: 0 2px 0 #000, 0 0 26px rgba(var(--fk-spec-rgb), 1);
+  animation: fk-spec-seal-stamp var(--fk-spec-ms) cubic-bezier(0.12, 0.95, 0.2, 1) both;
+  animation-delay: calc(var(--fk-spec-ms) * 0.28);
+}
+
+/* 主公 / 忠臣 / 反贼 / 内奸 read as a vertical seal, the way the shipped art
+   does. "Renegade" stacked letter over letter would be eight rows tall, so a
+   long label stays horizontal — decided in `plan.ts`, not guessed here. */
+.fk-spec--seal-tall .fk-spec__seal-stamp {
+  writing-mode: vertical-rl;
+  text-orientation: upright;
+}
+
+/* A horizontal label is wide and short; a vertical one is the other way about,
+   so each keeps itself inside the edge it can actually reach. */
+.fk-spec--seal-wide .fk-spec__seal-stamp {
+  left: clamp(4.2em, var(--fk-spec-ox), calc(100% - 4.2em));
+  top: clamp(1.1em, var(--fk-spec-oy), calc(100% - 1.1em));
+}
+
+@keyframes fk-spec-seal-stamp {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(3.4) rotate(-14deg); filter: blur(10px); }
+  /* The slam. Overshoot, then settle — a stamp has weight. */
+  9% { opacity: 1; transform: translate(-50%, -50%) scale(0.92) rotate(-4deg); filter: blur(0); }
+  13% { transform: translate(-50%, -50%) scale(1.06) rotate(-4deg); }
+  18% { transform: translate(-50%, -50%) scale(1) rotate(-4deg); }
+  84% { opacity: 1; transform: translate(-50%, -50%) scale(1) rotate(-4deg); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1.04) rotate(-4deg); }
+}
+
+/* 主公: bigger, and it never quite stops ringing. */
+.fk-spec--role-lord .fk-spec__seal-stamp {
+  font-size: clamp(38px, 8.6vh, 104px);
+  border-width: 4px;
+}
+
+/* 忠臣 holds longest. */
+.fk-spec-rite--solemn .fk-spec__seal-stamp {
+  animation-timing-function: cubic-bezier(0.25, 0.9, 0.3, 1);
+}
+
+/* 内奸 is not stamped. It resolves out of the dark, which is what being found
+   out looks like. */
+.fk-spec-rite--unmasked .fk-spec__seal-stamp {
+  animation-name: fk-spec-seal-reveal;
+  animation-timing-function: cubic-bezier(0.3, 0.1, 0.2, 1);
+}
+
+@keyframes fk-spec-seal-reveal {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.82) rotate(-4deg); filter: blur(16px) brightness(0.3); }
+  34% { opacity: 1; transform: translate(-50%, -50%) scale(1) rotate(-4deg); filter: blur(0) brightness(1); }
+  84% { opacity: 1; transform: translate(-50%, -50%) scale(1) rotate(-4deg); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1.03) rotate(-4deg); }
+}
+
+/* The kingdom's character behind the seal, huge and faint. The seat's colours
+   are gone by now; this is the last thing that says whose seat it was. */
+.fk-spec__seal-mark {
+  left: var(--fk-spec-ox);
+  top: var(--fk-spec-oy);
+  font-weight: 900;
+  font-size: clamp(150px, 34vh, 380px);
+  line-height: 1;
+  color: rgba(var(--fk-spec-rim), 0.12);
+  animation: fk-spec-seal-mark var(--fk-spec-ms) cubic-bezier(0.15, 0.9, 0.2, 1) both;
+  animation-delay: calc(var(--fk-spec-ms) * 0.2);
+}
+
+.fk-spec__seal-mark::before { content: var(--fk-spec-mark); }
+
+@keyframes fk-spec-seal-mark {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(2) rotate(6deg); }
+  22% { opacity: 1; transform: translate(-50%, -50%) scale(1) rotate(0deg); }
+  76% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1.06); }
+}
+
+/* -- the pall ------------------------------------------------------------ */
+
+.fk-spec--slay .fk-spec__ash {
+  left: var(--fk-spec-ox);
+  top: var(--fk-spec-oy);
+  width: clamp(2px, 0.35vh, 5px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  --dx: calc(var(--fk-j) * var(--fk-spec-sw) * 1.1);
+  background: rgba(var(--fk-spec-rgb), 0.7);
+  animation: fk-spec-slay-ash calc(var(--fk-spec-ms) * 0.72) cubic-bezier(0.3, 0.4, 0.4, 1) both;
+  animation-delay: calc(var(--fk-spec-ms) * 0.2 + var(--fk-i) * var(--fk-spec-ms) * 0.016);
+}
+
+@keyframes fk-spec-slay-ash {
+  0% { opacity: 0; transform: translate(-50%, calc(-50% + var(--fk-spec-sh) * 0.3)) scale(1.4); }
+  24% { opacity: 0.95; }
+  100% { opacity: 0; transform: translate(calc(-50% + var(--dx)), calc(-50% - var(--fk-spec-sh) * 1.9)) scale(0.2); }
+}
+
+/* A ring going out across the table — shared with the judgement verdict. */
+.fk-spec__toll {
+  left: 50%;
+  top: 50%;
+  width: calc(var(--fk-spec-w) * 1.1);
+  height: calc(var(--fk-spec-w) * 1.1);
+  border-radius: 50%;
+  border: 2px solid rgba(var(--fk-spec-rgb), 0.75);
+  box-shadow: 0 0 30px rgba(var(--fk-spec-rgb), 0.6);
+  animation: fk-spec-toll var(--fk-spec-ms) cubic-bezier(0.05, 0.85, 0.2, 1) both;
+}
+
+@keyframes fk-spec-toll {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.2); }
+  16% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(3.4); }
+}
+
+/* ------------------------------------------------------------ turn opening */
+/* `PropertyUpdate[id, "phase", 2]` — `Phase.Start`, once per turn per player,
+   and the only warning anyone gets that the table is about to be somebody
+   else's. A light runs once around the frame and the kingdom's seal breathes at
+   its shoulder; the steady gold border that holds for the rest of the turn is
+   `.fk-photo--current` and is not this. */
+
+.fk-spec--open .fk-spec__trace {
+  inset: -3%;
+  border-radius: 8px;
+  padding: 2px;
+  background: conic-gradient(from var(--fk-from, 0deg),
+    transparent 0deg,
+    rgba(var(--fk-spec-lit), 0.95) 26deg,
+    rgba(var(--fk-spec-rgb), 0.8) 44deg,
+    transparent 78deg);
+  /* A light that runs the border rather than a border that lights up: the
+     conic gradient is masked to a 2 px ring, so only the edge is ever painted. */
+  -webkit-mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+  animation: fk-spec-trace var(--fk-spec-ms) linear both;
+}
+
+@keyframes fk-spec-trace {
+  0% { opacity: 0; --fk-from: 0deg; transform: rotate(0deg); }
+  15% { opacity: 1; }
+  85% { opacity: 1; }
+  100% { opacity: 0; transform: rotate(360deg); }
+}
+
+.fk-spec--open .fk-spec__standard {
+  left: 50%;
+  top: calc(50% - var(--fk-spec-h) * 0.5);
+  font-weight: 800;
+  font-size: calc(var(--fk-spec-w) * 0.28);
+  line-height: 1.1;
+  color: rgba(var(--fk-spec-rgb), 0.95);
+  text-shadow: 0 1px 0 #000, 0 0 20px rgba(var(--fk-spec-rgb), 0.9);
+  animation: fk-spec-standard var(--fk-spec-ms) cubic-bezier(0.2, 0.9, 0.2, 1) both;
+}
+
+.fk-spec--open .fk-spec__standard::before { content: var(--fk-spec-mark); }
+
+@keyframes fk-spec-standard {
+  0% { opacity: 0; transform: translate(-50%, calc(-50% + 40%)) scale(0.7); }
+  30% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  70% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, calc(-50% - 30%)) scale(1.05); }
+}
+
+/* -------------------------------------------------------------------- draw */
+/* One ghost card per card drawn, up to five, arcing in and folding into the
+   frame. On another player's seat the alternative is one digit changing, which
+   is how an eight-seat opening deal reads as a row of numbers ticking. */
+
+.fk-spec--draw .fk-spec__deal {
+  width: calc(var(--fk-spec-w) * 0.2);
+  height: calc(var(--fk-spec-w) * 0.28);
+  border-radius: 2px;
+  --fk-a: calc(-40deg + var(--fk-i) * 20deg);
+  background: linear-gradient(160deg, rgba(var(--fk-spec-lit), 0.95), rgba(var(--fk-spec-rgb), 0.6));
+  box-shadow: 0 0 0 1px rgba(var(--fk-spec-lit), 0.85), 0 0 14px rgba(var(--fk-spec-rgb), 0.7);
+  animation: fk-spec-deal var(--fk-spec-ms) cubic-bezier(0.25, 0.1, 0.2, 1) both;
+  animation-delay: calc(var(--fk-i) * var(--fk-spec-ms) * 0.07);
+}
+
+@keyframes fk-spec-deal {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) rotate(var(--fk-a)) translateY(calc(var(--fk-spec-w) * -1.3))
+      rotate(calc(var(--fk-a) * -1)) scale(0.9);
+  }
+  30% { opacity: 1; }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) rotate(var(--fk-a)) translateY(0)
+      rotate(calc(var(--fk-a) * -1)) scale(0.3);
+  }
+}
+
+.fk-spec--draw .fk-spec__wash {
+  inset: auto 0 0 0;
+  height: 44%;
+  background: linear-gradient(to top, rgba(var(--fk-spec-rgb), 0.5), transparent);
+  animation: fk-spec-wash var(--fk-spec-ms) ease-out both;
+}
+
+@keyframes fk-spec-wash {
+  0% { opacity: 0; transform: translateY(26%); }
+  38% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; }
+}
+
+/* ------------------------------------------------------------------ equip */
+
+.fk-spec--equip .fk-spec__temper {
+  inset: 0;
+  border-radius: 6px;
+  background: linear-gradient(104deg, transparent 36%, rgba(var(--fk-spec-lit), 0.85) 50%, transparent 64%);
+  background-size: 300% 100%;
+  animation: fk-spec-temper var(--fk-spec-ms) cubic-bezier(0.2, 0.8, 0.3, 1) both;
+}
+
+@keyframes fk-spec-temper {
+  0% { background-position: 170% 0; opacity: 0; }
+  20% { opacity: 1; }
+  100% { background-position: -70% 0; opacity: 0; }
+}
+
+.fk-spec--equip .fk-spec__clang {
+  inset: -6%;
+  border-radius: 8px;
+  border: 2px solid rgba(var(--fk-spec-rgb), 0.9);
+  box-shadow: 0 0 20px rgba(var(--fk-spec-rgb), 0.7);
+  animation: fk-spec-clang var(--fk-spec-ms) cubic-bezier(0.1, 0.9, 0.2, 1) both;
+}
+
+@keyframes fk-spec-clang {
+  0% { opacity: 0; transform: scale(1.2); }
+  26% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1); }
+}
+
+/* -------------------------------------------------------------------- hex */
+/* A delayed trick settling into a judge zone. 乐不思蜀 lands silently today: a
+   chip appears under the seat and that is the whole of it. */
+
+.fk-spec--hex .fk-spec-ring {
+  stroke: rgba(var(--fk-spec-lit), 0.85);
+  stroke-dasharray: 7 9;
+  animation: fk-spec-hex-ring var(--fk-spec-ms) cubic-bezier(0.2, 0.75, 0.2, 1) both;
+}
+
+.fk-spec--hex .fk-spec-ring--in { animation-delay: calc(var(--fk-spec-ms) * 0.1); }
+
+@keyframes fk-spec-hex-ring {
+  0% { opacity: 0; transform: rotate(-40deg) scale(1.6); }
+  30% { opacity: 1; }
+  74% { opacity: 1; transform: rotate(12deg) scale(1); }
+  100% { opacity: 0; transform: rotate(16deg) scale(1); }
+}
+
+.fk-spec--hex .fk-spec__seal-drop {
+  inset: -6%;
+  border-radius: 8px;
+  box-shadow: inset 0 0 34px rgba(var(--fk-spec-rgb), 0.6);
+  animation: fk-spec-seal-drop var(--fk-spec-ms) ease-out both;
+}
+
+@keyframes fk-spec-seal-drop {
+  0% { opacity: 0; transform: translateY(-24%) scale(1.1); }
+  40% { opacity: 1; transform: translateY(0) scale(1); }
+  100% { opacity: 0; }
+}
+
+/* ---------------------------------------------------------------- verdict */
+/* A judgement resolving, drawn over the processing area — `setCardEmotion`
+   names a card, not a player, and the card is on the table. The engine holds
+   900 ms after sending it (`events/judge.lua:102`); this fills that pause. */
+
+.fk-spec--verdict .fk-spec__toll {
+  width: calc(var(--fk-spec-w) * 0.7);
+  height: calc(var(--fk-spec-w) * 0.7);
+  border-width: 3px;
+}
+
+.fk-spec__verdict-mark {
+  left: 50%;
+  top: 50%;
+  font-weight: 900;
+  font-size: clamp(48px, 9vh, 120px);
+  line-height: 1;
+  color: rgba(var(--fk-spec-lit), 1);
+  text-shadow:
+    0 2px 0 #1a1006, 0 -2px 0 #1a1006, 2px 0 0 #1a1006, -2px 0 0 #1a1006,
+    0 0 40px rgba(var(--fk-spec-rgb), 1);
+  animation: fk-spec-verdict var(--fk-spec-ms) cubic-bezier(0.1, 0.95, 0.2, 1) both;
+}
+
+.fk-spec__verdict-mark::before { content: var(--fk-spec-mark); }
+
+@keyframes fk-spec-verdict {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(2.4) rotate(-12deg); }
+  20% { opacity: 1; transform: translate(-50%, -50%) scale(1) rotate(0deg); }
+  72% { opacity: 1; transform: translate(-50%, -50%) scale(1) rotate(0deg); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1.16) rotate(0deg); }
+}
+
+.fk-spec--verdict .fk-spec__ember {
+  animation-duration: var(--fk-spec-ms);
+}
+
+/* ================================================== the portrait's reaction ==
+ *
+ * `data-fk-spec` on `.fk-photo`, not a class: React computes `className` from
+ * props and rewrites the whole attribute whenever one moves, which on a table
+ * that commits five times a second is a real way to lose an animation halfway
+ * through. Nothing in the component tree knows this attribute exists.
+ *
+ * Everything here is clipped to the frame — that is the point of putting it
+ * here rather than on the sky. */
+
+.fk-photo[data-fk-spec] { --fk-spec-host-ms: 300ms; }
+
+/* offensive: the seat leans into its own swing. */
+[data-fk-spec~="lunge"] { animation: fk-spec-lunge var(--fk-spec-host-ms) cubic-bezier(0.2, 0.9, 0.3, 1) both; }
+@keyframes fk-spec-lunge {
+  0%, 100% { transform: translateX(0) scale(1); }
+  22% { transform: translateX(-4%) scale(0.985); }
+  46% { transform: translateX(3.5%) scale(1.03); filter: brightness(1.2); }
+}
+
+/* defensive: it plants and hardens. */
+[data-fk-spec~="brace"] { animation: fk-spec-brace var(--fk-spec-host-ms) cubic-bezier(0.2, 0.9, 0.2, 1) both; }
+@keyframes fk-spec-brace {
+  0% { transform: scale(1); }
+  50% { transform: scale(0.965); filter: brightness(0.9) contrast(1.15); }
+  70% { transform: scale(1.015); filter: brightness(1.15) contrast(1.1); }
+  100% { transform: scale(1); }
+}
+
+/* support: it lifts. */
+[data-fk-spec~="lift"] { animation: fk-spec-lift var(--fk-spec-host-ms) cubic-bezier(0.25, 0.8, 0.3, 1) both; }
+@keyframes fk-spec-lift {
+  0%, 100% { transform: translateY(0); filter: none; }
+  45% { transform: translateY(-4%); filter: brightness(1.2) saturate(1.15); }
+}
+
+/* masochism: it takes the blow and then sets itself. */
+[data-fk-spec~="reel"] { animation: fk-spec-reel var(--fk-spec-host-ms) cubic-bezier(0.3, 0.1, 0.2, 1) both; }
+@keyframes fk-spec-reel {
+  0% { transform: translateX(0); }
+  18% { transform: translateX(6%) rotate(1.4deg); filter: brightness(1.35) saturate(0.7); }
+  38% { transform: translateX(-4%) rotate(-0.8deg); }
+  56% { transform: translateX(2%); filter: brightness(1.5); }
+  100% { transform: translateX(0); filter: none; }
+}
+
+/* negative: it wilts. */
+[data-fk-spec~="wilt"] { animation: fk-spec-wilt var(--fk-spec-host-ms) ease-in-out both; }
+@keyframes fk-spec-wilt {
+  0%, 100% { transform: translateY(0); filter: none; }
+  55% { transform: translateY(2.5%); filter: saturate(0.35) brightness(0.78); }
+}
+
+/* switch: it turns over. */
+[data-fk-spec~="turn"] { animation: fk-spec-turnover var(--fk-spec-host-ms) cubic-bezier(0.35, 0, 0.25, 1) both; }
+@keyframes fk-spec-turnover {
+  0%, 100% { transform: perspective(600px) rotateY(0deg); }
+  50% { transform: perspective(600px) rotateY(16deg); filter: brightness(1.25); }
+}
+
+/* Damage. Three weights, from `damageNum`, and they are meant to be told apart
+   from across the table. */
+[data-fk-spec~="struck1"] { animation: fk-spec-struck1 var(--fk-spec-host-ms) cubic-bezier(0.36, 0.07, 0.19, 0.97) both; }
+[data-fk-spec~="struck2"] { animation: fk-spec-struck2 var(--fk-spec-host-ms) cubic-bezier(0.36, 0.07, 0.19, 0.97) both; }
+[data-fk-spec~="struck3"] { animation: fk-spec-struck3 var(--fk-spec-host-ms) cubic-bezier(0.36, 0.07, 0.19, 0.97) both; }
+
+@keyframes fk-spec-struck1 {
+  0%, 100% { transform: translateX(0); filter: none; }
+  16% { transform: translateX(-4%); filter: brightness(1.5) saturate(0.7); }
+  42% { transform: translateX(3%); }
+  70% { transform: translateX(-1.5%); }
+}
+
+@keyframes fk-spec-struck2 {
+  0%, 100% { transform: translate(0, 0) rotate(0); filter: none; }
+  12% { transform: translate(-7%, 2%) rotate(-1.6deg); filter: brightness(1.8) saturate(0.5); }
+  34% { transform: translate(6%, -1%) rotate(1.4deg); filter: brightness(1.3); }
+  58% { transform: translate(-3%, 1%) rotate(-0.7deg); }
+  80% { transform: translate(1.5%, 0) rotate(0.3deg); }
+}
+
+@keyframes fk-spec-struck3 {
+  0%, 100% { transform: translate(0, 0) rotate(0) scale(1); filter: none; }
+  10% { transform: translate(-10%, 3%) rotate(-2.6deg) scale(1.04); filter: brightness(2.2) saturate(0.35); }
+  28% { transform: translate(9%, -2%) rotate(2.2deg) scale(1.02); filter: brightness(1.6); }
+  48% { transform: translate(-6%, 2%) rotate(-1.4deg); filter: brightness(1.25); }
+  68% { transform: translate(4%, -1%) rotate(0.8deg); }
+  86% { transform: translate(-1.5%, 0) rotate(0); }
+}
+
+/* The cost, not the hit: the frame dims from the top down and does not move. */
+[data-fk-spec~="drained"] { animation: fk-spec-drained var(--fk-spec-host-ms) ease-in-out both; }
+@keyframes fk-spec-drained {
+  0%, 100% { filter: none; }
+  50% { filter: brightness(0.72) saturate(0.6); }
+}
+
+[data-fk-spec~="mended"] { animation: fk-spec-mended var(--fk-spec-host-ms) ease-out both; }
+@keyframes fk-spec-mended {
+  0%, 100% { filter: none; transform: scale(1); }
+  40% { filter: brightness(1.22) saturate(1.2); transform: scale(1.015); }
+}
+
+[data-fk-spec~="equipped"] { animation: fk-spec-equipped var(--fk-spec-host-ms) ease-out both; }
+@keyframes fk-spec-equipped {
+  0%, 100% { filter: none; }
+  30% { filter: brightness(1.3) contrast(1.1); }
+}
+
+[data-fk-spec~="hexed"] { animation: fk-spec-hexed var(--fk-spec-host-ms) ease-in-out both; }
+@keyframes fk-spec-hexed {
+  0%, 100% { filter: none; }
+  55% { filter: brightness(0.78) saturate(0.55) hue-rotate(-14deg); }
+}
+
+/* The seat's own last moment. Ends exactly where `.fk-photo--dead` picks it
+   up, so there is no step between the animation finishing and the permanent
+   state taking over — and the four tempers end in the same place by four
+   different routes. */
+[data-fk-spec~="slain"] { animation: fk-spec-slain var(--fk-spec-host-ms) cubic-bezier(0.25, 0, 0.35, 1) both; }
+
+@keyframes fk-spec-slain {
+  0% { filter: none; transform: none; }
+  /* The frame the blade lands on. */
+  6% { filter: brightness(3.2) saturate(0) contrast(1.3); transform: scale(1.05); }
+  12% { filter: brightness(0.6) saturate(0.4); transform: translateX(-4%) scale(1.01); }
+  26% { filter: brightness(1.1) saturate(0.35); transform: translateX(3%) rotate(1deg); }
+  48% { filter: grayscale(0.7) brightness(0.7); transform: translateX(-1%) rotate(-0.4deg); }
+  100% { filter: grayscale(1) brightness(0.45); transform: translateY(1.5%) scale(0.985); }
+}
+
+/* 主公 goes down slowly and never jerks — the room is doing the reacting. */
+[data-fk-spec~="slain-sovereign"] { animation-timing-function: cubic-bezier(0.2, 0.6, 0.3, 1); }
+
+/* 忠臣 does not recoil sideways. It sinks. */
+[data-fk-spec~="slain-solemn"] { animation-name: fk-spec-slain-solemn; }
+
+@keyframes fk-spec-slain-solemn {
+  0% { filter: none; transform: none; }
+  8% { filter: brightness(2.2) saturate(0.3); }
+  40% { filter: grayscale(0.6) brightness(0.75); transform: translateY(2%); }
+  100% { filter: grayscale(1) brightness(0.45); transform: translateY(4%) scale(0.98); }
+}
+
+/* 反贼 is thrown. */
+[data-fk-spec~="slain-savage"] { animation-name: fk-spec-slain-savage; }
+
+@keyframes fk-spec-slain-savage {
+  0% { filter: none; transform: none; }
+  5% { filter: brightness(3.6) saturate(0); transform: scale(1.09) rotate(-3deg); }
+  14% { filter: brightness(0.5); transform: translate(9%, 3%) rotate(4deg); }
+  30% { transform: translate(-6%, 1%) rotate(-2deg); filter: grayscale(0.5) brightness(0.8); }
+  52% { transform: translate(3%, 0) rotate(1deg); }
+  100% { filter: grayscale(1) brightness(0.45); transform: translateY(2%) scale(0.985); }
+}
+
+/* 内奸 is not struck. The mask comes off: it desaturates and turns away. */
+[data-fk-spec~="slain-unmasked"] { animation-name: fk-spec-slain-unmasked; }
+
+@keyframes fk-spec-slain-unmasked {
+  0% { filter: none; transform: perspective(700px) rotateY(0deg); }
+  30% { filter: saturate(0.4) brightness(0.85); transform: perspective(700px) rotateY(-22deg); }
+  62% { filter: grayscale(0.8) brightness(0.6); transform: perspective(700px) rotateY(10deg); }
+  100% { filter: grayscale(1) brightness(0.45); transform: perspective(700px) rotateY(0deg) scale(0.985); }
+}
+
+/* The table takes a two-point hit as a camera shake. Applied to `.fk-seats`,
+   which holds the ring and nothing a player clicks in a hurry — the dashboard
+   and the confirm strip are outside it, so a shake can never move a control out
+   from under a click that is already on its way. */
+.fk-seats[data-fk-spec~="quake2"] { animation: fk-spec-quake2 var(--fk-spec-host-ms) cubic-bezier(0.36, 0.07, 0.19, 0.97) both; }
+.fk-seats[data-fk-spec~="quake3"] { animation: fk-spec-quake3 var(--fk-spec-host-ms) cubic-bezier(0.36, 0.07, 0.19, 0.97) both; }
+
+@keyframes fk-spec-quake2 {
+  0%, 100% { transform: translate(0, 0); }
+  20% { transform: translate(-3px, 2px); }
+  45% { transform: translate(3px, -2px); }
+  72% { transform: translate(-1px, 1px); }
+}
+
+@keyframes fk-spec-quake3 {
+  0%, 100% { transform: translate(0, 0); }
+  14% { transform: translate(-6px, 4px); }
+  32% { transform: translate(6px, -3px); }
+  54% { transform: translate(-4px, 2px); }
+  76% { transform: translate(2px, -1px); }
+}
+
+/* ====================================================== reduced motion ==== */
+/*
+ * Motion is decoration; the game is legible without any of it. `paint.ts` also
+ * collapses every repeated part to a single node under this setting, so what is
+ * left here is one short fade rather than eighteen 1 ms animations.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .fk-spec,
+  .fk-spec i,
+  .fk-spec svg *,
+  [data-fk-spec] {
+    animation-duration: 1ms !important;
+    animation-delay: 0ms !important;
+  }
+
+  .fk-spec__plaque,
+  .fk-spec__ult-name,
+  .fk-spec__verdict-mark,
+  .fk-spec__pip {
+    /* The words are the part worth keeping. */
+    animation: fk-spec-say var(--fk-spec-ms) ease-out both !important;
+  }
+
+  @keyframes fk-spec-say {
+    0% { opacity: 0; }
+    20%, 80% { opacity: 1; }
+    100% { opacity: 0; }
+  }
+}

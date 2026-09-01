@@ -37,10 +37,32 @@ const SKILL_MS = 350;
 /** Short, incidental motion: a hit shake, a heal pulse, an equipment flash. */
 const ACCENT_MS = 260;
 
-export type EffectKind = 'card' | 'skill' | 'accent';
+/**
+ * An authored card effect: a strike leaving, landing, and its debris settling.
+ *
+ * Longer than the sprite ceiling above and deliberately so. A sprite strip is
+ * twelve frames of one gesture and 450 ms is the whole of it; a strike here has
+ * three phases the eye reads in order — the wind-up on the attacker, the travel,
+ * the impact and the debris behind it — and compressed into 450 ms the first two
+ * are gone before they register and the effect reads as a flash. 620 ms is what
+ * that sequence needs, and it still lands inside the engine's 800 ms default
+ * beat with room at the end, which is the constraint that actually matters.
+ */
+const STRIKE_MS = 620;
+
+/**
+ * The table-wide ones — 万箭齐发, 五谷丰登, 南蛮入侵, 桃园结义.
+ *
+ * They cover the whole ring rather than one portrait, so the eye has further to
+ * travel before it has seen the effect, and the engine pauses longer on them
+ * anyway: each is followed by a per-player ask, not by the next card.
+ */
+const WIDE_MS = 820;
+
+export type EffectKind = 'card' | 'skill' | 'accent' | 'strike' | 'wide';
 
 const CEILING: Readonly<Record<EffectKind, number>> = {
-  card: CARD_MS, skill: SKILL_MS, accent: ACCENT_MS,
+  card: CARD_MS, skill: SKILL_MS, accent: ACCENT_MS, strike: STRIKE_MS, wide: WIDE_MS,
 };
 
 /**
@@ -55,7 +77,13 @@ const CEILING: Readonly<Record<EffectKind, number>> = {
 export function effectMs(kind: EffectKind): number {
   const pace = paceMs();
   if (pace <= 0) return 0;
-  const share = kind === 'card' ? 0.9 : kind === 'skill' ? 0.7 : 0.5;
+  const share = kind === 'card' ? 0.9
+    : kind === 'skill' ? 0.7
+    : kind === 'accent' ? 0.5
+    // An authored effect gets the whole beat and is capped rather than scaled
+    // down: it is the thing the beat is *for*, and a 杀 that finishes in half
+    // the pause the engine took for it leaves the table sitting still.
+    : 1;
   return Math.round(Math.min(CEILING[kind], pace * share));
 }
 

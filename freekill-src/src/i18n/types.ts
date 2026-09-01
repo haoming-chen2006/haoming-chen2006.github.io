@@ -26,7 +26,12 @@ export type TranslationTable = Readonly<Record<string, string>>;
 
 /**
  * Where a given English string came from. A native speaker reviewing this work
- * only needs to read the `authored` and `override` sets; `upstream` is the
+ * needs to read the `authored`, `override` and `mobile` sets; `upstream` is the
  * engine's own text and is not ours to second-guess.
+ *
+ * `mobile` is kept apart from `authored` rather than folded into it because it
+ * is a different review job: `authored` is the missing half of a table upstream
+ * half-translated, and its size is asserted key-for-key against that table,
+ * while `mobile` is a 249-character pack upstream never translated at all.
  */
-export type Provenance = 'upstream' | 'authored' | 'override';
+export type Provenance = 'upstream' | 'authored' | 'override' | 'mobile';

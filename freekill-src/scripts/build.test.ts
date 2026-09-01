@@ -237,10 +237,9 @@ describe('overview data (4.8)', () => {
   });
 
   it('carries only the upstream English that src/i18n/engine does not already have', () => {
-    // The second lookup tier in `Overview.tsx`. It exists for the ~18 keys where
-    // upstream wrote English and we have not — mobile general names, mostly. Any
-    // key `EN_US` already covers is dead weight on the critical path, and the
-    // page would never read it anyway because `engineTr` checks EN_US first.
+    // The second lookup tier in `Overview.tsx`. Any key `EN_US` already covers
+    // is dead weight on the critical path, and the page would never read it
+    // anyway because `engineTr` checks EN_US first.
     //
     // This is the assertion that catches the failure mode that actually
     // happened: `build-overview.mjs` cannot import `src/i18n/engine/index.ts`
@@ -248,12 +247,20 @@ describe('overview data (4.8)', () => {
     // composition was a hand-written list of tables, adding `modes.ts` silently
     // took a whole table out of the filter. The script globs the directory now;
     // this checks the result against the real thing.
+    //
+    // The tier is EMPTY now, and that is the point rather than a regression. It
+    // used to hold the ~18 keys where upstream's `packages/mobile/i18n/en_US.lua`
+    // stub happened to write real English — mobile general names, mostly, out of
+    // the 22 English values in its 452 entries. `engine/mobile.ts` translated
+    // that pack, inheriting those 18 verbatim, so there is no longer a key the
+    // overview can learn from upstream that the engine layer does not have. If a
+    // future package ships English we have not written, this goes non-empty
+    // again and the `redundant` check above still guards it.
     const en = data.translationsEn ?? {};
     const redundant = Object.keys(en).filter((k) => k in EN_US);
     expect(redundant, `already covered by src/i18n/engine: ${redundant.slice(0, 10).join(', ')}`)
       .toEqual([]);
-    expect(Object.keys(en).length).toBeGreaterThan(0);
-    expect(en.caochun).toBe('Cao Chun');
+    expect(EN_US.caochun).toBe('Cao Chun');
   });
 
   it('keeps the illustrator credits, which are the standard portraits only attribution', () => {

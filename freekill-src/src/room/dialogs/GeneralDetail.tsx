@@ -31,13 +31,89 @@
  * for 锁定技 — a compulsory skill never animates an invocation, so this box is
  * the only place it is ever readable, and it arrives in `all_skills` like the
  * rest.
+ *
+ * 简明 / 详细. The engine's text is correct, complete, and written for someone
+ * who already knows the game — 神司马懿's runs to three hundred characters. A
+ * player weighing three unfamiliar names cannot read that per candidate, so
+ * every general also carries a two-sentence plain-language summary
+ * (`../../i18n/generalSummaries.ts`) saying what it is FOR: aggressive, defensive,
+ * draws cards, disrupts. That summary is drawn in BOTH modes — the toggle only
+ * decides whether the rules text appears under it — and the choice persists in
+ * `localStorage` the way the language does, because a player who wants the
+ * short version wants it on the next general too.
  */
-import { useEffect } from 'react';
+import { useEffect, useSyncExternalStore } from 'react';
 import type { CSSProperties } from 'react';
+import { useLanguage } from '../../i18n';
 import { useRoom } from '../RoomContext';
 import { sanitizeMarkup } from '../components/markup';
+import { SUMMARY_LABELS, generalSummary } from '../../i18n/generalSummaries';
 import type { GeneralDetail as GeneralDetailData } from '../ltk/types';
 import { Dialog, Btn } from './parts';
+
+/**
+ * 简明 or 详细 — whether the box shows the rules text under each skill.
+ *
+ * A module-level store with `useSyncExternalStore`, the same shape and for the
+ * same reason as `src/i18n/LanguageProvider`: this is a reading preference, not
+ * a property of one popup, and a player who asked for the short version wants
+ * the short version on the next general and on the next session too. The box is
+ * unmounted and remounted on every open, so component state would forget it
+ * between the first and second card of the same shortlist.
+ *
+ * The default is `full`. The summary is drawn in BOTH modes — a player who
+ * never finds the toggle still gets the two-sentence lead — so defaulting to
+ * `simple` would only take the rules text away from someone who did not ask.
+ */
+export type SkillView = 'simple' | 'full';
+
+const VIEW_KEY = 'fk.skillView';
+const DEFAULT_VIEW: SkillView = 'full';
+
+function readStoredView(): SkillView {
+  try {
+    const saved = globalThis.localStorage?.getItem(VIEW_KEY);
+    if (saved === 'simple' || saved === 'full') return saved;
+  } catch {
+    /* private mode, or no DOM at all (node tests) */
+  }
+  return DEFAULT_VIEW;
+}
+
+let view: SkillView = readStoredView();
+const viewListeners = new Set<() => void>();
+
+export function getSkillView(): SkillView {
+  return view;
+}
+
+export function setSkillView(next: SkillView): void {
+  if (next === view) return;
+  view = next;
+  try { globalThis.localStorage?.setItem(VIEW_KEY, next); } catch { /* private mode */ }
+  for (const l of [...viewListeners]) l();
+}
+
+/** For tests: forget the stored choice and drop back to the default. */
+export function resetSkillView(): void {
+  try { globalThis.localStorage?.removeItem(VIEW_KEY); } catch { /* private mode */ }
+  setSkillView(DEFAULT_VIEW);
+}
+
+function subscribeView(listener: () => void): () => void {
+  viewListeners.add(listener);
+  return () => { viewListeners.delete(listener); };
+}
+
+/**
+ * `[view, setView]`. The third argument is the live store rather than a frozen
+ * default: this app is client-only (`main.tsx` mounts, nothing hydrates), and
+ * the room's tests render through `renderToStaticMarkup`, which would otherwise
+ * be unable to see either mode but the default one.
+ */
+export function useSkillView(): [SkillView, (next: SkillView) => void] {
+  return [useSyncExternalStore(subscribeView, getSkillView, getSkillView), setSkillView];
+}
 
 export interface GeneralDetailProps {
   /** The general on screen. */
@@ -58,6 +134,14 @@ export function GeneralDetail({ name, onClose, pool, onShow, selected }: General
   const detail = safe(() => lua.getGeneralDetail(name));
   const art = assets.generalPortrait(name, detail?.extension);
   const skills = readSkills(detail);
+
+  // The plain-language answer to "what is this one FOR", and the switch between
+  // it and the engine's own rules text. `useLanguage` rather than `lua.tr`: a
+  // summary is this repo's own prose, not a key the engine can translate.
+  const lang = useLanguage();
+  const labels = SUMMARY_LABELS[lang];
+  const summary = generalSummary(name);
+  const [view, setView] = useSkillView();
 
   const list = pool ?? [];
   const at = list.indexOf(name);
@@ -105,8 +189,47 @@ export function GeneralDetail({ name, onClose, pool, onShow, selected }: General
             </p>
           ) : null}
 
-          <div style={SECTION}>{lua.tr('Skill Description')}</div>
-          {/* Some of the 319 carry six skills with a paragraph each, so the list
+          <div style={SECTION}>
+            <span>{lua.tr('Skill Description')}</span>
+            {/* Two chips rather than one: a lone "简明" button never says which
+                way it is currently set, and this box is read while paging, so
+                the state has to be legible at a glance. */}
+            <span className="fk-detail__view" style={{ display: 'flex', gap: 4 }}>
+              {(['simple', 'full'] as const).map((mode) => (
+                <button
+                  key={mode}
+                  type="button"
+                  className="fk-chip"
+                  aria-pressed={view === mode}
+                  style={view === mode ? VIEW_ON : undefined}
+                  onClick={() => setView(mode)}
+                >
+                  {labels[mode]}
+                </button>
+              ))}
+            </span>
+          </div>
+
+          {/* Drawn in both modes. The rules text is what the toggle hides; the
+              two-sentence answer to "what is this one for" is the reason the
+              box is worth opening at all, and a player who never finds the
+              toggle should still get it. A general with no summary says so
+              rather than showing a blank line — the same rule the untranslated
+              skill body below follows. */}
+          <p className="fk-detail__summary" style={SUMMARY}>
+            {summary ? summary[lang] : labels.none}
+          </p>
+          {summary?.missing?.length ? (
+            // Named, not glossed over: these are skills this build ships no text
+            // for at all (their package is not in `packages/`), and a summary
+            // that quietly described three quarters of a character would be the
+            // same lie as a skill drawn with nothing under it.
+            <p className="fk-detail__gap" style={GAP}>
+              {labels.missing}{summary.missing.join(' · ')}
+            </p>
+          ) : null}
+
+          {/* Some of them carry six skills with a paragraph each, so the list
               scrolls inside the box rather than growing it past `.fk-dialog`'s
               86% cap and pushing OK off the bottom of the screen. */}
           <div className="fk-detail__skills" style={SKILLS}>
@@ -132,9 +255,14 @@ export function GeneralDetail({ name, onClose, pool, onShow, selected }: General
                   // Index in the key as well as the name: `all_skills` is a list,
                   // not a set, and a general that both has and grants the same
                   // skill puts it in twice.
-                  <div key={`${s.name}-${i}`} className="fk-detail__skill" style={{ marginBottom: 10 }}>
+                  <div key={`${s.name}-${i}`} className="fk-detail__skill" style={{ marginBottom: view === 'full' ? 10 : 2 }}>
                     <b style={{ color: s.is_related_skill ? '#b79ae0' : 'var(--fk-gold)' }}>{lua.tr(s.name)}</b>
-                    {body ? (
+                    {/* 简明 keeps the names and drops the rules. The names alone
+                        are literary allusions and say nothing about function —
+                        that is what the summary above is for — but they are how
+                        a player recognises the skill again once it fires, and
+                        dropping them would leave the mode with nothing in it. */}
+                    {view !== 'full' ? null : body ? (
                       <div
                         style={{ fontSize: 13, lineHeight: 1.55, marginTop: 2 }}
                         dangerouslySetInnerHTML={{ __html: sanitizeMarkup(body) }}
@@ -223,8 +351,18 @@ export function readSkills(detail: { skill?: readonly DetailSkill[] } | undefine
 
 const NOTE: CSSProperties = { margin: '0 0 8px', fontSize: 12, color: 'var(--fk-ink-dim)' };
 const SECTION: CSSProperties = {
+  display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8,
   margin: '0 0 6px', paddingBottom: 3, fontSize: 12, letterSpacing: 1,
   color: 'var(--fk-ink-dim)', borderBottom: '1px solid var(--fk-line)',
+};
+/** The chip that is currently in force. `aria-pressed` carries it for a screen
+ *  reader; this is the same thing for everybody else. */
+const VIEW_ON: CSSProperties = { borderColor: 'var(--fk-gold)', color: 'var(--fk-gold)' };
+/** Deliberately bigger than the rules text below it: in 简明 it is the whole
+ *  content of the box, and in 详细 it is the sentence that frames the rest. */
+const SUMMARY: CSSProperties = { margin: '0 0 8px', fontSize: 13.5, lineHeight: 1.6 };
+const GAP: CSSProperties = {
+  margin: '0 0 8px', fontSize: 12, lineHeight: 1.5, opacity: 0.7, color: 'var(--fk-ink-dim)',
 };
 const SKILLS: CSSProperties = { maxHeight: '46vh', overflowY: 'auto', paddingRight: 6 };
 const PAGER: CSSProperties = {

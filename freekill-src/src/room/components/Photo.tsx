@@ -13,6 +13,7 @@ import { memo, useEffect } from 'react';
 import type { ItemData } from '../../contract/scene';
 import { ChatText, useEmoji } from '../chat';
 import { useRoom } from '../RoomContext';
+import type { LtkLua } from '../ltk/LtkLua';
 import { seatChar } from '../ltk/prompt';
 import { CARD_TYPE, PHASE } from '../ltk/types';
 import { SkinLayer, useSkinMode } from '../skins';
@@ -227,17 +228,55 @@ function JudgeRow({ ids = [] }: { ids?: readonly number[] }) {
   );
 }
 
+/**
+ * What a mark shows beside its name, following the four shapes the engine
+ * documents at `lua/core/player.lua:44-54` and the Qt client implements across
+ * `RoomLogic.js:1286` and `Photo/MarkArea.qml:135-152`.
+ *
+ * This used to be `String(v)` for everything, which is right only for a plain
+ * number. A `@$`/`@&` mark carries an array — a card pile or a list of general
+ * names — and printed as `1,2,3` instead of its count. A `@[type]name` mark is
+ * a package-supplied display whose text comes from `GetQmlMark`; that call
+ * existed on `LtkLua` with no caller, so those marks rendered their own raw
+ * key. And a string-valued mark is a translation key, not a literal.
+ */
+function markValue(
+  lua: LtkLua, key: string, value: unknown, playerId: number,
+): string {
+  // `@@` is documented as "mark with invisible extra data": name only.
+  if (key.startsWith('@@')) return '';
+  // `@$` is card data and `@&` is general names; both display as a count.
+  if (key.startsWith('@$') || key.startsWith('@&')) {
+    return Array.isArray(value) ? String(value.length) : String(value ?? '');
+  }
+  if (key.startsWith('@[')) {
+    const close = key.indexOf(']');
+    if (close !== -1) {
+      const spec = lua.getQmlMark(key.slice(2, close), key, playerId) as
+        { text?: unknown } | null;
+      // A package with no `how_to_show` returns `{}`; showing the raw key then
+      // is worse than showing nothing, since the key is not prose.
+      return spec && spec.text != null ? String(spec.text) : '';
+    }
+  }
+  if (Array.isArray(value)) return value.map((x) => lua.tr(String(x))).join(' ');
+  return lua.tr(String(value));
+}
+
 function MarkRow({ player }: { player: PlayerState }) {
   const { lua } = useRoom();
   const entries = Object.entries(player.marks);
   if (!entries.length) return null;
   return (
     <div className="fk-marks">
-      {entries.map(([k, v]) => (
-        <span className="fk-mark" key={k}>
-          {lua.tr(k)}{k.startsWith('@@') ? '' : ` ${String(v)}`}
-        </span>
-      ))}
+      {entries.map(([k, v]) => {
+        const shown = markValue(lua, k, v, player.id);
+        return (
+          <span className="fk-mark" key={k}>
+            {lua.tr(k)}{shown ? ` ${shown}` : ''}
+          </span>
+        );
+      })}
     </div>
   );
 }

@@ -252,7 +252,7 @@ export function RoomPage({ roomId, onLeave }: { roomId: string; onLeave: () => v
           onRemoveSeat={isHost ? (s) => run(t('room.action.removeSeat'), api.removeSeat(roomId, s)) : undefined}
           onChangeSettings={isHost ? (patch) => run(t('room.action.changeSettings'), api.updateSettings(roomId, patch)) : undefined}
           onLeave={leave}
-          onChat={(text) => run(t('room.action.sendChat'), api.sendChat(roomId, text))}
+          onChat={(text) => run(t('room.action.sendChat'), api.sendChat(roomId, text, me?.seat ?? null))}
           chat={room.chat}
         />
       </>
@@ -302,7 +302,7 @@ export function RoomPage({ roomId, onLeave }: { roomId: string; onLeave: () => v
       client={wrapped}
       assets={loaded.assets}
       chat={room.chat}
-      onChat={(text) => run(t('room.action.sendChat'), api.sendChat(roomId, text))}
+      onChat={(text) => run(t('room.action.sendChat'), api.sendChat(roomId, text, me?.seat ?? null))}
       onLeave={leave}
       statusSlot={<span style={{ fontSize: 12, color: 'var(--paper-faint)' }}>
         {table?.warnings.length

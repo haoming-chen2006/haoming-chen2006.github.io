@@ -1,10 +1,16 @@
 /**
  * The only thing the player sees of any of this.
  *
- * One small speaker in the corner, and behind it two faders. That is the whole
- * surface, and it is deliberately not a settings page: the two decisions worth
+ * One small speaker in the corner, and behind it three faders. That is the whole
+ * surface, and it is deliberately not a settings page: the decisions worth
  * making are "sound or no sound" and "how much of each", and both of them want
  * to be one click away from the table rather than three clicks away in a modal.
+ *
+ * WHY THREE AND NOT TWO. The generals are their own answer. Somebody who wants
+ * the table loud and the music low is a different person from somebody who wants
+ * 曹操 to shout every time he uses 奸雄, and by the third game they are often the
+ * same person having changed their mind. A fader says that; a checkbox does not,
+ * and the row that used to be here was a checkbox with an apology under it.
  *
  * IT STARTS SILENT AND SAYS SO. The closed control shows a struck-through
  * speaker until the player turns sound on. Nothing plays before that click, on
@@ -13,18 +19,17 @@
  * the next visit unlocks the audio context on the first real gesture instead of
  * asking again.
  *
- * IT ALSO FOLLOWS THE ROUTE. The app is hash-routed
- * (`src/shell/router.ts`), so `#/room/<id>` is the table and everything else is
- * not, and that is the lobby-versus-table signal the music rotation runs on
- * without this component having to reach into the shell for it. The engine
- * refines it from inside the game: `StartGame` and `GameOver` move the scene
- * through `RoomAudio` directly.
+ * IT ALSO FOLLOWS THE ROUTE. The app is hash-routed (`src/shell/router.ts`), so
+ * `#/room/<id>` is the table and everything else is not, and that is the
+ * lobby-versus-table signal the music rotation runs on without this component
+ * having to reach into the shell for it. The engine refines it from inside the
+ * game: `StartGame` and `GameOver` move the scene through `RoomAudio` directly.
  */
 import { useCallback, useEffect, useSyncExternalStore } from 'react';
 import { useLanguage } from '../../i18n';
 import type { Language } from '../../i18n';
 import { roomAudio } from './bus';
-import { HAS_VOICE_BANK } from './clips';
+import { CLIP_COUNT, HAS_VOICE_BANK } from './clips';
 import LABELS from './labels.json';
 import './audio.css';
 
@@ -87,27 +92,21 @@ export function GameAudio() {
             value={effects}
             onChange={(v) => roomAudio.set({ effects: v })}
           />
-          {/* Voice lines are a licensing answer, not a preference. When the
-              build has no bank the row says why rather than offering a switch
-              that would do nothing — see `provenance.json`. */}
-          {HAS_VOICE_BANK ? (
-            <label className="fk-audio__check">
-              <input
-                type="checkbox"
-                checked={voice}
-                onChange={(e) => roomAudio.set({ voice: e.target.checked })}
-              />
-              <span>{label(lang, 'audio.voice')}</span>
-            </label>
-          ) : (
-            <p className="fk-audio__note">
-              <b>{label(lang, 'audio.voice')}</b>
-              {' — '}
-              {label(lang, 'audio.voice.absent')}
-              {' '}
-              {label(lang, 'audio.synth')}
-            </p>
-          )}
+          {/* A build with no pack still plays every cue — the synthesised patch
+              is behind all of them — so the fader stays and only the note under
+              it changes. */}
+          <Fader
+            label={label(lang, 'audio.voice')}
+            value={voice}
+            onChange={(v) => roomAudio.set({ voice: v })}
+          />
+          <p className="fk-audio__note">
+            {HAS_VOICE_BANK
+              ? label(lang, 'audio.voice.count').replace('{n}', String(CLIP_COUNT))
+              : null}
+            {HAS_VOICE_BANK ? ' ' : null}
+            {label(lang, 'audio.synth')}
+          </p>
         </div>
       ) : null}
     </div>

@@ -249,11 +249,20 @@ describe('supabase backplane', () => {
   }, TIMEOUT);
 
   it('carries chat between members and abandons the room when everyone leaves', async () => {
-    await guest.api.sendChat(room.summary.id, '你好');
-    await host.api.sendChat(room.summary.id, '开始吧');
+    await guest.api.sendChat(room.summary.id, '你好', 2);
+    await host.api.sendChat(room.summary.id, '开始吧', 1);
     const d = await guest.api.getRoom(room.summary.id);
     expect(d!.chat.map((c) => c.text)).toEqual(['你好', '开始吧']);
     expect(d!.chat[0].displayName).toBe('客人');
+    // The sender's seat has to survive the round trip, because that is the only
+    // thing that puts a speech bubble over the right portrait. It was selected
+    // back and keyed on from the start, but never written, so every bubble was
+    // silently dropped; asserting the text alone did not notice.
+    expect(d!.chat.map((c) => c.playerId)).toEqual([2, 1]);
+    // An observer has no seat, and must still be able to talk.
+    await guest.api.sendChat(room.summary.id, '旁观', null);
+    const e = await guest.api.getRoom(room.summary.id);
+    expect(e!.chat.at(-1)!.playerId).toBeNull();
 
     await host.api.leaveRoom(room.summary.id);
     await guest.api.leaveRoom(room.summary.id);

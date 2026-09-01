@@ -24,15 +24,20 @@
 
 /* ------------------------------------------------------------------ picker */
 
-/* Overriding .fk-btn's `flex: 1` and 64 px floor: this shares a 210 px row with
-   the message input, which needs the space more than the button does. */
-.fk-emoji-toggle {
+/* `.fk-btn` is `flex: 1 1 auto` with a 64 px floor, which was harmless when the
+   send arrow was the input's only companion. With the emoji toggle beside it,
+   two buttons that need no width at all were splitting a 210 px row three ways
+   and leaving the message box about 76 px wide. Both are sized to their glyph
+   here so the row spends its width on the words. */
+.fk-chat__input .fk-btn {
   flex: 0 0 auto;
   min-width: 0;
-  padding: 3px 7px;
+  padding: 3px 9px;
   font-size: 14px;
   line-height: 1.2;
 }
+
+.fk-emoji-toggle { font-size: 15px; }
 
 /* A block in the chat column, between the scrollback and the input — never a
    floating layer. It is bounded by the panel it sits in, so there is no

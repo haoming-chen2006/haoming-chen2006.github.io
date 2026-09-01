@@ -356,12 +356,18 @@ function PlayerCardBox(
 ) {
   const { lua } = useRoom();
   const prompt = usePrompt();
+  const state = useRoomState();
   const d = data as {
     _id: number; _reason: string; _prompt: string; _min?: number; _max?: number;
     card_data?: [string, number[]][];
     visible_data?: Record<string, boolean>;
   };
   const zones = d.card_data ?? [];
+  /* `_id` is whose cards these are. It arrived on every payload and was read
+     off it here from the start, but nothing ever rendered it, so a box opened
+     by 42 of the 52 skills that use one asked you to take a card from nobody
+     in particular. Named the same way the amazing-grace taker is below. */
+  const target = d._id == null ? null : lua.tr(state.players[d._id]?.general ?? String(d._id));
   const [picked, setPicked] = useState<number[]>([]);
   const min = d._min ?? 1;
   const max = d._max ?? 1;
@@ -376,10 +382,13 @@ function PlayerCardBox(
   const header = d._prompt
     ? prompt(d._prompt)
     : `${lua.tr('$ChooseCard')} — ${lua.tr(d._reason)}`;
+  const title = target
+    ? `${lua.tr(d._reason || '$ChooseCard')} — ${target}`
+    : lua.tr(d._reason || '$ChooseCard');
 
   return (
     <Dialog
-      title={lua.tr(d._reason || '$ChooseCard')}
+      title={title}
       prompt={header}
       actions={multi
         ? <Btn primary disabled={!interactive || picked.length < min} onClick={() => onReply(picked)}>{lua.tr('OK')}</Btn>

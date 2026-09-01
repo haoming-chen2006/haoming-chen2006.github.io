@@ -8,45 +8,49 @@
  * played them from somewhere else. There is no table of cards here, no list of
  * skills, and no lookup keyed on a general's name.
  *
- * The six events the brief asked for, and where each one actually comes from:
+ * The events, and where each one actually comes from:
  *
  *   card use      LogEvent{PlaySound}       `./packages/<pkg>/audio/card/<sex>/<card>`
+ *   equip worn    LogEvent{PlaySound}       `./audio/card/common/<weapon|armor|horse>`
+ *   equip proc    LogEvent{PlaySound}       `./packages/<pkg>/audio/card/<equip>`
  *   skill invoke  LogEvent{PlaySkillSound}  name + general + deputy + take
  *   damage        LogEvent{Damage}          damageType, damageNum
  *   death         LogEvent{Death}           the seat; the general comes from the store
  *   draw          MoveCards                 DrawPile -> PlayerHand
  *   judgement     Animate{Emotion}          `judgegood` / `judgebad`, is_card
+ *   victory       GameOver                  the winning roles
  *
- * The last two are not `LogEvent`s and never were: the Qt client draws a
+ * The last three are not `LogEvent`s and never were: the Qt client draws a
  * judgement from `Room:setCardEmotion(cid, "judgegood")` (`events/judge.lua:98`)
  * and plays no sound for either, while `audio/system/draw.mp3` has sat in the
  * engine since the first commit with not one call site in the whole `Fk/` tree.
  * They are here because a table where drawing and judging are silent is a table
  * where the two most frequent things that happen to you make no sound.
  *
- * WHY A CUE NAMES A CATEGORY AND NOT A FILE. The deployed build ships no audio
- * files at all — see `provenance.json`, and the header of
- * `src/room/assets/audio/build-audio.mjs`, for why the premise that it could
- * changed. So a cue cannot be "play this mp3". It is "this kind of thing
- * happened, and here is what the engine said about it": the category, the
- * element, and a seed derived from whatever name the engine used. `sfx.ts`
- * synthesises from that, and a build that *does* have a licensed clip for the
- * engine's own path plays that instead — `sample` carries the path for exactly
- * that case.
+ * A CUE NAMES A SOUND AND A MOMENT.
  *
- * That is also what keeps the promise not to build a per-card map. The
- * categories are the engine's own — it tells us the damage element, the
- * equipment subtype, whether a sound is a card use or an equipment proc — and
- * within a category the timbre comes from a hash of the name on the wire. A card
- * nobody has written yet gets a sound, deterministically, and no file here ever
- * has to learn that it exists.
+ *   `sample` / `pick`  the engine's own path, which the pack is keyed by. When
+ *                      the build shipped that recording it plays; when it did
+ *                      not, the category and the seed synthesise one.
+ *   `at`               when, relative to the message. Most things are `now`.
+ *                      A death lands on the slay animation's own phases, which
+ *                      `spectacle/budget.ts` publishes for exactly this; a
+ *                      present lands on the arc `Presents.tsx` is drawing.
+ *
+ * Naming the moment here rather than in the runtime is what keeps the timing
+ * model in one readable place. Resolving it — turning `shatter` into 245 ms at
+ * the table's current pace — happens in `runtime.ts`, because that is behind
+ * the dynamic import and this file is not: `bus.ts` imports it at the app root,
+ * and pulling the animation lane's budget table onto the first-paint path to
+ * multiply two numbers would be a poor trade.
  *
  * NOTHING HERE DECIDES ANYTHING. A cue is a request to make a noise. It reads no
- * game state beyond asking the store what a seat's general is called, it never
+ * game state beyond asking the room what a seat's general is called, it never
  * looks at legality, and a payload it cannot parse is silence rather than a
  * throw — these objects are assembled in Lua and a package can put anything in
  * them.
  */
+import { hashName, soundKey, type VoiceBank } from './clips';
 
 /** Which bed is playing. Coarse on purpose: the music is not a state machine. */
 export type Scene = 'lobby' | 'table' | 'over';
@@ -64,11 +68,23 @@ export type SoundName =
   | 'damage' | 'losehp' | 'losemaxhp' | 'death'
   | 'draw' | 'judge' | 'skill'
   | 'chain' | 'recast' | 'gamestart' | 'win' | 'lose'
-  /** A flower or an egg thrown across the table. Not an engine event — see
-   *  `presentCues` below for where it comes from and why it has no sample. */
+  /** A flower or an egg crossing the table. Not an engine event — see
+   *  `presentCues` for where it comes from. */
   | 'present'
   /** A path the engine sent that parses as none of the above. */
   | 'generic';
+
+/**
+ * When a cue wants to be heard, relative to the message that produced it.
+ *
+ * A number is milliseconds. The three names are the slay animation's own
+ * phases, published by `src/room/components/anim/spectacle/budget.ts` for a
+ * sound lane to land on: at the default 800 ms pace the cut is 105 ms after the
+ * flash, the portrait breaks at 245 and the role seal stamps at 490. They are
+ * names rather than numbers because the table's pace is a URL parameter and the
+ * animation lane owns the arithmetic.
+ */
+export type Beatmark = number | 'cut' | 'shatter' | 'seal';
 
 export interface SoundCue {
   readonly kind: 'sound';
@@ -80,30 +96,56 @@ export interface SoundCue {
   readonly heavy?: boolean;
   /** Derived from the name on the wire, so one card always sounds like itself. */
   readonly seed?: number;
-  /** The engine's own audio path. Played in place of the patch by a build that
-   *  has a licensed clip for it; ignored by the public build, which has none. */
+  /** The engine's own audio path. Played in place of the patch when the pack
+   *  has it, which is nearly always. */
   readonly sample?: string;
+  /** Several paths, one chosen per play. `fly1`/`fly2`, the way the QML does. */
+  readonly pick?: readonly string[];
   readonly gain?: number;
   /** Collapses a burst: at most one cue per tag per window. */
   readonly tag?: string;
+  /** When to play it. Absent is immediately. */
+  readonly at?: Beatmark;
 }
 
-export type Cue =
-  | SoundCue
+/**
+ * What it costs to interrupt a line, and what it may interrupt.
+ *
+ * Two seats speaking over each other is the single ugliest thing this lane can
+ * do, so only one general talks at a time and the ladder decides who. It is not
+ * a loudness order: a compulsory skill outranks an ordinary one because a 锁定技
+ * announces itself in no other way — the engine fires it with no prompt, no
+ * choice and, until `lua/web/skillwire.lua` put `compulsory` on the wire, no
+ * signal a client could read. For those, the voice line is the whole tell.
+ */
+export type VoiceRank = 'skill' | 'compulsory' | 'ult' | 'win' | 'death';
+
+export const RANK_ORDER: Readonly<Record<VoiceRank, number>> = {
+  skill: 20, compulsory: 26, ult: 32, win: 38, death: 44,
+};
+
+export interface VoiceCue {
+  readonly kind: 'voice';
+  readonly bank: VoiceBank;
+  /** Candidates in `RoomLogic.js:1402`'s order: general, deputy, bare skill. */
+  readonly names: readonly string[];
+  /** `data.i`; -1 means any take. */
+  readonly index: number;
+  /** Who is speaking, so a synthesised stand-in can be pitched as them. */
+  readonly general: string;
+  readonly rank: VoiceRank;
+  readonly at?: Beatmark;
   /**
-   * A recorded performance, if this build has a voice bank and the player asked
-   * for one. `then` is not an error path: it is what the table sounds like when
-   * nobody spoke, which in the public build is always.
+   * What the table sounds like if nobody spoke.
+   *
+   * Not an error path. It is played *under* a line that has to be fetched
+   * first, and *instead of* one for the 37 skill-general pairs the packs never
+   * recorded — quietly in the first case, at full in the second.
    */
-  | {
-    readonly kind: 'voice';
-    readonly bank: 'skill' | 'death';
-    readonly names: readonly string[];
-    /** `data.i`; -1 means any take. */
-    readonly index: number;
-    readonly then: SoundCue;
-  }
-  | { readonly kind: 'music'; readonly scene: Scene };
+  readonly then: SoundCue;
+}
+
+export type Cue = SoundCue | VoiceCue | { readonly kind: 'music'; readonly scene: Scene };
 
 /** What a cue needs to know that only the live room knows. */
 export interface CueContext {
@@ -111,35 +153,29 @@ export interface CueContext {
   general(playerId: number): string;
   /** The viewer's role, so a game over can tell a win from a loss. `''` if none. */
   myRole(): string;
+  /** The viewer's own general, for the victory line. `''` if none. */
+  myGeneral(): string;
+  /**
+   * 锁定技 / 限定技, remembered off `Animate{InvokeSkill}`.
+   *
+   * `PlaySkillSound` does not carry it — `serverplayer.lua:465` sends four
+   * fields and none of them is the skill's tags. `Animate{InvokeSkill}` does,
+   * since `lua/web/skillwire.lua` started stamping `compulsory` on it, and
+   * `events/skill.lua:81-82` sends the two back to back in one flush. So the
+   * rank of a skill is known by the time its line is due, and certainly by the
+   * second time the skill fires.
+   */
+  skillRank(skill: string): VoiceRank;
 }
 
-export const NO_CONTEXT: CueContext = { general: () => '', myRole: () => '' };
+export const NO_CONTEXT: CueContext = {
+  general: () => '',
+  myRole: () => '',
+  myGeneral: () => '',
+  skillRank: () => 'skill',
+};
 
 /* ----------------------------------------------------------------- helpers */
-
-/**
- * The engine's sound paths as they arrive, normalised.
- *
- * Lua builds them by concatenation, so they come with a leading `./` and
- * sometimes with the extension and sometimes without — `broadcastPlaySound`
- * takes the path `usecard.lua` built with no `.mp3`, while a package writing one
- * by hand may include it. Both normalise here rather than at every reader.
- */
-export function soundKey(path: unknown): string | undefined {
-  if (typeof path !== 'string') return undefined;
-  const clean = path.trim().replace(/^\.?\//, '').replace(/\.(mp3|ogg|wav)$/i, '');
-  return clean && !clean.includes('..') ? clean : undefined;
-}
-
-/** A stable small integer from a name, so one card always gets the same patch. */
-export function hashName(s: string): number {
-  let h = 2166136261;
-  for (let i = 0; i < s.length; i += 1) {
-    h ^= s.charCodeAt(i);
-    h = Math.imul(h, 16777619);
-  }
-  return (h >>> 0) % 65536;
-}
 
 const num = (v: unknown): number => {
   const n = typeof v === 'number' ? v : Number(v);
@@ -185,6 +221,8 @@ export function readPath(key: string): SoundCue {
 
   if (rest[0] === 'common') {
     const which = rest[1];
+    // The three sounds a piece of equipment makes going on, and the reason the
+    // brief's example works: `audio/card/common/horse.mp3` is a horse.
     return which === 'weapon' || which === 'armor' || which === 'horse'
       ? { ...base, sound: 'equip', variant: which }
       : { ...base, sound: 'generic', seed: hashName(key) };
@@ -201,9 +239,10 @@ export function readPath(key: string): SoundCue {
 /**
  * One notify message in, the noises it should make out.
  *
- * An array because two things genuinely happen at once — a game ending is a
- * sting *and* a change of music — and because an empty array is the honest
- * answer for the two thousand messages of a game that are not a sound.
+ * An array because several things genuinely happen at once — a game ending is a
+ * sting, a change of music and possibly a victory line — and because an empty
+ * array is the honest answer for the two thousand messages of a game that are
+ * not a sound.
  */
 export function cueFor(command: string, data: unknown, ctx: CueContext = NO_CONTEXT): readonly Cue[] {
   switch (command) {
@@ -211,7 +250,7 @@ export function cueFor(command: string, data: unknown, ctx: CueContext = NO_CONT
     case 'MoveCards': return moveCues(data);
     case 'Animate': return animateCues(data);
     case 'StartGame': return [
-      { kind: 'sound', sound: 'gamestart', tag: 'gamestart' },
+      { kind: 'sound', sound: 'gamestart', sample: 'audio/system/gamestart', tag: 'gamestart' },
       { kind: 'music', scene: 'table' },
     ];
     case 'GameOver': return gameOverCues(data, ctx);
@@ -228,33 +267,51 @@ export function cueFor(command: string, data: unknown, ctx: CueContext = NO_CONT
  * calls `roomAudio.notify('Present', …)` itself — which is why the command name
  * is not in `OBSERVED_WIRE_COMMANDS` and never will be.
  *
- * It carries no `sample`, and that is deliberate rather than an omission. The
- * engine's own noises for this are `audio/system/{fly,flower,egg}{1,2}.mp3`,
- * and those six files are exactly the ones carrying an intact
- * `copyright=绯雨音乐` tag — the evidence that stopped this build shipping any
- * audio at all (`src/room/assets/audio/build-audio.mjs`). A `sample` path here
- * would be an invitation to a future build to play a file it has no right to,
- * so there is none: a present is synthesised or it is silent.
+ * TWO SOUNDS, NOT ONE, BECAUSE IT IS TWO MOMENTS. `Flower.qml` and `Egg.qml`
+ * each fire `audio/system/fly<1|2>` when the sprite launches and
+ * `audio/system/{flower,egg}<1|2>` when it lands, and the whole joke is the gap
+ * between them. `Presents.tsx` publishes the arc it draws — a flower is thrown
+ * at once and lands 380 ms later, an egg hangs for 460 ms and lands at 980 —
+ * so the impact is scheduled against those, not guessed.
  *
- * The seed is what separates the two. `sfx.ts`'s `generic` patch derives its
- * pitch from it, so a flower rings high and an egg lands low, off the same
- * three lines of synthesis.
+ * The takes are two-deep upstream and picked per throw, which is why `pick`
+ * exists at all: two people throwing eggs in the same second should not be the
+ * same forty milliseconds of noise twice.
  */
 export function presentCues(data: unknown): readonly Cue[] {
   const kind = str((data as Record<string, unknown> | null | undefined)?.kind);
   if (!kind) return [];
   const flower = kind === 'Flower';
-  return [{
-    kind: 'sound',
-    sound: 'present',
-    variant: flower ? 'flower' : 'egg',
-    seed: hashName(flower ? 'flower' : 'egg'),
-    // Under the table, not over it. A present is somebody being silly while a
-    // game is going on; it must never be the loudest thing in the room.
-    gain: flower ? 0.32 : 0.4,
-    // Two people throwing at once is one noise. `runtime.ts` collapses by tag.
-    tag: 'present',
-  }];
+  // `Presents.tsx`'s own `Shape`: FLOWER lead 0 fly 380, EGG lead 460 fly 520.
+  const lead = flower ? 0 : 460;
+  const hit = lead + (flower ? 380 : 520);
+  const impact = flower
+    ? ['audio/system/flower1', 'audio/system/flower2']
+    : ['audio/system/egg1', 'audio/system/egg2'];
+  return [
+    {
+      kind: 'sound',
+      sound: 'present',
+      variant: flower ? 'flower' : 'egg',
+      seed: hashName(flower ? 'flower' : 'egg'),
+      pick: ['audio/system/fly1', 'audio/system/fly2'],
+      // Under the table, not over it. A present is somebody being silly while a
+      // game is going on; it must never be the loudest thing in the room.
+      gain: 0.3,
+      at: lead,
+      tag: 'present-fly',
+    },
+    {
+      kind: 'sound',
+      sound: 'present',
+      variant: flower ? 'flower' : 'egg',
+      seed: hashName(flower ? 'flower' : 'egg'),
+      pick: impact,
+      gain: flower ? 0.34 : 0.42,
+      at: hit,
+      tag: 'present-hit',
+    },
+  ];
 }
 
 /** `RoomLogic.js:1374`. The engine's own sound channel, and most of the game. */
@@ -270,10 +327,10 @@ export function logEventCues(data: unknown, ctx: CueContext = NO_CONTEXT): reado
 
     case 'Damage': {
       const element = DAMAGE_ELEMENTS[str(d.damageType)] ?? 'normal';
+      const heavy = num(d.damageNum) > 1;
       return [{
-        kind: 'sound', sound: 'damage', variant: element,
-        heavy: num(d.damageNum) > 1,
-        sample: `audio/system/${str(d.damageType) || 'normal_damage'}${num(d.damageNum) > 1 ? '2' : ''}`,
+        kind: 'sound', sound: 'damage', variant: element, heavy,
+        sample: `audio/system/${str(d.damageType) || 'normal_damage'}${heavy ? '2' : ''}`,
         tag: 'damage',
       }];
     }
@@ -308,21 +365,41 @@ export function logEventCues(data: unknown, ctx: CueContext = NO_CONTEXT): reado
         bank: 'skill',
         names,
         index: num(d.i) || -1,
+        general: general || deputy,
+        rank: ctx.skillRank(skill),
+        // A little behind the beat: the skill banner flashes on `Animate`, and a
+        // shout that lands a frame after the flash reads as caused by it, while
+        // one that lands on it reads as a click.
+        at: 60,
         // Pitched by skill name, so a general's signature skill has a signature
-        // note. This is the sound the public build actually makes for a skill.
+        // note. Under a line that is still loading; instead of one that does not
+        // exist, alongside the synthesised utterance that stands in for it.
         then: { kind: 'sound', sound: 'skill', seed: hashName(skill), tag: `skill:${skill}` },
       }];
     }
 
     case 'Death': {
       const general = ctx.general(num(d.to));
-      return [{
-        kind: 'voice',
-        bank: 'death',
-        names: general ? [general] : [],
-        index: -1,
-        then: { kind: 'sound', sound: 'death', seed: hashName(general), tag: 'death' },
-      }];
+      return [
+        // The blow, on the frame the blade crosses the table.
+        {
+          kind: 'sound', sound: 'death', seed: hashName(general), tag: 'death', at: 'cut',
+        },
+        // The last words, as the portrait breaks. Landing them on the cut would
+        // put a four-second line under a white flash; landing them on the seal
+        // would leave 250 ms of nothing in the middle of the largest moment in
+        // the game.
+        {
+          kind: 'voice',
+          bank: 'death',
+          names: general ? [general] : [],
+          index: -1,
+          general,
+          rank: 'death',
+          at: 'shatter',
+          then: { kind: 'sound', sound: 'death', seed: hashName(general), tag: 'death-voice' },
+        },
+      ];
     }
 
     default:
@@ -357,6 +434,11 @@ export function moveCues(data: unknown): readonly Cue[] {
  * the effect belongs on the card in the processing zone rather than on a seat.
  * It is also the only unambiguous "the judgement came up" on the wire: a card
  * moving into the processing zone looks exactly like a card being used.
+ *
+ * The one moment in a game with no recording anywhere in the engine — upstream
+ * plays nothing for either verdict — so this is still the synthesised chime,
+ * and it should stay one: a judgement wants a sound that is unmistakably up or
+ * unmistakably down, which is two notes, not a performance.
  */
 export function animateCues(data: unknown): readonly Cue[] {
   const d = (data ?? {}) as Record<string, unknown>;
@@ -375,6 +457,13 @@ export function animateCues(data: unknown): readonly Cue[] {
  * Upstream plays `audio/system/draw` on a drawn game, which is the *card* draw
  * sound — a paper riffle for a stalemate. Not copied: a draw gets no sting, only
  * the music standing down.
+ *
+ * THE VICTORY LINE. `packages/mobile/audio/win/` holds 45 of them and the Qt
+ * client reaches them from a chat message beginning `!` (`RoomPage.qml:633`) —
+ * a channel this build does not have. `GameOver` does carry everything needed:
+ * the winning roles, and, through the room, the viewer's own general. So the
+ * viewer's general says their line if the packs recorded one, which is 38 of
+ * 274 generals; everyone else gets the sting alone.
  */
 export function gameOverCues(data: unknown, ctx: CueContext = NO_CONTEXT): readonly Cue[] {
   const winners = str(data).split('+').map((s) => s.trim()).filter(Boolean);
@@ -388,7 +477,27 @@ export function gameOverCues(data: unknown, ctx: CueContext = NO_CONTEXT): reado
       sample: won ? 'audio/system/win' : 'audio/system/lose',
       tag: 'gameover',
     });
+    const general = ctx.myGeneral();
+    if (won && general) {
+      cues.push({
+        kind: 'voice',
+        bank: 'win',
+        names: [general],
+        index: -1,
+        general,
+        rank: 'win',
+        // After the sting has rung. `audio/system/win.mp3` runs about a second
+        // and a half; talking over your own fanfare is not a victory.
+        at: 1500,
+        // No stand-in. A victory line is the one place silence is fine: the
+        // fanfare already said it, and a synthesised shout under a win screen
+        // reads as a bug rather than as a flourish.
+        then: { kind: 'sound', sound: 'generic', seed: 0, gain: 0, tag: 'win-voice' },
+      });
+    }
   }
   cues.push({ kind: 'music', scene: 'over' });
   return cues;
 }
+
+export { hashName, soundKey };

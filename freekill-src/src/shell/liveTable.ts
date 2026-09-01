@@ -262,6 +262,32 @@ export async function startLiveTable(spec: LiveTableSpec): Promise<LiveTable> {
   let syncedThrough = -1;
   let dealt = false;
 
+  /**
+   * Is this the message that makes the table worth looking at?
+   *
+   * The curtain is a full-viewport overlay and lifting it is a promise that
+   * there is a game behind it. This used to lift on the first envelope that
+   * carried any message at all, which held only because envelopes used to be
+   * one-per-batch-per-recipient: whatever the first one was, the whole opening
+   * batch came with it.
+   *
+   * Splitting envelopes at public/private transitions broke that, and broke it
+   * for the host alone. A guest never applies a live envelope first — it holds
+   * everything until its resync lands, and that snapshot is `[...preamble,
+   * Observe]`, a whole table. The host has no resync at all (`resyncs` is
+   * false for it, and see the note above about its envelopes being handed over
+   * in-process), so it applies the opening one small run at a time — and the
+   * first of those can be a lone `EnterRoom`. Curtain up, nothing behind it:
+   * a bare table with one half-built photo on it and no way to interact.
+   *
+   * So the test is what the seat can see. `ArrangeSeats` is the message that
+   * establishes the circle every photo is positioned from — it is emitted
+   * after the last `AddPlayer` precisely so the seating exists first — and
+   * `Observe` is a whole room in one message. Either means there is a table.
+   */
+  const rendersATable = (m: { command: string }): boolean =>
+    m.command === 'ArrangeSeats' || m.command === 'Observe';
+
   const readVmErrors = (): readonly string[] => {
     const read = (client as Partial<RetainingClient>).vmErrors;
     try { return typeof read === 'function' ? read.call(client) : []; } catch { return []; }
@@ -294,7 +320,7 @@ export async function startLiveTable(spec: LiveTableSpec): Promise<LiveTable> {
       console.error(`[table] the client VM rejected game data: ${latest}`);
       warn(tr('table.warn.batch', { error: latest }));
     }
-    if (!dealt && env.messages.length > 0) {
+    if (!dealt && env.messages.some(rendersATable)) {
       dealt = true;
       setPhase('live', '');
     }

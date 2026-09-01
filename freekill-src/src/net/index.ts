@@ -278,12 +278,13 @@ export function createLobbyApi(opts: LobbyApiOptions = {}): LobbyApi {
       if (error) throw new Error(error.message);
     },
 
-    async sendChat(roomId, text) {
+    async sendChat(roomId, text, playerId = null) {
       const { data: me } = await sb.auth.getUser();
       const who = identityOf(me.user);
       if (!who) throw new Error('not signed in');
       const { error } = await sb.from('fk_chat').insert({
         room_id: roomId, user_id: who.userId, display_name: who.displayName, text,
+        player_id: playerId ?? null,
       });
       if (error) throw new Error(error.message);
     },

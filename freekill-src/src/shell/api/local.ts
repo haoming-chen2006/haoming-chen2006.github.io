@@ -248,11 +248,11 @@ export function createLocalApi(): LobbyApi {
       });
     },
 
-    async sendChat(roomId, text) {
+    async sendChat(roomId, text, playerId = null) {
       const who = me();
       mutate(roomId, (r) => {
         r.chat = [...r.chat.slice(-80), {
-          id: crypto.randomUUID(), playerId: null, displayName: who.displayName,
+          id: crypto.randomUUID(), playerId: playerId ?? null, displayName: who.displayName,
           text, at: Date.now(),
         }];
       });

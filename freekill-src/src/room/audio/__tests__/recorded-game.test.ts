@@ -115,14 +115,24 @@ describe('a full recorded game, played through the audio bus', () => {
       audio.notify(f.command, f.data);
       fired += audio.log.length - before;
     }
-    // Every sound-bearing LogEvent makes one cue; the rest make none.
-    const soundBearing = logEvents.filter((f) => {
-      const t = (f.data as { type?: string } | null)?.type;
-      return t === 'PlaySound' || t === 'Damage' || t === 'LoseHP'
-        || t === 'PlaySkillSound' || t === 'Death'
-        || (t === 'ChangeMaxHp' && Number((f.data as { num?: number }).num) < 0);
-    }).length;
-    expect(fired).toBe(soundBearing);
+    // Every sound-bearing LogEvent makes its cues; the rest make none. A death
+    // is deliberately two — the blow on the cut, and the last words as the
+    // portrait shatters (`cues.ts`'s `Death` branch) — so the count is per
+    // message rather than a flat one each. What this is really guarding is
+    // duplication: `LogEvent` reaches the bus through `onSound` *and* through
+    // `notify`, and a table where every hit thumps twice is unlistenable.
+    const cuesFor = (f: { data?: unknown }): number => {
+      const d = f.data as { type?: string; num?: number } | null;
+      switch (d?.type) {
+        case 'PlaySound': case 'Damage': case 'LoseHP': case 'PlaySkillSound':
+          return 1;
+        case 'Death': return 2;
+        case 'ChangeMaxHp': return Number(d.num) < 0 ? 1 : 0;
+        default: return 0;
+      }
+    };
+    const expected = logEvents.reduce((n, f) => n + cuesFor(f), 0);
+    expect(fired).toBe(expected);
   });
 
   it('knows who died, because it is reading the live room', () => {

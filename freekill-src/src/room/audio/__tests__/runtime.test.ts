@@ -106,28 +106,36 @@ const cue = (sound: SoundName, extra: Partial<SoundCue> = {}): SoundCue =>
 /* ------------------------------------------------------------- the mixer */
 
 describe('the mixer', () => {
-  it('builds three buses and nothing else until asked to play', async () => {
+  it('builds four buses and two ducks, and nothing else until asked to play', async () => {
     await makeRuntime();
-    // master, music, effects. Nothing is playing, so nothing is generating.
-    expect(rec.of('gain')).toHaveLength(3);
+    // master, musicDuck, musicBus, sfxDuck, sfxBus, voiceBus — in that order.
+    // The ducks are their own nodes because a gain the player owns and a gain
+    // the mixer owns are two gains (see the header of `runtime.ts`).
+    expect(rec.of('gain')).toHaveLength(6);
     expect(rec.of('osc')).toHaveLength(0);
   });
 
   it('sends music and effects to their own faders', async () => {
     const rt = await makeRuntime();
-    const [master, musicBus, sfxBus] = rec.of('gain');
-    rt.setVolumes(0.2, 0.9);
+    const [master, musicDuck, musicBus, sfxDuck, sfxBus, voiceBus] = rec.of('gain');
+    rt.setVolumes(0.2, 0.9, 0.7);
     // Ramped, never stepped: a slider dragged across its range must not staircase.
     expect(musicBus.gain.calls.at(-1)).toMatchObject({ kind: 'target', value: 0.2 });
     expect(sfxBus.gain.calls.at(-1)).toMatchObject({ kind: 'target', value: 0.9 });
+    expect(voiceBus.gain.calls.at(-1)).toMatchObject({ kind: 'target', value: 0.7 });
     expect(master.gain.value).toBe(1);
-    expect(musicBus.out).toContain(master);
-    expect(sfxBus.out).toContain(master);
+    // Each fader reaches master through its own duck; voice has none, because
+    // voice is what everything else ducks *for*.
+    expect(musicBus.out).toContain(musicDuck);
+    expect(sfxBus.out).toContain(sfxDuck);
+    expect(musicDuck.out).toContain(master);
+    expect(sfxDuck.out).toContain(master);
+    expect(voiceBus.out).toContain(master);
   });
 
   it('lands an effect on the effects bus and nowhere near the music', async () => {
     const rt = await makeRuntime();
-    const [, musicBus, sfxBus] = rec.of('gain');
+    const [, , musicBus, , sfxBus] = rec.of('gain');
     rec.reset();
     rt.fire(cue('card', { seed: 7, variant: 'male' }));
     const reached = new Set(rec.nodes.flatMap((n) => n.out));
@@ -215,19 +223,23 @@ describe('the synthesised bank', () => {
 
   it('stands the music back while something long is over it', async () => {
     const rt = await makeRuntime();
-    const [, musicBus] = rec.of('gain');
-    rt.setVolumes(0.6, 0.8);
-    const before = musicBus.gain.calls.length;
+    const [, musicDuck] = rec.of('gain');
+    rt.setVolumes(0.6, 0.8, 0.7);
+    const before = musicDuck.gain.calls.length;
     rt.fire(cue('gamestart', { tag: 'gs' }));
-    const ducked = musicBus.gain.calls.slice(before);
-    // Down now, and back on its own — there is no un-duck to forget.
-    expect(ducked.some((c) => c.kind === 'target' && Math.abs(c.value - 0.6 * 0.35) < 1e-9)).toBe(true);
-    expect(ducked.some((c) => c.kind === 'target' && c.value === 0.6 && c.at > 0)).toBe(true);
+    const ducked = musicDuck.gain.calls.slice(before);
+    // The duck is its own node, so it rides to 0.35 of whatever the player set
+    // rather than to an absolute the fader would have to remember. Down now,
+    // and back on its own — there is no un-duck to forget.
+    expect(ducked.some((c) => c.kind === 'target' && c.value === 0.35)).toBe(true);
+    expect(ducked.some((c) => c.kind === 'target' && c.value === 1 && c.at > 0)).toBe(true);
+    // And the player's fader was never touched to do it.
+    expect(musicDuck.gain.calls.length).toBeGreaterThan(before);
 
     // A short cue is not worth ducking for.
-    const mark = musicBus.gain.calls.length;
+    const mark = musicDuck.gain.calls.length;
     rt.fire(cue('draw', { tag: 'd2' }));
-    expect(musicBus.gain.calls.length).toBe(mark);
+    expect(musicDuck.gain.calls.length).toBe(mark);
   });
 });
 

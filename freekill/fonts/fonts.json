@@ -5,10 +5,10 @@
   "href": "fonts/lxgwwenkai.woff2",
   "license": "fonts/lxgwwenkai.OFL.txt",
   "copyright": "Copyright (c) 2021, LIU Zhaoxi (lxgw). Derived from FONTWORKS Klee One.",
-  "bytes": 656780,
-  "chars": 2980,
-  "han": 2756,
-  "missing": "↺↻⏰⚡✔❚➕➖⟲⬤⭐぀🔍🗨😃﫿️",
+  "bytes": 669676,
+  "chars": 3042,
+  "han": 2803,
+  "missing": "↺↻⏰⚡✔❚➕➖➤⟲⬤⭐぀🔍🗨😃﫿️",
   "missingHan": "",
-  "hanCovered": 2756
+  "hanCovered": 2803
 }

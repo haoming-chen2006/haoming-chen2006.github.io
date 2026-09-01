@@ -24,11 +24,12 @@
  * keep the digits verbatim for the same reason: the id is a filename, and
  * normalising it would silently answer a question the sender did not ask.
  *
- * It does not build HTML. Qt can afford `<img>` in a string because its log is
- * a rich-text control; ours goes through `dangerouslySetInnerHTML`, and chat is
- * the one surface where the bytes are typed by another player. `parseChat`
- * returns segments and React renders them, so a message containing `<script>`
- * is a message containing the characters `<script>`.
+ * It does not build HTML. Qt can afford to substitute an `<img>` into the string
+ * because its chat log is a rich-text control. Here that string would have to
+ * reach `dangerouslySetInnerHTML` — and chat is the one surface in the room
+ * whose bytes are typed by another player, rather than rendered by the engine
+ * as the game log is. So `parseChat` returns segments and React renders them:
+ * a message containing `<script>` is a message containing those characters.
  */
 
 /** The engine's token, verbatim from `RoomPage.qml`. */

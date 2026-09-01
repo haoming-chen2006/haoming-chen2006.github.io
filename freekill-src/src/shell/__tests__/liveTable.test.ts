@@ -301,6 +301,51 @@ describe('the shell actually starts a game', () => {
     expect(t.me.commands).toContain('GameLog');
   });
 
+  /**
+   * The curtain over the table is a full-viewport overlay, and lifting it is a
+   * promise that there is a game behind it. It used to lift on the first
+   * envelope carrying any message at all — safe only while envelopes were one
+   * per batch per recipient, because then the first one brought the whole
+   * opening with it.
+   *
+   * Splitting envelopes at public/private transitions broke that for the host
+   * alone. A guest holds everything until its resync, and that snapshot is a
+   * whole table; the host has no resync and applies the opening one small run
+   * at a time, so its first envelope can be a lone `EnterRoom`. The player who
+   * pressed start got a bare table with one half-built photo and nothing to
+   * click, while everyone else played normally.
+   *
+   * The assertion is the shape that made it possible: the host's first
+   * envelope really does arrive before the seating does, so "any message"
+   * cannot be the signal, and `ArrangeSeats` really does arrive later in the
+   * same opening, so it can be.
+   */
+  it('does not lift the curtain until the seating exists', () => {
+    const commandsOf = (e: { messages: readonly { command: string }[] }) =>
+      e.messages.map((m) => m.command);
+    expect(t.local.length).toBeGreaterThan(0);
+
+    const seatingAt = t.local.findIndex((e) =>
+      commandsOf(e).some((c) => c === 'ArrangeSeats' || c === 'Observe'));
+    expect(seatingAt, 'the host never received ArrangeSeats').toBeGreaterThanOrEqual(0);
+
+    // In this room the host is the only person, so nothing in the preamble is
+    // byte-identical for every member and nothing is recovered as public — the
+    // opening arrives in one envelope and seating is already in it. That is
+    // why a bot room cannot show the bug, and why the assertion here is the
+    // invariant rather than the ordering: whichever envelope carries seating,
+    // the curtain must not have lifted before it.
+    for (const e of t.local.slice(0, seatingAt)) {
+      expect(
+        commandsOf(e).some((c) => c === 'ArrangeSeats' || c === 'Observe'),
+        'no envelope before the seating one may lift the curtain',
+      ).toBe(false);
+    }
+    expect(commandsOf(t.local[seatingAt])).toContain(
+      t.local[seatingAt].messages.some((m) => m.command === 'Observe') ? 'Observe' : 'ArrangeSeats',
+    );
+  });
+
   it('runs the room to a finish with every seat the room had', () => {
     expect(t.over).toBe(true);
     expect(t.runner.roomSpec.seats).toHaveLength(8);

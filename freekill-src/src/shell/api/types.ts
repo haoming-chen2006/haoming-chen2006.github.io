@@ -82,5 +82,11 @@ export interface LobbyApi {
   updateSettings(roomId: string, patch: Record<string, unknown>): Promise<void>;
   startGame(roomId: string): Promise<void>;
   leaveRoom(roomId: string): Promise<void>;
-  sendChat(roomId: string, text: string): Promise<void>;
+  /**
+   * `playerId` is the sender's seat, which is also its in-game player id. It
+   * is what puts a speech bubble over the right portrait: `ChatLine.playerId`
+   * has always been read back and keyed on, but no backplane ever wrote it,
+   * so every bubble was dropped. Null for an observer, who has no seat.
+   */
+  sendChat(roomId: string, text: string, playerId?: number | null): Promise<void>;
 }

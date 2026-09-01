@@ -9,10 +9,11 @@
  */
 import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
 import {
-  animateCues, cueFor, gameOverCues, logEventCues, moveCues, readPath, soundKey,
-  type Cue, type CueContext, type SoundCue,
+  animateCues, cueFor, gameOverCues, logEventCues, moveCues, presentCues, readPath, soundKey,
+  RANK_ORDER,
+  type Cue, type CueContext, type SoundCue, type VoiceCue,
 } from '../cues';
-import { CLIPS } from '../clips';
+import { PACK } from '../clips';
 import { DEFAULT_SETTINGS, readSettings, resetSettings, writeSettings } from '../settings';
 import { RoomAudio, type SoundSource } from '../bus';
 
@@ -22,23 +23,49 @@ const sound = (cues: readonly Cue[]): SoundCue => {
   return hit;
 };
 
-const CTX: CueContext = { general: (id) => (id === 3 ? 'caocao' : ''), myRole: () => 'loyalist' };
+const voice = (cues: readonly Cue[]): VoiceCue => {
+  const hit = cues.find((c): c is VoiceCue => c.kind === 'voice');
+  if (!hit) throw new Error(`no voice cue in ${JSON.stringify(cues)}`);
+  return hit;
+};
 
-/* ------------------------------------------------------------- the licence */
+const CTX: CueContext = {
+  general: (id) => (id === 3 ? 'caocao' : ''),
+  myRole: () => 'loyalist',
+  myGeneral: () => 'liubei',
+  skillRank: () => 'skill',
+};
 
-describe('the licence, which is the reason any of this is synthesised', () => {
+/* ------------------------------------------------------------------ the pack */
+
+describe('the pack this build carries', () => {
   /**
-   * The audio lane was briefed to ship the engine's music and effects. Checking
-   * before deploying found a live third-party copyright notice inside the set
-   * that had been cleared as safe, and the same transcode fingerprint across the
-   * cleared and the flagged sets. `provenance.json` has the evidence.
+   * This assertion used to be `expect(CLIPS).toEqual([])`, and it was there as a
+   * licensing guard: the first pass of this lane found a live third-party
+   * copyright notice inside the set that had been cleared as safe, held
+   * everything back, and left a test behind so that repopulating the index
+   * could never look like a build artefact.
    *
-   * This test is the guard on that decision. A future `build-audio.mjs --pack`
-   * pointed at a FreeKill checkout would repopulate the index, and the diff that
-   * did it would look like a build artefact rather than a licensing change.
+   * The evidence has not changed and has not been re-argued —
+   * `provenance.json` still carries it in full. What changed is that the owner
+   * of this build reviewed it and decided to ship: an internal competition
+   * project judged on how it looks and sounds, not a business use. That is
+   * their decision to make, it is recorded in `provenance.json` under
+   * `decision`, and this test is now the guard on the other side of it: the pack
+   * is here, it is complete, and a build that quietly lost it should fail.
    */
-  it('ships no audio file at all', () => {
-    expect(CLIPS).toEqual([]);
+  it('ships the recordings, deliberately, and knows how many', () => {
+    expect(PACK).not.toBeNull();
+    expect(PACK!.clips).toBeGreaterThan(1900);
+    expect(PACK!.roles.voice.n).toBeGreaterThan(1800);
+    expect(PACK!.stamp).toMatch(/^[0-9a-f]{10}$/);
+  });
+
+  it('keeps the first-paint summary small enough to be on the first-paint path', () => {
+    // `GameAudio` is mounted at the app root and imports this, so it is in the
+    // entry bundle. The 2,015-row index it summarises is a lazy fetch; this is
+    // four numbers and a role table, and it must stay that way.
+    expect(JSON.stringify(PACK).length).toBeLessThan(600);
   });
 });
 
@@ -62,6 +89,7 @@ describe('the path the engine sends says what happened', () => {
     const use = readPath('packages/standard_cards/audio/card/male/slash');
     expect(use.sound).toBe('card');
     expect(use.variant).toBe('male');
+    expect(use.sample).toBe('packages/standard_cards/audio/card/male/slash');
 
     const proc = readPath('packages/standard_cards/audio/card/fan');
     expect(proc.sound).toBe('gear');
@@ -79,7 +107,13 @@ describe('the path the engine sends says what happened', () => {
   });
 
   it('reads wearing equipment and the two system sounds', () => {
-    expect(readPath('audio/card/common/horse')).toMatchObject({ sound: 'equip', variant: 'horse' });
+    // This is the one the brief asked for by name: equipping a horse must sound
+    // like a horse, and `audio/card/common/horse.mp3` is one.
+    const horse = readPath('audio/card/common/horse');
+    expect(horse).toMatchObject({ sound: 'equip', variant: 'horse' });
+    expect(horse.sample).toBe('audio/card/common/horse');
+    expect(readPath('audio/card/common/weapon').variant).toBe('weapon');
+    expect(readPath('audio/card/common/armor').variant).toBe('armor');
     expect(readPath('audio/system/chain').sound).toBe('chain');
     expect(readPath('audio/system/recast').sound).toBe('recast');
   });
@@ -94,12 +128,15 @@ describe('the path the engine sends says what happened', () => {
 
 describe('LogEvent, the engine\'s own sound channel', () => {
   it('plays the element and the weight the engine named', () => {
-    // `RoomLogic.js:1381` — `damageNum > 1` reaches for a different recording.
+    // `RoomLogic.js:1381` — `damageNum > 1` reaches for a different recording,
+    // and the pack has both, so the sample carries the `2` suffix too.
     const light = sound(logEventCues({ type: 'Damage', to: 2, damageType: 'fire_damage', damageNum: 1 }));
     expect(light).toMatchObject({ sound: 'damage', variant: 'fire', heavy: false });
+    expect(light.sample).toBe('audio/system/fire_damage');
 
     const heavy = sound(logEventCues({ type: 'Damage', to: 2, damageType: 'thunder_damage', damageNum: 2 }));
     expect(heavy).toMatchObject({ sound: 'damage', variant: 'thunder', heavy: true });
+    expect(heavy.sample).toBe('audio/system/thunder_damage2');
 
     // The engine omits `damageType` for an ordinary hit.
     expect(sound(logEventCues({ type: 'Damage', to: 2, damageNum: 1 })).variant).toBe('normal');
@@ -113,26 +150,46 @@ describe('LogEvent, the engine\'s own sound channel', () => {
   it('carries every general the seat has for a skill line, in the engine\'s order', () => {
     // `RoomLogic.js:1402` tries the main general, then the deputy, then the bare
     // skill. `serverplayer.lua:465` is what sends all three.
-    const [cue] = logEventCues({ type: 'PlaySkillSound', name: 'fankui', i: 2, general: 'simayi', deputy: 'zhangliao' });
+    const cue = voice(logEventCues({ type: 'PlaySkillSound', name: 'fankui', i: 2, general: 'simayi', deputy: 'zhangliao' }));
     expect(cue).toMatchObject({
-      kind: 'voice',
       bank: 'skill',
       names: ['fankui_simayi', 'fankui_zhangliao', 'fankui'],
       index: 2,
+      general: 'simayi',
+      rank: 'skill',
     });
-    // And the sound the public build actually makes, since it has no bank.
-    expect(cue.kind === 'voice' && cue.then).toMatchObject({ sound: 'skill' });
+    // A hair behind the beat, so the shout reads as caused by the flash.
+    expect(cue.at).toBe(60);
+    // And the sound the table makes if that line has to be fetched first.
+    expect(cue.then).toMatchObject({ sound: 'skill' });
   });
 
-  it('asks the room which general died', () => {
-    const [cue] = logEventCues({ type: 'Death', to: 3 }, CTX);
-    expect(cue).toMatchObject({ kind: 'voice', bank: 'death', names: ['caocao'] });
+  it('takes the rank of a skill from the room, not from the message', () => {
+    // `PlaySkillSound` does not say whether a skill is 锁定技; nothing on that
+    // message could. `Animate{InvokeSkill}` does.
+    const locked: CueContext = { ...CTX, skillRank: () => 'compulsory' };
+    expect(voice(logEventCues({ type: 'PlaySkillSound', name: 'wusheng', i: -1, general: 'guanyu' }, locked)).rank)
+      .toBe('compulsory');
+    expect(RANK_ORDER.compulsory).toBeGreaterThan(RANK_ORDER.skill);
+    expect(RANK_ORDER.death).toBeGreaterThan(RANK_ORDER.ult);
+  });
+
+  it('asks the room which general died, and lands the blow before the words', () => {
+    const cues = logEventCues({ type: 'Death', to: 3 }, CTX);
+    const blow = sound(cues);
+    const last = voice(cues);
+    expect(blow).toMatchObject({ sound: 'death', at: 'cut' });
+    expect(last).toMatchObject({ bank: 'death', names: ['caocao'], general: 'caocao', rank: 'death', at: 'shatter' });
+    // `spectacle/budget.ts` publishes those two phases for exactly this: the cut
+    // is 105 ms into a slay and the portrait breaks at 245.
+    expect(['cut', 'shatter', 'seal']).toContain(blow.at);
   });
 
   it('is silent for a LogEvent that is not a sound', () => {
     expect(logEventCues({ type: 'Judge' })).toEqual([]);
     expect(logEventCues(null)).toEqual([]);
     expect(logEventCues({})).toEqual([]);
+    expect(logEventCues({ type: 'PlaySkillSound', name: '' })).toEqual([]);
   });
 });
 
@@ -171,6 +228,43 @@ describe('drawing and judging, which the Qt client never played', () => {
     expect(animateCues({ type: 'Emotion', player: 2, emotion: 'judgegood' })).toEqual([]);
     expect(animateCues({ type: 'Indicate', from: 1, to: [[2]] })).toEqual([]);
   });
+
+  it('leaves the judgement synthesised, because the engine has no recording for it', () => {
+    // The one moment in a game upstream plays nothing for. Two notes, up or
+    // down, and no `sample` to reach for.
+    expect(sound(animateCues({ type: 'Emotion', emotion: 'judgegood', is_card: true })).sample).toBeUndefined();
+  });
+});
+
+/* -------------------------------------------------------------- presents */
+
+describe('a flower crossing the table', () => {
+  it('is two sounds, at the two moments the animation draws', () => {
+    // `Flower.qml` fires `fly` on launch and `flower` on impact, and
+    // `Presents.tsx`'s own `Shape` says a flower is thrown at once and lands
+    // 380 ms later.
+    const cues = presentCues({ kind: 'Flower' }) as readonly SoundCue[];
+    expect(cues).toHaveLength(2);
+    expect(cues[0].at).toBe(0);
+    expect(cues[0].pick).toEqual(['audio/system/fly1', 'audio/system/fly2']);
+    expect(cues[1].at).toBe(380);
+    expect(cues[1].pick).toEqual(['audio/system/flower1', 'audio/system/flower2']);
+    // Under the table, never over it.
+    expect(cues[1].gain).toBeLessThan(0.5);
+  });
+
+  it('gives an egg its wind-up', () => {
+    // `EGG` hangs for 460 ms before it moves and lands 520 ms after that.
+    const cues = presentCues({ kind: 'Egg' }) as readonly SoundCue[];
+    expect(cues[0].at).toBe(460);
+    expect(cues[1].at).toBe(980);
+    expect(cues[1].pick).toEqual(['audio/system/egg1', 'audio/system/egg2']);
+  });
+
+  it('says nothing about a payload it does not recognise', () => {
+    expect(presentCues({})).toEqual([]);
+    expect(presentCues(null)).toEqual([]);
+  });
 });
 
 /* ------------------------------------------------------------- game start */
@@ -179,23 +273,38 @@ describe('the ends of the game', () => {
   it('starts the table music with the game', () => {
     const cues = cueFor('StartGame', null);
     expect(cues.some((c) => c.kind === 'music' && c.scene === 'table')).toBe(true);
-    expect(sound(cues).sound).toBe('gamestart');
+    expect(sound(cues)).toMatchObject({ sound: 'gamestart', sample: 'audio/system/gamestart' });
   });
 
   it('tells a win from a loss the way GameOverBox does', () => {
     // `GameOverBox.qml:180` — `winner.split("+").includes(role)`.
-    const asLoyalist: CueContext = { general: () => '', myRole: () => 'loyalist' };
+    const asLoyalist: CueContext = { ...CTX, myGeneral: () => '' };
     expect(sound(gameOverCues('lord+loyalist', asLoyalist)).sound).toBe('win');
     expect(sound(gameOverCues('rebel', asLoyalist)).sound).toBe('lose');
+  });
+
+  it('lets the viewer\'s own general say their victory line, after the fanfare', () => {
+    // `packages/mobile/audio/win/` holds 45 of these and the Qt client reaches
+    // them from a chat channel this build does not have. `GameOver` plus the
+    // room is enough.
+    const cue = voice(gameOverCues('lord+loyalist', CTX));
+    expect(cue).toMatchObject({ bank: 'win', names: ['liubei'], rank: 'win' });
+    expect(cue.at).toBe(1500);
+    // No synthesised stand-in: a shout under a win screen reads as a bug.
+    expect(cue.then.gain).toBe(0);
+  });
+
+  it('gives a loser no victory line', () => {
+    expect(gameOverCues('rebel', CTX).some((c) => c.kind === 'voice')).toBe(false);
   });
 
   it('gives a draw and an observer no sting, only the music standing down', () => {
     // Upstream plays `audio/system/draw` on a drawn game, which is the *card*
     // draw sound. Not copied.
-    const drawn = gameOverCues('', { general: () => '', myRole: () => 'rebel' });
+    const drawn = gameOverCues('', { ...CTX, myRole: () => 'rebel' });
     expect(drawn).toEqual([{ kind: 'music', scene: 'over' }]);
 
-    const observing = gameOverCues('lord', { general: () => '', myRole: () => '' });
+    const observing = gameOverCues('lord', { ...CTX, myRole: () => '', myGeneral: () => '' });
     expect(observing).toEqual([{ kind: 'music', scene: 'over' }]);
   });
 });
@@ -223,17 +332,29 @@ describe('what the player chose, and where it is kept', () => {
     vi.restoreAllMocks();
   });
 
-  it('starts silent', () => {
+  it('starts silent, and starts with the generals up', () => {
+    // Silence is an autoplay decision and stays. The voice level is a taste
+    // decision and the recordings are the point of the build.
     expect(readSettings().enabled).toBe(false);
+    expect(readSettings().voice).toBeGreaterThan(0.5);
     expect(readSettings()).toEqual(DEFAULT_SETTINGS);
   });
 
   it('remembers a choice and clamps a nonsense one', () => {
-    writeSettings({ enabled: true, music: 0.3, effects: 0.9, voice: false });
-    expect(readSettings()).toEqual({ enabled: true, music: 0.3, effects: 0.9, voice: false });
+    writeSettings({ enabled: true, music: 0.3, effects: 0.9, voice: 0.4 });
+    expect(readSettings()).toEqual({ enabled: true, music: 0.3, effects: 0.9, voice: 0.4 });
 
     globalThis.localStorage.setItem('fk.audio', JSON.stringify({ enabled: true, music: 40, effects: -3 }));
     expect(readSettings()).toMatchObject({ enabled: true, music: 1, effects: 0 });
+  });
+
+  it('migrates the checkbox the previous build wrote', () => {
+    // `voice` was a boolean while there was nothing to fade. Somebody who had
+    // turned it on keeps it on; somebody who had turned it off keeps it off.
+    globalThis.localStorage.setItem('fk.audio', JSON.stringify({ enabled: true, voice: true }));
+    expect(readSettings().voice).toBe(DEFAULT_SETTINGS.voice);
+    globalThis.localStorage.setItem('fk.audio', JSON.stringify({ enabled: true, voice: false }));
+    expect(readSettings().voice).toBe(0);
   });
 
   it('survives a corrupt blob and a localStorage that throws on every access', () => {
@@ -292,14 +413,31 @@ describe('the bus, on a stream with no speakers attached', () => {
     expect(audio.log).toHaveLength(0);
   });
 
-  it('falls through to the synthesised patch while voices are off', () => {
+  it('remembers that a skill is 锁定技 and says so on its next line', () => {
+    // `events/skill.lua:81-82` sends `broadcastSkillInvoke` and
+    // `notifySkillInvoked` back to back, so the `Animate` that carries
+    // `compulsory` lands in the same flush as the line it belongs to.
     const audio = new RoomAudio();
-    expect(audio.get().voice).toBe(false);
+    const store = fakeStore();
+    audio.attach(store);
+    audio.notify('Animate', { type: 'InvokeSkill', name: 'wusheng', compulsory: true });
+    audio.notify('Animate', { type: 'InvokeUltSkill', name: 'longdan' });
+    store.onSound?.({ type: 'PlaySkillSound', name: 'wusheng', i: -1, general: 'guanyu' });
+    store.onSound?.({ type: 'PlaySkillSound', name: 'longdan', i: -1, general: 'zhaoyun' });
+    store.onSound?.({ type: 'PlaySkillSound', name: 'rende', i: -1, general: 'liubei' });
+    // Nothing is audible in node; what is asserted is that the bus derived a
+    // cue for each and did not throw on the `Animate`s.
+    expect(audio.log.filter((r) => r.cue === 'voice/skill')).toHaveLength(3);
+  });
+
+  it('falls through to the synthesised patch when the voice fader is down', () => {
+    const audio = new RoomAudio();
+    audio.set({ voice: 0 });
     const store = fakeStore();
     audio.attach(store);
     store.onSound?.({ type: 'PlaySkillSound', name: 'rende', i: -1, general: 'liubei', deputy: '' });
-    // Logged as the voice cue it was; resolved as the bell it became, which in
-    // this build is every time.
+    // Logged as the voice cue it was; resolved as whatever it became — which
+    // with no runtime built is nothing at all.
     expect(audio.log.at(-1)?.cue).toBe('voice/skill');
   });
 
@@ -318,7 +456,7 @@ describe('the bus, on a stream with no speakers attached', () => {
     const store = fakeStore();
     audio.attach(store);
     store.onSound?.({ type: 'Death', to: 3 });
-    expect(audio.log.at(-1)).toMatchObject({ cue: 'voice/death' });
+    expect(audio.log.map((r) => r.cue)).toEqual(['death', 'voice/death']);
   });
 
   it('is silent, and does not throw, on a payload shaped like nothing', () => {
@@ -328,6 +466,23 @@ describe('the bus, on a stream with no speakers attached', () => {
     expect(() => audio.notify('Animate', undefined)).not.toThrow();
     expect(() => audio.notify('SomethingNew', { a: 1 })).not.toThrow();
     expect(audio.log).toHaveLength(0);
+  });
+
+  it('recognises a replay and refuses to play a whole game in one tick', () => {
+    /**
+     * `RoomView` subscribes to `onNotifyUI` and the client hands a new
+     * subscriber everything it has retained, so remounting mid-game replays
+     * every `LogEvent` synchronously. The animation lane has `anim.replaying`
+     * for this; the bus has no such flag and cannot be given one from inside
+     * this lane, so it recognises the shape instead. Real play cannot produce
+     * this: the engine paces at 800 ms and yields between beats.
+     */
+    const audio = new RoomAudio();
+    const store = fakeStore();
+    audio.attach(store);
+    for (let i = 0; i < 120; i += 1) store.onSound?.({ type: 'LoseHP' });
+    const resolutions = audio.log.map((r) => r.how);
+    expect(resolutions.filter((h) => h === 'replay').length).toBeGreaterThan(60);
   });
 
   it('hands React the same snapshot until something actually changes', () => {

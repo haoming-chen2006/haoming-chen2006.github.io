@@ -18,8 +18,9 @@
  * log shorter while it is open, which is what the QML does and what the log's
  * own `overflow-y: auto` is for.
  *
- * Open state lives in the panel because the two halves live in different parents
- * — the grid above the form, the button inside it.
+ * The two halves are separate components because they live in different parents
+ * — the grid above the message form, the button inside it — so `ChatComposer`
+ * holds the open state between them.
  *
  * WHY BOTH BUTTONS REFUSE FOCUS. `ChatBox.qml` inserts at `chatEdit.cursorPosition`,
  * and the web equivalent reads `input.selectionStart` — so the message box wants

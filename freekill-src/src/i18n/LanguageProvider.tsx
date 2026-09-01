@@ -92,10 +92,36 @@ export function useLanguageState(): [Language, (lang: Language) => void] {
  *   const t = useT();
  *   <button>{t('waiting.start')}</button>
  *   <p>{t('waiting.seated', { seated, capacity })}</p>
+ *
+ * THE RETURNED FUNCTION HAS A STABLE IDENTITY, AND THAT IS THE POINT. It reads
+ * the language when it is *called*, not when it is created — the same rule
+ * `withLanguage` follows for the room's `LuaClient`, and for the same reason.
+ *
+ * A `t` whose identity moved on every toggle was a live bug, not a theoretical
+ * one. `useT` subscribes to the language, so the component re-renders on a
+ * switch either way; the only thing a fresh identity ever did was invalidate
+ * whatever hook listed `t` as a dependency. `RoomPage` listed it on the two
+ * effects that own the player's Lua VM and the live table, so toggling to
+ * English mid-game tore down the VM (`vm.close()` frees the wasm heap), booted
+ * a replacement that had never seen the game, and re-dealt: photos, hand, log
+ * and draw pile all to zero behind the dealing curtain, while the still-running
+ * table kept feeding the freed VM and wasmoon answered `memory access out of
+ * bounds`. Nothing about a language belongs in a VM's lifecycle, and with a
+ * stable `t` nothing about a language can reach one.
+ *
+ * The corollary for callers: `t` is no longer a signal that the language moved.
+ * A `useMemo` that *caches translated output* must depend on `useLanguage()`,
+ * not on `t`. Nothing in the tree does that today — every `t` in a dependency
+ * array is called inside the hook, never baked into a memoized string.
+ *
+ * `Pinned` is read directly rather than through `useLanguage()` so that the
+ * identity depends only on the test-only pin, which is `undefined` in the app
+ * and therefore constant for the life of the component.
  */
 export function useT(): (key: UiKey, vars?: Readonly<Record<string, string | number>>) => string {
-  const lang = useLanguage();
-  return useCallback((key, vars) => t(key, lang, vars), [lang]);
+  const pinned = useContext(Pinned);
+  useLanguage();
+  return useCallback((key, vars) => t(key, pinned ?? getLanguage(), vars), [pinned]);
 }
 
 /**

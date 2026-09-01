@@ -326,6 +326,77 @@ describe('lookup', () => {
     // is not rebuilt, so switching language mid-game keeps the table.
     expect(live.call('Translate', 'slash')).toBe('Slash');
   });
+
+  /**
+   * A VM that will not take the language is survivable and must be audible.
+   *
+   * This is the shape the live bug wore: the first call after a toggle reached
+   * a Lua VM whose wasm heap had just been freed, wasmoon threw `memory access
+   * out of bounds`, and an empty `catch` ate it — the table went blank and the
+   * page reported no exception at all. Translation must carry on, and the
+   * fault must reach both the log and the page's uncaught-error channel.
+   */
+  it('says so out loud when the VM refuses the language, and keeps translating', () => {
+    class Broken {
+      call<T>(fn: string, ...args: unknown[]): T {
+        if (fn === 'FkWebSetLanguage') throw new Error('memory access out of bounds');
+        return (zh[String(args[0])] ?? String(args[0])) as T;
+      }
+    }
+    const logged: unknown[][] = [];
+    const reported: unknown[] = [];
+    const console_ = console.error;
+    const report_ = (globalThis as { reportError?: unknown }).reportError;
+    console.error = (...a: unknown[]) => { logged.push(a); };
+    (globalThis as { reportError?: unknown }).reportError = (e: unknown) => { reported.push(e); };
+    try {
+      const en = withLanguage(new Broken(), 'en_US');
+      // The table survives: the JS-side table still answers by key, and the
+      // engine is still reachable for everything else.
+      expect(en.call('Translate', 'slash')).toBe('Slash');
+      expect(en.call('Translate', 'totally_unknown')).toBe('totally_unknown');
+      // Once, not once per call — a table makes thousands of these.
+      expect(en.call('Translate', 'slash')).toBe('Slash');
+      expect(logged).toHaveLength(1);
+      expect(String(logged[0][0])).toContain('en_US');
+      expect(reported).toHaveLength(1);
+      expect((reported[0] as Error).message).toContain('memory access out of bounds');
+    } finally {
+      console.error = console_;
+      (globalThis as { reportError?: unknown }).reportError = report_;
+    }
+  });
+
+  /** An older bundle with no such global is not a fault; it is a warning. */
+  it('only warns when the build simply has no FkWebSetLanguage', () => {
+    class Old {
+      call<T>(fn: string, ...args: unknown[]): T {
+        if (fn === 'FkWebSetLanguage') {
+          throw new Error('Lua.call(FkWebSetLanguage): no such lua function: FkWebSetLanguage');
+        }
+        return (zh[String(args[0])] ?? String(args[0])) as T;
+      }
+    }
+    const errors: unknown[][] = [];
+    const warnings: unknown[][] = [];
+    const reported: unknown[] = [];
+    const error_ = console.error;
+    const warn_ = console.warn;
+    const report_ = (globalThis as { reportError?: unknown }).reportError;
+    console.error = (...a: unknown[]) => { errors.push(a); };
+    console.warn = (...a: unknown[]) => { warnings.push(a); };
+    (globalThis as { reportError?: unknown }).reportError = (e: unknown) => { reported.push(e); };
+    try {
+      expect(withLanguage(new Old(), 'en_US').call('Translate', 'slash')).toBe('Slash');
+      expect(warnings).toHaveLength(1);
+      expect(errors).toHaveLength(0);
+      expect(reported).toHaveLength(0);
+    } finally {
+      console.error = error_;
+      console.warn = warn_;
+      (globalThis as { reportError?: unknown }).reportError = report_;
+    }
+  });
 });
 
 /* ------------------------------------------------- no new hardcoded Chinese */

@@ -85,6 +85,43 @@ export function createTranslator(lang: Language, base?: BaseTranslate): Translat
 }
 
 /**
+ * A VM that would not take the language, said out loud.
+ *
+ * Two channels because they reach different places. `console.error` puts it in
+ * the log next to whatever else the table was doing, which is where a developer
+ * reading a bug report looks. `reportError` re-raises it as an *uncaught* error
+ * without unwinding this call, so it also lands in the devtools exception list,
+ * in `window.onerror`, and in anything a headless walk reads off
+ * `Runtime.exceptionThrown` — the channel that reported `(none)` while the table
+ * was being destroyed.
+ *
+ * A missing global is the one benign case: an older bundle has no
+ * `FkWebSetLanguage`, `FKClient.call` answers `no such lua function`, and the
+ * only consequence is that a handful of Lua-built prompts stay in Chinese. That
+ * is a warning. Anything else is the VM itself failing and is an error.
+ */
+function reportVmFault(lang: Language, err: unknown): void {
+  const text = err instanceof Error ? err.message : String(err);
+  const missing = /no such lua function/i.test(text);
+  const note = missing
+    ? `[i18n] this build's client VM has no FkWebSetLanguage; prompts built inside Lua stay in the previous language (wanted ${lang})`
+    : `[i18n] the client VM failed to switch to ${lang}; prompts built inside Lua stay in the previous language`;
+  try {
+    if (missing) console.warn(note, text);
+    else console.error(note, err);
+  } catch { /* no console */ }
+  if (missing) return;
+  // Loud, but never thrown into the caller: a stale prompt is worth far less
+  // than the table this used to take down.
+  const report = (globalThis as { reportError?: (e: unknown) => void }).reportError;
+  if (typeof report === 'function') {
+    try {
+      report(err instanceof Error ? err : new Error(`${note}: ${text}`));
+    } catch { /* nothing better to do */ }
+  }
+}
+
+/**
  * The one-line adoption for the room lane.
  *
  * The room reaches translation through exactly one door — `LtkLua.tr`, which is
@@ -116,6 +153,19 @@ export function createTranslator(lang: Language, base?: BaseTranslate): Translat
  * once per change, not per call. `lua/web/client.lua` has the complete `en_US`
  * table, so switching it is safe; `Config.language` decides no rules, and the
  * authoritative host VM is a different VM entirely.
+ *
+ * AND IT NEVER SWALLOWS A VM FAULT. That push used to be a bare catch with an
+ * empty body, which is right about the consequence — a VM that would not take
+ * the language renders a few Lua-built prompts in the old one, and that is not
+ * worth a dead table — and wrong about the silence. It is the first call this
+ * layer makes after a toggle, so it is the first thing to touch a VM that has
+ * just been closed underneath us, and wasmoon answers a freed heap with
+ * `RuntimeError: memory access out of bounds`. An empty catch turned that into
+ * no evidence at all: the table went blank and the page reported no exception
+ * whatsoever. So a failure is now reported twice —
+ * `console.error` for the log, `reportError` so it also reaches
+ * `window.onerror` and the devtools exception list — and still never thrown
+ * into the caller.
  */
 export function withLanguage<C extends object>(
   client: C,
@@ -132,10 +182,15 @@ export function withLanguage<C extends object>(
             (fn: string, ...a: unknown[]) => unknown;
           const now = current();
           if (now !== vmLang) {
+            // Set before the attempt, on purpose: a VM that cannot take the
+            // language must not be asked again on every one of the thousands of
+            // `Translate` calls a table makes. One report, then carry on.
             vmLang = now;
-            // Older bundles have no such global; the VM answers with an error
-            // object and everything else carries on in Chinese.
-            try { call.call(target, 'FkWebSetLanguage', now); } catch { /* not fatal */ }
+            try {
+              call.call(target, 'FkWebSetLanguage', now);
+            } catch (err) {
+              reportVmFault(now, err);
+            }
           }
           if (fn === 'Translate') {
             const key = String(args[0] ?? '');

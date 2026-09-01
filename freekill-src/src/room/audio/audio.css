@@ -12,13 +12,19 @@
  */
 
 .fk-audio {
+  /* Top-right, not bottom-left. The bottom-left corner is where the hand's own
+     skill buttons sit, so the open panel covered the thing the player was
+     reaching for. The player can drag it from here — see `useDraggableSpot` in
+     `GameAudio.tsx`, which sets `left`/`top` inline and clears these. */
   position: fixed;
-  left: 12px;
-  bottom: 12px;
+  right: 12px;
+  top: 64px;
   z-index: 55;
   display: flex;
-  align-items: flex-end;
+  flex-direction: row-reverse;
+  align-items: flex-start;
   gap: 8px;
+  touch-action: none;
   font-size: 12px;
   color: var(--paper-dim, #cbbfae);
 }
@@ -126,6 +132,14 @@
 /* A phone has no room for a 232px panel beside a 32px button on the same row,
    and the table's own controls are already fighting for the bottom edge. */
 @media (max-width: 560px) {
-  .fk-audio { flex-direction: column-reverse; align-items: flex-start; }
+  .fk-audio { flex-direction: column; align-items: flex-end; }
   .fk-audio__panel { width: min(232px, calc(100vw - 32px)); }
 }
+
+/* The handle reads as a handle. `grab` while it is sitting there, `grabbing`
+   while it moves, and the panel loses its transition during a drag so it
+   tracks the pointer instead of easing after it. */
+.fk-audio__btn { cursor: grab; }
+.fk-audio--dragging { cursor: grabbing; user-select: none; }
+.fk-audio--dragging .fk-audio__btn { cursor: grabbing; }
+.fk-audio--dragging .fk-audio__panel { transition: none; }

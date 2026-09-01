@@ -19,7 +19,7 @@
  * play and makes 165 seconds of rotation cost a millisecond.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { SoundCue, SoundName } from '../cues';
+import type { SoundCue, SoundName, VoiceCue } from '../cues';
 
 /* ---------------------------------------------------------------- the stub */
 
@@ -324,5 +324,119 @@ describe('the rotation', () => {
     // the patch played and nothing went over the wire.
     expect(fetchSpy).not.toHaveBeenCalled();
     Reflect.deleteProperty(globalThis, 'fetch');
+  });
+});
+
+/* ------------------------------------------------- a skill that has a voice */
+
+/**
+ * What you hear when a general uses a skill.
+ *
+ * The clip is on disk but not decoded the first time it is asked for, and the
+ * cold path used to put a synthesised accent out at a third level "so the
+ * moment is not silent", with the recording chasing it a beat behind. In a
+ * game that is not punctuation, it is a chime in front of every single skill,
+ * with the general audibly starting afterwards. The user's word for it was
+ * "disturbing" — they already have the voices.
+ *
+ * So: a skill the pack recorded waits for its recording. A skill nobody
+ * recorded still gets the stand-in, because that is the case the accent was
+ * actually for, and losing it would make those skills silent.
+ */
+describe('firing a skill that has a recording', () => {
+  const skillCue = (skill: string): VoiceCue => ({
+    kind: 'voice',
+    bank: 'skill',
+    names: [`${skill}_caocao`, skill],
+    index: -1,
+    general: 'caocao',
+    rank: 'skill',
+    then: { kind: 'sound', sound: 'skill', seed: 1, tag: `skill:${skill}` },
+  });
+
+  /** A real `Bank` over a literal index — the seam `Bank.of` exists for. */
+  async function withBank(index: Record<string, unknown>) {
+    const rt = await makeRuntime();
+    const { Bank } = await import('../bank');
+    (rt as unknown as { bank: unknown }).bank = Bank.of('/audio/', index);
+    return rt;
+  }
+
+  it('plays no synthesised accent in front of a line it is about to play', async () => {
+    // `jianxiong_caocao` is in the index, so a recording exists. Nothing is
+    // decoded yet, so this is exactly the cold path.
+    const rt = await withBank({ v: 1, skill: { jianxiong_caocao: 1 }, generals: { caocao: { g: 1 } } });
+    rec.reset();
+    rt.fire(skillCue('jianxiong'));
+    // The accent was oscillators. There must be none: the recording is coming.
+    expect(rec.starts.filter((k) => k === 'osc')).toHaveLength(0);
+  });
+
+  it('still stands in for a skill nobody recorded', async () => {
+    // Not in the index — no take resolves, so this goes through `standIn`,
+    // which is the path that must keep making a noise.
+    const rt = await withBank({ v: 1, skill: { jianxiong_caocao: 1 }, generals: { caocao: { g: 1 } } });
+    rec.reset();
+    rt.fire(skillCue('mobile__nosuchskill'));
+    expect(rec.starts.filter((k) => k === 'osc').length).toBeGreaterThan(0);
+  });
+});
+
+/* ------------------------------------------------------------- the music */
+
+/**
+ * Which track the player actually hears.
+ *
+ * The pack ships one real recording, `audio/system/bgm`. It used to be a single
+ * entry in a pool of three synthesised beds, and only on the table — so the
+ * lobby never played it at all and the table played it roughly one time in
+ * four. Three quarters of the music was a generated bed standing in for a
+ * recording sitting right there in the pack, which is why it sounded wrong
+ * rather than merely repetitive.
+ *
+ * The beds are not deleted: a build with no pack still needs music, and that is
+ * what they were written for.
+ */
+describe('choosing the background music', () => {
+  async function withBank(index: Record<string, unknown>) {
+    const rt = await makeRuntime();
+    const { Bank } = await import('../bank');
+    (rt as unknown as { bank: unknown }).bank = Bank.of('/audio/', index);
+    return rt;
+  }
+  const PACK = { v: 1, files: { 'system/bgm': 11093 } };
+  /**
+   * What the runtime *chooses*, not what it manages to play: a clip has to be
+   * fetched and decoded before it can sound, and there is no network here. The
+   * choice is the thing that changed and the thing that was wrong.
+   */
+  const track = (rt: unknown, scene: string) => {
+    const r = rt as { scene: string; pickTrack(): { id: string } | null };
+    r.scene = scene;
+    return r.pickTrack()?.id ?? null;
+  };
+
+  it('plays the real recording on the table, not a generated bed', async () => {
+    const rt = await withBank(PACK);
+    rt.setVolumes(0.8, 0.8, 0.8);
+    expect(track(rt, 'table')).toBe('clip:audio/system/bgm');
+  });
+
+  it('plays it in the lobby too, where it never used to reach', async () => {
+    const rt = await withBank(PACK);
+    rt.setVolumes(0.8, 0.8, 0.8);
+    expect(track(rt, 'lobby')).toBe('clip:audio/system/bgm');
+  });
+
+  it('falls back to a synthesised bed when there is no pack', async () => {
+    const rt = await makeRuntime();
+    rt.setVolumes(0.8, 0.8, 0.8);
+    expect(track(rt, 'table')).toMatch(/^bed:/);
+  });
+
+  it('plays nothing once the game is over', async () => {
+    const rt = await withBank(PACK);
+    rt.setVolumes(0.8, 0.8, 0.8);
+    expect(track(rt, 'over')).toBeNull();
   });
 });

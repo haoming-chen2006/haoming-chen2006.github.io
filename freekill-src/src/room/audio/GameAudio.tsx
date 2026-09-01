@@ -25,7 +25,7 @@
  * having to reach into the shell for it. The engine refines it from inside the
  * game: `StartGame` and `GameOver` move the scene through `RoomAudio` directly.
  */
-import { useCallback, useEffect, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { useLanguage } from '../../i18n';
 import type { Language } from '../../i18n';
 import { roomAudio } from './bus';
@@ -46,6 +46,92 @@ function sceneFromHash(hash: string): 'lobby' | 'table' {
   return /^#\/room\//.test(hash) ? 'table' : 'lobby';
 }
 
+
+/**
+ * Where the control sits, and the fact that the player owns it.
+ *
+ * It used to be pinned bottom-left, which is where the hand's own skill buttons
+ * live — so on a wide table the panel sat on top of the thing you were trying
+ * to click. Top-right is out of the way of both the hand and the seat ring, and
+ * because "out of the way" depends on the table, the player can drag it.
+ *
+ * Stored per browser, in viewport-relative terms so a window resize does not
+ * strand it off-screen, and clamped on read for the case where it does anyway
+ * (a smaller monitor, a restored window). `null` means "wherever the stylesheet
+ * puts it", which keeps the default in CSS rather than duplicating it here.
+ */
+const SPOT_KEY = 'fk.audio.spot';
+
+function useDraggableSpot(): {
+  spot: { x: number; y: number } | null;
+  onGrab: (e: React.PointerEvent) => void;
+  dragging: boolean;
+} {
+  const [spot, setSpot] = useState<{ x: number; y: number } | null>(() => {
+    try {
+      const raw = localStorage.getItem(SPOT_KEY);
+      if (!raw) return null;
+      const v = JSON.parse(raw) as { x: number; y: number };
+      return typeof v?.x === 'number' && typeof v?.y === 'number' ? v : null;
+    } catch { return null; }
+  });
+  const [dragging, setDragging] = useState(false);
+  const from = useRef<{ dx: number; dy: number } | null>(null);
+
+  const onGrab = useCallback((e: React.PointerEvent) => {
+    // Only a plain left-button drag on the handle itself; the button's own
+    // click still has to work, so the move threshold is enforced below rather
+    // than by swallowing the event here.
+    if (e.button !== 0) return;
+    const box = (e.currentTarget as HTMLElement).closest('.fk-audio') as HTMLElement | null;
+    if (!box) return;
+    const r = box.getBoundingClientRect();
+    from.current = { dx: e.clientX - r.left, dy: e.clientY - r.top };
+
+    let moved = false;
+    const clamp = (x: number, y: number) => ({
+      x: Math.min(Math.max(x, 4), Math.max(4, window.innerWidth - r.width - 4)),
+      y: Math.min(Math.max(y, 4), Math.max(4, window.innerHeight - r.height - 4)),
+    });
+    const move = (ev: PointerEvent) => {
+      const g = from.current;
+      if (!g) return;
+      // A few pixels of slop, so a click that trembles is still a click.
+      if (!moved && Math.abs(ev.clientX - r.left - g.dx) + Math.abs(ev.clientY - r.top - g.dy) < 4) return;
+      moved = true;
+      setDragging(true);
+      setSpot(clamp(ev.clientX - g.dx, ev.clientY - g.dy));
+    };
+    const up = () => {
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+      from.current = null;
+      setDragging(false);
+      if (moved) {
+        setSpot((s) => {
+          try { if (s) localStorage.setItem(SPOT_KEY, JSON.stringify(s)); } catch { /* private mode */ }
+          return s;
+        });
+      }
+    };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+  }, []);
+
+  // A window that shrinks can leave a stored spot off-screen, and a control you
+  // cannot reach is worse than one in the wrong corner.
+  useEffect(() => {
+    const onResize = () => setSpot((s) => (s ? {
+      x: Math.min(s.x, Math.max(4, window.innerWidth - 60)),
+      y: Math.min(s.y, Math.max(4, window.innerHeight - 60)),
+    } : s));
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+
+  return { spot, onGrab, dragging };
+}
+
 export function GameAudio() {
   const lang = useLanguage();
   const status = useSyncExternalStore(roomAudio.subscribe, () => roomAudio.status(), () => roomAudio.status());
@@ -64,12 +150,19 @@ export function GameAudio() {
   }, []);
 
   const toggle = useCallback(() => { roomAudio.set({ enabled: !enabled }); }, [enabled]);
+  const { spot, onGrab, dragging } = useDraggableSpot();
 
   return (
-    <div className={`fk-audio${enabled ? ' fk-audio--on' : ''}`}>
+    <div
+      className={`fk-audio${enabled ? ' fk-audio--on' : ''}${dragging ? ' fk-audio--dragging' : ''}`}
+      // An explicit spot overrides the stylesheet's corner. `right`/`bottom` are
+      // cleared so the two systems cannot both position it at once.
+      style={spot ? { left: spot.x, top: spot.y, right: 'auto', bottom: 'auto' } : undefined}
+    >
       <button
         type="button"
         className="fk-audio__btn"
+        onPointerDown={onGrab}
         onClick={toggle}
         aria-pressed={enabled}
         title={label(lang, enabled ? 'audio.off' : 'audio.on')}

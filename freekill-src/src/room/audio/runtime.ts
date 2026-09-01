@@ -97,6 +97,14 @@ type Track =
   | { readonly kind: 'bed'; readonly id: string; readonly spec: BedSpec }
   | { readonly kind: 'clip'; readonly id: string; readonly clip: Clip };
 
+/**
+ * The synthesised beds, per scene — the FALLBACK, not the rotation.
+ *
+ * These were written for a build that shipped no audio at all, and for that
+ * build they were the whole answer. Now that the pack is here they only play
+ * where the recording cannot: no pack, or the music fader at zero.
+ * `pickTrack` reaches for `bgm()` first.
+ */
 const PLAYLIST: Readonly<Record<Scene, readonly string[]>> = {
   lobby: ['courtyard', 'rain'],
   table: ['march', 'embers', 'courtyard'],
@@ -277,6 +285,14 @@ export class AudioRuntime {
       .then((b) => {
         this.bank = b;
         if (b) this.prefetch(b.warm());
+        // The index arrives after the first `setScene` — sound is turned on,
+        // music starts, and only then does the pack land. Without this the
+        // opening bed held the channel until its own rotation came round
+        // minutes later, so "the music" was a generated bed for most of a
+        // session even though the recording was already downloaded. Hand over
+        // as soon as there is something real to hand over to; `rotate`
+        // crossfades, so it is a change of music rather than a cut.
+        if (b && this.current?.track.kind === 'bed' && this.bgm()) this.rotate(true);
         return b;
       })
       .catch(() => null);
@@ -339,16 +355,21 @@ export class AudioRuntime {
    * turning sound on and staying put gave silence.
    */
   setScene(scene: Scene): void {
-    const nothingToPlay = PLAYLIST[scene].length === 0 && !(scene === 'table' && this.bgm());
+    const nothingToPlay = PLAYLIST[scene].length === 0 && !this.bgm();
     if (scene === this.scene && (this.current || nothingToPlay)) return;
     this.scene = scene;
-    if (scene !== 'table') this.music = null;
+    // The decoded buffer used to be dropped on leaving the table, because the
+    // table was the only scene that played it. It is 20 MB decoded but it is
+    // also now the music everywhere, and re-decoding it on every trip between
+    // lobby and table is a stall for no gain.
+    if (scene === 'over') this.music = null;
     this.rotate(true);
   }
 
-  /** The engine's own bed, when the pack has it and the fader is up. */
+  /** The game's own recording, when the pack has it and the fader is up. */
   private bgm(): Clip | undefined {
     if (this.musicLevel <= 0.02) return undefined;
+    if (this.scene === 'over') return undefined;
     return this.bank?.clip('audio/system/bgm');
   }
 
@@ -409,17 +430,23 @@ export class AudioRuntime {
 
   /** Shuffle, not cycle — but never the same track twice running. */
   private pickTrack(): Track | null {
+    // The soundtrack, wherever there is music at all.
+    //
+    // This used to be one entry in a pool of three synthesised beds, and only
+    // on the table -- so the lobby never played it and the table played it
+    // roughly one time in four. Three quarters of what a player heard was a
+    // generated bed standing in for a recording that was sitting right there
+    // in the pack, which is why the music sounded wrong rather than merely
+    // repetitive. The pack ships exactly one track, so this is a loop, and a
+    // loop of the real thing is what the game itself plays.
+    const clip = this.bgm();
+    if (clip) return { kind: 'clip', id: `clip:${clip.key}`, clip };
+
     const names = PLAYLIST[this.scene];
     const pool: Track[] = [];
     for (const name of names) {
       const spec = BEDS.find((b) => b.name === name);
       if (spec) pool.push({ kind: 'bed', id: `bed:${name}`, spec });
-    }
-    // The game's own bed joins the table's rotation, crossfading with the
-    // generated ones so a session is never the same 110 seconds twice running.
-    if (this.scene === 'table') {
-      const clip = this.bgm();
-      if (clip) pool.push({ kind: 'clip', id: `clip:${clip.key}`, clip });
     }
     if (!pool.length) return null;
     const fresh = pool.filter((t) => t.id !== this.lastTrackId);
@@ -575,10 +602,14 @@ export class AudioRuntime {
       return `voice:${clip.key}`;
     }
 
-    // Cold. The accent goes out now so the moment is not silent, and the line
-    // chases it. `then` at a third of its level: it is a footstep in front of a
-    // sentence, not a chime competing with one.
-    this.synth({ ...cue.then, gain: (cue.then.gain ?? 1) * 0.34 }, delay);
+    // Cold: the recording exists but is not decoded yet, so the line chases in
+    // a moment. It used to go out behind a synthesised accent at a third level,
+    // on the theory that the moment should not be silent. In a game it is not a
+    // footstep in front of a sentence, it is a chime before every single skill
+    // — and with the general actually speaking a beat later it reads as a bug,
+    // not as punctuation. A skill that has a voice now waits for its voice.
+    // `standIn` below still covers the skills nobody recorded, which is the
+    // case the accent was really for.
     const sent = this.ctx.currentTime;
     void this.load(clip).then((late) => {
       if (!late) return;

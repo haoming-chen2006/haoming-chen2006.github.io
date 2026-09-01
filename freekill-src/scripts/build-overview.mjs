@@ -9,11 +9,38 @@
 // This is the real Lua data, not a hand-maintained copy. At runtime the overview
 // page prefers a live `LuaClient` when one is booted and falls back to this file
 // otherwise; either way, no card or general fact is authored in TypeScript.
-import { writeFileSync, mkdirSync } from 'node:fs';
+import { writeFileSync, mkdirSync, readdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createLuaVm } from '../src/engine/vm.ts';
 import { buildBundle } from './build-lua-bundle.mjs';
+/**
+ * Every English key `src/i18n/engine` covers, read off the directory.
+ *
+ * Not `../src/i18n/engine/index.ts`: this script runs under plain node, whose
+ * type-stripping resolves `import type` but not the extensionless runtime
+ * imports index.ts uses. Listing the tables by hand instead is what went wrong
+ * once already — the list said upstream/override/authored, the modes lane added
+ * `modes.ts`, and this filter silently stopped recognising a whole table.
+ *
+ * So it globs. Only MEMBERSHIP is asked of this set — "does src/i18n/engine
+ * already cover this key" — so merge order is irrelevant and a new table needs
+ * no edit here. `scripts/build.test.ts` asserts the result really is disjoint
+ * from the real `EN_US`, which is the check that catches a table this misses.
+ */
+async function engineEnglishKeys() {
+  const dir = join(WEB_ROOT, 'src', 'i18n', 'engine');
+  const keys = new Set();
+  for (const name of readdirSync(dir).sort()) {
+    if (!name.endsWith('.ts') || name === 'index.ts') continue;
+    const mod = await import(pathToFileURL(join(dir, name)).href);
+    for (const [expName, table] of Object.entries(mod)) {
+      if (!expName.endsWith('_EN_US') || typeof table !== 'object' || !table) continue;
+      for (const k of Object.keys(table)) keys.add(k);
+    }
+  }
+  return keys;
+}
 
 const here = dirname(fileURLToPath(import.meta.url));
 const WEB_ROOT = join(here, '..');
@@ -52,7 +79,22 @@ local function decode(s)  -- client_util returns json strings; re-parse via load
   return s
 end
 
-local out = { generals = {}, cards = {}, modes = {}, packs = { general = {}, card = {} }, translations = {} }
+local out = { generals = {}, cards = {}, modes = {}, packs = { general = {}, card = {} },
+              translations = {}, translationsEn = {} }
+
+-- 只留真的是英文的那些。packages/mobile/i18n/en_US.lua 往 en_US 表里塞了 452 个
+-- key，其中只有 22 个是英文 —— 剩下的值原样是中文。照单全收会让「英文」页面
+-- 看起来在翻，其实没翻，比直接显示中文更糟。
+local function isEnglish(s)
+  if type(s) ~= "string" or s == "" then return false end
+  for _, c in utf8.codes(s) do
+    if (c >= 0x3400 and c <= 0x4DBF) or (c >= 0x4E00 and c <= 0x9FFF)
+      or (c >= 0xF900 and c <= 0xFAFF) or (c >= 0x3040 and c <= 0x30FF) then
+      return false
+    end
+  end
+  return true
+end
 
 -- The overview renders engine keys, not baked strings: the page has to be able
 -- to re-render in another language without another build. So every key it looks
@@ -63,6 +105,10 @@ local function put(k)
   if type(k) ~= 'string' or k == '' then return end
   local v = Fk:translate(k)
   if v ~= k then out.translations[k] = v end
+  -- 上游自己写下的英文，按 key 记一份。src/i18n/engine 覆盖标准包，手杀包只有
+  -- 22 个 key 有真英文（武将名居多）；能捡一个是一个，捡不到就还是中文。
+  local en = Fk:translate(k, 'en_US')
+  if en ~= k and en ~= v and isEnglish(en) then out.translationsEn[k] = en end
 end
 
 -- Generals, by package, with the detail payload the overview page shows.
@@ -81,6 +127,9 @@ for _, pack in ipairs(Fk.package_names) do
         out.generals[#out.generals + 1] = {
           name = g.name,
           pack = pack,
+          -- Portraits live under the *extension* directory, not the package
+          -- one: mobile's ten sub-packages all draw from packages/mobile/image.
+          extension = p.extensionName or pack,
           kingdom = g.kingdom,
           hp = g.hp,
           maxHp = g.maxHp,
@@ -168,13 +217,27 @@ export async function buildOverview({ quiet = false } = {}) {
   const vm = await createLuaVm(await buildBundle(), { logLevels: new Set(['error']) });
   vm.lua.doStringSync(`dofile('lua/web/client.lua')`);
   if (vm.lua.doStringSync(`return FKClient.boot()`) !== true) throw new Error('FKClient.boot() failed');
-  const json = vm.lua.doStringSync(EXTRACT);
-  const data = JSON.parse(json);
+  const data = JSON.parse(vm.lua.doStringSync(EXTRACT));
+
+  // Drop the upstream English we already have a better copy of. `src/i18n/engine`
+  // is the first tier the page consults, so a key it covers is dead weight in the
+  // payload — and it is nearly all of them: 260 of 278 keys, 25 KB, on the
+  // critical path, to say "Cao Cao" twice. What survives is the 18 keys only
+  // upstream has, which is 481 bytes.
+  const covered = await engineEnglishKeys();
+  const before = Object.keys(data.translationsEn).length;
+  for (const k of Object.keys(data.translationsEn)) {
+    if (covered.has(k)) delete data.translationsEn[k];
+  }
+  const json = JSON.stringify(data);
+
   mkdirSync(join(WEB_ROOT, 'public'), { recursive: true });
   writeFileSync(join(WEB_ROOT, 'public', 'overview.json'), json);
   if (!quiet) {
     console.log(`overview: ${data.generals.length} generals, ${data.cards.length} cards, ` +
       `${data.modes.length} modes, ${(json.length / 1024).toFixed(0)} KB`);
+    console.log(`  upstream en_US kept: ${Object.keys(data.translationsEn).length} of ${before} ` +
+      `(the rest are already in src/i18n/engine)`);
   }
   vm.close();
   return data;

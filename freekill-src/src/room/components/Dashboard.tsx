@@ -1,7 +1,11 @@
 /**
- * The viewer's own half of the table: skills, hand, and the control row.
+ * The viewer's own half of the table: their skills and their hand.
  *
  * `Fk/Components/LunarLTK/Dashboard.qml` plus `SkillArea.qml` and `HandcardArea.qml`.
+ *
+ * The prompt and the OK/Cancel row used to live here as a third column down the
+ * right-hand edge. They are now a full-width strip directly above the hand —
+ * see `ConfirmBar.tsx`, which is where the Qt client puts them too.
  *
  * Everything clickable here is clickable because the scene said so. `enabled`
  * on a `CardItem` is the only reason a card can be picked; `enabled` on
@@ -9,26 +13,19 @@
  * looks at a card, a target or a skill and decides anything.
  */
 import { memo } from 'react';
-import type { ItemData } from '../../contract/scene';
-import { fillArgs } from '../ltk/prompt';
-import { useRoom, useRoomState, useScene, usePrompt } from '../RoomContext';
+import { useRoom, useRoomState, useScene } from '../RoomContext';
 import { CardItem, cls } from './CardItem';
-import { InteractionWidget } from './Interaction';
 
 export const Dashboard = memo(function Dashboard() {
   const state = useRoomState();
   const scene = useScene();
   const { lua, mode } = useRoom();
-  const prompt = usePrompt();
 
   const meId = state.selfId;
   const me = meId == null ? undefined : state.players[meId];
   const hand = meId == null ? [] : (state.hands[meId] ?? []);
   const cardItems = scene.items.CardItem ?? {};
   const skillItems = scene.items.SkillButton ?? {};
-  const buttons = scene.items.Button ?? {};
-  const interaction = scene.items.Interaction?.['1'];
-  const specialSkills = scene.items.SpecialSkills?.['1'] as (ItemData & { skills?: string[] }) | undefined;
   const interactive = mode === 'play' && scene.active;
 
   /**
@@ -45,15 +42,6 @@ export const Dashboard = memo(function Dashboard() {
   const pileCards = (scene.created.CardItem ?? [])
     .map(Number)
     .filter((cid) => Number.isFinite(cid) && !hand.includes(cid));
-
-  // `#AskForSkillInvoke` / `#AskForUseCard` / `#AskForResponseCard` when the
-  // scene sent no prompt of its own — see `PendingRequest.promptArg`.
-  const req = state.request;
-  const promptText = scene.prompt
-    ? prompt(scene.prompt)
-    : req.kind === 'scene' && req.promptArg
-      ? fillArgs(lua.tr(`#${req.command}`), lua.tr(req.promptArg))
-      : '';
 
   const clickCard = (cid: number, selected: boolean) => {
     lua.interact('CardItem', cid, 'click', { selected, autoTarget: false });
@@ -128,57 +116,9 @@ export const Dashboard = memo(function Dashboard() {
         ))}
       </div>
 
-      <div className="fk-controls">
-        <div className="fk-prompt">{promptText}</div>
-
-        {specialSkills?.skills?.length ? (
-          <div className="fk-interaction">
-            {specialSkills.skills.map((s, i) => (
-              <button
-                type="button"
-                key={s}
-                className={cls('fk-chip', i === 0 && 'fk-chip--on')}
-                onClick={() => lua.interact('SpecialSkills', '1', 'click', s)}
-              >{lua.tr(s)}</button>
-            ))}
-          </div>
-        ) : null}
-
-        {interaction ? <InteractionWidget item={interaction} /> : null}
-
-        {/* `Room.qml:487-519`: OK and Cancel stand there for as long as the
-            request does, lit or not, so the player can see that a confirmation
-            step exists before they have earned it. End appears only while the
-            engine says it may be pressed. An absent item is a button the scene
-            never had cause to mention — which means "not available", not "not
-            there": before this, OK popped into existence the instant it lit up
-            and the control row jumped under the cursor. */}
-        <div className="fk-buttons">
-          <ControlButton id="OK" label="OK" item={buttons.OK ?? { id: 'OK' }} shown={interactive} primary interactive={interactive} />
-          <ControlButton id="Cancel" label="Cancel" item={buttons.Cancel ?? { id: 'Cancel' }} shown={interactive} interactive={interactive} />
-          <ControlButton id="End" label="End" item={buttons.End ?? { id: 'End' }} shown={interactive && buttons.End?.enabled === true} interactive={interactive} />
-        </div>
-      </div>
     </div>
   );
 });
-
-function ControlButton(
-  { id, label, item, shown, primary, interactive }:
-  { id: string; label: string; item: ItemData; shown: boolean; primary?: boolean; interactive: boolean },
-) {
-  const { lua } = useRoom();
-  if (!shown) return null;
-  const enabled = item.enabled === true && interactive;
-  return (
-    <button
-      type="button"
-      className={cls('fk-btn', primary && 'fk-btn--primary')}
-      disabled={!enabled}
-      onClick={() => lua.interact('Button', id, 'click')}
-    >{lua.tr(label)}</button>
-  );
-}
 
 /** `ui_data.footnote` on an expanded card names the pile it came from — `$Equip`,
  *  a private pile's name, a skill's name — and `Dashboard.qml:172` prints it

@@ -111,6 +111,15 @@ export interface AdvanceResult {
   /** Connections the room is now waiting on. Empty means it finished. */
   waitingOn: number[];
   /**
+   * Milliseconds of animation delay the room asked for across this advance.
+   *
+   * The same number `ResumeResult.delayMs` carries, summed. A headless caller
+   * ignores it and the clock jumps by it; a live one may spend it in wall time
+   * instead, which is what turns a bot's turn into something a person can
+   * watch. Either way it is the engine's own request, not the driver's guess.
+   */
+  delayMs: number;
+  /**
    * Why the loop stopped. `budget` and `log` are ordinary outcomes - a bounded
    * advance and a finished replay - so they are reported here rather than as
    * `err`, which is reserved for the engine actually failing.

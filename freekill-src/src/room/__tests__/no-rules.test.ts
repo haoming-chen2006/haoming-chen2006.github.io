@@ -132,9 +132,13 @@ describe('no game rules in the room', () => {
   });
 
   it('lets the scene be the only source of the OK button state', () => {
-    const dash = code(readFileSync(join(ROOM, 'components', 'Dashboard.tsx'), 'utf8'));
-    // The button's disabled state must be a straight read of the scene item.
-    expect(dash).toMatch(/const enabled = item\.enabled === true/);
-    expect(dash).not.toMatch(/OK[\s\S]{0,80}length\s*[<>=]/);
+    // The OK/Cancel row moved out of the dashboard's right-hand column and into
+    // the horizontal confirm strip above the hand (`ConfirmBar.tsx`), which is
+    // where the Qt client puts it. The assertion is unchanged and deliberately
+    // still literal: the button's disabled state must be a straight read of the
+    // scene item, never an expression that derives it.
+    const bar = code(readFileSync(join(ROOM, 'components', 'ConfirmBar.tsx'), 'utf8'));
+    expect(bar).toMatch(/const enabled = item\.enabled === true/);
+    expect(bar).not.toMatch(/OK[\s\S]{0,80}length\s*[<>=]/);
   });
 });

@@ -189,11 +189,37 @@ export async function answerOnce(seat, ctx, a) {
 
     // Choose-a-card boxes: a single-pick box replies on the click itself, a
     // multi-pick box toggles and waits for OK.
-    await clickOne(pick(rng, zoneCards.filter((c) => c.box)), 'pick-card-from-zone');
+    //
+    // ONE CLICK IS NOT AN ANSWER. `AskForPoxi` became reachable when the mobile
+    // pack landed — it registers five poxi methods, and utility's
+    // `askforCardsChosenFromAreas` only calls the pick feasible when one card
+    // has been taken from every area (`packages/utility/init.lua`, `feasible`).
+    // Picking one card left OK correctly disabled, the driver sent nothing, and
+    // the run reported `reply-delivery` and `stale-request` FAILs against a room
+    // that was behaving properly. So this follows the same rule the general
+    // picker does: keep offering cards, and let the dialog's own OK say when the
+    // selection is legal. Bounded by the number of cards on offer.
+    const takeable = () => of(a, 'zoneCard').filter((c) => c.box);
+    let picked = 0;
+    for (const card of shuffled(rng, zoneCards.filter((c) => c.box))) {
+      const btn = of(await refresh(), 'dialogBtn').find((b) => b.primary);
+      if (btn && clickable(btn)) break;
+      // A single-pick box replies on the click and tears the dialog down; when
+      // that happens there is nothing left to take and nothing left to confirm.
+      if (picked > 0 && !takeable().length) break;
+      const live = takeable().find((c) => c.idx === card.idx);
+      if (!live) continue;
+      await clickOne(live, 'pick-card-from-zone');
+      picked += 1;
+    }
     const after = await refresh();
     const ok = of(after, 'dialogBtn').find((b) => b.primary && clickable(b));
-    if (ok) await clickOne(ok, 'confirm-card-pick');
-    return { handled: asked ?? 'AskForCardChosen', steps };
+    if (ok) { await clickOne(ok, 'confirm-card-pick'); return { handled: asked ?? 'AskForCardChosen', steps }; }
+    return {
+      handled: asked ?? 'AskForCardChosen',
+      ...(picked && of(after, 'zoneCard').length ? { stuck: 'OK never enabled' } : {}),
+      steps,
+    };
   }
 
   /* --------------------------------------------------------- scene answers */

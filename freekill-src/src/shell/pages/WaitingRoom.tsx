@@ -4,12 +4,23 @@
  * Host-only actions arrive as undefined callbacks for non-hosts, and the rule
  * here is hide, not disable: a control a player can never use is noise, and a
  * disabled Start button invites them to keep clicking it.
+ *
+ * WHAT THE TABLE SAYS ABOUT ROLES, AND WHAT IT DOES NOT. The composition strip
+ * names every allegiance this mode deals, in its colours. It does *not* tint the
+ * seats, and that is a correctness point rather than a design one:
+ * `GameLogic:run` shuffles `room.players` before it deals, so the chair someone
+ * picks here has no relation to the seat — or the role — they get. Colouring
+ * this grid would be inventing information. The ring in the lobby's mode picker
+ * shows the in-game seating, which is real; this shows the deal, which is also
+ * real; neither claims to know who gets what.
  */
 import { useState } from 'react';
 import type { WaitingRoomViewProps } from '../../contract/views';
 import { engineTr, useLanguage, useT } from '../../i18n';
 import { useSession } from '../session';
 import { generalAvatar } from '../boot';
+import { modeOfRoom } from '../../contract/modes';
+import { RoleStrip, SeatRing, modeNameKey } from '../ModePicker';
 
 export function WaitingRoomView(props: WaitingRoomViewProps) {
   const {
@@ -19,15 +30,20 @@ export function WaitingRoomView(props: WaitingRoomViewProps) {
   const t = useT();
   const lang = useLanguage();
   const { loaded } = useSession();
-  // The mode is an engine key; the overview payload carries only the Chinese.
-  const modeTitle = engineTr(String(settings.gameMode ?? ''), lang,
-    (k) => loaded.overview.translations[k] ?? k);
+  const mode = modeOfRoom(settings, capacity);
+  // A room on a mode this build does not offer still has to render: fall back
+  // to the engine's own name for it rather than to a wrong guess.
+  const modeTitle = mode
+    ? t(modeNameKey(mode.id))
+    : engineTr(String(settings.gameMode ?? ''), lang, (k) => loaded.overview.translations[k] ?? k);
   const [copied, setCopied] = useState<'code' | 'link' | null>(null);
   const [draft, setDraft] = useState('');
 
   const bySeat = new Map(seats.map((s) => [s.seat, s]));
   const humans = seats.filter((s) => !s.isBot);
   const everyoneReady = humans.every((s) => s.ready || s.playerId === meId);
+  const empty = Math.max(0, capacity - seats.length);
+  const full = empty === 0;
 
   async function copy(what: 'code' | 'link') {
     try {
@@ -37,13 +53,32 @@ export function WaitingRoomView(props: WaitingRoomViewProps) {
     } catch { /* clipboard blocked — the text is on screen anyway */ }
   }
 
+  function fillWithBots() {
+    if (!onAddBot) return;
+    for (let seat = 1; seat <= capacity; seat++) {
+      if (!bySeat.has(seat)) onAddBot(seat);
+    }
+  }
+
   return (
     <div className="page">
-      <h2>{t('waiting.title')}</h2>
-      <p className="lede">
-        {modeTitle} · {t('waiting.seated', { seated: seats.length, capacity })}
-        {isHost ? t('waiting.youAreHost') : ''}
-      </p>
+      <div className="waiting-head">
+        {mode ? <SeatRing mode={mode} size={64} /> : null}
+        <div>
+          <h2 style={{ margin: 0 }}>{modeTitle}</h2>
+          <p className="lede" style={{ margin: '4px 0 0' }}>
+            {t('waiting.seated', { seated: seats.length, capacity })}
+            {isHost ? t('waiting.youAreHost') : ''}
+          </p>
+        </div>
+      </div>
+
+      {mode ? (
+        <div className="waiting-composition">
+          <span className="waiting-composition__label">{t('waiting.composition')}</span>
+          <RoleStrip mode={mode} />
+        </div>
+      ) : null}
 
       <div className="sharebar">
         <span style={{ color: 'var(--paper-faint)', fontSize: 13 }}>{t('waiting.code')}</span>
@@ -90,12 +125,24 @@ export function WaitingRoomView(props: WaitingRoomViewProps) {
         })}
       </div>
 
+      {!full ? (
+        <p className="lede" style={{ margin: '14px 0 0' }}>{t('waiting.fillTable', { n: empty })}</p>
+      ) : null}
+
       <div className="row" style={{ marginTop: 22 }}>
         <button className="btn ghost" onClick={onLeave}>{t('waiting.leave')}</button>
+        {onAddBot && !full
+          ? <button className="btn" onClick={fillWithBots}>{t('waiting.fillWithBots')}</button>
+          : null}
         {onStart
           ? (
-            <button className="btn primary" onClick={onStart} disabled={seats.length < 2}>
-              {everyoneReady ? t('waiting.start') : t('waiting.startNotReady')}
+            /* The mode fixes the seat count, so a short table is not a game this
+               build knows how to deal — `webmodes_dizhu` is 3 seats in the
+               engine too, and starting it with 2 would be refused there. Saying
+               so on the button is better than letting the engine say it. */
+            <button className="btn primary" onClick={onStart} disabled={!full}>
+              {!full ? t('waiting.startNeedsFull')
+                : everyoneReady ? t('waiting.start') : t('waiting.startNotReady')}
             </button>
           )
           : <span style={{ color: 'var(--paper-faint)', fontSize: 13 }}>{t('waiting.waitForHost')}</span>}

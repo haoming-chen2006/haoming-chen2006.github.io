@@ -21,6 +21,31 @@ export async function sha(): Promise<string> {
 /** The reference game: seed 20260828, 8 seats, standard 身份局. */
 export const SEED = 20260828;
 
+/**
+ * The mobile pack's ten sub-packages, by the name `Engine:canUseGeneral` matches
+ * on (`r.disabled_packs`, `lua/lunarltk/core/engine.lua:324`). Note these are
+ * package names, not the shared `mobile` extension name.
+ *
+ * `scripts/build.test.ts` asserts `overview.json` contains exactly these, so
+ * renaming or adding one upstream fails there rather than quietly widening the
+ * pool underneath a test that meant to pin it.
+ */
+export const MOBILE_PACKS = [
+  'mobile_bingshi', 'mobile_shiji', 'm_shzl_ex', 'm_yj_ex', 'mobile_sp',
+  'mobile_lxxh', 'mobile_rare', 'mobile_jsrg', 'mobile_test', 'mobile_derived',
+] as const;
+
+/**
+ * Settings that hold a test to the 25-general standard roster.
+ *
+ * Several suites assert things that are true of the standard pack and are not
+ * claims about content generally - that every battle-log line renders in
+ * English, say. Those were written when 25 generals was the whole game. Rather
+ * than weaken the assertion, the game is pinned to the roster it was written
+ * about, and the mobile roster gets its own measurement.
+ */
+export const STANDARD_ROSTER_ONLY = { disabledPack: [...MOBILE_PACKS] } as const;
+
 export function roomSpec(overrides: Partial<RoomSpec> = {}): RoomSpec {
   return {
     roomId: 'test-1',

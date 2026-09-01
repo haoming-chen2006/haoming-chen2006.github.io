@@ -16,7 +16,9 @@ import type { LuaClient } from '../contract/engine';
 import type { Envelope, WireCommand } from '../contract/protocol';
 import { getGameTransport, type GameTransport } from './api/transport';
 import type { RetainingClient } from './retainingClient';
-import { errorText, startHostRunner, type HostRunner, type HostSeat } from './hostRunner';
+import {
+  DEFAULT_PACE_MS, errorText, startHostRunner, type HostRunner, type HostSeat,
+} from './hostRunner';
 import { getLanguage, t } from '../i18n';
 import type { UiKey } from '../i18n';
 
@@ -39,6 +41,81 @@ const HELD_LIMIT = 2000;
  * the table instead of ordering it.
  */
 const ORDER_HOLD_MS = 16;
+
+/**
+ * The table's tempo, and where a person can change it.
+ *
+ * `hostRunner` explains what the number means; this is only the question of who
+ * gets to pick it, and the answer has to be "whoever is looking at the table",
+ * not "whoever last built the bundle". The site is static files on GitHub
+ * Pages, so a constant in the source would make "try 400 instead of 800" a
+ * rebuild and a deploy before anyone can tell whether 400 feels better. It
+ * should be a reload.
+ *
+ * Three overrides, most immediate first, all of them live:
+ *
+ *   window.__fkPace = 0            in the console, for the next room
+ *   #/room/abc?pace=400           in the link — `parseHash` already drops the
+ *                                  query, so this routes unchanged
+ *   localStorage['fk.pace'] = 250  sticky across reloads
+ *
+ * `0` is off, and it is a first-class setting rather than a debug flag. A
+ * watchable table costs 2.5-4x the wall time of an instant one, so anything
+ * that plays whole games back to back has to turn it off. For the audit suite
+ * that is the positional URL, not `--url`:
+ *
+ *   npm run audit -- --games=1 'http://127.0.0.1:4173/freekill/?pace=0'
+ *
+ * Two details of `scripts/audit/run.mjs` are why it reads the way it does, and
+ * both are worth knowing before changing this. Its flag parser is
+ * `hit.split('=')[1]`, so `--url=…?pace=0` silently loses everything from the
+ * second `=` and arrives as `…?pace`; the positional argument bypasses that.
+ * And it normalises the URL by appending `/`, which lands inside the query as
+ * `?pace=0/` — hence the trailing slash this tolerates. A switch that only
+ * works when nobody normalises the URL is not a switch the one caller that
+ * needs it can reach.
+ *
+ * Nothing else about the harness is known here. The app behaves identically
+ * whether or not it is being watched, which is the whole point of auditing it —
+ * a table that quietly played differently under observation would make every
+ * timing the suite reports a fiction.
+ *
+ * Anything unparseable is ignored rather than treated as zero — a typo should
+ * not silently make the game unwatchable — and the value is clamped to five
+ * seconds so a stray `80000` cannot wedge a room that a person then has to work
+ * out how to unwedge.
+ */
+const MAX_PACE_MS = 5_000;
+
+export function resolvePaceMs(): number {
+  const read = (raw: unknown): number | null => {
+    if (raw === null || raw === undefined) return null;
+    const text = String(raw).trim().replace(/\/+$/, '');
+    if (text === '') return null;
+    const n = Number(text);
+    if (!Number.isFinite(n) || n < 0) return null;
+    return Math.min(MAX_PACE_MS, Math.round(n));
+  };
+  try {
+    const fromWindow = read((window as { __fkPace?: unknown }).__fkPace);
+    if (fromWindow !== null) return fromWindow;
+    const { search, hash } = window.location;
+    const query = new URLSearchParams(search);
+    const fromSearch = read(query.get('pace'));
+    if (fromSearch !== null) return fromSearch;
+    const q = hash.indexOf('?');
+    if (q >= 0) {
+      const fromHash = read(new URLSearchParams(hash.slice(q + 1)).get('pace'));
+      if (fromHash !== null) return fromHash;
+    }
+    const stored = read(window.localStorage?.getItem('fk.pace'));
+    if (stored !== null) return stored;
+  } catch {
+    // A sandboxed iframe throws on `localStorage`, and a non-browser caller has
+    // no `window` at all. Neither is a reason to have no tempo.
+  }
+  return DEFAULT_PACE_MS;
+}
 
 /** The order the host published in: flush index, then the engine's own counter. */
 const firstSeq = (e: Envelope): number => e.messages[0]?.seq ?? 0;
@@ -340,6 +417,10 @@ export async function startLiveTable(spec: LiveTableSpec): Promise<LiveTable> {
         hostSeat: mySeat,
         settings: spec.settings,
         transport,
+        // Only the host paces, because only the host decides when the engine
+        // takes its next step. Every other seat is watching the same beats
+        // arrive over the wire.
+        paceMs: resolvePaceMs(),
         onLocalEnvelope: deliver,
         onFault: (m, fatal) => {
           if (fatal) setPhase('failed', m);

@@ -36,6 +36,14 @@ function FKHost.boot()
 
   dofile("lua/freekill.lua")
   dofile("lua/client/i18n/init.lua")
+
+  -- 手杀包依赖的两个 Room 方法，本镜像还没有。必须在包加载之后、开局之前。
+  dofile("lua/web/roomcompat.lua")
+
+  -- 技能不全的武将不进开局池。客户端 client.lua 里跑的是同一份代码、同一个
+  -- 顺序，所以两边看到的武将池一致 —— 不一致会直接违反 bundle 哈希的承诺。
+  dofile("lua/web/roster.lua").hideIncomplete()
+
   dofile("lua/server/scheduler.lua")
 
   state = dofile("lua/web/state.lua")

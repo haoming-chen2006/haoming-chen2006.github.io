@@ -19,7 +19,7 @@ import { MainThreadLuaClient } from '../../engine/luaClient.ts';
 import { InProcessLuaHost, allBotSeats } from '../../engine/luaHost.ts';
 import { RoomSession } from '../../engine/roomSession.ts';
 import { PlayerState } from '../../engine/types.ts';
-import { bundle, SEED } from '../../engine/__tests__/support.ts';
+import { bundle, SEED, STANDARD_ROSTER_ONLY } from '../../engine/__tests__/support.ts';
 import { skillsOf } from '../components/Dashboard.tsx';
 import { LtkLua } from '../ltk/LtkLua.ts';
 import { CARD_AREA } from '../ltk/types.ts';
@@ -74,7 +74,16 @@ async function seat(seed = SEED): Promise<Table> {
     (s.playerId === ME ? { ...s, state: PlayerState.Online as 1 } : s));
   const session = await RoomSession.start(
     host,
-    { roomId: `room-${seed}`, seed, seats, ownerId: ME, timeout: 15, settings: { gameMode: 'aaa_role_mode' } },
+    {
+      roomId: `room-${seed}`, seed, seats, ownerId: ME, timeout: 15,
+      // Pinned to the standard roster. Every assertion in this file is about
+      // the room shell - which control the scene enables, what the dashboard
+      // lists, whether the hand matches the engine - and the general pool is an
+      // uncontrolled variable that changes what the seed plays without telling
+      // us anything new about the shell. The mobile roster is exercised by
+      // `npm run audit` and by the engine error census instead.
+      settings: { gameMode: 'aaa_role_mode', ...STANDARD_ROSTER_ONLY },
+    },
     { onEnvelope: (e: Envelope) => { if (e.to === null || e.to === ME) client.deliverEnvelope(e); } },
   );
   return {

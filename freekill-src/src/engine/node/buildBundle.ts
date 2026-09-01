@@ -22,10 +22,40 @@ export const ENGINE_ROOT = process.env.FK_ROOT ?? '/Users/haoming/FreeKill';
 /** `lua/core/mod_manager.lua:67` hard-requires all three at startup. */
 export const STANDARD_PACKAGES = ['standard', 'standard_cards', 'maneuvering'] as const;
 
+/** The mobile roster and the skill library it depends on. */
+export const MOBILE_PACKAGES = ['utility', 'mobile'] as const;
+
+/**
+ * Packages this repo owns, under `<site>/packages/`, mounted at `packages/<name>`
+ * beside the mirrored ones.
+ *
+ * `webmodes` cannot live in `opts.packages` with the others: those are read out
+ * of the read-only upstream mirror and this one is site source. It reaches the
+ * engine by the engine's own front door either way — `ModManager:loadPackages`
+ * enumerates `packages/` off the VFS and cannot tell which root a directory
+ * came from.
+ *
+ * That enumeration is also why this only works at all now: `__fk_isdir` used to
+ * call `FS.isDir`, which this emscripten build does not export, and the
+ * TypeError was swallowed into `false`. Every discovered package was skipped in
+ * silence — `webmodes` would have been mounted and never loaded.
+ */
+export const SITE_PACKAGES = ['webmodes'] as const;
+
+/** What the shipped build contains. Kept in step with `scripts/build-lua-bundle.mjs`. */
+export const SHIPPED_PACKAGES = [...STANDARD_PACKAGES, 'test', ...MOBILE_PACKAGES] as const;
+
 export interface BuildBundleOptions {
   engineRoot?: string;
-  /** Extra `packages/` directories. `test` is needed by the luaunit suites. */
+  /** Extra `packages/` directories, read from the upstream mirror. */
   packages?: readonly string[];
+  /**
+   * Site-owned `packages/` directories. Defaults to `SITE_PACKAGES`; pass `[]`
+   * to build the upstream configuration exactly, which is what the luaunit
+   * suites need — `test/lua/core/engine.lua:18` asserts `extension_names` is
+   * precisely the four upstream packages.
+   */
+  sitePackages?: readonly string[];
   /** Include the repo's `test/lua/**` tree, for porting the luaunit suites. */
   includeTests?: boolean;
 }
@@ -41,11 +71,14 @@ function walk(abs: string, rel: string, out: Map<string, string>): void {
 
 export function buildBundle(opts: BuildBundleOptions = {}): LuaBundle {
   const engineRoot = opts.engineRoot ?? ENGINE_ROOT;
-  const packages = opts.packages ?? [...STANDARD_PACKAGES, 'test'];
+  const packages = opts.packages ?? SHIPPED_PACKAGES;
   const files = new Map<string, string>();
 
   walk(join(engineRoot, 'lua'), 'lua', files);
   for (const pkg of packages) walk(join(engineRoot, 'packages', pkg), `packages/${pkg}`, files);
+  for (const pkg of opts.sitePackages ?? SITE_PACKAGES) {
+    walk(join(WEB_ROOT, 'packages', pkg), `packages/${pkg}`, files);
+  }
   if (opts.includeTests) walk(join(engineRoot, 'test', 'lua'), 'test/lua', files);
 
   // The web overlay, mounted at lua/web/. It shadows nothing under lua/ or

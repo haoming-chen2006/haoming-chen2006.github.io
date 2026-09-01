@@ -6,7 +6,7 @@
  * It is a recording of engine output, not a second implementation of anything.
  */
 import raw from '../dev/data/lua-data.json';
-import type { CardData, GeneralData, SkillData } from '../ltk/types';
+import type { CardData, GeneralData, GeneralDetail, SkillData } from '../ltk/types';
 
 interface RawCard {
   cid: number; name: string; extension: string; package: string;
@@ -47,6 +47,31 @@ export const generals: Record<string, GeneralData & { skills: { name: string; re
   data.generals as never;
 
 export const skills: Record<string, RawSkill> = data.skills;
+
+/**
+ * `GetGeneralDetail(name)` — `client_util.lua:27`.
+ *
+ * The dump stores a general's skills as `{ name, related }`; the engine answers
+ * with `{ name, description, is_related_skill }`, where the description is
+ * `Fk:getDescription(name)` and that is `Fk:translate(":" .. name)`. Assembling
+ * it here rather than in the room keeps the room's only source of skill text the
+ * same shape from the fixture and from the real client VM — the general-detail
+ * popup reads `detail.skill` and does not care which one answered.
+ */
+export function generalDetail(name: string, lang: Language): GeneralDetail | undefined {
+  const g = data.generals[name] ?? data.generals.diaochan;
+  if (!g) return undefined;
+  return {
+    ...(generals[name] ?? generals.diaochan),
+    gender: g.gender,
+    skill: (g.skills ?? []).map((s) => ({
+      name: s.name,
+      description: translate(`:${s.name}`, lang),
+      is_related_skill: !!s.related,
+    })),
+    companions: [],
+  };
+}
 
 export function skillData(name: string): SkillData | undefined {
   const s = data.skills[name];

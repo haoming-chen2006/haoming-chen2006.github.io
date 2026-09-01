@@ -19,6 +19,15 @@
     'Noto Sans CJK SC', 'Source Han Sans SC', system-ui, sans-serif;
   --ui: system-ui, -apple-system, 'Segoe UI', Roboto, 'PingFang SC', sans-serif;
   --radius: 10px;
+
+  /* Allegiance colours, used by the mode picker's seat ring and role chips.
+     Green 反贼, yellow 忠臣, blue 内奸 are the game's own; red for the 主公
+     follows the 身份 marker it is printed on. Hollow means "not knowable". */
+  --role-lord: #c9483a;
+  --role-loyalist: #d8b23c;
+  --role-rebel: #6faa63;
+  --role-renegade: #5b8bc4;
+  --role-hidden: #6b6154;
 }
 
 * { box-sizing: border-box; }
@@ -143,7 +152,80 @@ input[type='text']:focus, select:focus { border-color: #6b5c49; }
 .room-row .meta { color: var(--paper-faint); font-size: 13px; }
 .empty { color: var(--paper-faint); padding: 34px; text-align: center; border: 1px dashed var(--line); border-radius: 12px; }
 
+/* ----------------------------------------------------- the mode picker */
+
+.mode-head {
+  display: flex; align-items: flex-end; gap: 16px; justify-content: space-between;
+  margin-bottom: 14px; flex-wrap: wrap;
+}
+.mode-head__title { font-family: var(--han); font-size: 19px; letter-spacing: 3px; color: var(--gold); }
+.mode-head__hint { color: var(--paper-faint); font-size: 13px; margin-top: 3px; }
+
+/* 200px is measured, not guessed: five of them plus four gutters fit inside
+   `.page`'s 1180px less its padding and the card's, so the whole offer is one
+   row on a laptop and reflows to two or three below that. */
+.mode-grid {
+  display: grid; gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+}
+
+.mode-card {
+  display: flex; flex-direction: column; gap: 10px; text-align: left;
+  padding: 14px; border-radius: 14px; cursor: pointer; color: inherit;
+  border: 1px solid var(--line); background: var(--ink-2);
+  transition: border-color 130ms, background 130ms, transform 130ms;
+}
+.mode-card:hover:not(:disabled) { border-color: #6b5c49; background: var(--ink-3); }
+.mode-card:disabled { opacity: 0.5; cursor: not-allowed; }
+.mode-card[aria-checked='true'] {
+  border-color: var(--gold);
+  background: linear-gradient(180deg, #2a231b, var(--ink-2));
+  box-shadow: 0 0 0 1px rgba(217, 201, 163, 0.28);
+}
+.mode-card:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+
+.mode-card__top { display: flex; align-items: center; gap: 12px; }
+.mode-card__head { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.mode-card__name { font-family: var(--han); font-size: 19px; letter-spacing: 2px; line-height: 1.25; }
+.mode-card__seats { font-size: 12px; color: var(--paper-faint); letter-spacing: 1px; }
+.mode-card__tagline { margin: 0; font-size: 12.5px; line-height: 1.65; color: var(--paper-dim); }
+
+.mode-ring { flex: none; }
+.mode-ring__track { fill: none; stroke: var(--line); stroke-width: 1; }
+.mode-ring__seat { fill: var(--role-hidden); stroke: none; }
+.mode-ring__seat[data-role='lord'] { fill: var(--role-lord); }
+.mode-ring__seat[data-role='loyalist'] { fill: var(--role-loyalist); }
+.mode-ring__seat[data-role='rebel'] { fill: var(--role-rebel); }
+.mode-ring__seat[data-role='renegade'] { fill: var(--role-renegade); }
+.mode-ring__seat[data-role='hidden'] { fill: none; stroke: var(--role-hidden); stroke-width: 1.6; }
+
+.role-strip { display: flex; gap: 6px; flex-wrap: wrap; }
+.role-chip {
+  font-size: 11.5px; padding: 2px 8px; border-radius: 999px; letter-spacing: 0.5px;
+  border: 1px solid currentColor; color: var(--role-hidden); white-space: nowrap;
+}
+.role-chip[data-role='lord'] { color: var(--role-lord); }
+.role-chip[data-role='loyalist'] { color: var(--role-loyalist); }
+.role-chip[data-role='rebel'] { color: var(--role-rebel); }
+.role-chip[data-role='renegade'] { color: var(--role-renegade); }
+.role-chip[data-role='hidden'],
+.role-chip[data-role='open'] { color: var(--paper-faint); border-style: dashed; }
+
+.mode-advanced { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--line); }
+.mode-actions { margin-top: 18px; display: flex; justify-content: flex-end; }
+
 /* ----------------------------------------------------------- waiting room */
+
+.waiting-head { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
+.waiting-head h2 {
+  font-family: var(--han); font-weight: 400; font-size: 26px; letter-spacing: 3px;
+}
+.waiting-composition {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  margin-bottom: 18px; padding: 10px 14px;
+  border: 1px solid var(--line); border-radius: 12px; background: var(--ink-2);
+}
+.waiting-composition__label { font-size: 12px; color: var(--paper-faint); letter-spacing: 1px; }
 
 .seats { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px; }
 .seat {

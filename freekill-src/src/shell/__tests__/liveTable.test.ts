@@ -16,7 +16,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { Envelope } from '../../contract/protocol.ts';
 import { MainThreadLuaClient } from '../../engine/luaClient.ts';
 import { InProcessLuaHost } from '../../engine/luaHost.ts';
-import { bundle } from '../../engine/__tests__/support.ts';
+import { bundle, STANDARD_ROSTER_ONLY } from '../../engine/__tests__/support.ts';
 import { LtkLua } from '../../room/ltk/LtkLua.ts';
 import { RoomStore } from '../../room/state/store.ts';
 import { retainNotifications, type RetainingClient } from '../retainingClient.ts';
@@ -213,7 +213,14 @@ async function seatDown(roomId: string): Promise<Table> {
     roomId,
     seats: SEATS,
     hostSeat: 1,
-    settings: { gameMode: 'aaa_role_mode', generalNum: 3, generalTimeout: 30 },
+    // Pinned to the standard roster, like the other end-to-end suites. Two
+    // assertions below depend on the shape of the game this seed plays, and the
+    // clearest is `wire.some(e => e.to === null)`: public envelopes are
+    // *recovered* by `routeFlush` only when a message is byte-identical for
+    // every seat, which this game does five times out of 860. A different
+    // roster plays a shorter game and recovers none - not a regression, just an
+    // assertion resting on a rare event. Pinning the pool keeps it honest.
+    settings: { gameMode: 'aaa_role_mode', generalNum: 3, generalTimeout: 30, ...STANDARD_ROSTER_ONLY },
     transport,
     createHost: async () => host,
     onLocalEnvelope: (e) => { local.push(e); client.deliverEnvelope(e); },
@@ -633,7 +640,15 @@ describe('a seat the engine has stopped waiting on', () => {
       // 20 seconds, which the driver burns in real time: long enough that the
       // first half cannot be an accident of the ask ending on its own, short
       // enough that the second half does not dominate the suite.
-      settings: { gameMode: 'aaa_role_mode', generalNum: 3, generalTimeout: 20 },
+      // Pinned to the standard roster, and this one is load-bearing rather than
+      // tidy: the assertion below needs BOTH seats to be holding an open
+      // `AskForGeneral` at the same moment. Whether that ever happens is a fact
+      // about the roster, not about request handling. With the mobile pack
+      // loaded, role mode runs its lord-general step first - seat 1 is asked,
+      // answers, is sent `CancelRequest` and gets its skills, and only then is
+      // seat 2 asked. The two asks never overlap, so the test would wait out its
+      // full 120 s on a game that is behaving perfectly.
+      settings: { gameMode: 'aaa_role_mode', generalNum: 3, generalTimeout: 20, ...STANDARD_ROSTER_ONLY },
       timeout: 20,
       transport,
       createHost: async () => spy,

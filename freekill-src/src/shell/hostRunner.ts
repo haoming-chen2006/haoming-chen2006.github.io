@@ -25,6 +25,10 @@
  *  * The host's own envelopes never go near the wire. Realtime broadcast is
  *    configured `self: false`, so a host publishing to itself would hear
  *    nothing back; its client VM is fed in-process instead.
+ *
+ * And one that is not obvious from the interfaces either — see `paceMs`. The
+ * driver is also where the table's tempo lives, because the driver is what
+ * decides how much wall time one `ResumeRoom` is allowed to occupy.
  */
 import type { DecisionRecord, RoomSpec, SeatSpec } from '../contract/engine';
 import type { ClientReply, Envelope, WireCommand } from '../contract/protocol';
@@ -44,6 +48,58 @@ const ROBOT = 5;
 
 /** How long the loop naps while a seat is thinking, before nudging the clock. */
 const POLL_MS = 400;
+
+/**
+ * The tempo of a bot's turn, and why it is a clamp rather than a timer.
+ *
+ * The engine already knows how long each beat of the table should last, and it
+ * has always said so. `Request:_finish` (`lua/server/request.lua`) asks for
+ * `800 - ai_compute_time` milliseconds after any request an AI answered, and
+ * the game flow asks for its own beats elsewhere: 900ms after a judge result,
+ * 400ms at the judge reveal, 150ms on a reveal, 50ms in turn flow. Every one is
+ * a `Room:delay`, which yields the room coroutine and comes back to the driver
+ * as `delayMs` on that `ResumeRoom`.
+ *
+ * What was missing is that nobody spent it. In realtime mode `advance` resumed
+ * the moment the coroutine yielded, so a whole bot turn — draw, play, discard,
+ * the response to it — arrived in one flush and rendered in one frame. That is
+ * the complaint: five cards at once, and no way to tell what happened.
+ *
+ * So the driver spends the delay the engine asked for, in wall time, clamped to
+ * `paceMs`. Clamping rather than scaling keeps the engine's shorter beats short
+ * — a 50ms turn-flow beat stays 50ms — so the rhythm the game was designed with
+ * survives, and only its longest beat is capped.
+ *
+ * The default cap is the engine's own 800ms, which means in practice that every
+ * beat is honoured exactly as asked and only the 900ms judge result is trimmed.
+ * That is deliberate: 800ms is what the Qt client this project is porting does,
+ * and the complaint that started this was that bots are too fast to follow, not
+ * that games are too short. It is also, measured through the real shell driver,
+ * the difference between a median gap of 6ms between two of a bot's consecutive
+ * card moves — the same frame — and a gap a person can actually watch.
+ *
+ * The cost is real and belongs in the open: a full 8-seat game asks for between
+ * 350 and 1,700 seconds of delay depending on how long it runs. Nothing that
+ * plays whole games back to back can afford that, which is why `paceMs` exists
+ * at all and why zero is a first-class setting rather than a debug flag. See
+ * `resolvePaceMs` in `liveTable.ts` for how a harness turns it off.
+ *
+ * Three properties this arrangement has that a timer bolted on elsewhere does
+ * not:
+ *
+ *  * It cannot lie to the engine. The sleep is real wall time, and the next
+ *    resume reports it as `advanceUs`, so the virtual clock and the request
+ *    timers stay exactly as honest as they were. Nothing sends `request_timer`.
+ *  * It cannot slow a human. The engine only asks for that 800ms once an AI has
+ *    answered (`ai_start_time`), and the pause is skipped outright whenever the
+ *    room came back waiting on input — so a person's own click is submitted on
+ *    the next tick, as before.
+ *  * It paces per beat rather than per decision. A beat is where the engine
+ *    itself chose to pause, which is why 2-3 `MoveCards` inside one of them are
+ *    one thing happening (a card leaving a hand and landing on the table) and
+ *    not three actions racing.
+ */
+export const DEFAULT_PACE_MS = 800;
 
 /**
  * What the driver needs of a host VM. Both `WorkerLuaHost` and
@@ -80,6 +136,17 @@ export interface HostRunnerSpec {
   readonly transport: GameTransport;
   /** Seconds a seat gets to answer one request before the engine moves on. */
   readonly timeout?: number;
+  /**
+   * Longest wall-clock pause the driver will grant one beat of the table, in
+   * milliseconds. See `DEFAULT_PACE_MS`.
+   *
+   * Zero — the default — restores the old behaviour exactly: the engine's
+   * delays are reported and not spent, and a game runs as fast as the VM can
+   * produce it. That is deliberately what a caller gets when it says nothing,
+   * so the headless suites and anything else driving this loop directly stay at
+   * full speed. `startLiveTable` is what picks a real tempo for a real player.
+   */
+  readonly paceMs?: number;
   /** Envelopes addressed to the host's own seat, or to everyone. */
   onLocalEnvelope(envelope: Envelope): void;
   /** Something went wrong. `fatal` means the room is not going to recover. */
@@ -158,6 +225,7 @@ export async function startHostRunner(spec: HostRunnerSpec): Promise<HostRunner>
   let wake: (() => void) | null = null;
   const inbox: { playerId: number; reply: unknown }[] = [];
   const seatIds = new Set(seats.map((s) => s.playerId));
+  const paceMs = Math.max(0, Math.floor(spec.paceMs ?? 0));
 
   /**
    * The question each seat is being asked right now, and nothing else.
@@ -320,9 +388,17 @@ export async function startHostRunner(spec: HostRunnerSpec): Promise<HostRunner>
 
   /* --------------------------------------------------------------- driver */
 
+  /**
+   * Every timer the driver is currently sitting on, so `stop` can end the loop
+   * on the spot rather than after a beat. `wake` releases only the nap that is
+   * waiting for a reply; tearing the room down has to release all of them.
+   */
+  const naps = new Set<() => void>();
+
   const stop = (): void => {
     if (stopped) return;
     stopped = true;
+    for (const end of [...naps]) end();
     wake?.();
     offOutput(); offDecision(); offReply(); offResync();
     flushLog();
@@ -338,21 +414,43 @@ export async function startHostRunner(spec: HostRunnerSpec): Promise<HostRunner>
 
   await host.createRoom(roomSpec);
 
-  const napUntilReply = (): Promise<void> => new Promise<void>((resolve) => {
+  /**
+   * Sleep, and be interruptible.
+   *
+   * `wakeable` is what separates the two waits this loop does. Napping while a
+   * seat thinks must end the instant that seat answers, or every click pays up
+   * to `POLL_MS`. Spending a beat must not: a reply landing mid-beat is a late
+   * or raced one, and cutting the beat short for it would put the table back to
+   * rendering two actions in one frame — which is the whole bug.
+   */
+  const nap = (ms: number, wakeable: boolean): Promise<void> => new Promise<void>((resolve) => {
     let done = false;
     const finish = () => {
       if (done) return;
       done = true;
       clearTimeout(timer);
-      wake = null;
+      naps.delete(finish);
+      if (wake === finish) wake = null;
       resolve();
     };
-    const timer = setTimeout(finish, POLL_MS);
-    wake = finish;
+    const timer = setTimeout(finish, ms);
+    naps.add(finish);
+    if (wakeable) wake = finish;
+    if (stopped) finish();
   });
+
+  const napUntilReply = (): Promise<void> => nap(POLL_MS, true);
 
   void (async () => {
     let lastResumeAt = now();
+    /**
+     * What to tell the engine on the next resume. `delay_done` is the reason
+     * `Room:delay` parks on, so it is the truthful thing to say once the beat
+     * has actually been spent — and it is accepted by every other yield in the
+     * room, which all park on `Util.TrueFunc`. Never `request_timer`: see the
+     * note at the top of this file.
+     */
+    let reason: string | null = null;
     try {
       for (;;) {
         if (stopped) return;
@@ -367,8 +465,17 @@ export async function startHostRunner(spec: HostRunnerSpec): Promise<HostRunner>
         const advanceUs = Math.max(0, Math.round((at - lastResumeAt) * 1000));
         lastResumeAt = at;
 
-        // Never `request_timer`: see the note at the top of this file.
-        const res = await host.advance({ advanceUs, realtime: true });
+        // One resume per turn of this loop when the table is paced, because a
+        // beat is one resume: `advance`'s own loop would run the bot's whole
+        // turn before handing control back, which is precisely what leaves
+        // nothing to look at. Unpaced, it keeps running the room at full speed
+        // and the clamp below is a no-op.
+        const res = await host.advance(
+          paceMs > 0
+            ? { reason, advanceUs, realtime: true, maxResumes: 1 }
+            : { reason, advanceUs, realtime: true },
+        );
+        reason = null;
         if (stopped) return;
         if (res.err) throw new Error(res.err);
         if (res.over) {
@@ -380,7 +487,22 @@ export async function startHostRunner(spec: HostRunnerSpec): Promise<HostRunner>
           spec.onGameOver?.();
           return;
         }
-        if (res.stopped === 'input' && inbox.length === 0) await napUntilReply();
+        if (res.stopped === 'input') {
+          // Someone has to decide. Never spend a beat here: the question is
+          // already on its way to them, and the only thing a pause could
+          // still delay is their answer coming back.
+          if (inbox.length === 0) await napUntilReply();
+          continue;
+        }
+        // A beat the engine asked to be seen. It is the engine's number, so a
+        // short one stays short; `paceMs` only caps the long ones. The `?? 0`
+        // is for a host that predates the field: `Math.min(undefined, n)` is
+        // NaN, which would turn pacing off without anything saying so.
+        const beat = Math.min(res.delayMs ?? 0, paceMs);
+        if (beat > 0) {
+          reason = 'delay_done';
+          await nap(beat, false);
+        }
       }
     } catch (e) {
       if (stopped) return;

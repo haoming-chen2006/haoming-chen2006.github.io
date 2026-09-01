@@ -9,15 +9,20 @@
  * added to the package appears in the target automatically and immediately
  * shows up as a gap.
  *
- * The request table below is the part that cannot be derived, so it carries
- * its evidence. It matters because the previous report listed
- * `AskForPoxi`, `AskForArrangeCards` and `AskForExchange` under "not reached in
- * this run", which reads as a hole in the testing. It is not: those three have
- * zero call sites in the four packages this build loads. No seed, no bias and
- * no amount of play will ever produce them, and a report that keeps promising
- * to reach them is lying about its own ceiling. Separating "we have not
- * covered this yet" from "this build cannot do this" is the difference between
- * a coverage report that shrinks and one that never can.
+ * The request table below is the part that cannot be derived, so it carries its
+ * evidence. Separating "we have not covered this yet" from "this build cannot
+ * do this" is the difference between a coverage report that shrinks and one
+ * that never can — a report that keeps promising to reach a request with no
+ * call site is lying about its own ceiling.
+ *
+ * That cuts both ways, and it did. `AskForPoxi`, `AskForChoices`,
+ * `AskForCardsAndChoice`, `AskForMoveCardInBoard` and `AskForArrangeCards` were
+ * all filed as "cannot occur", correctly, for the four standard packages. The
+ * mobile pack supplies callers for every one of them, and the report went on
+ * printing "cannot occur in this build" directly underneath "sent by the engine
+ * but never answered here". Each entry now says which generals produce it, so
+ * the next package to land is checked against this list rather than against a
+ * claim that has quietly expired.
  */
 
 /**
@@ -62,38 +67,62 @@ export const REQUESTS = {
     note: 'src/contract/scene.ts calls this unreachable; it is not',
   },
 
-  /* ------------------------------- present in the protocol, dead in play */
+  /* ------------------ reachable only because the mobile pack supplies callers */
   AskForPoxi: {
-    reach: 'unreachable',
-    why: 'Room:askToPoxi is only called by Room:askToChooseCards, which has zero '
-      + 'call sites in standard/standard_cards/maneuvering/test. The seven '
-      + 'askToChooseCards hits in packages are ai:askToChooseCards, a decision '
-      + 'helper that sends no request.',
+    reach: 'rare',
+    producer: 'a poxi method — 20 mobile generals; mobile registers five methods '
+      + '(zhenxing, changshi__kuiji, daozhuan, AskForCardsChosen, '
+      + 'askforCardsChosenFromAreas)',
+    note: 'PoxiBox exists and had never run against a real payload — '
+      + 'src/contract/scene.ts still marks it exercised:false, which is now the '
+      + 'stale claim. Answering it needs more than one card picked: the driver '
+      + 'used to click once, leave OK correctly disabled, and report a FAIL '
+      + 'against a working room. See policy.mjs.',
+  },
+  /*
+   * Everything below said "no caller in any loaded package", and that was true
+   * of standard/standard_cards/maneuvering/test. The mobile pack supplies the
+   * callers. These four have been SEEN in a campaign, so they are reachable as
+   * a matter of observation, not inference — leaving them classified as
+   * unreachable made the report print "cannot occur in this build" directly
+   * underneath "sent by the engine but never answered here".
+   */
+  AskForChoices: {
+    reach: 'rare',
+    producer: 'askToChoices — 10 mobile generals, e.g. m_yuan__sunquan, majun',
+    note: 'sent and answered in a 14-game campaign.',
+  },
+  AskForCardsAndChoice: {
+    reach: 'rare',
+    producer: 'askToChooseCardsAndChoice / askToViewCardsAndChoice — 4 mobile '
+      + 'generals: m_shi__xinxianying, m_sp__simazhao, ruanhui, mobile__chengui',
+    note: 'SENT AND UNANSWERABLE. DialogHost has no case for it, so the room '
+      + 'falls through to UnknownRequest and the seat has nothing to click; the '
+      + 'campaign reports it as a liveness FAIL. Highest-value dialog to build '
+      + 'after AskForMoveCardInBoard.',
+  },
+  AskForMoveCardInBoard: {
+    reach: 'rare',
+    producer: 'askToMoveCardInBoard / askToChooseToMoveCardInBoard — 7 mobile '
+      + 'generals: mobile__lvfan, mobile__yanghong, mobile__cuiyan, '
+      + 'm_ex__lingtong, mxing__zhanghe, pangdegong, yangbiao',
+    note: 'SENT AND UNANSWERABLE, same as above and affecting more generals. '
+      + 'This is the one to build first.',
   },
   AskForArrangeCards: {
-    reach: 'unreachable',
-    why: 'Room:askToArrangeCards has zero callers in any loaded package.',
+    reach: 'rare',
+    producer: 'askToArrangeCards — 2 mobile generals: mobile__godjiangwei, '
+      + 'mobile__cuilingyi',
+    note: 'ArrangeBox exists; not yet seen in a campaign.',
   },
   AskForExchange: {
     reach: 'unreachable',
-    why: 'Room:askToExchange has zero callers in any loaded package.',
-  },
-  AskForChoices: {
-    reach: 'unreachable',
-    why: 'Room:askToChoices (plural) has zero callers in any loaded package.',
+    why: 'Room:askToExchange still has zero callers, mobile included.',
   },
   AskForCardsChosen: {
     reach: 'unreachable',
     why: 'not a wire command at all — it is a poxi_type string, and reaches the '
-      + 'client as AskForPoxi, which is itself unreachable.',
-  },
-  AskForCardsAndChoice: {
-    reach: 'unreachable',
-    why: 'Room:askToChooseCardsAndChoice is called only from inside room.lua.',
-  },
-  AskForMoveCardInBoard: {
-    reach: 'unreachable',
-    why: 'Room:askToMoveCardInBoard has zero callers.',
+      + 'client as AskForPoxi, which IS reachable and is catalogued above.',
   },
   MiniGame: {
     reach: 'unreachable',

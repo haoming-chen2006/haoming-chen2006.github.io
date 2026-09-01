@@ -1,12 +1,13 @@
 {
-  "note": "Machine-readable record of who wrote each English string in src/i18n/engine/. \"upstream\" is FreeKill's own en_US, inherited verbatim and not ours to review. \"authored\" was translated from the Chinese for this project. \"override\" replaces an upstream entry that was not English (Chinese text, or a placeholder stub). A native-speaker review only needs the \"authored\" and \"override\" lists.",
+  "note": "Machine-readable record of who wrote each English string in src/i18n/engine/. \"upstream\" is FreeKill's own en_US, inherited verbatim and not ours to review. \"authored\" was translated from the Chinese for this project. \"override\" replaces an upstream entry that was not English (Chinese text, or a placeholder stub). A native-speaker review only needs the \"authored\" and \"override\" lists. \"modes\" are engine keys this repo's own packages/webmodes defines; they are authored too, but upstream zh_CN does not contain them, so they are listed apart from the zhKeys accounting.",
   "source": "src/room/dev/data/lua-data.json (translations.zh_CN / translations.en_US)",
   "counts": {
     "zhKeys": 1368,
-    "total": 1372,
+    "total": 1384,
     "upstream": 624,
     "override": 57,
-    "authored": 691
+    "authored": 691,
+    "modes": 12
   },
   "override": [
     "$fastchat_f1",
@@ -759,5 +760,19 @@
     "~zhenji",
     "~zhouyu",
     "~zhugeliang"
+  ],
+  "modes": [
+    "#dz__feiyang-invoke",
+    ":dz__bahu",
+    ":dz__feiyang",
+    ":webmodes_dizhu",
+    ":webmodes_duel",
+    ":webmodes_team",
+    "dz__bahu",
+    "dz__feiyang",
+    "webmodes",
+    "webmodes_dizhu",
+    "webmodes_duel",
+    "webmodes_team"
   ]
 }

@@ -184,8 +184,13 @@ export class FixtureLuaClient implements LuaClient {
       case 'GetCardExtensionByName':
         return (data.cardExtensionByName.get(String(args[0])) ?? '') as T;
       case 'GetGeneralData':
-      case 'GetGeneralDetail':
         return (data.generals[String(args[0])] ?? data.generals.diaochan) as T;
+      case 'GetGeneralDetail':
+        // A different shape from `GetGeneralData`, not a synonym for it: the
+        // detail call carries `skill`, each entry with its rules text. Answering
+        // it with the plain general data left the general-detail popup with an
+        // empty skill list in the harness.
+        return data.generalDetail(String(args[0]), this.language) as T;
       case 'GetSkillData':
         return data.skillData(String(args[0])) as T;
       case 'CanSortHandcards':

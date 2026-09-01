@@ -27,7 +27,9 @@
 
   position: relative;
   display: grid;
-  grid-template-rows: 1fr auto;
+  /* table | confirm strip | dashboard. The strip is its own row so the prompt
+     sits between the table and the hand rather than beside either. */
+  grid-template-rows: 1fr auto auto;
   width: 100%;
   height: 100%;
   /* The shell's .app is a flex column with `min-height: 100%` and auto height,
@@ -41,8 +43,17 @@
   min-height: 0;
   overflow: hidden;
   color: var(--fk-ink);
+  /* The felt.
+   *
+   * Four layers rather than one gradient: a warm pool of light where the cards
+   * are played, a cool falloff to the edges, a fine woven texture so the green
+   * is a surface rather than a fill, and a vignette that keeps the eye in the
+   * middle of the table. All of it is painted, none of it is an image request. */
   background:
-    radial-gradient(120% 90% at 50% 34%, var(--fk-felt-a) 0%, var(--fk-felt-b) 78%),
+    radial-gradient(58% 42% at 50% 46%, rgba(216, 178, 106, 0.10) 0%, transparent 70%),
+    radial-gradient(120% 96% at 50% 30%, var(--fk-felt-a) 0%, var(--fk-felt-b) 76%),
+    repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.014) 0 2px, transparent 2px 4px),
+    repeating-linear-gradient(-45deg, rgba(0, 0, 0, 0.02) 0 2px, transparent 2px 4px),
     var(--fk-felt-b);
   background-size: cover;
   font-family: "FreeKill CJK", "Noto Serif CJK SC", "Source Han Serif SC",
@@ -59,6 +70,18 @@
   position: relative;
   min-height: 0;
   overflow: hidden;
+}
+
+/* Depth. The table is lit from the middle and falls away at the edges, which
+   is what stops eight portraits on a flat green field from reading as a
+   contact sheet. Purely decorative, so it never takes a click. */
+.fk-seats::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  background: radial-gradient(78% 68% at 50% 44%, transparent 40%, rgba(0, 0, 0, 0.42) 100%);
 }
 
 /* The ring gets the table minus the log column, so a seat is never hidden
@@ -88,11 +111,17 @@
   position: relative;
   width: 100%;
   height: var(--fk-photo-h);
-  border: 1px solid var(--fk-line);
-  border-radius: 5px;
+  border: 1px solid #6c5b41;
+  border-radius: 6px;
   overflow: hidden;
   background: #2a2118 center/cover no-repeat;
-  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.55);
+  /* A thin warm inner edge reads as a card stock bevel; the drop shadow lifts
+     the seat off the felt instead of letting it sit flat on it. */
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 226, 168, 0.10),
+    0 6px 16px rgba(0, 0, 0, 0.6),
+    0 1px 3px rgba(0, 0, 0, 0.8);
+  transition: box-shadow 200ms ease, transform 200ms ease;
 }
 
 .fk-photo__art {
@@ -195,7 +224,21 @@
 
 /* state overlays */
 .fk-photo--dead .fk-photo__art { filter: grayscale(1) brightness(0.45); }
-.fk-photo--current { box-shadow: 0 0 0 2px var(--fk-gold), 0 4px 16px rgba(216, 178, 106, 0.4); }
+/* Whose turn it is. A steady gold frame plus a slow breath, so the eye can
+   find the active seat without it flashing for the whole turn. */
+.fk-photo--current {
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 226, 168, 0.28),
+    0 0 0 2px var(--fk-gold),
+    0 0 26px rgba(216, 178, 106, 0.5),
+    0 6px 18px rgba(0, 0, 0, 0.6);
+  animation: fk-current-breath 2.6s ease-in-out infinite;
+}
+
+@keyframes fk-current-breath {
+  0%, 100% { outline-color: transparent; filter: brightness(1); }
+  50% { filter: brightness(1.06); }
+}
 .fk-photo--chained::after {
   content: "";
   position: absolute;
@@ -352,19 +395,34 @@
 
 /* -------------------------------------------------------------- centre */
 
+/* The processing area.
+ *
+ * This was `width: min(68%, 900px)` centred with `top: 46%`, which on a narrow
+ * ring reached under the left and right seats and drew cards straight across
+ * their equipment rows. It is now bounded by the seat columns — `--fk-table-inset`
+ * is `photoW + 2 * gutter`, published by `RoomView` from the measured ring — so
+ * the middle of the table is the space the seats do not occupy, at any size. */
 .fk-table {
   position: absolute;
-  left: 50%;
-  top: 46%;
-  transform: translate(-50%, -50%);
-  width: min(68%, 900px);
+  left: var(--fk-table-inset, 180px);
+  right: var(--fk-table-inset, 180px);
+  /* Below the tallest seat on the top edge, not centred in the ring. Centring
+     put the processing area straight through the equipment row of whichever
+     seat sat above it — 152px of overlap, measured in a live game. */
+  top: var(--fk-table-top, 300px);
+  bottom: 10px;
   min-height: calc(var(--fk-card-h) + 26px);
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
+  justify-content: center;
+  gap: 8px;
   pointer-events: none;
 }
+
+/* A card on the table is a stage for the judgement effects the engine plays on
+   it — see `TableCard` and `anim/bus.ts`. */
+.fk-table-card { position: relative; }
 
 .fk-table__cards {
   display: flex;
@@ -375,19 +433,23 @@
   min-height: var(--fk-card-h);
 }
 
+/* The deck, the discard and the round number.
+ *
+ * These used to be pinned to the top-centre of the ring, which is exactly where
+ * the top row of seats now is — they were drawn across two portraits. They
+ * belong with the cards they are counting, so they sit at the head of the
+ * table band instead. */
 .fk-piles {
-  position: absolute;
-  left: 50%;
-  top: 4px;
-  transform: translateX(-50%);
   display: flex;
   gap: 18px;
   font-size: 12px;
+  letter-spacing: 0.02em;
   color: var(--fk-ink-dim);
-  background: var(--fk-panel);
-  border: 1px solid var(--fk-line);
-  border-radius: 4px;
-  padding: 3px 12px;
+  background: rgba(12, 10, 7, 0.72);
+  border: 1px solid rgba(216, 178, 106, 0.28);
+  border-radius: 999px;
+  padding: 3px 16px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.45);
 }
 
 .fk-piles b { color: var(--fk-gold); font-weight: 600; }
@@ -398,13 +460,15 @@
   position: relative;
   width: var(--fk-card-w);
   height: var(--fk-card-h);
-  border-radius: 5px;
+  border-radius: 6px;
   border: 1px solid #12100c;
   background: #efe6d2 center/cover no-repeat;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.35),
+    0 3px 8px rgba(0, 0, 0, 0.55);
   color: #201a12;
   flex: 0 0 auto;
-  transition: transform 140ms ease, box-shadow 140ms ease, filter 140ms ease;
+  transition: transform 140ms cubic-bezier(0.2, 0.8, 0.3, 1), box-shadow 140ms ease, filter 140ms ease;
 }
 
 .fk-card__art { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border-radius: 4px; }
@@ -493,12 +557,15 @@
 
 .fk-dashboard {
   display: grid;
-  grid-template-columns: minmax(140px, 210px) 1fr minmax(190px, 260px);
+  /* Two columns now: the skills and the hand. The prompt and OK/Cancel used to
+     be a third column down the right edge — they are the strip above. */
+  grid-template-columns: minmax(140px, 210px) 1fr;
   gap: 10px;
   align-items: stretch;
-  padding: 8px 12px 10px;
-  border-top: 1px solid var(--fk-line);
-  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.45), rgba(0, 0, 0, 0.78));
+  padding: 4px 14px 10px;
+  border-top: 1px solid rgba(216, 178, 106, 0.22);
+  background:
+    linear-gradient(to bottom, rgba(10, 8, 6, 0.72), rgba(0, 0, 0, 0.9));
 }
 
 .fk-skills {
@@ -531,33 +598,78 @@
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  gap: 4px;
+  gap: 6px;
   flex-wrap: nowrap;
   overflow-x: auto;
-  padding: 18px 4px 6px;
-  min-height: calc(var(--fk-card-h) + 26px);
+  /* Headroom for the 16px a selected card lifts by, so it is not clipped by
+     the confirm strip above it. */
+  padding: 22px 4px 6px;
+  min-height: calc(var(--fk-card-h) + 30px);
 }
 
 .fk-hand__empty { color: var(--fk-ink-dim); font-size: 13px; align-self: center; }
 
-/* --------------------------------------------------------------- controls */
+/* ---------------------------------------------------------- confirm strip */
 
-.fk-controls {
+/* The question you are being asked, directly over the cards you answer it with.
+   `Room.qml:362` anchors this full width to the seam between the table and the
+   dashboard; the web room gives it its own grid row, which is the same place
+   without the negative margin. See `ConfirmBar.tsx`. */
+.fk-confirm {
   display: flex;
   flex-direction: column;
+  align-items: center;
   justify-content: flex-end;
   gap: 6px;
+  /* Reserved whether or not there is a question in it. A strip that collapses
+     moves the whole hand up and down as requests open and close. */
+  min-height: 62px;
+  padding: 6px 16px 4px;
+  background:
+    linear-gradient(to bottom, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.42) 60%, rgba(0, 0, 0, 0.5) 100%);
+  transition: background 200ms ease;
 }
 
-.fk-prompt {
-  min-height: 18px;
-  font-size: 13px;
-  line-height: 1.3;
-  color: #ffe7a8;
-  text-shadow: 0 1px 2px #000;
+/* While something is actually being asked, the strip lifts off the felt: a warm
+   rule along the top edge and a faint glow behind the text, so the eye lands on
+   the question before it lands on the hand. */
+.fk-confirm--asking {
+  background:
+    radial-gradient(120% 160% at 50% 100%, rgba(216, 178, 106, 0.16), transparent 70%),
+    linear-gradient(to bottom, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.48) 60%, rgba(0, 0, 0, 0.58) 100%);
+  box-shadow: inset 0 1px 0 rgba(216, 178, 106, 0.35);
 }
 
-.fk-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
+.fk-confirm__prompt {
+  min-height: 19px;
+  max-width: min(900px, 92%);
+  text-align: center;
+  font-size: clamp(14px, 1.35vw, 18px);
+  line-height: 1.25;
+  color: #ffeec2;
+  /* `Room.qml:376` uses `Text.Outline` with `styleColor: "#3D2D1C"` so the
+     prompt stays readable wherever it lands over the table. */
+  text-shadow:
+    0 1px 0 #3d2d1c, 0 -1px 0 #3d2d1c, 1px 0 0 #3d2d1c, -1px 0 0 #3d2d1c,
+    0 2px 8px rgba(0, 0, 0, 0.9);
+}
+
+.fk-confirm--asking .fk-confirm__prompt { animation: fk-ask-in 220ms ease-out; }
+
+@keyframes fk-ask-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+
+.fk-confirm__row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.fk-buttons { display: flex; gap: 10px; flex-wrap: wrap; }
 
 .fk-btn {
   flex: 1 1 auto;
@@ -786,24 +898,222 @@
 .fk-indicators line { stroke: #dfc27a; stroke-width: 2.5; }
 .fk-indicators circle { fill: #dfc27a; }
 
-.fk-effect {
+/* ============================================================== animation ==
+ *
+ * Two layers, and the split is deliberate.
+ *
+ * SPRITES are the engine's own art — the 22 card effects, the damage burst, the
+ * two judgement marks and the nine skill-invoke banners it ships as PNG frame
+ * folders, packed into one WebP strip each by `assets/anim/build-anim.mjs`.
+ * One rule drives all of them: `steps()` walks `background-position` across the
+ * strip a frame at a time. No JavaScript runs per frame, the compositor does
+ * the work, and a React re-render cannot interrupt a running animation because
+ * the nodes are appended to the stage by `anim/bus.ts`, not rendered by React.
+ *
+ * ACCENTS are the moments the engine reports and ships no art for — a hit, a
+ * recovery, equipment landing, cards drawn, a player falling. Those are built
+ * from transforms and filters. The shipped sprites cost 3.3 MB for 22 effects;
+ * authoring a dozen more the same way would cost more than the rest of the game
+ * put together, and a transform stays sharp at any size and can be tinted per
+ * damage element, which a fixed PNG cannot.
+ */
+
+/* The unclipped layer an effect is drawn into. `overflow: visible` is the
+   point: a 杀 is wider than the portrait and is meant to spill past it. */
+.fk-anim-layer {
   position: absolute;
-  left: 50%;
-  top: 40%;
-  transform: translate(-50%, -50%);
-  font-size: calc(var(--fk-photo-w) * 0.19);
-  color: #ffe7a8;
-  text-shadow: 0 2px 6px #000;
+  inset: 0;
+  overflow: visible;
   pointer-events: none;
-  animation: fk-pop 1100ms ease-out forwards;
-  z-index: 8;
+  z-index: 9;
 }
 
-@keyframes fk-pop {
-  0% { opacity: 0; transform: translate(-50%, -30%) scale(0.7); }
-  22% { opacity: 1; transform: translate(-50%, -50%) scale(1.08); }
-  75% { opacity: 1; }
-  100% { opacity: 0; transform: translate(-50%, -70%) scale(1); }
+/* One sprite. Every number comes in as a custom property from `bus.ts`:
+   the strip's URL, its frame count, one frame's size, and the duration the
+   current table pace allows. */
+.fk-anim {
+  /* The width the effect is DRAWN at, derived from the measured seat rather
+     than from the sheet's pixels: the Qt client draws these at `scale: 0.75`
+     over a fixed 175px photo, and the web photo is anywhere from 84 to 168.
+     Every other length below is built from this one, which is why the ratio
+     that crosses from `bus.ts` is unitless — CSS cannot divide px by px. */
+  --fk-anim-dw: calc(var(--fk-photo-w, 140px) * 1.15);
+
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  width: var(--fk-anim-dw);
+  height: calc(var(--fk-anim-dw) * var(--fk-anim-ratio, 1));
+  transform: translate(-50%, -50%);
+  background-image: var(--fk-anim-url);
+  background-repeat: no-repeat;
+  /* The strip is `frames` frames wide and one frame tall. */
+  background-size: calc(var(--fk-anim-dw) * var(--fk-anim-frames)) 100%;
+  background-position: 0 0;
+  will-change: background-position;
+  animation:
+    fk-sprite var(--fk-anim-ms) steps(var(--fk-anim-frames)) 1 both,
+    fk-sprite-fade var(--fk-anim-ms) ease-out 1 both;
+}
+
+/* Walking the strip. The end position is one frame PAST the last, which is what
+   `steps(n)` needs to show frames 0..n-1 and never a blank tail. */
+@keyframes fk-sprite {
+  from { background-position-x: 0; }
+  to { background-position-x: calc(var(--fk-anim-dw) * var(--fk-anim-frames) * -1); }
+}
+
+/* The art was drawn to be played at 20fps over about a second and cut off by
+   nothing. Compressed into a beat it needs a tail, or it ends on a hard edge. */
+@keyframes fk-sprite-fade {
+  0% { opacity: 0; }
+  12% { opacity: 1; }
+  78% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* A skill invocation names itself, the way `SkillInvokeAnimation.qml` does —
+   the banner alone does not say which skill fired. */
+.fk-anim__label {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  white-space: nowrap;
+  font-size: calc(var(--fk-anim-dw) * 0.17);
+  font-weight: 700;
+  color: #fff6dd;
+  text-shadow:
+    0 1px 0 #4a2c10, 0 -1px 0 #4a2c10, 1px 0 0 #4a2c10, -1px 0 0 #4a2c10,
+    0 0 12px rgba(255, 190, 90, 0.9);
+  animation: fk-anim-label var(--fk-anim-ms) ease-out both;
+}
+
+@keyframes fk-anim-label {
+  0% { opacity: 0; transform: translate(-30%, -50%) scale(0.9); }
+  30% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  80% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1.02); }
+}
+
+/* `InvokeUltSkill` — the engine's "big" animation, for a limited skill firing
+   its once-per-game. Same banner, more presence. */
+.fk-anim--ult {
+  --fk-anim-dw: calc(var(--fk-photo-w, 140px) * 1.75);
+  filter: drop-shadow(0 0 14px rgba(255, 200, 110, 0.85));
+  z-index: 12;
+}
+
+/* ---------------------------------------------------------------- accents */
+
+/* A hit. `Photo.qml:336` trembles the photo 15px and back over 200ms; this is
+   that, plus a tint that names the element the damage came in as. */
+.fk-hit { animation: fk-tremble 260ms cubic-bezier(0.36, 0.07, 0.19, 0.97) both; }
+
+.fk-hit::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: var(--fk-hit-tint, radial-gradient(circle at 50% 45%, rgba(255, 70, 50, 0.62), transparent 72%));
+  animation: fk-hit-flash 260ms ease-out both;
+  z-index: 7;
+}
+
+.fk-hit--normal  { --fk-hit-tint: radial-gradient(circle at 50% 45%, rgba(255, 74, 52, 0.62), transparent 72%); }
+.fk-hit--fire    { --fk-hit-tint: radial-gradient(circle at 50% 45%, rgba(255, 146, 40, 0.72), transparent 72%); }
+.fk-hit--thunder { --fk-hit-tint: radial-gradient(circle at 50% 45%, rgba(150, 190, 255, 0.72), transparent 72%); }
+.fk-hit--ice     { --fk-hit-tint: radial-gradient(circle at 50% 45%, rgba(180, 240, 255, 0.75), transparent 72%); }
+
+@keyframes fk-tremble {
+  0%, 100% { transform: translateX(0); }
+  15% { transform: translateX(-7px); }
+  35% { transform: translateX(6px); }
+  55% { transform: translateX(-4px); }
+  78% { transform: translateX(2px); }
+}
+
+@keyframes fk-hit-flash {
+  0% { opacity: 0; }
+  18% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* Recovery. There is no `LogEvent` for it — a 桃 raises hp through the same
+   `PropertyUpdate` as everything else — so the bus watches the value. */
+.fk-heal::after {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  border-radius: inherit;
+  pointer-events: none;
+  border: 2px solid rgba(126, 232, 130, 0.9);
+  box-shadow: 0 0 18px rgba(96, 220, 110, 0.75), inset 0 0 24px rgba(96, 220, 110, 0.4);
+  animation: fk-heal-ring 420ms ease-out both;
+  z-index: 7;
+}
+
+@keyframes fk-heal-ring {
+  0% { opacity: 0; transform: scale(0.94); }
+  30% { opacity: 1; transform: scale(1.02); }
+  100% { opacity: 0; transform: scale(1.09); }
+}
+
+/* Equipment landing: a sweep of light down the portrait, once. */
+.fk-equipped::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(105deg, transparent 38%, rgba(255, 233, 170, 0.75) 50%, transparent 62%);
+  background-size: 280% 100%;
+  animation: fk-sweep 420ms ease-out both;
+  z-index: 7;
+}
+
+@keyframes fk-sweep {
+  from { background-position: 160% 0; opacity: 1; }
+  to { background-position: -60% 0; opacity: 0; }
+}
+
+/* Cards drawn. The hand count changing is otherwise the only sign, and on
+   another player's seat that is one digit. */
+.fk-drew::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 40%;
+  pointer-events: none;
+  background: linear-gradient(to top, rgba(120, 200, 255, 0.55), transparent);
+  animation: fk-drew-glow 360ms ease-out both;
+  z-index: 7;
+}
+
+@keyframes fk-drew-glow {
+  0% { opacity: 0; transform: translateY(30%); }
+  35% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; }
+}
+
+/* A player falling. `LogEvent{type:"Death"}`. The portrait is greyed for the
+   rest of the game by `.fk-photo--dead`; this is the moment it happens. */
+.fk-fell { animation: fk-fell 900ms ease-in both; }
+
+@keyframes fk-fell {
+  0% { filter: none; transform: none; }
+  22% { filter: brightness(1.9) saturate(0.5); }
+  100% { filter: grayscale(1) brightness(0.5); transform: translateY(4px); }
+}
+
+/* Motion is decoration; the game is legible without it. */
+@media (prefers-reduced-motion: reduce) {
+  .fk-anim, .fk-anim__label,
+  .fk-hit, .fk-hit::after, .fk-heal::after, .fk-equipped::after,
+  .fk-drew::after, .fk-fell {
+    animation-duration: 1ms !important;
+  }
 }
 
 .fk-gameover__winner { font-size: 22px; color: var(--fk-gold); margin-bottom: 8px; }

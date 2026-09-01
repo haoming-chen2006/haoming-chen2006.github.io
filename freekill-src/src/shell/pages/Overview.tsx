@@ -23,6 +23,9 @@ type Tab = 'generals' | 'cards' | 'modes' | 'skills';
  *  engine key (`wei`) renders long, so these are UI-dictionary keys. */
 const KINGDOMS: Record<string, UiKey> = {
   wei: 'kingdom.wei', shu: 'kingdom.shu', wu: 'kingdom.wu', qun: 'kingdom.qun', jin: 'kingdom.jin',
+  // The mobile roster brings nine 神 generals; without this they render a bare
+  // `god` badge and the kingdom filter cannot reach them.
+  god: 'kingdom.god',
 };
 const CARD_TYPE: Record<number, UiKey> = {
   1: 'cardType.basic', 2: 'cardType.trick', 3: 'cardType.equip',
@@ -48,9 +51,17 @@ function useEngineText(): (key: string, baked?: string) => string {
   const { loaded } = useSession();
   const lang = useLanguage();
   const zh = loaded.overview.translations;
+  // Three tiers, best first: our own English table (complete for the standard
+  // pack), then upstream's own English where upstream wrote any (44 of the
+  // mobile roster's 249 general names), then the Chinese. The middle tier is
+  // why an English reader sees "Cao Chun" rather than 曹纯; it is not why they
+  // see English skill text, because upstream never wrote that.
+  const en = loaded.overview.translationsEn;
   return useCallback(
-    (key: string, baked?: string) => engineTr(key, lang, (k) => zh[k] ?? baked ?? k),
-    [lang, zh],
+    (key: string, baked?: string) => engineTr(key, lang, (k) => (
+      (lang === 'en_US' ? en?.[k] : undefined) ?? zh[k] ?? baked ?? k
+    )),
+    [lang, zh, en],
   );
 }
 
@@ -146,7 +157,7 @@ export function Overview({ tab, onTab }: { tab: Tab; onTab: (t: Tab) => void }) 
       {tab === 'generals' ? (
         <div className="grid-generals">
           {shownGenerals.map((g) => {
-            const src = generalImage(loaded, g.name, g.pack);
+            const src = generalImage(loaded, g.name, g.extension);
             return (
               <button className="general-card" key={g.name} onClick={() => setDetail(g)}>
                 {src ? <img src={src} alt={tr(g.name, g.title)} loading="lazy" /> : <div style={{ aspectRatio: '3/4' }} />}
@@ -236,7 +247,7 @@ function GeneralDetail({ general, onClose }: { general: OverviewGeneral; onClose
   const t = useT();
   const tr = useEngineText();
   const { loaded } = useSession();
-  const src = generalImage(loaded, general.name, general.pack);
+  const src = generalImage(loaded, general.name, general.extension);
   return (
     <div className="detail" onClick={onClose} role="dialog" aria-modal="true">
       <div className="sheet" onClick={(e) => e.stopPropagation()}>

@@ -606,15 +606,27 @@ export const PROBE_SRC = String.raw`
     // for the cards this seat has never been told about. Cards whose area IS
     // the draw pile are already inside that number, so they are excluded here
     // rather than added twice.
+    // Cards the engine PRINTED at runtime are not deck cards and must not be
+    // counted against a deck baseline. CardManager:printCard hands them ids
+    // from -2 downwards (lua/lunarltk/core/room/card_manager.lua:27,145), so
+    // they are unmistakable. A skill like quchong or miaolue legitimately puts
+    // one into play, the seat learns its id from the MoveCards that moves it,
+    // and the universe grows by one — which read as a card appearing from
+    // nowhere and failed a game that was behaving correctly.
+    //
+    // They are counted separately rather than dropped, because "how many
+    // derived cards are in play" is worth seeing.
     var byArea = { unknown: 0, hand: 0, equip: 0, judge: 0, special: 0, processing: 0, draw: 0, discard: 0, "void": 0 };
-    var known = 0;
+    var known = 0, printed = 0;
     for (var cid in st.cardArea) {
+      if (Number(cid) < 0) { printed += 1; continue; }
       var a = AREA_NAME[st.cardArea[cid]] || 'unknown';
       byArea[a] += 1;
       known += 1;
     }
     out.areas = byArea;
     out.knownCards = known;
+    out.printedCards = printed;
     out.universe = st.drawPileCount + (known - byArea.draw);
 
     out.ownHand = st.selfId == null ? [] : (st.hands[st.selfId] || []).slice();

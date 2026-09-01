@@ -29,9 +29,13 @@ export function sourceFiles() {
   // vi_VN is not shipped; it contributes 78 Latin diacritics and zero Han.
   const isLua = (p) => p.endsWith('.lua') && !p.endsWith('vi_VN.lua');
   files.push(...walk(join(ENGINE_ROOT, 'lua'), isLua));
-  for (const pkg of ['standard', 'standard_cards', 'maneuvering']) {
+  for (const pkg of ['standard', 'standard_cards', 'maneuvering', 'utility', 'mobile']) {
     files.push(...walk(join(ENGINE_ROOT, 'packages', pkg), isLua));
   }
+  // Site-owned packages. They mount at the same `packages/` prefix as the
+  // mirrored ones and their translation tables render in the UI exactly the
+  // same way, so leaving them out ships tofu for whatever Han only they use.
+  files.push(...walk(join(WEB_ROOT, 'packages'), isLua));
   files.push(join(ENGINE_ROOT, 'lang', 'zh_CN.ts'), join(ENGINE_ROOT, 'lang', 'en_US.ts'));
   files.push(...walk(join(ENGINE_ROOT, 'Fk'), (p) => /\.(qml|js|mjs)$/.test(p)));
   files.push(...walk(join(WEB_ROOT, 'src'), (p) => /\.(ts|tsx|css|html)$/.test(p)));

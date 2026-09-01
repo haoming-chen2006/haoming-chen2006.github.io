@@ -115,8 +115,21 @@ export async function playAuditedGame(opts) {
     const seated = await fillWithBots(host.b, botTarget);
     if (seated !== botTarget) throw new Error(`wanted ${botTarget} seated before guests, got ${seated}`);
 
+    // The share link is `origin + pathname + #/join/<code>` (src/shell/router.ts) —
+    // deliberately without the host's query, because a link handed to a friend
+    // should not carry the host's debug flags. For the campaign that is wrong in
+    // one specific way: the base URL's `?pace=0` would be dropped, and the guest
+    // seats would run paced while the host did not. Re-apply the base's query so
+    // every seat at the table is on the same build settings.
+    const joinFor = (u) => {
+      const from = new URL(base);
+      if (!from.search) return u;
+      const to = new URL(u);
+      for (const [k, v] of from.searchParams) if (!to.searchParams.has(k)) to.searchParams.set(k, v);
+      return to.toString();
+    };
     for (const g of guests) {
-      await g.b.goto(joinUrl);
+      await g.b.goto(joinFor(joinUrl));
       await g.b.waitFor(`location.hash.startsWith('#/room/')`, 60000);
     }
     for (const s of openedSeats) {

@@ -4,7 +4,7 @@ import { MainThreadLuaClient } from '../luaClient.ts';
 import { InProcessLuaHost, allBotSeats } from '../luaHost.ts';
 import { RoomSession } from '../roomSession.ts';
 import { PlayerState } from '../types.ts';
-import { bundle, SEED } from './support.ts';
+import { bundle, SEED, STANDARD_ROSTER_ONLY } from './support.ts';
 
 const LONG = 300_000;
 
@@ -103,7 +103,13 @@ async function seatAHuman(seed = SEED): Promise<Table> {
   };
   t.session = await RoomSession.start(
     host,
-    { roomId: 'human-1', seed, seats, ownerId: 1, timeout: 15, settings: { gameMode: 'aaa_role_mode' } },
+    {
+      roomId: 'human-1', seed, seats, ownerId: 1, timeout: 15,
+      // Pinned to the standard roster: the counts below ("more than five scenes
+      // offered a card") describe the game this seed plays, and the general
+      // pool decides that. See `STANDARD_ROSTER_ONLY`.
+      settings: { gameMode: 'aaa_role_mode', ...STANDARD_ROSTER_ONLY },
+    },
     { onEnvelope: deliver, keepRaw: true },
   );
   return t;
@@ -210,7 +216,7 @@ describe('a human at the table', () => {
           seats: allBotSeats(8),
           ownerId: 1,
           timeout: 15,
-          settings: { gameMode: 'aaa_role_mode' },
+          settings: { gameMode: 'aaa_role_mode', ...STANDARD_ROSTER_ONLY },
         },
         {
           onEnvelope: (e) => {

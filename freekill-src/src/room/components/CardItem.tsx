@@ -12,6 +12,8 @@ import { useLanguage } from '../../i18n';
 import { localize, type Localized } from '../../i18n/localized';
 import { useRoom } from '../RoomContext';
 import type { CardState } from '../state/types';
+import { cardStage } from './anim/bus';
+import { EffectStage } from './anim/Stage';
 
 export interface CardItemProps {
   readonly cid: number;
@@ -90,15 +92,27 @@ export function cls(...parts: readonly (string | false | undefined | null)[]): s
   return parts.filter(Boolean).join(' ');
 }
 
-/** Convenience for table cards, which carry their own footnote/expiry. */
+/**
+ * Convenience for table cards, which carry their own footnote/expiry — and
+ * which are the only cards the engine plays an effect ON.
+ *
+ * `Room:setCardEmotion` (`room.lua:524`) sends `Animate{type:"Emotion",
+ * is_card:true, player:<card id>}`, and the judge event uses it for every
+ * judgement in the game: `judgegood` or `judgebad` over the card that was
+ * flipped (`events/judge.lua:96`). Rendering that on the card is the whole
+ * difference between a judgement you watch and a line in the log you missed.
+ */
 export function TableCard({ card }: { card: CardState }) {
   return (
-    <CardItem
-      cid={card.cid}
-      known={card.known}
-      footnote={card.footnote}
-      virtName={card.virtName}
-      expired={card.expired}
-    />
+    <div className="fk-table-card">
+      <CardItem
+        cid={card.cid}
+        known={card.known}
+        footnote={card.footnote}
+        virtName={card.virtName}
+        expired={card.expired}
+      />
+      <EffectStage stage={cardStage(card.cid)} host=".fk-table-card" />
+    </div>
   );
 }

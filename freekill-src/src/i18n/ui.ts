@@ -86,10 +86,16 @@ export const UI = {
   'lobby.roomName': { zh_CN: '房间名', en_US: 'Room name' },
   'lobby.defaultRoomName': { zh_CN: '{name}的房间', en_US: '{name}’s room' },
   'lobby.mode': { zh_CN: '模式', en_US: 'Mode' },
-  'lobby.capacity': { zh_CN: '人数', en_US: 'Players' },
-  'lobby.capacityOption': { zh_CN: '{n} 人', en_US: '{n} players' },
+  'lobby.chooseMode': { zh_CN: '选个玩法', en_US: 'Choose a game' },
+  'lobby.chooseModeHint': {
+    zh_CN: '人数由玩法决定 —— 选了玩法，桌子就定了。',
+    en_US: 'The game decides the table. Pick one and the seats are set.',
+  },
+  'lobby.moreOptions': { zh_CN: '更多设置', en_US: 'More options' },
+  'lobby.fewerOptions': { zh_CN: '收起设置', en_US: 'Fewer options' },
   'lobby.generalNum': { zh_CN: '选将数', en_US: 'Characters offered' },
   'lobby.create': { zh_CN: '创建房间', en_US: 'Create room' },
+  'lobby.createIn': { zh_CN: '创建{mode}', en_US: 'Create a {mode} room' },
   'lobby.packs': { zh_CN: '扩展包', en_US: 'Packages' },
   'lobby.code': { zh_CN: '房号', en_US: 'Room code' },
   'lobby.join': { zh_CN: '加入', en_US: 'Join' },
@@ -100,10 +106,71 @@ export const UI = {
   'lobby.status.playing': { zh_CN: '游戏中', en_US: 'In progress' },
   'lobby.status.finished': { zh_CN: '已结束', en_US: 'Finished' },
 
+  /* ------------------------------------------------------------ game modes */
+  // src/shell/ModePicker.tsx, keyed by `src/contract/modes.ts`'s ModeId.
+  //
+  // These are the app's own words for the five offers, not the engine's. The
+  // engine has a name and a rules document for each mode it owns (`Fk:translate`
+  // of `webmodes_dizhu` and `:webmodes_dizhu`), and the room shows those; what
+  // the lobby needs is a sentence short enough to choose by.
+  'mode.duel.name': { zh_CN: '单挑', en_US: 'Duel' },
+  'mode.duel.tagline': {
+    zh_CN: '两个人，没有身份，谁先倒下谁输。',
+    en_US: 'Two players, no roles. Last one standing wins.',
+  },
+  'mode.team.name': { zh_CN: '2v2 对决', en_US: '2v2' },
+  'mode.team.tagline': {
+    zh_CN: '两人一队，队友坐你对面。没有主公，没有内奸，没有暗身份。',
+    en_US: 'Two against two, your partner opposite you. No lord, no renegade, nothing hidden.',
+  },
+  'mode.dizhu.name': { zh_CN: '斗地主', en_US: 'Fight the Landlord' },
+  'mode.dizhu.tagline': {
+    zh_CN: '一个地主打两个农民。地主多两个选将、多一点体力，还有两个专属技能。',
+    en_US: 'One landlord against two peasants. The landlord picks from two more characters, starts on one more HP, and holds two skills of their own.',
+  },
+  'mode.role5.name': { zh_CN: '五人身份', en_US: '5-player Roles' },
+  'mode.role5.tagline': {
+    zh_CN: '主公、忠臣、两名反贼、一名内奸。除主公外身份是暗的。',
+    en_US: 'A lord, a loyalist, two rebels and a renegade. Everyone but the lord starts hidden.',
+  },
+  'mode.role8.name': { zh_CN: '八人身份', en_US: '8-player Roles' },
+  'mode.role8.tagline': {
+    zh_CN: '主公、两忠臣、四反贼、一内奸。最经典的一桌。',
+    en_US: 'A lord, two loyalists, four rebels and a renegade. The classic table.',
+  },
+
+  'mode.seats': { zh_CN: '{n} 人', en_US: '{n} players' },
+  'mode.roleCount': { zh_CN: '{role}×{n}', en_US: '{role} ×{n}' },
+  'mode.hiddenRoles': { zh_CN: '暗身份', en_US: 'Hidden roles' },
+  'mode.openRoles': { zh_CN: '明身份', en_US: 'Open roles' },
+  'mode.unknown': { zh_CN: '未知玩法', en_US: 'Unknown game' },
+  'mode.selected': { zh_CN: '已选', en_US: 'Selected' },
+
+  // Role names as each mode says them. 斗地主 deals `lord` and `rebel` in the
+  // engine — see `contract/modes.ts` for why — but calls them 地主 and 农民.
+  'mode.role.lord': { zh_CN: '主公', en_US: 'Lord' },
+  'mode.role.loyalist': { zh_CN: '忠臣', en_US: 'Loyalist' },
+  'mode.role.rebel': { zh_CN: '反贼', en_US: 'Rebel' },
+  'mode.role.renegade': { zh_CN: '内奸', en_US: 'Renegade' },
+  'mode.role.landlord': { zh_CN: '地主', en_US: 'Landlord' },
+  'mode.role.peasant': { zh_CN: '农民', en_US: 'Peasant' },
+  'mode.side.yellow': { zh_CN: '黄队', en_US: 'Yellow' },
+  'mode.side.green': { zh_CN: '绿队', en_US: 'Green' },
+
   /* ---------------------------------------------------------- waiting room */
   // src/shell/pages/WaitingRoom.tsx
   'waiting.title': { zh_CN: '等待中', en_US: 'Waiting' },
   'waiting.seated': { zh_CN: '{seated}/{capacity} 就座', en_US: '{seated}/{capacity} seated' },
+  'waiting.fillTable': {
+    zh_CN: '还差 {n} 个人。等朋友进来，或者补机器人。',
+    en_US: '{n} seat(s) still empty. Wait for a friend, or fill them with bots.',
+  },
+  'waiting.fillWithBots': { zh_CN: '余下补机器人', en_US: 'Fill the rest with bots' },
+  'waiting.startNeedsFull': {
+    zh_CN: '开始游戏（人未满）',
+    en_US: 'Start game (table not full)',
+  },
+  'waiting.composition': { zh_CN: '本局身份', en_US: 'This table deals' },
   'waiting.youAreHost': { zh_CN: ' · 你是房主', en_US: ' · you are the host' },
   'waiting.code': { zh_CN: '房号', en_US: 'Room code' },
   'waiting.copyCode': { zh_CN: '复制房号', en_US: 'Copy code' },

@@ -24,8 +24,11 @@ export const TablePile = memo(function TablePile() {
     return () => clearTimeout(t);
   }, [state.table, store]);
 
+  // The counters live inside the table band rather than pinned to the top of
+  // the ring: that is where the top row of seats is now, and they were being
+  // drawn straight across two portraits.
   return (
-    <>
+    <div className="fk-table">
       <div className="fk-piles">
         <span>{lua.tr('pile_draw')} <b>{state.drawPileCount}</b></span>
         <span>{lua.tr('pile_discard')} <b>{state.discardCount}</b></span>
@@ -33,11 +36,9 @@ export const TablePile = memo(function TablePile() {
           ? <span>{fillArgs(lua.tr('#currentRoundNum'), String(state.round))}</span>
           : null}
       </div>
-      <div className="fk-table">
-        <div className="fk-table__cards">
-          {state.table.map((c, i) => <TableCard key={`${c.cid}:${c.eventId ?? 0}:${i}`} card={c} />)}
-        </div>
+      <div className="fk-table__cards">
+        {state.table.map((c, i) => <TableCard key={`${c.cid}:${c.eventId ?? 0}:${i}`} card={c} />)}
       </div>
-    </>
+    </div>
   );
 });

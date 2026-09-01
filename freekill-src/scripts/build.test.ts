@@ -12,7 +12,8 @@ import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { AssetManifestSchema, LuaManifestSchema } from '../src/contract/manifest';
-import { buildBundle, ENGINE_ROOT } from './build-lua-bundle.mjs';
+import { EN_US } from '../src/i18n/engine';
+import { buildBundle, ENGINE_ROOT, PACKAGES, SITE_PACKAGES } from './build-lua-bundle.mjs';
 import { glyphSet } from './glyphset.mjs';
 import { DIST } from './verify-dist.mjs';
 
@@ -39,9 +40,16 @@ describe('lua bundle (4.7)', () => {
     for (const rel of walk(join(ENGINE_ROOT, 'lua'), 'lua')) {
       expected.set(rel, readFileSync(join(ENGINE_ROOT, rel), 'utf8'));
     }
-    for (const pkg of ['standard', 'standard_cards', 'maneuvering', 'test']) {
+    for (const pkg of PACKAGES) {
       for (const rel of walk(join(ENGINE_ROOT, 'packages', pkg), `packages/${pkg}`)) {
         expected.set(rel, readFileSync(join(ENGINE_ROOT, rel), 'utf8'));
+      }
+    }
+    // Site-owned packages mount at the same `packages/<name>` prefix from a
+    // different root, which is exactly the thing a walker can get wrong.
+    for (const pkg of SITE_PACKAGES) {
+      for (const rel of walk(join(WEB_ROOT, 'packages', pkg), `packages/${pkg}`)) {
+        expected.set(rel, readFileSync(join(WEB_ROOT, rel), 'utf8'));
       }
     }
     const overlayDir = join(WEB_ROOT, 'lua', 'web');
@@ -70,6 +78,12 @@ describe('lua bundle (4.7)', () => {
     for (const p of ['standard', 'standard_cards', 'maneuvering', 'test']) {
       expect(manifest.packages).toContain(p);
     }
+    // The mobile roster and the skill library it requires. `utility` is not
+    // optional: packages/mobile/**/*.lua requires `packages.utility.utility`.
+    for (const p of ['utility', 'mobile']) expect(manifest.packages).toContain(p);
+    // This repo's own game modes, mounted from the site tree, not the mirror.
+    expect(manifest.packages).toContain('webmodes');
+    expect(bundle['packages/webmodes/init.lua']).toBeTruthy();
   });
 });
 
@@ -162,27 +176,90 @@ describe('fonts (4.6)', () => {
   });
 
   it('is a rounding error next to the 25.84 MB it replaces', () => {
-    expect(fonts.bytes).toBeLessThan(600 * 1024);
+    // 653 KB, up from 338 KB. The mobile pack nearly doubled the Han the build
+    // can render (1,458 -> 2,800) and the subset has to cover all of it or the
+    // roster shows tofu. Harvesting only the translation tables instead of the
+    // whole Lua tree would save 122 Han - not worth the risk of missing one.
+    expect(fonts.bytes).toBeLessThan(700 * 1024);
   });
 });
 
 describe('overview data (4.8)', () => {
   const data = JSON.parse(readFileSync(join(PUBLIC, 'overview.json'), 'utf8')) as {
-    generals: { name: string; illustrator: string; skills: string[]; kingdom: string }[];
-    cards: { name: string; copies: number }[];
+    generals: { name: string; pack: string; extension: string; illustrator: string;
+      skills: string[]; kingdom: string }[];
+    translationsEn?: Record<string, string>;
+    cards: { name: string; pack: string; copies: number }[];
     modes: { name: string }[];
     translations: Record<string, string>;
   };
+  const byExtension = (ext: string) => data.generals.filter((g) => g.extension === ext);
 
-  it('is the real standard pack, not a sample', () => {
-    expect(data.generals.length).toBe(25);
+  it('is the real content, not a sample', () => {
+    expect(byExtension('standard')).toHaveLength(25);
     expect(data.generals.map((g) => g.name)).toContain('xiahoudun');
     expect(data.cards.map((c) => c.name)).toContain('slash');
     expect(data.modes.map((m) => m.name)).toContain('aaa_role_mode');
   });
 
-  it('keeps the illustrator credits, which are the portraits only attribution', () => {
-    expect(data.generals.every((g) => g.illustrator === 'KayaK')).toBe(true);
+  it('ships the mobile roster, minus the generals whose skills are not here', () => {
+    // 294 visible in the engine; 45 hidden by `lua/web/roster.lua` because they
+    // cannot be played correctly here - 40 reference a skill that lives in an
+    // extension pack this checkout does not have (`nos__`, `ol__`, `mou__`,
+    // `os__`, `*_ex`), 3 need a card it does not define, 2 need a Room method
+    // this engine version does not have. Seating a general whose skill silently
+    // does nothing is a rules divergence, which is worse than a shorter roster.
+    expect(byExtension('mobile')).toHaveLength(249);
+    expect(data.generals.map((g) => g.name)).toContain('sunru');
+    // Ten sub-packages share one extension directory, which is why the payload
+    // carries `extension` separately from `pack`.
+    expect(new Set(byExtension('mobile').map((g) => g.pack)).size).toBeGreaterThanOrEqual(9);
+    // Every hidden general is gone for a reason the payload can still explain.
+    expect(data.generals.map((g) => g.name)).not.toContain('m_ex__caiwenji');
+  });
+
+  it('resolves a portrait for every general but the four upstream never drew', () => {
+    // The lookup key is the *extension* directory. Resolving by `pack` instead
+    // silently blanks 254 of 279 tiles - the art is in the manifest, under a
+    // path nothing asks for - so this is pinned rather than eyeballed.
+    const assets = AssetManifestSchema.parse(
+      JSON.parse(readFileSync(join(PUBLIC, 'asset-manifest.json'), 'utf8')),
+    );
+    const keys = new Set(assets.entries.map((e) => e.key));
+    const blank = data.generals.filter(
+      (g) => !keys.has(`packages/${g.extension}/image/generals/${g.name}.jpg`),
+    );
+    // These four ship no portrait in packages/mobile/image/generals at all.
+    // The grid draws its 3/4 placeholder for them, which is the honest answer.
+    expect(blank.map((g) => g.name).sort()).toEqual([
+      'm_shi__chenjiao', 'm_shi__wangchang', 'm_sp__yujin', 'mobile__yangqiu',
+    ]);
+  });
+
+  it('carries only the upstream English that src/i18n/engine does not already have', () => {
+    // The second lookup tier in `Overview.tsx`. It exists for the ~18 keys where
+    // upstream wrote English and we have not — mobile general names, mostly. Any
+    // key `EN_US` already covers is dead weight on the critical path, and the
+    // page would never read it anyway because `engineTr` checks EN_US first.
+    //
+    // This is the assertion that catches the failure mode that actually
+    // happened: `build-overview.mjs` cannot import `src/i18n/engine/index.ts`
+    // under plain node, so it composes the same set itself. When that
+    // composition was a hand-written list of tables, adding `modes.ts` silently
+    // took a whole table out of the filter. The script globs the directory now;
+    // this checks the result against the real thing.
+    const en = data.translationsEn ?? {};
+    const redundant = Object.keys(en).filter((k) => k in EN_US);
+    expect(redundant, `already covered by src/i18n/engine: ${redundant.slice(0, 10).join(', ')}`)
+      .toEqual([]);
+    expect(Object.keys(en).length).toBeGreaterThan(0);
+    expect(en.caochun).toBe('Cao Chun');
+  });
+
+  it('keeps the illustrator credits, which are the standard portraits only attribution', () => {
+    // Only the standard pack carries `illustrator:` keys; the mobile art ships
+    // with no credit of its own, and inventing one would be worse than none.
+    expect(byExtension('standard').every((g) => g.illustrator === 'KayaK')).toBe(true);
   });
 
   it('carries skill text for every general', () => {

@@ -172,6 +172,9 @@ export class Auditor {
         key: 'universe',
         expected: want, firstSeen: snap.universe, worst: snap.universe,
         drawPile: snap.drawPile, discard: snap.discard,
+        // Derived cards (negative ids) are excluded from `universe`; reported
+        // here so a real leak is not confused with a skill printing a card.
+        printedCards: snap.printedCards ?? 0,
         onScreen: snap.dom?.piles ?? null,
         areas: snap.areas, seq: snap.seq, round: snap.round,
         firstRound: snap.round,

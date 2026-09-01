@@ -11,8 +11,24 @@ export interface LuaVm {
 interface EmscriptenFs {
   chdir(path: string): void;
   stat(path: string): { mode: number };
-  isDir(mode: number): boolean;
+  /** Not exported by every emscripten build; `isDirMode` is the fallback. */
+  isDir?(mode: number): boolean;
   readdir(path: string): string[];
+}
+
+/**
+ * `FS.isDir` is absent from the `glue.wasm` emscripten build — it exports
+ * `isFile`/`isFIFO`/`isSocket` and nothing else. Calling it threw a TypeError
+ * that `__fk_isdir`'s catch swallowed into `false`, so every directory in the
+ * VFS reported as a non-directory. That is invisible for the four packages
+ * `ModManager:loadPackages` requires by name, and fatal for every package it
+ * discovers by walking `packages/` — they were skipped in silence. Test the
+ * S_IFDIR bits directly instead.
+ */
+const S_IFMT = 0o170000;
+const S_IFDIR = 0o040000;
+export function isDirMode(fs: EmscriptenFs, mode: number): boolean {
+  return typeof fs.isDir === 'function' ? fs.isDir(mode) : (mode & S_IFMT) === S_IFDIR;
 }
 
 export interface VmOptions {
@@ -121,7 +137,7 @@ function installHostShims(
   });
   lua.global.set('__fk_isdir', (p: string) => {
     try {
-      return fs.isDir(fs.stat(resolve(cwd, p)).mode);
+      return isDirMode(fs, fs.stat(resolve(cwd, p)).mode);
     } catch {
       return false;
     }

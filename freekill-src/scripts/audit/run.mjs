@@ -36,13 +36,39 @@ const argv = process.argv.slice(2);
 const flag = (name, fallback) => {
   const hit = argv.find((a) => a === `--${name}` || a.startsWith(`--${name}=`));
   if (!hit) return fallback;
-  const [, v] = hit.split('=');
-  return v === undefined ? true : v;
+  // Split on the FIRST `=` only. `hit.split('=')[1]` silently truncated any
+  // value containing one, so `--url=http://host/?pace=0` arrived as
+  // `http://host/?pace` — a wrong URL that still fetched fine, so the run
+  // completed and lied. Query strings are the common case; this is not exotic.
+  const eq = hit.indexOf('=');
+  return eq === -1 ? true : hit.slice(eq + 1);
 };
 
+/**
+ * Normalise the base URL without corrupting its query.
+ *
+ * The old form was `u.replace(/\/$/, '') + '/'`, which appended the slash to
+ * whatever the string ended with — for `…/freekill/?pace=0` that is the query,
+ * giving `?pace=0/`. Only the *path* wants a trailing slash; `new URL` is what
+ * knows where the path stops.
+ *
+ * `pace` defaults to 0 because a campaign is a bulk instrument. The engine's
+ * 800 ms bot pace makes a game 2.5-4x longer, which runs past this harness's
+ * own 15-minute per-game timeout and reports as a product failure. None of the
+ * audit's checks read a clock — rules, geometry, card conservation, hand
+ * retention, coverage and liveness are all event-driven — and at `pace=0` the
+ * driver takes byte-for-byte the pre-pacing path. An explicit `pace` in the URL
+ * still wins, so `…/?pace=800` audits the paced build on purpose.
+ */
+function normaliseBase(raw) {
+  const u = new URL(String(raw));
+  if (!u.pathname.endsWith('/')) u.pathname += '/';
+  if (!u.searchParams.has('pace')) u.searchParams.set('pace', '0');
+  return u.toString();
+}
+
 const positional = argv.find((a) => !a.startsWith('--'));
-const url = String(flag('url', positional ?? (flag('live', false) ? LIVE : PREVIEW)))
-  .replace(/\/$/, '') + '/';
+const url = normaliseBase(flag('url', positional ?? (flag('live', false) ? LIVE : PREVIEW)));
 const games = Number(flag('games', 1));
 const seatCount = Math.max(1, Math.min(4, Number(flag('seats', 2))));
 const parallel = Math.max(1, Number(flag('parallel', 1)));

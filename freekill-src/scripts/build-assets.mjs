@@ -33,7 +33,12 @@ const WANT_AUDIO = argv.has('--audio');
 
 /* ------------------------------------------------------------------ sources */
 
-const PACKS = ['standard', 'standard_cards', 'maneuvering'];
+/**
+ * `mobile` adds 317 general portraits and 27 chrome rasters (7.6 MB of JPEG) and
+ * no `anim/` tree at all. Its 82 MB of audio is severable and stays behind
+ * `--audio` with everyone else's.
+ */
+const PACKS = ['standard', 'standard_cards', 'maneuvering', 'mobile'];
 
 /** Quality per class, from the measured re-encode table in assets-findings.md. */
 function qualityFor(rel) {

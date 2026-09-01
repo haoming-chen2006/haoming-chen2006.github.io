@@ -14,6 +14,7 @@
 import { useMemo, useState } from 'react';
 import { useRoom, useRoomState, usePrompt } from '../RoomContext';
 import { CardItem, cls } from '../components/CardItem';
+import { GeneralDetail } from './GeneralDetail';
 import { Btn, Dialog, GeneralCard, Panel } from './parts';
 
 export interface DialogHostProps {
@@ -82,6 +83,25 @@ function RequestDialog({ onReply, interactive }: DialogHostProps) {
 
 /* --------------------------------------------------------- choose general */
 
+/**
+ * 选将. Which generals are offered, whether a pick is legal and whether the set
+ * is finished are all the engine's answers (`ChooseGeneralFilter` /
+ * `ChooseGeneralFeasible`); the box picks nothing for itself.
+ *
+ * READING BEFORE PICKING. A player choosing between three names they have never
+ * seen is guessing, and with a 319-general pool that is nearly always. Every
+ * card therefore carries a ⓘ badge, and there is a `Show General Detail` button
+ * for whatever is selected — the same two routes `ChooseGeneralBox.qml` offers.
+ * Both open `<GeneralDetail>`, which is read-only and can page across the whole
+ * offer, so the shortlist is read in one sitting rather than one box at a time.
+ *
+ * The detail box lives in local state, next to `picked` and torn down with it.
+ * That matters more than it looks: this component unmounts the moment the
+ * request is answered (`RequestDialog` returns null once `state.request` is no
+ * longer a dialog), so there is no path where the popup outlives the question
+ * it was opened from, and nothing about it can leave a request live after a
+ * reply. It also never calls `onReply`, so it cannot answer one either.
+ */
 function ChooseGeneralBox(
   { data, onReply, interactive }: { data: unknown; onReply: (v: unknown) => void; interactive: boolean },
 ) {
@@ -91,6 +111,7 @@ function ChooseGeneralBox(
   const ruleName = rule ?? (heg ? 'heg_general_choose' : 'askForGeneralsChosen');
   const extraData = extra ?? { n: count };
   const [picked, setPicked] = useState<string[]>([]);
+  const [detail, setDetail] = useState<string | null>(null);
 
   const prompt = lua.chooseGeneralPrompt(ruleName, generals, extraData) || '#AskForGeneral';
   const feasible = lua.chooseGeneralFeasible(ruleName, picked, generals, extraData);
@@ -102,17 +123,48 @@ function ChooseGeneralBox(
   };
 
   return (
-    <Dialog
-      title={lua.tr('#AskForGeneral')}
-      prompt={prompt === '#AskForGeneral' ? undefined : lua.tr(prompt)}
-      actions={<Btn primary disabled={!interactive || !feasible} onClick={() => onReply(picked)}>{lua.tr('OK')}</Btn>}
-    >
-      <div className="fk-generals">
-        {generals.map((g) => (
-          <GeneralCard key={g} name={g} selected={picked.includes(g)} onClick={interactive ? () => toggle(g) : undefined} />
-        ))}
-      </div>
-    </Dialog>
+    <>
+      <Dialog
+        title={lua.tr('#AskForGeneral')}
+        prompt={prompt === '#AskForGeneral' ? undefined : lua.tr(prompt)}
+        actions={<>
+          {/* `ChooseGeneralBox.qml:123` — enabled once something is selected,
+              and deliberately NOT primary: the audit driver and every player
+              read the primary button in a request dialog as "answer it". */}
+          <Btn disabled={!picked.length} onClick={() => setDetail(picked[picked.length - 1] ?? null)}>
+            {lua.tr('Show General Detail')}
+          </Btn>
+          <Btn primary disabled={!interactive || !feasible} onClick={() => onReply(picked)}>{lua.tr('OK')}</Btn>
+        </>}
+      >
+        {/* The offer is whatever the mode hands over — three in 身份, the whole
+            of a 319-general pool under free assign. The grid scrolls inside the
+            box so a long one cannot push OK off the bottom of the screen. */}
+        <div className="fk-generals" style={{ maxHeight: '58vh', overflowY: 'auto' }}>
+          {generals.map((g) => (
+            <GeneralCard
+              key={g}
+              name={g}
+              selected={picked.includes(g)}
+              onClick={interactive ? () => toggle(g) : undefined}
+              // Not gated on `interactive`: an observer and a replay viewer want
+              // to read a general's skills as much as the seat picking one does,
+              // and reading answers nothing.
+              onDetail={() => setDetail(g)}
+            />
+          ))}
+        </div>
+      </Dialog>
+      {detail ? (
+        <GeneralDetail
+          name={detail}
+          pool={generals}
+          onShow={setDetail}
+          selected={picked.includes(detail)}
+          onClose={() => setDetail(null)}
+        />
+      ) : null}
+    </>
   );
 }
 

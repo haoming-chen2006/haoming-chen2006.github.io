@@ -122,9 +122,16 @@ try {
     // Wait for the full set, not "more than twenty": catching the list
     // mid-render and then asserting it is complete is a false failure, and one
     // this walk has produced.
-    await b.waitFor(`document.querySelectorAll('.general-card').length === 25`, 30000);
+    // The expected count comes from the build's own manifest, never a literal:
+    // this walk hardcoded 25 and started failing the moment a general pack
+    // landed, reporting a roster ten times larger as a regression.
+    const expected = await b.evaluate(
+      `fetch('overview.json').then(r => r.json()).then(d => d.generals.length)`);
+    if (!expected) throw new Error('overview.json served no generals');
+    await b.waitFor(
+      `document.querySelectorAll('.general-card').length === ${expected}`, 30000);
     const n = await b.evaluate(`document.querySelectorAll('.general-card').length`);
-    if (n !== 25) throw new Error(`expected 25 generals, saw ${n}`);
+    if (n !== expected) throw new Error(`expected ${expected} generals, saw ${n}`);
     // The portraits are loading="lazy", so naturalWidth is 0 until the browser
     // gets round to them. Over a real CDN that is not instant; asserting
     // immediately measured the network, not the page.
@@ -135,12 +142,21 @@ try {
   });
 
   await step('general search filters against the real Lua data', async () => {
+    // 奸雄 matched exactly one general when the roster was the standard pack.
+    // With a general pack loaded, several 曹操 variants carry it, so assert that
+    // the search narrows and that 曹操 is among the hits -- not a magic count.
     await setInput('.filters input[type=text]', '奸雄');
-    await b.waitFor(`document.querySelectorAll('.general-card').length === 1`);
-    const who = await b.evaluate(`document.querySelector('.general-card .nm').textContent`);
-    if (who !== '曹操') throw new Error(`searching 奸雄 found ${who}, expected 曹操`);
+    const all = await b.evaluate(
+      `fetch('overview.json').then(r => r.json()).then(d => d.generals.length)`);
+    await b.waitFor(`(() => { const n = document.querySelectorAll('.general-card').length;
+      return n > 0 && n < ${all}; })()`);
+    const names = await b.evaluate(
+      `[...document.querySelectorAll('.general-card .nm')].map(e => e.textContent)`);
+    if (!names.includes('曹操')) {
+      throw new Error(`searching 奸雄 found ${names.join(', ')}, expected 曹操 among them`);
+    }
     await setInput('.filters input[type=text]', '');
-    await b.waitFor(`document.querySelectorAll('.general-card').length === 25`);
+    await b.waitFor(`document.querySelectorAll('.general-card').length === ${all}`);
   });
 
   await step('the cards overview renders real card art', async () => {

@@ -19,7 +19,29 @@ const WEB_ROOT = join(here, '..');
 export const ENGINE_ROOT = process.env.FK_ROOT || '/Users/haoming/FreeKill';
 
 const LUA_ROOTS = ['lua'];
-export const PACKAGES = ['standard', 'standard_cards', 'maneuvering', 'test'];
+/**
+ * `mobile` is the 294-general mobile roster; `utility` is the shared skill/event
+ * library it requires. Both are GPL-3.0 with SPDX headers, same as the rest.
+ *
+ * Ordering here is cosmetic — `ModManager:loadPackages` requires the first four
+ * by name and then discovers the rest by walking `packages/`, so `utility`
+ * loads because it is on disk, not because it is listed before `mobile`.
+ */
+export const PACKAGES = ['standard', 'standard_cards', 'maneuvering', 'test', 'utility', 'mobile'];
+
+/**
+ * Packages this repo owns, under `<site>/packages/`, mounted at `packages/<name>`
+ * beside the mirrored ones. `webmodes` holds the web build's own game modes.
+ *
+ * They are listed apart from `PACKAGES` because they come from a different root
+ * — that one is the read-only upstream mirror — but the engine cannot tell:
+ * `ModManager:loadPackages` enumerates `packages/` off the virtual filesystem
+ * and requires whatever has an `init.lua`.
+ */
+export const SITE_PACKAGES = ['webmodes'];
+
+/** Everything the manifest reports, in load order. */
+export const ALL_PACKAGES = [...PACKAGES, ...SITE_PACKAGES];
 
 /** The web overlay, mounted at `lua/web/`. Owned by the engine lane. */
 const OVERLAY = join(WEB_ROOT, 'lua', 'web');
@@ -59,6 +81,7 @@ export async function buildBundle() {
   const isLua = (p) => p.endsWith('.lua');
   for (const root of LUA_ROOTS) walk(join(ENGINE_ROOT, root), root, files, isLua);
   for (const pkg of PACKAGES) walk(join(ENGINE_ROOT, 'packages', pkg), `packages/${pkg}`, files, isLua);
+  for (const pkg of SITE_PACKAGES) walk(join(WEB_ROOT, 'packages', pkg), `packages/${pkg}`, files, isLua);
   if (existsSync(OVERLAY)) walk(OVERLAY, 'lua/web', files, isLua);
 
   const obj = {};
@@ -76,7 +99,7 @@ export function manifestFor(bundle, json) {
     overlay,
     files: Object.keys(bundle).length,
     sourceBytes: Object.values(bundle).reduce((n, s) => n + Buffer.byteLength(s), 0),
-    packages: PACKAGES,
+    packages: ALL_PACKAGES,
   };
 }
 

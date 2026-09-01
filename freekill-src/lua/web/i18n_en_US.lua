@@ -10,7 +10,7 @@
 -- 上游 en_US 只覆盖 1368 个 key 中的 681 个，而且 skill_skeleton.lua 派生出来的
 -- ~107 个技能角标只会注册进「加载包时的那个语言」，所以必须整张覆盖。
 --
--- 1372 条。
+-- 1384 条。
 return {
   [" thinking..."] = " thinking...",
   ["##JudgeCard"] = "%arg judge",
@@ -202,6 +202,7 @@ return {
   ["#double_swords_skill"] = "Double Sword",
   ["#duel_skill"] = "Choose another player. In turns (starting with the target player), both of you play Slash successively.<br />The first player who doesn't play Slash suffers 1 DMG from the other player",
   ["#duel_skill_1_cardskill"] = "Duel",
+  ["#dz__feiyang-invoke"] = "Flying High: discard two hand cards, then discard every card in your judgement area",
   ["#eight_diagram_skill"] = "Eight Diagram",
   ["#ex__choose_skill_1_active"] = "Choose",
   ["#ex_nihilo_skill"] = "You draw 2 cards",
@@ -567,6 +568,8 @@ return {
   [":double_swords"] = "Double Sword (equip card, weapon)<br /><b>ATK range</b>: 2<br /><b>Weapon skill</b>: After your used Slash targets a character of the opposite gender, you can make him choose: 1. discard 1 hand card; 2. you draw 1 card.",
   [":duel"] = "Duel (trick card)<br /><b>Phase</b>: Action phase<br /><b>Target</b>: Another player<br /><b>Effect</b>: In turns (starting with the target player), both of you play Slash successively. The first player who doesn't play Slash suffers 1 DMG from the other player.",
   [":dummyskill"] = "No effect.",
+  [":dz__bahu"] = "(forced) In your Prepare phase, draw a card; in your Action phase you may use one extra Slash.",
+  [":dz__feiyang"] = "At the start of your Judge phase, you may discard two hand cards, then discard every card in your judgement area.",
   [":eight_diagram"] = "Eight Diagram (equip card, armor)<br /><b>Armor skill</b>: When you need to use/play Dodge: you can perform a judgement; if it's red, you are regarded as having used/played Dodge.",
   [":ex_nihilo"] = "Ex Nihilo (trick card)<br /><b>Phase</b>: Action phase<br /><b>Target</b>: Yourself<br /><b>Effect</b>: The target draws 2 cards.",
   [":fan"] = "Fan (equip card, weapon)<br /><b>ATK range</b>: 4<br /><b>Weapon skill</b>: You can use any basic Slash as Fire Slash.",
@@ -634,6 +637,9 @@ return {
   [":tieqi"] = "After you use Slash to target a player: you can perform a judgment; if it’s red, he can't use Dodge.",
   [":tuxi"] = "During your draw phase, you can change to take 1 hand card from up to 2 players.",
   [":vine"] = "Vine (equip card, armor)<br /><b>Armor skill</b>: Savage Assault, Archery Attack and basic Slash have no effect on you. When you are about to suffer Fire DMG, the DMG is increased by +1.",
+  [":webmodes_dizhu"] = "# Fight the Landlord\n\nThree players. One is the **landlord**, two are **peasants**. The landlord takes seat one and goes first.\n\nThe landlord has three advantages:\n\n- **+2** characters to choose from (peasants see 3, the landlord sees 5)\n- **+1** HP and max HP\n- two skills of their own:\n\n**Flying High**: at the start of your Judge phase, you may discard two hand cards, then discard every card in your judgement area.\n\n**Overbearing**: (forced) in your Prepare phase, draw a card; in your Action phase you may use one extra Slash.\n\nAll three roles are face up: everyone knows who the landlord is from the first turn.\n\nThe peasants win if the landlord dies; the landlord wins by killing both peasants.\n\n*Killing a peasant earns no three-card bounty.*",
+  [":webmodes_duel"] = "# Duel\n\nTwo players, no roles and nothing hidden. Kill the other one.\n\nThere are no lord skills, no extra HP for anybody, and both players draw from the same character pool.",
+  [":webmodes_team"] = "# 2v2\n\nFour players in two teams of two. **Your partner sits opposite you**: seats 1 and 3 are one team, seats 2 and 4 the other.\n\nNo lord, no renegade, no concealed allegiance — every side is face up from the start.\n\nWhen both members of a team are dead, the other team wins.",
   [":wusheng"] = "You can use/play any red card as Slash.",
   [":wushuang"] = "(forced) If you use Slash to target a player, the target needs to use 2 Dodge to evade it. During Duel, the opponent must play 2 Slash per round.",
   [":xiaoji"] = "After you lose 1 card in your equipment area: you can draw 2 cards.",
@@ -1043,6 +1049,8 @@ return {
   ["draw_card"] = "Draw cards",
   ["duel"] = "Duel",
   ["dummyskill"] = "Skill",
+  ["dz__bahu"] = "Overbearing",
+  ["dz__feiyang"] = "Flying High",
   ["eight_diagram"] = "Eight Diagram",
   ["equip"] = "Equip card",
   ["equip_char"] = "Eq.",
@@ -1335,6 +1343,10 @@ return {
   ["virtual_viewas"] = "Use",
   ["weapon"] = "Weapon",
   ["weapon_sealed"] = "Weapon sealed",
+  ["webmodes"] = "Web modes",
+  ["webmodes_dizhu"] = "Fight the Landlord",
+  ["webmodes_duel"] = "Duel",
+  ["webmodes_team"] = "2v2",
   ["wei"] = "Wei",
   ["wu"] = "Wu",
   ["wusheng"] = "Warrior Saint",

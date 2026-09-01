@@ -9,29 +9,42 @@
  * `UpdateRequestUI("Photo", id, "click", { selected })` — the same call the QML
  * `onSelectedChanged` handler makes.
  */
-import { memo } from 'react';
+import { memo, useEffect } from 'react';
 import type { ItemData } from '../../contract/scene';
 import { useRoom } from '../RoomContext';
 import { seatChar } from '../ltk/prompt';
 import { CARD_TYPE, PHASE } from '../ltk/types';
-import type { PlayerState, RoomState, SeatEffect } from '../state/types';
+import { SkinLayer, useSkinMode } from '../skins';
+import type { FocusState, PlayerState } from '../state/types';
+import { seatStage } from './anim/bus';
+import { EffectStage, useAnimBus } from './anim/Stage';
 import { cls } from './CardItem';
 import { HpBar } from './HpBar';
 
+/**
+ * Everything here is a primitive or a reference the store keeps stable across
+ * commits, so `memo` below can do its job. It is deliberately NOT the whole
+ * `RoomState`: the table commits five times a second on `refreshStatusSkills`
+ * whether or not the game moved, and a seat that re-renders on every one of
+ * those is eight portraits, eight hp bars and eight equipment rows reconciled
+ * for nothing.
+ */
 export interface PhotoProps {
   readonly player: PlayerState;
-  readonly state: RoomState;
+  readonly equips?: readonly number[];
+  readonly judge?: readonly number[];
   readonly item?: ItemData;
   readonly isCurrent: boolean;
   readonly handCount: number;
-  readonly effects: readonly SeatEffect[];
+  readonly focus: FocusState | null;
   readonly bubble?: string;
   readonly onClick?: (pid: number, selected: boolean) => void;
 }
 
 export const Photo = memo(function Photo(props: PhotoProps) {
-  const { player, state, item, isCurrent, handCount, effects, bubble, onClick } = props;
+  const { player, equips, judge, item, isCurrent, handCount, focus, bubble, onClick } = props;
   const { lua, assets } = useRoom();
+  const [skinMode] = useSkinMode();
 
   const general = player.general;
   const art = general ? assets.generalPortrait(general, generalPack(lua, general)) : undefined;
@@ -47,7 +60,20 @@ export const Photo = memo(function Photo(props: PhotoProps) {
   const roleKnown = player.roleShown || player.dead || player.role === 'lord';
   const roleIcon = assets.role(roleKnown ? player.role : 'unknown');
 
-  const thinking = state.focus?.ids.includes(player.id) ? state.focus : null;
+  const thinking = focus?.ids.includes(player.id) ? focus : null;
+
+  // The two states the notify stream never carries, because selectability is
+  // the scene's business: this seat is a legal target, and this seat is picked.
+  // Both are read straight off the scene item — `enabled` and `selected` — and
+  // the engine ships art for both.
+  const bus = useAnimBus();
+  const targetable = candidate && enabled && !selected;
+  useEffect(() => {
+    if (targetable) bus?.pulse(seatStage(player.id), 'selectable');
+  }, [targetable, bus, player.id]);
+  useEffect(() => {
+    if (selected) bus?.pulse(seatStage(player.id), 'selected');
+  }, [selected, bus, player.id]);
 
   return (
     <div
@@ -74,6 +100,9 @@ export const Photo = memo(function Photo(props: PhotoProps) {
         {art
           ? <img className="fk-photo__art" src={art} alt="" draggable={false} />
           : <div className="fk-photo__art fk-photo__art--none">{displayName.slice(0, 1) || '?'}</div>}
+        {/* Ships defaulted to `off` for licensing reasons: this renders nothing
+            until a player opts in. See `src/room/skins/policy.ts`. */}
+        <SkinLayer general={player.general} mode={skinMode} className="fk-photo__art" />
 
         <div className="fk-photo__scrim" />
 
@@ -111,32 +140,26 @@ export const Photo = memo(function Photo(props: PhotoProps) {
 
         {thinking ? <span className="fk-photo__tip">{lua.tr(thinking.command)}</span> : null}
 
-        {effects.map((e) => (
-          <span key={e.id} className="fk-effect">
-            {e.kind === 'skill' ? lua.tr(e.value) : effectGlyph(e)}
-          </span>
-        ))}
+        {/* The engine's own effect art, played straight off the notify stream.
+            Last child so it draws over the portrait and its overlays, and
+            unclipped so a 杀 can spill past the frame the way it does in the
+            Qt client. Nothing React renders into it — see `anim/bus.ts`. */}
+        <EffectStage stage={seatStage(player.id)} />
       </div>
 
-      <EquipRow player={player} state={state} />
-      <JudgeRow player={player} state={state} />
+      <EquipRow ids={equips} />
+      <JudgeRow ids={judge} />
       <MarkRow player={player} />
     </div>
   );
 });
 
-function effectGlyph(e: SeatEffect): string {
-  if (e.kind === 'damage') return '✷';
-  return ({ damage: '✷', slash: '⚔', jink: '≫', peach: '❀', chain: '⛓' } as Record<string, string>)[e.value] ?? '✦';
-}
-
 function generalPack(lua: { getGeneralData: (n: string) => { extension?: string } }, name: string): string | undefined {
   try { return lua.getGeneralData(name)?.extension; } catch { return undefined; }
 }
 
-function EquipRow({ player, state }: { player: PlayerState; state: RoomState }) {
+function EquipRow({ ids = [] }: { ids?: readonly number[] }) {
   const { lua, assets } = useRoom();
-  const ids = state.equips[player.id] ?? [];
   if (!ids.length) return null;
   return (
     <div className="fk-equips">
@@ -159,9 +182,8 @@ function EquipRow({ player, state }: { player: PlayerState; state: RoomState }) 
   );
 }
 
-function JudgeRow({ player, state }: { player: PlayerState; state: RoomState }) {
+function JudgeRow({ ids = [] }: { ids?: readonly number[] }) {
   const { lua } = useRoom();
-  const ids = state.judge[player.id] ?? [];
   if (!ids.length) return null;
   return (
     <div className="fk-judge">

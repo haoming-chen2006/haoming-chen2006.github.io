@@ -205,19 +205,23 @@ export class InProcessLuaHost implements LuaHost {
     let reason = opts.reason ?? null;
     let advanceUs = Math.max(0, Math.floor(opts.advanceUs ?? 0));
     let last = opts.realtime ? performance.now() : 0;
+    let delayMs = 0;
 
     for (let i = 1; i <= max; i++) {
       const res = await this.resumeRaw(reason, advanceUs);
       await this.pump();
-      if (res.err) return { over: true, resumes: i, waitingOn: [], stopped: 'error', err: res.err };
-      if (res.over) return { over: true, resumes: i, waitingOn: [], stopped: 'over' };
+      delayMs += res.delayMs;
+      if (res.err) return { over: true, resumes: i, waitingOn: [], delayMs, stopped: 'error', err: res.err };
+      if (res.over) return { over: true, resumes: i, waitingOn: [], delayMs, stopped: 'over' };
 
       if (opts.stopWhenLogExhausted && this.logExhausted()) {
-        return { over: false, resumes: i, waitingOn: [], stopped: 'log' };
+        return { over: false, resumes: i, waitingOn: [], delayMs, stopped: 'log' };
       }
 
       const waiting = await this.pendingInput();
-      if (waiting.length > 0) return { over: false, resumes: i, waitingOn: waiting, stopped: 'input' };
+      if (waiting.length > 0) {
+        return { over: false, resumes: i, waitingOn: waiting, delayMs, stopped: 'input' };
+      }
 
       reason = 'delay_done';
       if (opts.realtime) {
@@ -228,7 +232,7 @@ export class InProcessLuaHost implements LuaHost {
         advanceUs = res.delayMs * 1000;
       }
     }
-    return { over: false, resumes: max, waitingOn: [], stopped: 'budget' };
+    return { over: false, resumes: max, waitingOn: [], delayMs, stopped: 'budget' };
   }
 
   /** Drain the engine's output and its decisions, and notify the handlers. */

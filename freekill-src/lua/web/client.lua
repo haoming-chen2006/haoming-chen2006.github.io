@@ -37,6 +37,12 @@ function FKClient.boot()
   dofile("lua/freekill.lua")
   dofile("lua/client/i18n/init.lua")
 
+  -- 手杀包依赖的两个 Room 方法，本镜像还没有。必须在包加载之后、开局之前。
+  dofile("lua/web/roomcompat.lua")
+
+  -- 和 host.lua 同一份代码、同一个位置：两边的武将池必须字节级一致。
+  FKClient.hiddenGenerals = dofile("lua/web/roster.lua").hideIncomplete()
+
   fk.FK_VER = fk.FK_VER or "web"
   dofile("lua/client/client.lua")
 

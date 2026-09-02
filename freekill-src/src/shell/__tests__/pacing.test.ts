@@ -19,6 +19,7 @@ import type { AdvanceOptions, AdvanceResult } from '../../engine/types.ts';
 import { loopbackTransport } from '../api/transport.ts';
 import { startHostRunner, type GameHost, type HostSeat } from '../hostRunner.ts';
 import { resolvePaceMs } from '../liveTable.ts';
+import { DEFAULT_PACE_MS } from '../hostRunner.ts';
 
 const SEATS: HostSeat[] = [
   { seat: 1, displayName: 'me', avatar: 'caocao', isBot: false, connection: 'online' },
@@ -219,7 +220,7 @@ describe('picking a tempo without a rebuild', () => {
   };
 
   it('falls back to the default when nothing says otherwise', () => {
-    expect(withWindow({}, resolvePaceMs)).toBe(800);
+    expect(withWindow({}, resolvePaceMs)).toBe(DEFAULT_PACE_MS);
   });
 
   it('takes a number off the query string, the hash or storage', () => {
@@ -260,8 +261,8 @@ describe('picking a tempo without a rebuild', () => {
    * unwedge.
    */
   it('ignores nonsense and clamps the absurd', () => {
-    expect(withWindow({ location: { search: '?pace=soon', hash: '' } }, resolvePaceMs)).toBe(800);
-    expect(withWindow({ location: { search: '?pace=-5', hash: '' } }, resolvePaceMs)).toBe(800);
+    expect(withWindow({ location: { search: '?pace=soon', hash: '' } }, resolvePaceMs)).toBe(DEFAULT_PACE_MS);
+    expect(withWindow({ location: { search: '?pace=-5', hash: '' } }, resolvePaceMs)).toBe(DEFAULT_PACE_MS);
     expect(withWindow({ location: { search: '?pace=80000', hash: '' } }, resolvePaceMs)).toBe(5_000);
   });
 
@@ -271,6 +272,6 @@ describe('picking a tempo without a rebuild', () => {
     const had = 'window' in g;
     const before = g.window;
     delete g.window;
-    try { expect(resolvePaceMs()).toBe(800); } finally { if (had) g.window = before; }
+    try { expect(resolvePaceMs()).toBe(DEFAULT_PACE_MS); } finally { if (had) g.window = before; }
   });
 });

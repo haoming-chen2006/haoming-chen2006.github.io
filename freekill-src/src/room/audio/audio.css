@@ -12,16 +12,21 @@
  */
 
 .fk-audio {
-  /* Top-right, not bottom-left. The bottom-left corner is where the hand's own
-     skill buttons sit, so the open panel covered the thing the player was
-     reaching for. The player can drag it from here — see `useDraggableSpot` in
-     `GameAudio.tsx`, which sets `left`/`top` inline and clears these. */
+  /* TOP-LEFT, and it has now been in three corners for three good reasons.
+     Bottom-left covered the hand's own skill buttons. Top-right was clear until
+     the skin picker moved in beside it, and two stacked panels in one corner is
+     the same problem again — the sound faders sat over the artwork chooser.
+     Top-left is the one corner nothing else claims.
+
+     Which is also why it is draggable: a fixed answer keeps being wrong as the
+     table grows things, so the player gets the final say. `useDraggableSpot` in
+     `GameAudio.tsx` sets `left`/`top` inline and clears these. */
   position: fixed;
-  right: 12px;
+  left: 12px;
   top: 64px;
   z-index: 55;
   display: flex;
-  flex-direction: row-reverse;
+  flex-direction: row;
   align-items: flex-start;
   gap: 8px;
   touch-action: none;
@@ -132,7 +137,7 @@
 /* A phone has no room for a 232px panel beside a 32px button on the same row,
    and the table's own controls are already fighting for the bottom edge. */
 @media (max-width: 560px) {
-  .fk-audio { flex-direction: column; align-items: flex-end; }
+  .fk-audio { flex-direction: column; align-items: flex-start; }
   .fk-audio__panel { width: min(232px, calc(100vw - 32px)); }
 }
 

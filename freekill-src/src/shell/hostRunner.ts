@@ -70,13 +70,21 @@ const POLL_MS = 400;
  * — a 50ms turn-flow beat stays 50ms — so the rhythm the game was designed with
  * survives, and only its longest beat is capped.
  *
- * The default cap is the engine's own 800ms, which means in practice that every
- * beat is honoured exactly as asked and only the 900ms judge result is trimmed.
- * That is deliberate: 800ms is what the Qt client this project is porting does,
- * and the complaint that started this was that bots are too fast to follow, not
- * that games are too short. It is also, measured through the real shell driver,
- * the difference between a median gap of 6ms between two of a bot's consecutive
- * card moves — the same frame — and a gap a person can actually watch.
+ * The default cap is 1200ms. It was 800ms, which is the engine's own figure and
+ * what the Qt client does, and it was still too quick to follow: the report was
+ * that "the bot is playing cards a little bit too fast" and that a play "just
+ * goes through and over" before you have read it. 800ms is the interval between
+ * an AI's *decisions*; what a watcher is actually trying to do is read a card,
+ * find whose it was, and see who it landed on, and that is more than one beat's
+ * worth of looking.
+ *
+ * Raising the cap rather than adding a second delay keeps the one property that
+ * matters: every shorter beat is still honoured exactly as the engine asked — a
+ * 50ms turn-flow beat stays 50ms — so the game's own rhythm is intact and only
+ * its longest pauses grow. Measured through the real shell driver, 800ms was
+ * already the difference between a 6ms median gap between two of a bot's
+ * consecutive card moves — the same frame — and something watchable; 1200ms is
+ * that with room to look up.
  *
  * The cost is real and belongs in the open: a full 8-seat game asks for between
  * 350 and 1,700 seconds of delay depending on how long it runs. Nothing that
@@ -90,7 +98,7 @@ const POLL_MS = 400;
  *  * It cannot lie to the engine. The sleep is real wall time, and the next
  *    resume reports it as `advanceUs`, so the virtual clock and the request
  *    timers stay exactly as honest as they were. Nothing sends `request_timer`.
- *  * It cannot slow a human. The engine only asks for that 800ms once an AI has
+ *  * It cannot slow a human. The engine only asks for that pause once an AI has
  *    answered (`ai_start_time`), and the pause is skipped outright whenever the
  *    room came back waiting on input — so a person's own click is submitted on
  *    the next tick, as before.
@@ -99,7 +107,7 @@ const POLL_MS = 400;
  *    one thing happening (a card leaving a hand and landing on the table) and
  *    not three actions racing.
  */
-export const DEFAULT_PACE_MS = 800;
+export const DEFAULT_PACE_MS = 1200;
 
 /**
  * What the driver needs of a host VM. Both `WorkerLuaHost` and

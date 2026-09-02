@@ -85,7 +85,9 @@ describe('a full recorded game, played through the audio bus', () => {
 
     // Every category the brief asked for, present in a real game.
     expect(counts.gamestart).toBe(1);
-    expect(counts.draw).toBeGreaterThan(10);
+    // Drawing is deliberately silent — see `moveCues`. Every turn opens with a
+    // draw phase, so this fired on every turn of every game and said nothing.
+    expect(counts.draw ?? 0).toBe(0);
     expect(counts['voice/skill']).toBeGreaterThan(10);
     expect(Object.keys(counts).some((k) => k.startsWith('damage/'))).toBe(true);
     expect(Object.keys(counts).some((k) => k.startsWith('judge/'))).toBe(true);
@@ -94,6 +96,9 @@ describe('a full recorded game, played through the audio bus', () => {
 
     // And the messages they came from are the ones the engine actually uses for
     // sound, not a grab-bag of whatever was on the wire.
+    // `MoveCards` no longer contributes a cue, so it drops out of this list by
+    // way of the `filter` — the assertion still pins that nothing UNEXPECTED
+    // started making noise.
     expect(Object.keys(commands).sort()).toEqual(
       ['Animate', 'GameOver', 'LogEvent', 'MoveCards', 'StartGame'].filter((c) => commands[c]),
     );

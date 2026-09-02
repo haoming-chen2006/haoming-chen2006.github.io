@@ -182,6 +182,13 @@ export const UI = {
     en_US: 'Start game (table not full)',
   },
   'waiting.composition': { zh_CN: '本局身份', en_US: 'This table deals' },
+  'waiting.freeAssign': { zh_CN: '自由选将', en_US: 'Free pick' },
+  'waiting.freeAssign.on': {
+    zh_CN: '开启后，每位玩家选将时都可搜索并选择任意武将',
+    en_US: 'Let every player search the whole roster and pick any general',
+  },
+  'waiting.freeAssign.yes': { zh_CN: '房主已开启，选将时可搜索任意武将', en_US: 'On — you can pick any general' },
+  'waiting.freeAssign.no': { zh_CN: '房主未开启', en_US: 'Off — the host has not enabled it' },
   'waiting.youAreHost': { zh_CN: ' · 你是房主', en_US: ' · you are the host' },
   'waiting.code': { zh_CN: '房号', en_US: 'Room code' },
   'waiting.copyCode': { zh_CN: '复制房号', en_US: 'Copy code' },

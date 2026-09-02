@@ -25,7 +25,7 @@ import { RoleStrip, SeatRing, modeNameKey } from '../ModePicker';
 export function WaitingRoomView(props: WaitingRoomViewProps) {
   const {
     joinCode, joinUrl, seats, capacity, settings, meId, isHost,
-    onStart, onAddBot, onRemoveSeat, onLeave, onChat, chat,
+    onStart, onAddBot, onRemoveSeat, onChangeSettings, onLeave, onChat, chat,
   } = props;
   const t = useT();
   const lang = useLanguage();
@@ -71,6 +71,40 @@ export function WaitingRoomView(props: WaitingRoomViewProps) {
             {isHost ? t('waiting.youAreHost') : ''}
           </p>
         </div>
+      </div>
+
+      {/*
+        FREE ASSIGN, IN THE ROOM.
+        
+        This setting existed only in the create-room dialog, and the lobby's
+        quick-create buttons ("创建八人身份" and friends) open a room without ever
+        showing that dialog — which is how most rooms are actually made. So the
+        switch was, in practice, unreachable: the player looked for it in the
+        room they were sitting in, which is also where they would look for it.
+
+        `onChangeSettings` was already passed to this view by `RoomPage` and
+        never destructured. It patches the room's settings row, the room
+        broadcasts it, and every seat's choose-general dialog reads
+        `enableFreeAssign` off `EnterRoom` — so this is a wiring gap, not a
+        feature. Non-hosts see the state and cannot change it, because it is the
+        host's room.
+      */}
+      <div className="waiting-composition" style={{ gap: 10 }}>
+        <span className="waiting-composition__label">{t('waiting.freeAssign')}</span>
+        {onChangeSettings ? (
+          <label style={{ display: 'flex', gap: 8, alignItems: 'center', cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={settings.enableFreeAssign === true}
+              onChange={(e) => onChangeSettings({ enableFreeAssign: e.target.checked })}
+            />
+            <span style={{ fontSize: 13 }}>{t('waiting.freeAssign.on')}</span>
+          </label>
+        ) : (
+          <span style={{ fontSize: 13, color: 'var(--paper-faint)' }}>
+            {settings.enableFreeAssign === true ? t('waiting.freeAssign.yes') : t('waiting.freeAssign.no')}
+          </span>
+        )}
       </div>
 
       {mode ? (

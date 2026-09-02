@@ -197,15 +197,17 @@ describe('LogEvent, the engine\'s own sound channel', () => {
 
 describe('drawing and judging, which the Qt client never played', () => {
   it('sounds once per message however many cards moved', () => {
-    // The opening deal is four cards to eight seats in one `MoveCards`.
+    // Every turn in the game opens with a draw phase, so a sound here fires on
+    // every single turn forever and carries no information — the cards visibly
+    // arrive in the hand at the same moment. It was the metronome of a session.
+    // Removed rather than quietened: a cue that always happens tells you nothing.
     const cues = moveCues({
       merged: [
         { fromArea: 6, toArea: 1, ids: [1, 2, 3, 4] },
         { fromArea: 6, toArea: 1, ids: [5, 6, 7, 8] },
       ],
     });
-    expect(cues).toHaveLength(1);
-    expect(sound(cues).sound).toBe('draw');
+    expect(cues).toEqual([]);
   });
 
   it('does not sound for a move that is not off the pile', () => {

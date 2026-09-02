@@ -408,21 +408,25 @@ export function logEventCues(data: unknown, ctx: CueContext = NO_CONTEXT): reado
 }
 
 /**
- * Drawing.
+ * Drawing makes no sound.
  *
- * One sound per message, not one per card: the opening deal is four cards to
- * eight seats in a single `MoveCards`, and eight overlapping copies of a paper
- * sound is a hiss.
+ * It used to: a paper riffle on any `DrawPile -> PlayerHand` move, one per
+ * message rather than one per card. The trouble is that every turn in the game
+ * opens with a draw phase, so at eight seats that sound is the metronome of the
+ * whole session — it fires on every single turn, forever, and carries no
+ * information, because the cards visibly arrive in the hand at the same moment.
+ * The user's word for it was "annoying", and they are right: a cue that always
+ * happens tells you nothing.
+ *
+ * Deliberately not "quieter" or "less often". A sound that survives at low gain
+ * is still a sound the ear learns to expect; the honest fix for a cue with no
+ * content is to remove it. Damage, judgement, deaths and skills still sound,
+ * and those are the moments a player actually needs to hear.
+ *
+ * The function stays rather than the call site being deleted, because
+ * `MoveCards` is exactly where a future card-specific cue would belong.
  */
-export function moveCues(data: unknown): readonly Cue[] {
-  const d = (data ?? {}) as { merged?: readonly { fromArea?: number; toArea?: number; ids?: readonly number[] }[] };
-  const merged = Array.isArray(d.merged) ? d.merged : [];
-  for (const move of merged) {
-    // `CARD_AREA.DrawPile` is 6, `PlayerHand` is 1 — `ltk/types.ts`.
-    if (num(move?.fromArea) === 6 && num(move?.toArea) === 1 && (move?.ids?.length ?? 0) > 0) {
-      return [{ kind: 'sound', sound: 'draw', sample: 'audio/system/draw', gain: 0.5, tag: 'draw' }];
-    }
-  }
+export function moveCues(_data: unknown): readonly Cue[] {
   return [];
 }
 

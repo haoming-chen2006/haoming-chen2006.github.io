@@ -101,10 +101,15 @@ const PANELS = {
     note: 'Cards plus one button per choice, replying { cards, choice }; cancel_choices reply with no cards. Covers the read-only `viewCards` viewer (min=max=0) too. WEAK for one reason: `filter_skel`\'s extra.choiceFilter gates the non-default choices in QML via Lua.evaluate, and there is no string-eval door into the VM on this side, so every choice is offered once the card count is legal.',
   },
   CustomDialog: {
-    ui: 'UnknownRequest — JSON dump, declinable', status: 'dead',
-    note: 'Package-supplied QML component. Eight distinct components are in use across utility/ and mobile/. Still unimplemented, but the box now carries a Cancel that replies "" so the seat is not frozen for the whole timeout.',
+    ui: 'one panel per component (CustomDialogs.tsx)', status: 'weak',
+    note: 'Package-supplied QML component, read as the name of a panel. Six are implemented and cover all eight skills that raise it: ChooseCardListBox (清正), ChooseCardNamesBox (共损/星启/谋立), JieDangBox (党锢), TaMoBox (榻谟), WuLingBox (五灵), DaoShuBox (盗书). '
+      + 'It was DEAD TWICE OVER: no case in DialogHost, and an empty payload on the wire, because this build\'s Room:askToCustomDialog reads qml_path/extra_data while every caller writes the newer params.component (carried now by lua/web/roomcompat.lua). '
+      + 'WEAK because the set of components is closed: another package QML — ChooseSkillBox, ChooseGeneralSkillsBox, ChooseGeneralsAndChoiceBox, all of which have zero roster callers today — is declined by name with a working Cancel rather than guessed at.',
   },
-  MiniGame: { ui: 'UnknownRequest — JSON dump, declinable', status: 'dead', note: 'No roster skill uses it.' },
+  MiniGame: {
+    ui: 'declined by name, with a Cancel', status: 'dead',
+    note: 'No roster skill uses it: no package calls Fk:addMiniGame, so Fk.mini_games is empty.',
+  },
 };
 
 const ORDER = { dead: 0, weak: 1, scene: 2, ok: 3, none: 4 };
@@ -115,16 +120,32 @@ const hidden = src.generals.filter((g) => g.hidden);
 
 /** skill -> the playable generals that print it on their card. */
 const carriers = new Map();
+/**
+ * skill -> the playable generals that can GAIN it without printing it.
+ *
+ * `addRelatedSkills` covers two different things and this report only ever
+ * modelled one of them. For 关索 it is a companion note — 当先/制蛮 belong to
+ * somebody else and are listed for reference — and dropping those is right.
+ * For 曹髦 it is his own kit: 〖潜龙〗 hands him 〖清正〗 at 25 道心值 and three
+ * more after that (`packages/mobile/pkg/mobile_lxxh/skills/qianlong.lua:50-60`),
+ * with 〖魏统〗 opening at 60, so 清正 is in play before the first turn.
+ *
+ * Skipping every related skill is what kept 清正 — the one a player actually
+ * reported as "not implemented" — out of a census whose whole job was to find
+ * exactly that. They are counted apart rather than folded into `rows` so the
+ * "printed on the card" denominators everything else uses stay what they were.
+ */
+const granted = new Map();
 for (const g of playable) {
   for (const s of g.skills) {
-    if (s.related) continue; // another general's skill, shown for reference only
-    if (!carriers.has(s.name)) carriers.set(s.name, []);
-    carriers.get(s.name).push(g);
+    const into = s.related ? granted : carriers;
+    if (!into.has(s.name)) into.set(s.name, []);
+    into.get(s.name).push(g);
   }
 }
+for (const name of carriers.keys()) granted.delete(name);
 
-const rows = [];
-for (const [name, gens] of [...carriers].sort((a, b) => a[0].localeCompare(b[0]))) {
+function buildRow(name, gens) {
   const sk = src.skills[name];
   const cmds = Object.keys(sk.requests);
   // The worst thing this skill asks for decides its row.
@@ -134,7 +155,7 @@ for (const [name, gens] of [...carriers].sort((a, b) => a[0].localeCompare(b[0])
   const body = sk.file ? readSkill(sk.file) : '';
   const choice = callSignals(body, ['askToChoice', 'askToChoices']);
   const chosen = callSignals(body, ['askToChooseCard']);
-  rows.push({
+  return {
     silentChoice: choice.unprompted,
     argChoices: choice.args,
     detailedChoice: /detailed\s*=\s*true/.test(body),
@@ -159,8 +180,15 @@ for (const [name, gens] of [...carriers].sort((a, b) => a[0].localeCompare(b[0])
     foreign,
     status: worst,
     file: sk.file,
-  });
+  };
 }
+
+const byName = (a, b) => a[0].localeCompare(b[0]);
+const rows = [...carriers].sort(byName).map(([name, gens]) => buildRow(name, gens));
+/** Skills a general gains in play rather than printing. Same shape as `rows`. */
+const grantedRows = [...granted].sort(byName)
+  .filter(([name]) => src.skills[name])
+  .map(([name, gens]) => buildRow(name, gens));
 
 /* ------------------------------------------------------------- patterns */
 
@@ -197,10 +225,12 @@ const out = {
     hidden: hidden.length,
     skills: rows.length,
     pairs: rows.reduce((n, r) => n + r.generals.length, 0),
+    granted: grantedRows.length,
   },
   hidden: hidden.map((g) => ({ name: g.name, title: g.title, pack: g.extension })),
   panels: PANELS,
   rows,
+  grantedRows,
   buckets: Object.fromEntries(Object.entries(buckets)
     .map(([k, v]) => [k, { skills: v.skills, generals: [...v.generals].sort() }])),
   qmlMarks: src.qmlMarks,

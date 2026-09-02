@@ -128,9 +128,33 @@ export const REQUESTS = {
     reach: 'unreachable',
     why: 'no package calls Fk:addMiniGame, so Fk.mini_games is empty.',
   },
+  /*
+   * This said "zero callers" and that was wrong twice over.
+   *
+   * It has eight, and the reason the census missed them is that six go through
+   * `Utility.*` helpers rather than naming `askToCustomDialog`, and 盗书 does
+   * not use a helper at all — it posts `Request:new(friends, "CustomDialog")`
+   * itself (`mobile_daoshu.lua:102`), which no `askTo*` scan can see.
+   * `skill-panels.mjs` now looks for both.
+   *
+   * Filing it unreachable meant the campaign never expected it, so the seat
+   * that got one and could not answer it did not read as a gap in the target.
+   */
   CustomDialog: {
-    reach: 'unreachable',
-    why: 'zero callers, and it expects a QML path the web client has no analogue for.',
+    reach: 'rare',
+    producer: 'a package QML component — 6 components, 8 skills: '
+      + 'mobile_qianlong__qingzheng (mobile__caomao, granted by 潜龙 at 25 道心值), '
+      + 'xingqi + mouli (mobile__wangling), mobile__gongsun (mobile__yangyi, hidden), '
+      + 'danggu (shichangshi), tamo (godlusu), wuling (godhuatuo), '
+      + 'mobile__daoshu (mobile__jianggan)',
+    wantGenerals: ['mobile__caomao', 'mobile__wangling', 'shichangshi', 'godlusu', 'godhuatuo', 'mobile__jianggan'],
+    wantSkills: ['mobile__qianlong', 'xingqi', 'danggu', 'tamo', 'wuling', 'mobile__daoshu'],
+    note: 'Answered by the panels in src/room/dialogs/CustomDialogs.tsx, one per '
+      + 'component. Was SENT AND UNANSWERABLE, and worse than the other two of '
+      + 'those: the payload itself was empty, because this build\'s '
+      + 'Room:askToCustomDialog reads qml_path/extra_data and every caller '
+      + 'writes the newer params.component. lua/web/roomcompat.lua carries it '
+      + 'now. 清正 alone raised five dead boxes in one measured four-seat game.',
   },
 };
 

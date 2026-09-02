@@ -390,13 +390,18 @@ describe('moving a card between two players (AskForMoveCardInBoard)', () => {
 
 describe('a request this build has no panel for', () => {
   it('can be declined instead of freezing the seat for the whole timeout', () => {
-    // `CustomDialog` expects a package-supplied QML component and will keep
-    // landing here. A box with no button is a guaranteed 30-second stall; `''`
-    // is what the timeout would have sent anyway (`Request:getResult`).
+    // A `CustomDialog` naming a component nobody has read. Six of them now have
+    // panels (`../CustomDialogs`); `ChooseSkillBox` is one no roster skill
+    // raises, so it stays here. A box with no button is a guaranteed 30-second
+    // stall; `''` is what the timeout would have sent anyway
+    // (`Request:getResult`).
     const r = room();
     r.store.applyNotify('CustomDialog', { path: 'ChooseSkillBox.qml', data: {} });
     const html = r.draw();
-    expect(html).toContain('No dialog is implemented');
+    expect(html).toContain('has no panel for');
+    // Named, so a bug report can say WHICH component — and not a JSON dump,
+    // which reads as a crash to the player looking at it.
+    expect(html).toContain('ChooseSkillBox');
     expect(pressableActions(html)).toContain('取消');
   });
 });

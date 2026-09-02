@@ -159,6 +159,18 @@ const SELF_ARGS = new Set([
 ]);
 const WIDGET = /UI\.(ComboBox|CardNameBox|Spin|CheckBox)\b/g;
 
+/**
+ * A skill that posts its own request instead of calling an `askTo*` helper.
+ *
+ * `Request:new(players, "<Command>")` is public API and `packages/` uses it —
+ * 盗书 raises `CustomDialog` this way so it can ask a whole team at once
+ * (`packages/mobile/pkg/mobile_sp/skills/mobile_daoshu.lua:102`), and utility's
+ * `askToJointSkills` does the same. A scan that only knows the helper names
+ * reports those skills as raising nothing at all, which is how 盗书 stayed off
+ * the dead-panel census while its seat sat looking at an unanswerable box.
+ */
+const RAW_REQUEST = /Request:new\s*\(\s*([A-Za-z_][\w.\[\]]*)?\s*,\s*"([A-Za-z]+)"/g;
+
 function scan(text) {
   const asks = new Map();
   let m;
@@ -179,6 +191,18 @@ function scan(text) {
     if (!e.via.includes(via)) e.via.push(via);
     if (!e.receivers.includes(who)) e.receivers.push(who);
     e.foreign = e.foreign || foreign;
+    asks.set(cmd, e);
+  }
+  RAW_REQUEST.lastIndex = 0;
+  while ((m = RAW_REQUEST.exec(text))) {
+    const cmd = m[2];
+    const who = m[1] ?? '?';
+    const e = asks.get(cmd) ?? { via: [], calls: [], n: 0, foreign: false, receivers: [] };
+    e.n += 1;
+    if (!e.calls.includes('Request:new')) e.calls.push('Request:new');
+    if (!e.via.includes('raw Request')) e.via.push('raw Request');
+    if (!e.receivers.includes(who)) e.receivers.push(who);
+    e.foreign = e.foreign || (!SELF_ARGS.has(who) && who !== '?');
     asks.set(cmd, e);
   }
   const widgets = [];

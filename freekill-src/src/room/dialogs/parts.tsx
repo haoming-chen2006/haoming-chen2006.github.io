@@ -1,9 +1,27 @@
 /** Pieces shared by the request dialogs. */
 import type { CSSProperties, ReactNode } from 'react';
-import { useRoom } from '../RoomContext';
+import { useRoom, useRoomState } from '../RoomContext';
 import { cls } from '../components/CardItem';
 import { Detail } from '../components/Detail';
 import { sanitizeMarkup } from '../components/markup';
+
+/**
+ * Which skill is asking, for the dialogs whose payload does not say.
+ *
+ * Several requests put the skill on the REQUEST rather than in the data —
+ * `req.focus_text = skill_name` (`room.lua:983` for `AskForCardsAndChoice`,
+ * `:2835` for `CustomDialog`) — and `Request:_sendPacket` broadcasts it as
+ * `MoveFocus`'s text field (`request.lua:220`), which the store already keeps.
+ *
+ * Only when this seat is the one being focused: another seat's focus carries
+ * another seat's skill. A caller that set no `skill_name` leaves the command
+ * name there, which has no `:` entry and correctly yields nothing.
+ */
+export function useAskingSkill(): string {
+  const state = useRoomState();
+  const mine = state.focus && state.selfId != null && state.focus.ids.includes(state.selfId);
+  return mine ? state.focus?.command ?? '' : '';
+}
 
 /**
  * A box that owns the screen until it is answered — `RoomLogic.js`'s `popupBox`

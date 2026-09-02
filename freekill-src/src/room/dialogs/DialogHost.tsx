@@ -16,9 +16,11 @@ import { useRoom, useRoomState, usePrompt } from '../RoomContext';
 import { CardItem, cls } from '../components/CardItem';
 import { describe, fillArgs } from '../ltk/prompt';
 import { moveOut, shift, tap, zoneWithRoom, type ArrangeState } from './arrange';
+import { componentName, readCustomDialog } from './custom';
+import { CustomDialogBox, customPanelFor } from './CustomDialogs';
 import { FreeAssign, freeAssignEnabled } from './FreeAssign';
 import { GeneralDetail } from './GeneralDetail';
-import { Btn, Dialog, GeneralCard, OptionBtn, Panel } from './parts';
+import { Btn, Dialog, GeneralCard, OptionBtn, Panel, useAskingSkill } from './parts';
 
 export interface DialogHostProps {
   readonly onReply: (value: unknown) => void;
@@ -76,14 +78,42 @@ function RequestDialog({ onReply, interactive }: DialogHostProps) {
     case 'AskForPoxi': return <PoxiBox data={req.data} onReply={onReply} interactive={interactive} />;
     case 'AskForCardsAndChoice': return <CardsAndChoiceBox data={req.data} onReply={onReply} interactive={interactive} />;
     case 'AskForMoveCardInBoard': return <MoveInBoardBox data={req.data} onReply={onReply} interactive={interactive} />;
+    case 'CustomDialog': return <CustomRequest data={req.data} onReply={onReply} interactive={interactive} />;
     case 'AskForAG':
       // Normally `FillAG` has already built `state.ag` and `DialogHost` is
       // drawing the board; this is the case where the ask arrives without a
       // fill, which leaves the seat nothing to pick from.
-      return state.ag ? null : <UnknownRequest command={req.command} data={req.data} onReply={onReply} interactive={interactive} />;
+      return state.ag ? null : <UnsupportedRequest command={req.command} onReply={onReply} interactive={interactive} />;
     default:
-      return <UnknownRequest command={req.command} data={req.data} onReply={onReply} interactive={interactive} />;
+      return <UnsupportedRequest command={req.command} onReply={onReply} interactive={interactive} />;
   }
+}
+
+/**
+ * `CustomDialog` — the request that names its own widget.
+ *
+ * The panels live in `./CustomDialogs`, one per QML component, and `./custom`
+ * reads the payload. Both shapes of it: `askToCustomDialog` sends `{path, data}`
+ * and 盗书 posts `{component}` itself. What lands here is either a component we
+ * have read the `.qml` for, or an honest refusal.
+ */
+function CustomRequest(
+  { data, onReply, interactive }: { data: unknown; onReply: (v: unknown) => void; interactive: boolean },
+) {
+  const spec = readCustomDialog(data);
+  if (spec && customPanelFor(spec.path)) {
+    return <CustomDialogBox spec={spec} onReply={onReply} interactive={interactive} />;
+  }
+  return (
+    <UnsupportedRequest
+      command="CustomDialog"
+      // Name the component rather than the command: "CustomDialog is not
+      // supported" is true of nothing, since six of them are.
+      what={spec ? componentName(spec.path) : undefined}
+      onReply={onReply}
+      interactive={interactive}
+    />
+  );
 }
 
 /* --------------------------------------------------------- choose general */
@@ -673,7 +703,7 @@ interface CardsAndChoicePayload {
  * then say what you want to do about them.
  *
  * THIS PANEL DID NOT EXIST, AND THAT WAS A HANG, NOT A GAP. `DialogHost` had no
- * case for the command, so the room fell through to `UnknownRequest` — a JSON
+ * case for the command, so the room fell through to the unsupported box — a JSON
  * dump with no buttons at all. `scripts/audit/catalogue.mjs` records the
  * consequence in the campaign log as a liveness FAIL: "SENT AND UNANSWERABLE".
  * Four mobile generals reach it (m_shi__xinxianying, m_sp__simazhao, ruanhui,
@@ -708,7 +738,6 @@ function CardsAndChoiceBox(
 ) {
   const { lua } = useRoom();
   const prompt = usePrompt();
-  const state = useRoomState();
   const d = data as CardsAndChoicePayload;
   const cards = d.cards ?? [];
   const choices = d.choices ?? [];
@@ -735,15 +764,11 @@ function CardsAndChoiceBox(
    *
    * The payload does not carry the name — `askToChooseCardsAndChoice` puts it
    * on the REQUEST rather than in the data (`req.focus_text = skillname`,
-   * `room.lua:983`), and `Request:_sendPacket` broadcasts it as `MoveFocus`'s
-   * text field (`request.lua:220`), which the store already keeps. Only when
-   * this seat is the one being focused, and only when it names something the
-   * packages described — a caller that set no `skill_name` leaves the command
-   * name there, which has no `:` entry and correctly yields nothing.
+   * `room.lua:983`). `useAskingSkill` reads it back off `MoveFocus`; see
+   * `./parts`.
    */
-  const focused = state.focus && state.selfId != null && state.focus.ids.includes(state.selfId);
-  const skill = String((d.extra_data as { skillName?: unknown } | undefined)?.skillName
-    ?? (focused ? state.focus?.command : '') ?? '');
+  const asking = useAskingSkill();
+  const skill = String((d.extra_data as { skillName?: unknown } | undefined)?.skillName ?? asking ?? '');
 
   return (
     <Dialog
@@ -813,7 +838,7 @@ interface MoveInBoardPayload {
  * `AskForMoveCardInBoard` — `MoveCardInBoardBox.qml`. Take one equipment or
  * delayed trick off one of two players and give it to the other.
  *
- * ALSO A HANG BEFORE THIS. Same `UnknownRequest` dead end as above and reaching
+ * ALSO A HANG BEFORE THIS. Same dead end as above and reaching
  * more of the roster — seven mobile generals (mobile__lvfan, mobile__yanghong,
  * mobile__cuiyan, m_ex__lingtong, mxing__zhanghe, pangdegong, yangbiao).
  *
@@ -980,34 +1005,42 @@ function GameOverBox({ winner }: { winner: string }) {
 }
 
 /**
- * A request type the room has no dialog for. The spec calls this out as a thing
- * to report rather than paper over, so it renders the payload instead of an
- * empty box.
+ * A request the room has no panel for.
  *
- * IT ALSO HAS TO BE ANSWERABLE. Two of the four commands that land here —
- * `CustomDialog` and `MiniGame` — expect a QML component a browser has no
- * analogue for, so this is where they will stay. But a box with no button is a
- * guaranteed thirty-second freeze for the seat and a liveness FAIL for the
- * campaign, and the engine already has a name for "I am not answering this":
- * every `Request:getResult` treats `""` as no answer and applies the caller's
- * own default (`room.lua:2941`, `:989`, and so on down the file). Declining
- * immediately is exactly what the timeout would have done, minus the thirty
- * seconds of a frozen table.
+ * WHAT IS STILL LEFT HERE, now that the six `CustomDialog` components the
+ * roster actually uses have panels: `MiniGame`, which no shipped skill raises,
+ * and a `CustomDialog` naming a component nobody has read. Both are "the
+ * package brought its own QML", and the honest answer is that we have not read
+ * that file — not that the request type is unsupported, which stopped being
+ * true.
+ *
+ * IT HAS TO BE ANSWERABLE, and that is the whole reason it is a box rather than
+ * nothing. A panel with no button is a guaranteed thirty-second freeze for the
+ * seat and a liveness FAIL for the campaign, and the engine already has a name
+ * for "I am not answering this": every `Request:getResult` reads `""` as no
+ * answer and applies the caller's own default (`room.lua:2941`, `:989`, and so
+ * on down the file). Declining immediately is exactly what the timeout would
+ * have done, minus the thirty seconds of a frozen table.
+ *
+ * IT DOES NOT DUMP THE PAYLOAD. It used to, and a wall of JSON is not something
+ * a player can act on — it reads as a crash. The name of the thing we cannot
+ * draw is the whole of the useful content, and it is the string worth having in
+ * a bug report.
  */
-function UnknownRequest(
-  { command, data, onReply, interactive }:
-  { command: string; data: unknown; onReply?: (v: unknown) => void; interactive?: boolean },
+function UnsupportedRequest(
+  { command, what, onReply, interactive }:
+  { command: string; what?: string; onReply?: (v: unknown) => void; interactive?: boolean },
 ) {
   const { lua } = useRoom();
   return (
     <Dialog
       title={lua.tr(command)}
-      prompt="No dialog is implemented for this request type."
+      prompt={`This build has no panel for ${what ?? command} yet. Declining it lets the game continue.`}
       actions={onReply
         ? <Btn primary disabled={!interactive} onClick={() => onReply('')}>{lua.tr('Cancel')}</Btn>
         : undefined}
     >
-      <pre style={{ maxWidth: 640, whiteSpace: 'pre-wrap', fontSize: 12 }}>{JSON.stringify(data, null, 2)}</pre>
+      <div className="fk-dialog__prompt">{what ? `${command} · ${what}` : command}</div>
     </Dialog>
   );
 }

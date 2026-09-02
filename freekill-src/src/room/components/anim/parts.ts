@@ -25,6 +25,8 @@
  * rather than a stylesheet.
  */
 
+import { brush, loop, type Glyph } from './ink';
+
 /** Every length is a multiple of this — the measured photo width. See `Scene`. */
 export interface Scene {
   /** The unit. One `u` is the width of a seat photo at the current table size. */
@@ -93,6 +95,71 @@ export function path(into: SVGSVGElement, d: string, cls?: string, props?: Props
 /** Uniform in `[lo, hi)`. Variety, not a decision — see the module header. */
 export function rnd(lo: number, hi: number): number {
   return lo + Math.random() * (hi - lo);
+}
+
+/* ----------------------------------------------------------------- objects */
+
+export interface GlyphOpts {
+  /** The glyph's LONGER side, in `u`. Not its width — a guandao and a horse are
+   *  the same "size" at 1.6 and read as the same weight on the table. */
+  readonly size?: number;
+  /** Extra classes: the motion (`fx-g--draw`, `fx-g--charge`, …) and anything
+   *  a recipe wants to hang a palette off. */
+  readonly cls?: string;
+  readonly turn?: number;
+  /** Offset from the middle of the host, in `u`. */
+  readonly dx?: number;
+  readonly dy?: number;
+  /** Mirror on X. A horse runs the way the strike is going. */
+  readonly flip?: boolean;
+  readonly delay?: number;
+}
+
+/**
+ * An object, drawn.
+ *
+ * THE WHOLE POINT OF THIS LIBRARY. A burst of particles says "something
+ * happened here"; a horse says 赤兔. Every equipment card and half the tricks
+ * are ABOUT a specific object, and the brief is that a card must be
+ * recognisable in silhouette before colour — which means the silhouette has to
+ * be of something.
+ *
+ * Three `<path>` nodes and no more, whatever the glyph: the brush strokes are
+ * concatenated into one `d` per pass. A horse is eleven strokes and three
+ * nodes. That matters because eight seats can all be animating at once and a
+ * glyph must cost about what a div costs.
+ */
+export function glyph(root: HTMLElement, s: Scene, g: Glyph, o: GlyphOpts = {}): HTMLElement {
+  const [bw, bh] = g.box;
+  const long = (o.size ?? 1.4) * s.u;
+  const scale = long / Math.max(bw, bh);
+  const wrap = add(root, `fx-glyph ${o.cls ?? ''}`.trim(), {
+    w: `${round(bw * scale)}px`,
+    h: `${round(bh * scale)}px`,
+    a: `${round(o.turn ?? 0)}deg`,
+    dx: `${round((o.dx ?? 0) * s.u)}px`,
+    dy: `${round((o.dy ?? 0) * s.u)}px`,
+    fl: o.flip ? -1 : 1,
+    d: `${Math.round(o.delay ?? 0)}ms`,
+    // Stroke weights inside the SVG are in glyph units, so a thin detail on a
+    // 240-unit box lands at a fraction of a pixel on a small seat. This is the
+    // reciprocal of the scale, which the CSS multiplies back in.
+    gs: round(1 / scale),
+  });
+  const box = svg(wrap, 'fx-glyph__svg', `0 0 ${bw} ${bh}`);
+  const body = g.ink.map(brush).join('')
+    + (g.rings ? g.rings.map(loop).join('') : '')
+    + (g.fill ? g.fill.join('') : '');
+  if (body) path(box, body, 'fx-glyph__ink');
+  const hot = (g.lit ? g.lit.map(brush).join('') : '') + (g.litFill ? g.litFill.join('') : '');
+  if (hot) path(box, hot, 'fx-glyph__lit');
+  if (g.cut?.length) {
+    for (const t of g.cut) path(box, t.d, 'fx-glyph__cut', { tw: t.w });
+  }
+  if (g.thin?.length) {
+    for (const t of g.thin) path(box, t.d, 'fx-glyph__thin', { tw: t.w });
+  }
+  return wrap;
 }
 
 const round = (n: number) => Math.round(n * 100) / 100;

@@ -208,7 +208,10 @@ export class AnimBus {
         const id = Number(d.player);
         if (!Number.isFinite(id)) return;
         const host = this.hosts.get(seatStage(id));
-        if (host) this.spec.skill(id, host, d.skill_type, d.name);
+        // `compulsory` is `lua/web/skillwire.lua` putting the engine's own
+        // `Skill:hasTag(Skill.Compulsory)` on this message. `spectacle/` draws a
+        // 锁定技 as a property of the seat rather than as an event.
+        if (host) this.spec.skill(id, host, d.skill_type, d.name, d.compulsory);
         return;
       }
       case 'InvokeUltSkill': {

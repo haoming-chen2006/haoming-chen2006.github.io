@@ -25,18 +25,26 @@ export const Indicators = memo(function Indicators(
   }, [state.indicators.length]);
 
   if (!container) return null;
-  const box = container.getBoundingClientRect();
   const now = Date.now();
 
+  // MEASURE ONLY IF THERE IS SOMETHING TO DRAW. `getBoundingClientRect` is a
+  // synchronous layout flush, and this one used to run above the early return —
+  // inside React's render phase, on every committed burst, whether or not an
+  // arrow existed. An arrow exists for about a second per card played; the
+  // table commits thousands of times a game, so almost every one of those
+  // flushes measured a ring in order to draw nothing. Together with the same
+  // mistake in `Presents`, that made `getBoundingClientRect` the largest named
+  // function in a CPU profile of the host seat.
+  const live = state.indicators.filter((i) => now - i.at < LIFETIME_MS);
+  if (!live.length) return null;
+
+  const box = container.getBoundingClientRect();
   const centre = (pid: number): [number, number] | null => {
     const el = seatRefs.get(pid);
     if (!el) return null;
     const r = el.getBoundingClientRect();
     return [r.left - box.left + r.width / 2, r.top - box.top + r.height / 2];
   };
-
-  const live = state.indicators.filter((i) => now - i.at < LIFETIME_MS);
-  if (!live.length) return null;
 
   return (
     <svg className="fk-indicators" width={box.width} height={box.height}>

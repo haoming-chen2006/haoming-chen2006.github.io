@@ -29,10 +29,15 @@
  *   The gesture. Upstream opens this by right-clicking or long-pressing an
  *   unselected card in the offer. This build already spends right-click on a
  *   general card opening `<GeneralDetail>` (`parts.tsx:118`), which is a
- *   reading affordance every viewer wants and which predates this. So the door
- *   is a visible badge on the card instead — discoverable, which the hidden
- *   right-click never was: its own help string has to explain the gesture
- *   ("启用后在选将界面长按或右键武将牌").
+ *   reading affordance every viewer wants and which predates this. So there are
+ *   two doors instead, and the difference between them is the whole lesson: a
+ *   ⇄ badge on each card, which is a shortcut for someone who already knows the
+ *   feature exists, and a NAMED BUTTON in the choose-general action row, which
+ *   is how anyone else finds out that it does. The badge alone was not enough —
+ *   the person who asked for this feature had it, shipped, and could not see
+ *   it. Upstream has the same failure and the same evidence: its help string
+ *   has to spell the gesture out ("启用后在选将界面长按或右键武将牌") because
+ *   nothing on screen does.
  *
  *   The roster. Upstream offers a pack grid *and* a search box.  This offers
  *   the search box over the whole roster, because `SearchAllGenerals("")`
@@ -48,6 +53,7 @@
 import { useDeferredValue, useMemo, useState } from 'react';
 import type { CSSProperties } from 'react';
 import { useRoom } from '../RoomContext';
+import { fillArgs } from '../ltk/prompt';
 import { Dialog, GeneralCard } from './parts';
 
 const BAR: CSSProperties = { display: 'flex', gap: 8, alignItems: 'center', margin: '0 0 8px' };
@@ -107,7 +113,19 @@ export function FreeAssign({ current, offer, onPick, onClose }: FreeAssignProps)
       // under nothing: this is the box the player is working in.
       layer={45}
       title={lua.tr('Enable free assign')}
-      prompt={lua.tr('help: Enable free assign')}
+      /*
+       * NOT `help: Enable free assign`, which used to be here.
+       *
+       * That string is the *setting's* help text and it describes upstream's
+       * gesture verbatim — "启用后在选将界面长按或右键武将牌" / "press and hold
+       * or right-click a character on the selection screen". Neither works in
+       * this client: right-click on a general card opens `<GeneralDetail>`, and
+       * the way in is the labelled button in `ChooseGeneralBox`'s action row.
+       * Printing an instruction that does nothing, inside the panel it claims
+       * to open, is worse than printing nothing. `$ChooseGeneral` is the
+       * engine's own name for what this box is for.
+       */
+      prompt={fillArgs(lua.tr('$ChooseGeneral'), '1')}
       actions={<button type="button" className="fk-btn" onClick={onClose}>{lua.tr('Cancel')}</button>}
     >
       {/* Inline for the same reason `parts.tsx`'s badges are: three rules that

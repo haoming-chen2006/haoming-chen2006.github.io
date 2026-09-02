@@ -14,17 +14,21 @@
  * broadcast, kept so that a later message can be drawn in the light of an
  * earlier one. Nothing decides whether anything should have happened.
  *
- * WHAT IS NOT HERE, AND WHY. The brief asked for 锁定技 to read differently
- * from an optional skill. It cannot, honestly: `InvokeSkill` carries `name`,
- * `player` and `skill_type` and nothing else, and `GetSkillData` — the client
- * VM's own description of a skill — reports `active`/`notactive`, `limit`,
- * `wake`, `quest` and the switch-skill name, but not `Skill.Compulsory`
- * (`lua/client/client_util.lua:420`). The Qt client cannot distinguish
- * a locked skill on invocation either. The only signal that exists is the
- * prefix of the translated *description* — "锁定技，" in zh_CN, "(forced)" in
- * en_US, "Tỏa định kỹ," in vi_VN — and reading game meaning out of translated
- * prose is exactly the kind of thing this lane exists not to do. The fix is one
- * field on the wire, not a heuristic here.
+ * 锁定技 USED TO BE INEXPRESSIBLE AND IS NOT ANY MORE. `InvokeSkill` once
+ * carried `name`, `player` and `skill_type` and nothing else, so a locked skill
+ * looked exactly like an optional one and the only remaining signal was the
+ * prefix of the translated *description* — which this lane would not read,
+ * because game meaning does not come out of translated prose. A correctness
+ * lane put the fact itself on the wire instead (`lua/web/skillwire.lua`,
+ * sourced from the engine's own `Skill:hasTag(Skill.Compulsory)`), and
+ * `skill()` below now passes it through. It changes the SHAPE of the moment
+ * rather than its colour: a compulsory skill does not announce itself and is
+ * not chosen, so it is drawn as something belonging to the seat — an aura on
+ * the portrait's own outline, no wind-up, no recoil — rather than as an event
+ * that happens at a moment. See `fk-spec--locked` in `motif.css`.
+ *
+ * The one thing to know about the flag: it counts a 觉醒技 as compulsory,
+ * because that is what `Skill.Compulsory` means in the engine.
  */
 import { beatMs } from './budget';
 import { Sky } from './paint';
@@ -37,6 +41,7 @@ import {
   skillBurst, slayBurst, strikeBurst, ultBurst, verdictBurst, vigourBurst,
 } from './plan';
 import './spectacle.css';
+import './motif.css';
 
 /**
  * How long a masochism skill may claim the element of the damage that provoked
@@ -126,18 +131,36 @@ export class Spectacle {
 
   /* ---------------------------------------------------------------- skills */
 
-  /** `Animate{type="InvokeSkill"}` — the nine categories. */
-  skill(pid: number, host: HTMLElement, skillType: unknown, name: unknown): void {
+  /**
+   * `Animate{type="InvokeSkill"}` — a skill firing.
+   *
+   * `name` is the load-bearing field and always was: it is the engine's own
+   * key for the skill, it is on every one of these messages, and it is what
+   * `signatures.ts` is written against. `skill_type` remains the fallback for
+   * anything not yet designed, and `compulsory` says whether this is a 锁定技 —
+   * which changes the shape of the moment rather than its colour, because a
+   * locked skill is not invoked, it is simply true of the player.
+   */
+  skill(
+    pid: number,
+    host: HTMLElement,
+    skillType: unknown,
+    name: unknown,
+    compulsory: unknown,
+  ): void {
     const ms = beatMs('skill');
     if (ms <= 0) return;
     const category = toCategory(skillType);
     const kingdom = this.kingdomOf(pid);
+    const key = typeof name === 'string' ? name : '';
     this.sky.play(skillBurst({
       category,
-      label: this.tr(String(name ?? '')),
+      name: key,
+      label: this.tr(key),
       kingdom,
       mark: markOf(kingdom, this.tr),
       element: category === 'masochism' ? this.elementOf(pid) : undefined,
+      compulsory: compulsory === true,
       ms,
     }), host);
   }

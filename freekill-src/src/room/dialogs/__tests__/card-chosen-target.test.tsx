@@ -25,9 +25,25 @@ import { DialogHost } from '../DialogHost';
 
 const EMPTY_MANIFEST: AssetManifest = { version: 1, base: '', entries: [], totals: {} };
 
-/** `tr` is identity so an assertion reads the key the panel chose to show. */
+/**
+ * `tr` is identity so an assertion reads the key the panel chose to show —
+ * except for the one template the panel's whole sentence is built out of.
+ *
+ * `RoomLogic.js:1010` composes the prompt as
+ * `Lua.tr(processPrompt("#AskForChooseCard:" + _id)).arg(Lua.tr(reason))`, so
+ * the skill and the target BOTH arrive by substitution into that key. Under a
+ * blanket identity `tr` the template comes back as its own name, both
+ * substitutions silently vanish, and the test would be asserting on a string
+ * the panel never renders in a real room. Answering this one key with the
+ * engine's own Chinese is what lets the assertions below check the thing that
+ * actually matters: that `%1` becomes the skill and `%src` becomes the player.
+ */
+const TEMPLATES: Record<string, string> = {
+  '#AskForChooseCard': '%1：请选择%src的一张卡牌',
+};
+
 const stubLua = {
-  tr: (key: string) => key,
+  tr: (key: string) => TEMPLATES[key] ?? key,
   getCardData: (cid: number) => ({ cid, name: 'slash', suit: 'spade', number: 7, known: true }),
   getGeneralData: () => null,
   getIllustrator: () => '',
@@ -80,6 +96,10 @@ describe('a box that picks one card off a player', () => {
     expect(html).toContain('dismantlement_skill');
     // ...and the seat can now see whose hand it is reaching into.
     expect(html).toContain('diaochan');
+    // Both arrive through the template rather than through a sentence of our
+    // own, so neither placeholder may survive to the screen.
+    expect(html).not.toContain('%1');
+    expect(html).not.toContain('%src');
   });
 
   it('falls back to the raw id rather than naming nobody', () => {

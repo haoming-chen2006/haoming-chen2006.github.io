@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>glyphs — lab</title>
+    <style>
+      /* The glyph sheet. Dev only: `vite` serves it, nothing imports it, and it
+         is not an entry in `vite.config.ts`. The one thing it has to get right
+         is the ground — a glyph is judged against a lit portrait, not against
+         white, so every cell carries a portrait-ish gradient behind it. */
+      html, body { margin: 0; background: #0f130f; color: #d8cbb4;
+        font: 11px system-ui, sans-serif; }
+      #sheet { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px; }
+      .cell { position: relative; width: 190px; height: 214px;
+        border: 1px solid #4b3f2d; border-radius: 4px; overflow: hidden;
+        background: linear-gradient(155deg, #6a5b45 0%, #3a2f22 42%, #241c14 100%); }
+      .cell::before { content: ""; position: absolute; inset: 0;
+        background: radial-gradient(58% 44% at 62% 30%, rgba(255,232,190,0.34), transparent 70%); }
+      .cell > .fx { position: absolute; left: 50%; top: 50%; width: 0; height: 0; }
+      .cap { position: absolute; left: 0; right: 0; bottom: 0; padding: 2px 4px;
+        background: rgba(0,0,0,0.62); color: #f0d9a8; font-weight: 700;
+        letter-spacing: .04em; z-index: 5; }
+      .sub { color: #9fb08a; font-weight: 400; }
+    </style>
+  </head>
+  <body>
+    <div id="sheet"></div>
+    <script type="module" src="./lab.ts"></script>
+  </body>
+</html>

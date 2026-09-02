@@ -96,18 +96,18 @@ export const REQUESTS = {
     reach: 'rare',
     producer: 'askToChooseCardsAndChoice / askToViewCardsAndChoice — 4 mobile '
       + 'generals: m_shi__xinxianying, m_sp__simazhao, ruanhui, mobile__chengui',
-    note: 'SENT AND UNANSWERABLE. DialogHost has no case for it, so the room '
-      + 'falls through to UnknownRequest and the seat has nothing to click; the '
-      + 'campaign reports it as a liveness FAIL. Highest-value dialog to build '
-      + 'after AskForMoveCardInBoard.',
+    note: 'Answered by CardsAndChoiceBox in DialogHost. Was SENT AND '
+      + 'UNANSWERABLE — no case at all, so the room fell through to '
+      + 'UnknownRequest and the campaign reported a liveness FAIL every time '
+      + 'one of those four generals used its skill.',
   },
   AskForMoveCardInBoard: {
     reach: 'rare',
     producer: 'askToMoveCardInBoard / askToChooseToMoveCardInBoard — 7 mobile '
       + 'generals: mobile__lvfan, mobile__yanghong, mobile__cuiyan, '
       + 'm_ex__lingtong, mxing__zhanghe, pangdegong, yangbiao',
-    note: 'SENT AND UNANSWERABLE, same as above and affecting more generals. '
-      + 'This is the one to build first.',
+    note: 'Answered by MoveInBoardBox in DialogHost. Was SENT AND UNANSWERABLE '
+      + 'in the same way as AskForCardsAndChoice, across more of the roster.',
   },
   AskForArrangeCards: {
     reach: 'rare',

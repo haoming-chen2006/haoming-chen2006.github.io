@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>skill signatures — contact sheet</title>
+    <style>
+      /* One cell is a complete miniature table: `.fk-room` (the layer's parent
+         and the `--fk-photo-w` holder), `.fk-seats`, `.fk-photo` (the host).
+         Each cell gets its own `AnimBus`, so each gets its own `Sky` and its
+         own twelve-effect cap — a shared one would evict most of a sheet. */
+      html, body { margin: 0; background: #0b0f0d; color: #e8ddcd;
+        font: 12px system-ui, sans-serif; }
+      #bar { position: sticky; top: 0; z-index: 90; display: flex; flex-wrap: wrap;
+        gap: 6px; align-items: center; padding: 7px 10px; background: #15120e;
+        border-bottom: 1px solid #4b3f2d; }
+      #bar b { color: #d8b26a; letter-spacing: .06em; text-transform: uppercase; }
+      #bar button, #bar input, #bar select { font: 11px system-ui, sans-serif;
+        padding: 3px 7px; color: #f0e5da; background: #2c241a;
+        border: 1px solid #5d4d36; border-radius: 3px; }
+      #bar button { cursor: pointer; }
+      #bar button:hover { background: #40331f; }
+      #grid { display: grid; gap: 10px; padding: 12px; }
+      .cell { display: flex; flex-direction: column; gap: 3px; }
+      .fk-room { --fk-photo-w: 118px; position: relative; overflow: hidden;
+        height: 210px; border-radius: 5px;
+        background:
+          radial-gradient(58% 42% at 50% 46%, rgba(216,178,106,0.10) 0%, transparent 70%),
+          radial-gradient(120% 96% at 50% 30%, #2b3a2b 0%, #131a14 76%), #131a14; }
+      .fk-seats { position: absolute; inset: 0; overflow: hidden; }
+      .fk-photo { position: absolute; left: 50%; top: 50%; width: var(--fk-photo-w);
+        height: calc(var(--fk-photo-w) * 1.33); transform: translate(-50%, -50%);
+        border: 1px solid #6c5b41; border-radius: 6px; overflow: hidden;
+        background: linear-gradient(160deg, #3a3025, #221b13);
+        box-shadow: inset 0 0 0 1px rgba(255,226,168,0.10), 0 6px 16px rgba(0,0,0,0.6); }
+      .fk-photo b { position: absolute; inset: 0; display: grid; place-items: center;
+        font-size: 26px; font-weight: 400; color: #7d6f57; }
+      .fk-anim-layer { position: absolute; inset: 0; overflow: visible;
+        pointer-events: none; z-index: 9; }
+      .cap { display: flex; gap: 6px; align-items: baseline; line-height: 1.3; }
+      .cap i { font-style: normal; color: #f2e6d2; font-weight: 700; }
+      .cap s { text-decoration: none; color: #8d8271; }
+      .cap u { text-decoration: none; color: #6d8f6d; font-size: 10px; margin-left: auto; }
+      .cap.fb i { color: #b07c62; }
+      .cap.fb u { color: #a06a4a; }
+      .rule { color: #7a7263; font-size: 10px; line-height: 1.35;
+        display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+        overflow: hidden; }
+    </style>
+  </head>
+  <body>
+    <div id="bar"></div>
+    <div id="grid"></div>
+    <script type="module" src="./contact.ts"></script>
+  </body>
+</html>

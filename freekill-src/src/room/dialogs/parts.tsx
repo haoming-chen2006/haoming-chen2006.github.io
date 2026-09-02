@@ -2,6 +2,8 @@
 import type { CSSProperties, ReactNode } from 'react';
 import { useRoom } from '../RoomContext';
 import { cls } from '../components/CardItem';
+import { Detail } from '../components/Detail';
+import { sanitizeMarkup } from '../components/markup';
 
 /**
  * A box that owns the screen until it is answered — `RoomLogic.js`'s `popupBox`
@@ -9,8 +11,13 @@ import { cls } from '../components/CardItem';
  * right for a question the seat has to answer before anything else can happen.
  */
 export function Dialog(
-  { title, prompt, children, actions, layer }:
-  { title: string; prompt?: string; children: ReactNode; actions?: ReactNode; layer?: number },
+  { title, prompt, detail, children, actions, layer }:
+  {
+    title: string; prompt?: string;
+    /** What the skill behind this question does, in the engine's own words. */
+    detail?: string;
+    children: ReactNode; actions?: ReactNode; layer?: number;
+  },
 ) {
   return (
     // `layer` raises one box over another of the same kind. `.fk-modal` is
@@ -22,6 +29,7 @@ export function Dialog(
       <div className="fk-dialog">
         <h3 className="fk-dialog__title">{title}</h3>
         {prompt ? <p className="fk-dialog__prompt" dangerouslySetInnerHTML={{ __html: prompt }} /> : null}
+        {detail ? <Detail text={detail} /> : null}
         {children}
         {actions ? <div className="fk-dialog__actions">{actions}</div> : null}
       </div>
@@ -79,6 +87,47 @@ export function Btn(
     </button>
   );
 }
+
+/**
+ * An option you can read — the name of the choice, and under it what taking it
+ * will do.
+ *
+ * THIS IS THE WHOLE POINT OF THE CHOICE PANELS. An option arrives as an i18n
+ * key: `mobile__lvfan`, `zhiheng`, `#qusheng_3_prompt`. Translated it becomes a
+ * two-character skill name, which tells a player who already knows the general
+ * which button to press and tells everybody else nothing at all. The engine
+ * ships the answer — `:<key>` is the paragraph a general's card prints — and
+ * `DetailedChoiceBox.qml` puts exactly that under each option. Upstream only
+ * does it when the *skill* asked for a detailed box; there is no reason to
+ * withhold prose we already have, so it is drawn whenever it exists.
+ *
+ * The description stays INSIDE the button rather than beside it, and that is
+ * load-bearing rather than cosmetic: `scripts/audit/probe.mjs` enumerates a
+ * choice panel through `.fk-dialog .fk-dialog__row > .fk-btn`, so an option
+ * wrapped in a layout div is an option the audit driver can no longer see or
+ * press. It is also the better reading: the thing you press and the thing that
+ * says what pressing it does are one target.
+ */
+export function OptionBtn(
+  { label, detail, onClick, disabled, selected }:
+  { label: string; detail?: string; onClick?: () => void; disabled?: boolean; selected?: boolean },
+) {
+  return (
+    <button
+      type="button"
+      className={cls('fk-btn', 'fk-option', selected && 'fk-btn--primary')}
+      disabled={disabled}
+      onClick={onClick}
+    >
+      <span className="fk-option__name">{label}</span>
+      {detail ? (
+        // Engine markup: `:<skill>` routinely carries `<b>` and `<br />`.
+        <span className="fk-option__detail" dangerouslySetInnerHTML={{ __html: sanitizeMarkup(detail) }} />
+      ) : null}
+    </button>
+  );
+}
+
 
 /**
  * A general card with its portrait, kingdom/hp line and the inline artist credit

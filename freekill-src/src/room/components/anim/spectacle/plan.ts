@@ -14,10 +14,13 @@
  * and is the only thing ever written with `innerHTML`. Nothing that came off
  * the wire can reach the second path.
  */
+import { motifClasses, motifParts, motifVars } from './compose';
+import { resolveMotif, type Motif } from './motif';
 import {
   ELEMENT_LIT, ELEMENT_RGB, KINGDOM_BANNER, ROLE_RITE, SIGNATURE,
   type Element, type Kingdom, type Role, type SkillCategory,
 } from './palette';
+import { signatureOf } from './signatures';
 
 /** One child node of an effect. `n` repeats it, numbering the copies. */
 export interface Part {
@@ -119,6 +122,12 @@ function quote(mark: string): string {
 
 export interface SkillOptions {
   readonly category: SkillCategory;
+  /**
+   * The skill's own engine name — `luoshen`, `kurou`, `paoxiao`. The key
+   * `signatures.ts` is written against, and the only thing that lets 洛神 and
+   * 集智 stop being the same `drawcard` burst.
+   */
+  readonly name?: string;
   /** The translated skill name. Engine text. */
   readonly label: string;
   readonly kingdom: Kingdom;
@@ -130,31 +139,107 @@ export interface SkillOptions {
    * fire, and the engine already said which element landed.
    */
   readonly element?: Element;
+  /**
+   * 锁定技. `Animate{type="InvokeSkill"}.compulsory`, sourced from the engine's
+   * own `Skill:hasTag(Skill.Compulsory)` — see `lua/web/skillwire.lua`. Counts
+   * a 觉醒技 as compulsory, because that is what the engine means by the tag.
+   */
+  readonly compulsory?: boolean;
   readonly ms: number;
 }
 
+/**
+ * A skill firing.
+ *
+ * TWO PATHS, AND THE FIRST IS THE POINT. If `signatures.ts` has an entry for
+ * this skill's engine name, the effect is that entry's motif — composed out of
+ * `motif.ts`'s vocabulary and drawn by `motif.css`. If it does not, the effect
+ * is the skill's `skill_type` category, exactly as before. The category layer
+ * is not deprecated by the signature layer; it is what the signature layer
+ * falls back to, and it has to stay good, because a pack shipped in 2027 will
+ * land on it.
+ */
 export function skillBurst(o: SkillOptions): Burst {
-  const sig = SIGNATURE[o.category];
   const banner = KINGDOM_BANNER[o.kingdom];
+  const motif = o.name ? signatureOf(o.name) : undefined;
+  const design = motif ? designed(motif, o) : byCategory(o);
+
+  return {
+    ...design,
+    cls: [
+      design.cls,
+      // 锁定技 is not invoked; it is simply true of this player. The class
+      // hangs an aura on the seat's own outline and takes the wind-up out of
+      // everything else — see `motif.css`. It applies on both paths, so a skill
+      // nobody has designed yet still reads as locked when it is.
+      o.compulsory ? 'fk-spec--locked' : '',
+    ].filter(Boolean).join(' '),
+    vars: {
+      ...design.vars,
+      '--fk-spec-ms': `${o.ms}ms`,
+      '--fk-spec-rim': banner.rim,
+      '--fk-spec-seal': banner.seal,
+    },
+    ms: o.ms,
+    scope: 'seat',
+    parts: [
+      ...design.parts,
+      ...(o.compulsory ? [{ cls: 'fk-spec__aura' }] : []),
+      plaque(o.label, o.mark),
+    ],
+  };
+}
+
+/** What a skill nobody has designed yet looks like: its category. */
+function byCategory(o: SkillOptions): Omit<Burst, 'ms' | 'scope'> {
+  const sig = SIGNATURE[o.category];
   // Masochism is the one category whose colour is not its own: it takes the
   // element of the damage that provoked it. Everything else keeps its signature.
   const inherited = o.category === 'masochism' && o.element && o.element !== 'normal';
   const rgb = inherited ? ELEMENT_RGB[o.element as Element] : sig.rgb;
   const lit = inherited ? ELEMENT_LIT[o.element as Element] : sig.lit;
-
   return {
     cls: `fk-spec fk-spec--skill fk-spec--${o.category} fk-spec-move--${sig.move}`,
-    vars: {
-      '--fk-spec-ms': `${o.ms}ms`,
-      '--fk-spec-rgb': rgb,
-      '--fk-spec-lit': lit,
-      '--fk-spec-rim': banner.rim,
-      '--fk-spec-seal': banner.seal,
-    },
-    ms: o.ms,
-    host: sig.host || undefined,
-    scope: 'seat',
-    parts: [...field(o.category, sig.motes), plaque(o.label, o.mark)],
+    vars: { '--fk-spec-rgb': rgb, '--fk-spec-lit': lit },
+    // A locked skill holds still by default. The character is not reacting to
+    // its own skill firing; the skill is a fact about the character.
+    host: (o.compulsory ? '' : sig.host) || undefined,
+    parts: field(o.category, sig.motes),
+  };
+}
+
+/**
+ * What a skill somebody has designed looks like.
+ *
+ * The one thing a signature does not get to keep is the element of the damage
+ * that provoked it. A masochism skill answering a fire 杀 should look like it
+ * was answering fire — the engine said which element landed, and ignoring it
+ * would make the designed path less true than the category path.
+ *
+ * But it takes the element on the SECOND colour, not the first. `--fk-spec-rgb`
+ * is the figure — 夏侯惇's eye, 司马懿's chain — and that is the character,
+ * which does not change colour because somebody set him on fire. `--fk-spec-rgb2`
+ * is the swarm, which is the incoming blow made of pieces, and that is exactly
+ * the thing that was on fire. A designed masochism motif therefore always has a
+ * swarm; the category path, which has no such split, keeps overriding both.
+ */
+function designed(raw: Motif, o: SkillOptions): Omit<Burst, 'ms' | 'scope'> {
+  const m = resolveMotif(raw);
+  const inherited = o.category === 'masochism' && o.element && o.element !== 'normal';
+  const vars = motifVars(m);
+  return {
+    cls: `fk-spec fk-spec--skill ${motifClasses(m)}`,
+    vars: inherited
+      ? {
+        ...vars,
+        '--fk-spec-rgb2': ELEMENT_RGB[o.element as Element],
+        '--fk-spec-lit2': ELEMENT_LIT[o.element as Element],
+      }
+      : vars,
+    // A locked skill holds still whatever the motif asked for: the character is
+    // not reacting to its own skill firing.
+    host: o.compulsory || m.stance === 'still' ? undefined : m.stance,
+    parts: motifParts(m, o.label),
   };
 }
 

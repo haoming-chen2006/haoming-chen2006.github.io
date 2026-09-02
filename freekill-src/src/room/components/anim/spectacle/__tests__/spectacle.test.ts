@@ -12,8 +12,14 @@
  * that the nine categories are actually distinguishable rather than nine tints
  * of one thing.
  */
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { budgetMs, SLAY_PHASE } from '../budget';
+import { motifParts } from '../compose';
+import { FIGURES } from '../motif';
+import { SIGNATURES, signatureOf } from '../signatures';
 import { jitter } from '../paint';
 import {
   CATEGORIES, ELEMENT_RGB, KINGDOM_BANNER, KINGDOMS, markOf, ROLES, ROLE_RITE,
@@ -327,5 +333,73 @@ describe('particle scatter', () => {
     const xs = Array.from({ length: 40 }, (_, i) => jitter(i));
     expect(Math.max(...xs)).toBeGreaterThan(0.6);
     expect(Math.min(...xs)).toBeLessThan(-0.6);
+  });
+});
+
+/* -------------------------------------------------------------- signatures */
+
+/**
+ * The roster the build actually ships, read the same way the contact sheet
+ * reads it. A signature keyed to a skill no general has is a design nobody will
+ * ever see, and the way that happens is a typo in a key nothing checks.
+ */
+const ROSTER: { generals: { skills: string[] }[] } = JSON.parse(
+  readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../../../../../../public/overview.json'), 'utf8'),
+);
+const SHIPPED = new Set(ROSTER.generals.flatMap((g) => g.skills));
+
+describe('the signature table', () => {
+  it('is keyed to skills this build actually ships', () => {
+    const orphans = Object.keys(SIGNATURES).filter((k) => !SHIPPED.has(k));
+    expect(orphans).toEqual([]);
+  });
+
+  it('draws the engine\'s generated sub-skills as the skill they belong to', () => {
+    // `SkillSkeleton:createTriggerSkill` names a trigger `#<parent>_<n>_trig`
+    // and registers its translation as the parent's, so both fire `InvokeSkill`
+    // under names a player never sees and both mean 咆哮. Without this the
+    // designed effect appeared for some of a skill's invocations and the plain
+    // category burst for the rest — 残势 fired 24 times as itself and 38 as
+    // `#canshi_2_trig` in one pair of audited games.
+    expect(signatureOf('paoxiao')).toBe(SIGNATURES.paoxiao);
+    expect(signatureOf('#paoxiao_1_trig')).toBe(SIGNATURES.paoxiao);
+    expect(signatureOf('paoxiao&')).toBe(SIGNATURES.paoxiao);
+    expect(signatureOf('#paoxiao')).toBe(SIGNATURES.paoxiao);
+    // And it never invents one. A name that strips to nothing known is a
+    // fallback to the category, which is a real effect.
+    expect(signatureOf('#not_a_skill_1_trig')).toBeUndefined();
+    expect(signatureOf('nonesuch')).toBeUndefined();
+  });
+
+  it('never asks a seat for more nodes than one paint can hold', () => {
+    // The same rule the plans above are held to, applied to every design in the
+    // table at once: this is where a 537-row file would quietly grow a 60-node
+    // effect that only shows up as a frame drop on somebody else's laptop.
+    for (const [name, motif] of Object.entries(SIGNATURES)) {
+      const parts = motifParts(motif, '牌');
+      const nodes = parts.reduce((n, p) => n + (p.n ?? 1), 0);
+      expect(nodes, name).toBeLessThanOrEqual(34);
+    }
+  });
+
+  it('is a vocabulary rather than a house style', () => {
+    // Twelve of these are looked at side by side on the contact sheet, and the
+    // failure mode of a composed system is that everything drifts to the same
+    // safe combination. No figure and no colour may own more than a tenth of
+    // the roster, and every figure has to earn its CSS by being used.
+    const share = (pick: (m: (typeof SIGNATURES)[string]) => string) => {
+      const tally = new Map<string, number>();
+      for (const m of Object.values(SIGNATURES)) {
+        const k = pick(m);
+        tally.set(k, (tally.get(k) ?? 0) + 1);
+      }
+      return tally;
+    };
+    const total = Object.keys(SIGNATURES).length;
+    const figures = share((m) => m.figure);
+    const hues = share((m) => m.hue);
+    for (const [k, n] of figures) expect(n / total, `figure ${k}`).toBeLessThan(0.1);
+    for (const [k, n] of hues) expect(n / total, `hue ${k}`).toBeLessThan(0.1);
+    for (const f of FIGURES) expect(figures.get(f) ?? 0, `figure ${f} unused`).toBeGreaterThan(0);
   });
 });

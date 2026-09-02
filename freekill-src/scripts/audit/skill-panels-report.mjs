@@ -63,26 +63,26 @@ const PANELS = {
     note: 'Answered on the table: hand cards and seats light up, OK/Cancel in the bar. No dialog is wanted here.',
   },
   AskForSkillInvoke: {
-    ui: 'ConfirmBar yes/no', status: 'scene',
-    note: 'Prompt is `#AskForSkillInvoke` with the skill name substituted. Correct, but says nothing about what the skill will do.',
+    ui: 'ConfirmBar yes/no + skill text', status: 'scene',
+    note: 'Prompt is `#AskForSkillInvoke` with the skill name substituted, and under it the skill\'s own `:<name>` rules text — the paragraph the general\'s card prints.',
   },
   AskForUseCard: { ui: 'ConfirmBar + hand', status: 'scene', note: 'Prompt via processPrompt; hand filtered by the engine.' },
   AskForResponseCard: { ui: 'ConfirmBar + hand', status: 'scene', note: 'Same path as AskForUseCard.' },
   AskForChoice: {
-    ui: 'ChoiceBox', status: 'weak',
-    note: 'One row of buttons titled "<skill>: please choose". Options are rendered with tr(), not processPrompt(), so any option carrying arguments shows as a raw colon-string. `detailed` is ignored.',
+    ui: 'ChoiceBox', status: 'ok',
+    note: 'One row of buttons titled "<skill>: please choose". Options go through processPrompt (as ChoiceBox.qml:33 does), so an option carrying arguments reads as prose. Each option also carries its `:<option>` rules text, which upstream draws only behind the `detailed` flag.',
   },
   AskForChoices: {
-    ui: 'ChoiceBox (multi)', status: 'weak',
-    note: 'Same box plus OK. The title reads data[5] (the prompt key) where skill_name is data[4], so the heading is a raw prompt key.',
+    ui: 'ChoiceBox (multi)', status: 'ok',
+    note: 'Same box plus OK/Cancel. Reads skill_name from data[4] and the prompt from data[5], as RoomLogic.js:962 sends them.',
   },
   AskForCardChosen: {
-    ui: 'PlayerCardBox', status: 'weak',
-    note: 'Zones $Hand/$Equip/$Judge. `_id` — whose cards these are — is destructured and never rendered, so the box never names the victim. QML builds `#AskForChooseCard:<id>`.',
+    ui: 'PlayerCardBox', status: 'ok',
+    note: 'Zones $Hand/$Equip/$Judge. The prompt is `#AskForChooseCard:<id>` with the skill in %1, as RoomLogic.js:1010 builds it, and the target is named in the title too.',
   },
   AskForPoxi: {
-    ui: 'PoxiBox', status: 'weak',
-    note: 'Filter and feasibility are delegated to the engine, which is right. But `known` is hard-coded on every card, so `extra_data.visible_data` is ignored and face-down hand cards render face-up; and the prompt — already-translated text ending in `:<targetId>` — is passed through `tr()` instead of `processPrompt`, so it prints an unsubstituted `%src` and a dangling id.',
+    ui: 'PoxiBox', status: 'ok',
+    note: 'Filter, feasibility and card visibility are all the engine\'s answers. The prompt — already-translated text ending in `:<targetId>` — goes through processPrompt, as PoxiBox.qml:13 does.',
   },
   AskForGuanxing: { ui: 'ArrangeBox', status: 'ok', note: 'Click-to-move zones with capacity and minimum. The bottom zone starts empty, so the move button works.' },
   AskForArrangeCards: {
@@ -93,18 +93,18 @@ const PANELS = {
   AskForAG: { ui: 'AgBox floating panel', status: 'ok', note: 'Non-modal, table stays clickable.' },
   AskForGeneral: { ui: 'ChooseGeneralBox', status: 'ok', note: 'With per-general detail popup.' },
   AskForMoveCardInBoard: {
-    ui: 'UnknownRequest — JSON dump, no buttons', status: 'dead',
-    note: 'DialogHost has no case. The modal has no actions prop, so there is no reply path: the seat times out.',
+    ui: 'MoveInBoardBox', status: 'ok',
+    note: 'Two rows, one per player; clicking a card moves it across. Replies { cardId, pos } with pos the card\'s ORIGINAL side, as MoveCardInBoardBox.qml:136 does. Cancel replies "", which the engine reads as "move a random one" (room.lua:2941).',
   },
   AskForCardsAndChoice: {
-    ui: 'UnknownRequest — JSON dump, no buttons', status: 'dead',
-    note: 'Same dead end. Covers both the read-only `viewCards` viewer and the real see-then-decide ask.',
+    ui: 'CardsAndChoiceBox', status: 'weak',
+    note: 'Cards plus one button per choice, replying { cards, choice }; cancel_choices reply with no cards. Covers the read-only `viewCards` viewer (min=max=0) too. WEAK for one reason: `filter_skel`\'s extra.choiceFilter gates the non-default choices in QML via Lua.evaluate, and there is no string-eval door into the VM on this side, so every choice is offered once the card count is legal.',
   },
   CustomDialog: {
-    ui: 'UnknownRequest — JSON dump, no buttons', status: 'dead',
-    note: 'Package-supplied QML component. Eight distinct components are in use across utility/ and mobile/.',
+    ui: 'UnknownRequest — JSON dump, declinable', status: 'dead',
+    note: 'Package-supplied QML component. Eight distinct components are in use across utility/ and mobile/. Still unimplemented, but the box now carries a Cancel that replies "" so the seat is not frozen for the whole timeout.',
   },
-  MiniGame: { ui: 'UnknownRequest — JSON dump, no buttons', status: 'dead', note: 'No roster skill uses it.' },
+  MiniGame: { ui: 'UnknownRequest — JSON dump, declinable', status: 'dead', note: 'No roster skill uses it.' },
 };
 
 const ORDER = { dead: 0, weak: 1, scene: 2, ok: 3, none: 4 };

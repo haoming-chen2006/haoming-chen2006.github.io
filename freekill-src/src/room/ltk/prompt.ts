@@ -82,3 +82,30 @@ export function fillArgs(template: string, ...args: readonly string[]): string {
   args.forEach((a, i) => { out = out.replaceAll(`%${i + 1}`, a); });
   return out;
 }
+
+/**
+ * What a skill, card or choice actually DOES — the engine's `:<name>` entry.
+ *
+ * This is the same text a general's card prints: `GetGeneralDetail` builds its
+ * skill list out of `Fk:getDescription`, which is `Fk:translate(":" .. name)`,
+ * and `DetailedChoiceBox.qml:61` looks up exactly `":" + modelData` to put a
+ * paragraph under each option. So it is the engine's own prose, not ours.
+ *
+ * TWO THINGS IT HAS TO GET RIGHT.
+ *
+ * The key. An option can carry `processPrompt` arguments — `zhiheng:::2` — and
+ * `:zhiheng:::2` is a key nobody defined. The description belongs to the head
+ * of the string, which is the i18n key itself, so that is what is looked up.
+ *
+ * The miss. `Fk:translate` answers an unknown key with the key, so a naive call
+ * would put a literal `:mobile__lvfan` on screen — the exact leak this lane
+ * exists to close. An absent description comes back as `''` and the caller
+ * draws nothing, because a panel that says nothing is honest and a panel that
+ * shows an identifier is not.
+ */
+export function describe(lua: Pick<LtkLua, 'tr'>, name: string): string {
+  if (!name) return '';
+  const key = `:${name.split(':')[0]}`;
+  const value = lua.tr(key);
+  return !value || value === key ? '' : value;
+}

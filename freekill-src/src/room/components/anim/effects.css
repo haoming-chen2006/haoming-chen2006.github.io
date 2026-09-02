@@ -1523,3 +1523,151 @@
     100% { opacity: 0; transform: none; }
   }
 }
+
+/* ------------------------------------------------------------------ objects
+ *
+ * A drawn object — a horse, a guandao, a trigram wheel. See `ink.ts` for why
+ * these are brush outlines rather than SVG strokes and `glyphs.ts` for the
+ * drawings themselves.
+ *
+ * The dark contour is `paint-order: stroke fill`: the stroke is painted UNDER
+ * the fill, so a 2px dark edge appears outside the shape without a second path
+ * and without a filter. That contour is what lets a glyph read over a portrait
+ * it knows nothing about — a flat fill alone disappears into a bright one.
+ * `--gs` is the reciprocal of the glyph's scale, so every stroke width below is
+ * in screen pixels however big the effect was drawn.
+ */
+
+.fx-glyph {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: var(--w);
+  height: var(--h);
+  margin: calc(var(--h) / -2) 0 0 calc(var(--w) / -2);
+  transform-origin: 50% 50%;
+}
+
+.fx-glyph__svg { width: 100%; height: 100%; overflow: visible; }
+
+.fx-glyph__ink {
+  fill: var(--fx-key);
+  stroke: var(--fx-deep);
+  stroke-width: calc(var(--gs) * 5);
+  stroke-linejoin: round;
+  paint-order: stroke fill;
+}
+
+.fx-glyph__lit {
+  fill: var(--fx-hot);
+  stroke: var(--fx-deep);
+  stroke-width: calc(var(--gs) * 3);
+  stroke-linejoin: round;
+  paint-order: stroke fill;
+}
+
+.fx-glyph__thin {
+  fill: none;
+  stroke: var(--fx-key);
+  stroke-width: calc(var(--gs) * var(--tw) * 1.6);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Detail cut INTO the body rather than added to it: a rattan weave, a grip
+   wrap, a panel seam. Key-on-key is invisible, which is why this exists. */
+.fx-glyph__cut {
+  fill: none;
+  stroke: var(--fx-deep);
+  stroke-width: calc(var(--gs) * var(--tw) * 1.6);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0.85;
+}
+
+/* The motions. Each fills the whole beat; the object is what changes, not the
+   timing, so a recipe picks a verb and the glyph does the rest. */
+
+/* Neutral: it is there, then it is not. */
+.fx-g--hold { animation: fx-g-hold var(--fx-ms) var(--fx-out) var(--d) both; }
+@keyframes fx-g-hold {
+  0%   { transform: translate(var(--dx), var(--dy)) rotate(var(--a)) scale(calc(var(--fl) * 0.7), 0.7); opacity: 0; }
+  16%  { transform: translate(var(--dx), var(--dy)) rotate(var(--a)) scale(calc(var(--fl) * 1.06), 1.06); opacity: 1; }
+  30%  { transform: translate(var(--dx), var(--dy)) rotate(var(--a)) scale(var(--fl), 1); opacity: 1; }
+  74%  { opacity: 1; }
+  100% { transform: translate(var(--dx), var(--dy)) rotate(var(--a)) scale(calc(var(--fl) * 1.1), 1.1); opacity: 0; }
+}
+
+/* Presented: pulled out of nothing along its own length and snapped straight.
+   For a weapon being taken up. */
+.fx-g--draw { animation: fx-g-draw var(--fx-ms) var(--fx-snap) var(--d) both; }
+@keyframes fx-g-draw {
+  0%   { transform: translate(calc(var(--dx) - 12%), calc(var(--dy) + 18%)) rotate(calc(var(--a) - 26deg)) scale(calc(var(--fl) * 0.3), 0.3); opacity: 0; }
+  22%  { opacity: 1; }
+  56%  { transform: translate(var(--dx), var(--dy)) rotate(var(--a)) scale(calc(var(--fl) * 1.04), 1.04); opacity: 1; }
+  78%  { transform: translate(var(--dx), var(--dy)) rotate(var(--a)) scale(var(--fl), 1); opacity: 1; }
+  100% { transform: translate(var(--dx), calc(var(--dy) - 8%)) rotate(var(--a)) scale(calc(var(--fl) * 1.06), 1.06); opacity: 0; }
+}
+
+/* Worn: it rises from under the seat, overshoots and settles. Armour. */
+.fx-g--rise { animation: fx-g-rise var(--fx-ms) var(--fx-snap) var(--d) both; }
+@keyframes fx-g-rise {
+  0%   { transform: translate(var(--dx), calc(var(--dy) + 70%)) rotate(var(--a)) scale(calc(var(--fl) * 0.82), 0.82); opacity: 0; }
+  26%  { opacity: 1; }
+  52%  { transform: translate(var(--dx), calc(var(--dy) - 6%)) rotate(var(--a)) scale(calc(var(--fl) * 1.05), 1.05); opacity: 1; }
+  72%  { transform: translate(var(--dx), var(--dy)) rotate(var(--a)) scale(var(--fl), 1); opacity: 1; }
+  100% { transform: translate(var(--dx), var(--dy)) rotate(var(--a)) scale(calc(var(--fl) * 1.04), 1.04); opacity: 0; }
+}
+
+/* Passing: it comes in from off one side, crosses, and is gone off the other.
+   A horse. The scale bump at the middle is the near pass. */
+.fx-g--charge { animation: fx-g-charge var(--fx-ms) cubic-bezier(0.3, 0.05, 0.4, 1) var(--d) both; }
+@keyframes fx-g-charge {
+  0%   { transform: translate(calc(var(--dx) - 170%), var(--dy)) rotate(var(--a)) scale(calc(var(--fl) * 0.78), 0.78); opacity: 0; }
+  18%  { opacity: 1; }
+  46%  { transform: translate(var(--dx), calc(var(--dy) - 4%)) rotate(var(--a)) scale(calc(var(--fl) * 1.08), 1.08); opacity: 1; }
+  70%  { opacity: 1; }
+  100% { transform: translate(calc(var(--dx) + 150%), var(--dy)) rotate(var(--a)) scale(calc(var(--fl) * 0.92), 0.92); opacity: 0; }
+}
+
+/* Landed: dropped in from above and stopped dead. Siege engines, slabs. */
+.fx-g--slam { animation: fx-g-slam var(--fx-ms) cubic-bezier(0.6, 0, 0.3, 1) var(--d) both; }
+@keyframes fx-g-slam {
+  0%   { transform: translate(var(--dx), calc(var(--dy) - 90%)) rotate(calc(var(--a) - 10deg)) scale(calc(var(--fl) * 1.16), 1.16); opacity: 0; }
+  20%  { opacity: 1; }
+  40%  { transform: translate(var(--dx), var(--dy)) rotate(var(--a)) scale(calc(var(--fl) * 1.02), 0.94); opacity: 1; }
+  52%  { transform: translate(var(--dx), calc(var(--dy) - 5%)) rotate(var(--a)) scale(var(--fl), 1); opacity: 1; }
+  76%  { transform: translate(var(--dx), var(--dy)) rotate(var(--a)) scale(var(--fl), 1); opacity: 1; }
+  100% { transform: translate(var(--dx), var(--dy)) rotate(var(--a)) scale(calc(var(--fl) * 1.05), 1.05); opacity: 0; }
+}
+
+/* Turning: it arrives already spinning and slows to rest. Trigram wheels. */
+.fx-g--turn { animation: fx-g-turn var(--fx-ms) var(--fx-out) var(--d) both; }
+@keyframes fx-g-turn {
+  0%   { transform: translate(var(--dx), var(--dy)) rotate(calc(var(--a) - 150deg)) scale(calc(var(--fl) * 0.34), 0.34); opacity: 0; }
+  24%  { opacity: 1; }
+  66%  { transform: translate(var(--dx), var(--dy)) rotate(calc(var(--a) + 8deg)) scale(calc(var(--fl) * 1.04), 1.04); opacity: 1; }
+  82%  { transform: translate(var(--dx), var(--dy)) rotate(var(--a)) scale(var(--fl), 1); opacity: 1; }
+  100% { transform: translate(var(--dx), var(--dy)) rotate(calc(var(--a) + 24deg)) scale(calc(var(--fl) * 1.2), 1.2); opacity: 0; }
+}
+
+/* Driven: it stabs forward along its own axis and pulls back. Spears, rams. */
+.fx-g--thrust { animation: fx-g-thrust var(--fx-ms) cubic-bezier(0.7, 0, 0.2, 1) var(--d) both; }
+@keyframes fx-g-thrust {
+  0%   { transform: translate(calc(var(--dx) - 34%), calc(var(--dy) + 34%)) rotate(var(--a)) scale(calc(var(--fl) * 0.9), 0.9); opacity: 0; }
+  22%  { opacity: 1; }
+  48%  { transform: translate(calc(var(--dx) + 14%), calc(var(--dy) - 14%)) rotate(var(--a)) scale(calc(var(--fl) * 1.06), 1.06); opacity: 1; }
+  70%  { transform: translate(var(--dx), var(--dy)) rotate(var(--a)) scale(var(--fl), 1); opacity: 1; }
+  100% { transform: translate(calc(var(--dx) + 6%), calc(var(--dy) - 6%)) rotate(var(--a)) scale(var(--fl), 1); opacity: 0; }
+}
+
+/* Loosed: drawn back against the string, then released. Bows. */
+.fx-g--loose { animation: fx-g-loose var(--fx-ms) cubic-bezier(0.4, 0, 0.15, 1) var(--d) both; }
+@keyframes fx-g-loose {
+  0%   { transform: translate(calc(var(--dx) + 18%), var(--dy)) rotate(var(--a)) scale(calc(var(--fl) * 0.62), 0.62); opacity: 0; }
+  26%  { transform: translate(calc(var(--dx) - 8%), var(--dy)) rotate(var(--a)) scale(calc(var(--fl) * 1.02), 1.02); opacity: 1; }
+  46%  { transform: translate(calc(var(--dx) - 14%), var(--dy)) rotate(var(--a)) scale(calc(var(--fl) * 1.02), 1.06); opacity: 1; }
+  60%  { transform: translate(calc(var(--dx) + 6%), var(--dy)) rotate(var(--a)) scale(var(--fl), 0.96); opacity: 1; }
+  78%  { transform: translate(var(--dx), var(--dy)) rotate(var(--a)) scale(var(--fl), 1); opacity: 1; }
+  100% { transform: translate(var(--dx), var(--dy)) rotate(var(--a)) scale(calc(var(--fl) * 1.04), 1.04); opacity: 0; }
+}

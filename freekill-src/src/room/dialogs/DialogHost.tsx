@@ -14,9 +14,10 @@
 import { useMemo, useState } from 'react';
 import { useRoom, useRoomState, usePrompt } from '../RoomContext';
 import { CardItem, cls } from '../components/CardItem';
+import { describe, fillArgs } from '../ltk/prompt';
 import { FreeAssign, freeAssignEnabled } from './FreeAssign';
 import { GeneralDetail } from './GeneralDetail';
-import { Btn, Dialog, GeneralCard, Panel } from './parts';
+import { Btn, Dialog, GeneralCard, OptionBtn, Panel } from './parts';
 
 export interface DialogHostProps {
   readonly onReply: (value: unknown) => void;
@@ -72,13 +73,15 @@ function RequestDialog({ onReply, interactive }: DialogHostProps) {
     case 'AskForChoice': return <ChoiceBox data={req.data} onReply={onReply} interactive={interactive} multi={false} />;
     case 'AskForChoices': return <ChoiceBox data={req.data} onReply={onReply} interactive={interactive} multi />;
     case 'AskForPoxi': return <PoxiBox data={req.data} onReply={onReply} interactive={interactive} />;
+    case 'AskForCardsAndChoice': return <CardsAndChoiceBox data={req.data} onReply={onReply} interactive={interactive} />;
+    case 'AskForMoveCardInBoard': return <MoveInBoardBox data={req.data} onReply={onReply} interactive={interactive} />;
     case 'AskForAG':
       // Normally `FillAG` has already built `state.ag` and `DialogHost` is
       // drawing the board; this is the case where the ask arrives without a
       // fill, which leaves the seat nothing to pick from.
-      return state.ag ? null : <UnknownRequest command={req.command} data={req.data} />;
+      return state.ag ? null : <UnknownRequest command={req.command} data={req.data} onReply={onReply} interactive={interactive} />;
     default:
-      return <UnknownRequest command={req.command} data={req.data} />;
+      return <UnknownRequest command={req.command} data={req.data} onReply={onReply} interactive={interactive} />;
   }
 }
 
@@ -165,6 +168,32 @@ function ChooseGeneralBox(
         title={freeAssign ? `${lua.tr('#AskForGeneral')} (${lua.tr('Enable free assign')})` : lua.tr('#AskForGeneral')}
         prompt={prompt === '#AskForGeneral' ? undefined : lua.tr(prompt)}
         actions={<>
+          {/*
+            THE DOOR TO THE WHOLE ROSTER, WITH A LABEL ON IT.
+
+            `FreeAssign` has been reachable since it was built, but only through
+            a 26px ⇄ badge in the corner of a card — and the room's own host
+            could not find it. A corner glyph is a shortcut for someone who
+            already knows the feature exists; it is not how you tell a player
+            that this room lets them play anybody. `ChooseGeneralBox.qml` has
+            the same problem and knows it: free assign is a right-click there,
+            and the setting's own help string has to explain the gesture
+            ("启用后在选将界面长按或右键武将牌").
+
+            So the badge stays as the per-card shortcut and this is the way in:
+            a named button, in the row a player is already reading because OK is
+            in it. It opens the search panel on whatever is selected — or on the
+            first card when nothing is, which is the slot a single-pick offer
+            would have replaced anyway.
+          */}
+          {freeAssign && interactive ? (
+            <Btn
+              onClick={() => {
+                const at = offer.indexOf(picked[picked.length - 1] ?? '');
+                setAssigning(at >= 0 ? at : 0);
+              }}
+            >{lua.tr('Enable free assign')}</Btn>
+          ) : null}
           {/* `ChooseGeneralBox.qml:123` — enabled once something is selected,
               and deliberately NOT primary: the audit driver and every player
               read the primary button in a request dialog as "answer it". */}
@@ -379,17 +408,32 @@ function PlayerCardBox(
       : picked.length >= max ? picked : [...picked, cid]);
   };
 
+  /**
+   * The question, built the way `RoomLogic.js:1010` builds it.
+   *
+   * QML sends `Lua.tr(processPrompt("#AskForChooseCard:" + data._id))
+   * .arg(Lua.tr(reason))` — the target goes in through `%src` and the skill
+   * through `%1`, giving "过河拆桥：请选择 貂蝉 的一张卡牌". This box used to
+   * write its own `"$ChooseCard — <reason>"`, which is a sentence the engine
+   * never wrote, names the skill twice once the title is counted, and — before
+   * `card-chosen-target` — named nobody at all.
+   *
+   * `$ChooseCards` takes the range instead, for the multi-pick box
+   * (`PlayerCardBox.qml:14`).
+   */
   const header = d._prompt
     ? prompt(d._prompt)
-    : `${lua.tr('$ChooseCard')} — ${lua.tr(d._reason)}`;
-  const title = target
-    ? `${lua.tr(d._reason || '$ChooseCard')} — ${target}`
-    : lua.tr(d._reason || '$ChooseCard');
+    : fillArgs(prompt(`#AskForChooseCard:${d._id}`), lua.tr(d._reason));
+  const title = multi
+    ? fillArgs(lua.tr('$ChooseCards'), String(min), String(max))
+    : lua.tr('$ChooseCard');
 
   return (
     <Dialog
-      title={title}
+      title={target ? `${title} — ${target}` : title}
       prompt={header}
+      // What the skill reaching into this hand actually does.
+      detail={describe(lua, d._reason)}
       actions={multi
         ? <Btn primary disabled={!interactive || picked.length < min} onClick={() => onReply(picked)}>{lua.tr('OK')}</Btn>
         : undefined}
@@ -417,18 +461,54 @@ function PlayerCardBox(
 
 /* -------------------------------------------------------------- choices */
 
+/**
+ * `AskForChoice` / `AskForChoices` — `ChoiceBox.qml`, `CheckBox.qml` and their
+ * `Detailed*` siblings. The single most-used dialog in the game, and the one
+ * that leaked the most identifiers.
+ *
+ * THREE FAULTS, ALL VISIBLE TO A PLAYER, ALL FIXED HERE.
+ *
+ * 1. THE OPTIONS WERE NOT FORMATTED. Every one of the four QML boxes renders an
+ *    option through `Util.processPrompt` (`ChoiceBox.qml:33`,
+ *    `CheckBox.qml:37`); this box used `tr()`. `tr` does not split on `:`, so
+ *    an option a skill built as `"key::"..pid..":"..n` — the ordinary way to
+ *    say "give 甄姬 two cards" — reached the button face as the literal string
+ *    `key::5:2`. The panel survey counted 39 skills whose options carry
+ *    arguments; every one of them printed a colon-string.
+ *
+ * 2. THE TITLE READ THE WRONG FIELD. `AskForChoices` sends
+ *    `[choices, all, [min,max], cancelable, skill, prompt, detailed]`
+ *    (`RoomLogic.js:962-972`): the skill is index 4 and the prompt is index 5.
+ *    This box put index 5 in `$Choice`'s `%1`, so a multi-choice panel was
+ *    headed by a raw prompt key — `#qusheng_3_prompt：请选择` — instead of by
+ *    the skill that raised it.
+ *
+ * 3. NOTHING SAID WHAT AN OPTION DID. Upstream keeps that behind the `detailed`
+ *    flag, which arrives false for most skills. The text is the engine's and
+ *    costs one lookup (`ltk/prompt.ts:describe`), so it is drawn whenever it
+ *    exists — see `OptionBtn`.
+ *
+ * The reply is unchanged and must stay so: the option's own untranslated
+ * string, which is what `all_choices[box.result]` sends.
+ */
 function ChoiceBox(
   { data, onReply, interactive, multi }:
   { data: unknown; onReply: (v: unknown) => void; interactive: boolean; multi: boolean },
 ) {
   const { lua } = useRoom();
   const prompt = usePrompt();
-  const [choices, allChoices, a, b, c, e] = data as [string[], string[], unknown, unknown, unknown, unknown];
-  const skillName = multi ? String(e ?? '') : String(a ?? '');
-  const promptKey = multi ? String((data as unknown[])[5] ?? '') : String(b ?? '');
-  const range = multi ? ((data as unknown[])[2] as [number, number]) : [1, 1];
-  const cancelable = multi ? Boolean((data as unknown[])[3]) : false;
-  void c;
+  const d = data as unknown[];
+  const choices = (d[0] ?? []) as string[];
+  const allChoices = (d[1] ?? choices) as string[];
+  // `RoomLogic.js:931` for the single, `:962` for the multi. The two payloads
+  // agree on 0 and 1 and on nothing else, which is what item 2 above was.
+  const skillName = String((multi ? d[4] : d[2]) ?? '');
+  const promptKey = String((multi ? d[5] : d[3]) ?? '');
+  // `[min, max]`. Defended because a payload that omits it would otherwise
+  // read `undefined[0]` and take the whole table down mid-request.
+  const bounds = (multi ? d[2] : undefined) as [number, number] | undefined;
+  const range: [number, number] = Array.isArray(bounds) ? bounds : [1, 1];
+  const cancelable = multi ? Boolean(d[3]) : false;
   const [picked, setPicked] = useState<string[]>([]);
 
   const toggle = (choice: string) => {
@@ -438,8 +518,12 @@ function ChoiceBox(
 
   return (
     <Dialog
-      title={lua.tr('$Choice').replace('%1', lua.tr(skillName))}
+      title={fillArgs(lua.tr('$Choice'), lua.tr(skillName))}
       prompt={promptKey ? prompt(promptKey) : undefined}
+      // The skill that raised the question, in its own words. `#AskForChoice`
+      // names it and nothing else, so without this a player who does not
+      // already know the general is choosing between two-character allusions.
+      detail={describe(lua, skillName)}
       actions={multi ? <>
         {cancelable ? <Btn disabled={!interactive} onClick={() => onReply('')}>{lua.tr('Cancel')}</Btn> : null}
         <Btn primary disabled={!interactive || picked.length < range[0] || picked.length > range[1]} onClick={() => onReply(picked)}>
@@ -448,13 +532,18 @@ function ChoiceBox(
       </> : undefined}
     >
       <div className="fk-dialog__row">
-        {(allChoices ?? choices).map((choice) => (
-          <Btn
-            key={choice}
-            primary={picked.includes(choice)}
+        {allChoices.map((choice, i) => (
+          <OptionBtn
+            // `all_options` is a list, not a set: 拼点-style skills legitimately
+            // offer the same option twice and index alone is what tells them
+            // apart. The reply is still the string, as QML's `result` index is.
+            key={`${i}:${choice}`}
+            label={prompt(choice)}
+            detail={describe(lua, choice)}
+            selected={picked.includes(choice)}
             disabled={!interactive || !choices.includes(choice)}
             onClick={() => toggle(choice)}
-          >{lua.tr(choice)}</Btn>
+          />
         ))}
       </div>
     </Dialog>
@@ -465,6 +554,7 @@ function ChoiceBox(
 
 function PoxiBox({ data, onReply, interactive }: { data: unknown; onReply: (v: unknown) => void; interactive: boolean }) {
   const { lua } = useRoom();
+  const prompt = usePrompt();
   const d = data as { type: string; data?: [string, number[]][]; extra_data: unknown; cancelable?: boolean };
   const zones = d.data ?? [];
   const [picked, setPicked] = useState<number[]>([]);
@@ -489,8 +579,23 @@ function PoxiBox({ data, onReply, interactive }: { data: unknown; onReply: (v: u
     ? (d.extra_data as { visible_data?: Record<string, boolean> }).visible_data
     : undefined);
 
-  // Both the prompt and the legality of a pick are the engine's answer.
-  const promptText = lua.poxiPrompt(d.type, zones, d.extra_data);
+  /**
+   * The heading, and why it must go through `processPrompt`.
+   *
+   * `PoxiPrompt` is `Fk:translate(poxi.prompt(data, extra_data))`
+   * (`client_util.lua:1061`) — and a poxi method's `prompt` returns a string
+   * that is *already translated and then has arguments appended*. The standard
+   * one ends `return ret .. ":" .. extra_data.to` (`aux_poxi.lua`), so what
+   * comes back is `"求索：请选择%src的2至3张卡牌:5"`: `Fk:translate` cannot
+   * match that as a key and hands it straight back.
+   *
+   * `PoxiBox.qml:13` therefore runs `Util.processPrompt` on it, which splits the
+   * trailing `:5` off, translates the head (a no-op — it is already prose) and
+   * puts the player's name where `%src` is. This box ran `tr()` instead, which
+   * does none of that: the panel every multi-card steal in the game opens was
+   * headed by a literal `%src` and a dangling player id.
+   */
+  const promptText = prompt(lua.poxiPrompt(d.type, zones, d.extra_data));
   const feasible = lua.poxiFeasible(d.type, picked, zones, d.extra_data);
 
   const toggle = (cid: number) => {
@@ -502,7 +607,10 @@ function PoxiBox({ data, onReply, interactive }: { data: unknown; onReply: (v: u
   return (
     <Dialog
       title={lua.tr(d.type)}
-      prompt={promptText ? lua.tr(promptText) : undefined}
+      prompt={promptText || undefined}
+      // A poxi type is a skill name — `zhenxing`, `changshi__kuiji` — so the
+      // engine has a paragraph saying what taking these cards is for.
+      detail={describe(lua, d.type)}
       actions={<>
         {d.cancelable ? <Btn disabled={!interactive} onClick={() => onReply('')}>{lua.tr('Cancel')}</Btn> : null}
         <Btn primary disabled={!interactive || !feasible} onClick={() => onReply(picked)}>{lua.tr('OK')}</Btn>
@@ -521,6 +629,256 @@ function PoxiBox({ data, onReply, interactive }: { data: unknown; onReply: (v: u
                 <CardItem cid={cid} known={visible?.[String(cid)] !== false} />
               </div>
             ))}
+          </div>
+        </div>
+      ))}
+    </Dialog>
+  );
+}
+
+/* ------------------------------------------------- see cards, then decide */
+
+interface CardsAndChoicePayload {
+  cards?: number[];
+  choices?: string[];
+  cancel_choices?: string[];
+  disabled?: number[];
+  min?: number;
+  max?: number;
+  prompt?: string;
+  filter_skel?: string;
+  extra_data?: unknown;
+}
+
+/**
+ * `AskForCardsAndChoice` — `ChooseCardsAndChoiceBox.qml`. Look at some cards,
+ * then say what you want to do about them.
+ *
+ * THIS PANEL DID NOT EXIST, AND THAT WAS A HANG, NOT A GAP. `DialogHost` had no
+ * case for the command, so the room fell through to `UnknownRequest` — a JSON
+ * dump with no buttons at all. `scripts/audit/catalogue.mjs` records the
+ * consequence in the campaign log as a liveness FAIL: "SENT AND UNANSWERABLE".
+ * Four mobile generals reach it (m_shi__xinxianying, m_sp__simazhao, ruanhui,
+ * mobile__chengui), and every time one did, the seat sat looking at a payload
+ * for the full 30-second timeout while the engine picked for it.
+ *
+ * THE SHAPE, off `Room:askToChooseCardsAndChoice` (`room.lua:953`):
+ *
+ *   cards           what to show. `all_cards` when the skill sent one, so some
+ *                   of them may be unselectable — those are in `disabled`.
+ *   choices         the "and now do this" buttons. Defaults to `{"OK"}`, and
+ *                   `default_choice` is spliced in at index 0 and is ALWAYS
+ *                   available (`room.lua:958-961`).
+ *   cancel_choices  buttons that answer with no cards at all.
+ *   min / max       how many cards the `choices` buttons need. Both 0 for
+ *                   `viewCards`, which is how the read-only viewer arrives.
+ *
+ * The reply is `{ cards, choice }` (`ChooseCardsAndChoiceBox.qml:133`), and a
+ * cancel choice replies with an empty card list.
+ *
+ * THE ONE THING WE CANNOT DO. `filter_skel` names a skill skeleton whose
+ * `extra.choiceFilter` decides whether a non-default choice is legal for the
+ * current selection; QML asks Lua to evaluate it inline (`:125`). There is no
+ * `Lua.evaluate` on this side — `LtkLua` is a fixed set of named calls by
+ * design, and adding a string-eval door into the VM to gate a button is not a
+ * trade worth making. So every choice is offered once the card count is legal,
+ * which is what QML itself falls back to when `filter_skel` is empty. The
+ * engine validates the answer; a refused one is a refused answer, not a hang.
+ */
+function CardsAndChoiceBox(
+  { data, onReply, interactive }: { data: unknown; onReply: (v: unknown) => void; interactive: boolean },
+) {
+  const { lua } = useRoom();
+  const prompt = usePrompt();
+  const state = useRoomState();
+  const d = data as CardsAndChoicePayload;
+  const cards = d.cards ?? [];
+  const choices = d.choices ?? [];
+  const cancelChoices = d.cancel_choices ?? [];
+  const disabled = d.disabled ?? [];
+  const min = d.min ?? 1;
+  const max = d.max ?? 1;
+  const [picked, setPicked] = useState<number[]>([]);
+
+  const toggle = (cid: number) => {
+    // `max === 0` is the read-only viewer: there is nothing to select, and
+    // selecting anyway would answer a question that was never asked.
+    if (max === 0 || disabled.includes(cid)) return;
+    if (picked.includes(cid)) { setPicked(picked.filter((c) => c !== cid)); return; }
+    // `updateCardSelectable` (`:170`) drops the oldest rather than refusing the
+    // click, so a full selection still responds to being pointed at.
+    setPicked(picked.length >= max ? [...picked.slice(1), cid] : [...picked, cid]);
+  };
+
+  const enough = picked.length >= min && picked.length <= max;
+
+  /**
+   * Which skill is asking, so the panel can say what it does.
+   *
+   * The payload does not carry the name — `askToChooseCardsAndChoice` puts it
+   * on the REQUEST rather than in the data (`req.focus_text = skillname`,
+   * `room.lua:983`), and `Request:_sendPacket` broadcasts it as `MoveFocus`'s
+   * text field (`request.lua:220`), which the store already keeps. Only when
+   * this seat is the one being focused, and only when it names something the
+   * packages described — a caller that set no `skill_name` leaves the command
+   * name there, which has no `:` entry and correctly yields nothing.
+   */
+  const focused = state.focus && state.selfId != null && state.focus.ids.includes(state.selfId);
+  const skill = String((d.extra_data as { skillName?: unknown } | undefined)?.skillName
+    ?? (focused ? state.focus?.command : '') ?? '');
+
+  return (
+    <Dialog
+      title={d.prompt ? prompt(d.prompt) : lua.tr('$ChooseCard')}
+      detail={describe(lua, skill)}
+      actions={<>
+        {choices.map((choice, i) => (
+          <OptionBtn
+            key={`ok:${i}:${choice}`}
+            // Index 0 is `default_choice` and is what the engine falls back to
+            // on a timeout, so it is the one marked primary — which is also the
+            // button `scripts/audit/policy.mjs` presses to answer a card box.
+            selected={i === 0}
+            label={prompt(choice)}
+            detail={describe(lua, choice)}
+            disabled={!interactive || !enough}
+            onClick={() => onReply({ cards: picked, choice })}
+          />
+        ))}
+        {cancelChoices.map((choice, i) => (
+          <OptionBtn
+            key={`no:${i}:${choice}`}
+            label={prompt(choice)}
+            detail={describe(lua, choice)}
+            disabled={!interactive}
+            onClick={() => onReply({ cards: [], choice })}
+          />
+        ))}
+      </>}
+    >
+      {/* One `.fk-zone`, because that is the selector the audit probe
+          enumerates dialog cards through (`probe.mjs`, group `zoneCard`). */}
+      <div className="fk-zone">
+        <div className="fk-zone__title">
+          {lua.tr('$Hand')}{max > 0 ? ` — ${picked.length}/${max}` : ''}
+        </div>
+        <div className="fk-zone__cards">
+          {cards.map((cid) => {
+            const off = disabled.includes(cid) || max === 0;
+            return (
+              <div
+                key={cid}
+                className={cls(picked.includes(cid) && 'fk-card--selected')}
+                style={{ cursor: interactive && !off ? 'pointer' : 'default', opacity: off ? 0.55 : 1 }}
+                onClick={interactive && !off ? () => toggle(cid) : undefined}
+              >
+                <CardItem cid={cid} known />
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </Dialog>
+  );
+}
+
+/* --------------------------------------------------- move a card in play */
+
+interface MoveInBoardPayload {
+  cards?: number[];
+  cardsPosition?: number[];
+  generalNames?: string[];
+  playerIds?: number[];
+}
+
+/**
+ * `AskForMoveCardInBoard` — `MoveCardInBoardBox.qml`. Take one equipment or
+ * delayed trick off one of two players and give it to the other.
+ *
+ * ALSO A HANG BEFORE THIS. Same `UnknownRequest` dead end as above and reaching
+ * more of the roster — seven mobile generals (mobile__lvfan, mobile__yanghong,
+ * mobile__cuiyan, m_ex__lingtong, mxing__zhanghe, pangdegong, yangbiao).
+ *
+ * THE REPLY IS THE SUBTLE PART. `{ cardId, pos }`, and `pos` is the card's
+ * position in the payload — where it is NOW, not where you are sending it.
+ * `MoveCardInBoardBox.qml:136` reads it straight out of the unmodified
+ * `cardsPosition` array, and the server uses it to pick the two ends of the
+ * move: `pos == 0` means "from targetOne to targetTwo" (`room.lua:2945`).
+ * Sending the destination instead would move every card the wrong way.
+ *
+ * `''` is a legal answer — the engine then moves a random one (`room.lua:2941`)
+ * — so Cancel is real rather than a way of stalling.
+ *
+ * Two rows, one per player, drawn as zones. QML animates the card across; a
+ * click that re-parents it says the same thing and is honest about being
+ * click-driven, which is the same call `ArrangeBox` above makes.
+ */
+function MoveInBoardBox(
+  { data, onReply, interactive }: { data: unknown; onReply: (v: unknown) => void; interactive: boolean },
+) {
+  const { lua } = useRoom();
+  const d = data as MoveInBoardPayload;
+  const cards = d.cards ?? [];
+  const positions = d.cardsPosition ?? [];
+  const playerIds = d.playerIds ?? [];
+  /** `"general/deputy"`, each half translated on its own — `RoomLogic.js:1125`. */
+  const names = (d.generalNames ?? []).map((n) => n.split('/').map((x) => lua.tr(x)).join('/'));
+  const [moved, setMoved] = useState<number | null>(null);
+
+  /** Where a card is drawn: its own side until it is the one being moved. */
+  const sideOf = (i: number): number => {
+    const home = positions[i] ?? 0;
+    return cards[i] === moved ? 1 - home : home;
+  };
+
+  /** The name a skill printed onto a card it put into play, if any. Asked of
+   *  the card's owner, which is the side the payload started it on. */
+  const virtName = (i: number): string | undefined => {
+    const owner = playerIds[positions[i] ?? 0];
+    if (owner == null) return undefined;
+    return lua.getVirtualEquipData(owner, cards[i])?.name;
+  };
+
+  return (
+    <Dialog
+      title={lua.tr('Please click to move card')}
+      actions={<>
+        <Btn disabled={!interactive} onClick={() => onReply('')}>{lua.tr('Cancel')}</Btn>
+        <Btn
+          primary
+          disabled={!interactive || moved == null}
+          // `pos` is where the card came FROM. See the note above.
+          onClick={() => onReply({ cardId: moved, pos: positions[cards.indexOf(moved as number)] ?? 0 })}
+        >{lua.tr('OK')}</Btn>
+      </>}
+    >
+      {names.map((name, side) => (
+        <div className="fk-zone" key={`${side}:${playerIds[side] ?? side}`} style={{ marginBottom: 8 }}>
+          <div className="fk-zone__title">{name}</div>
+          <div className="fk-zone__cards">
+            {cards.map((cid, i) => (sideOf(i) !== side ? null : (
+              <div
+                key={cid}
+                className={cls(cid === moved && 'fk-card--selected')}
+                style={{ cursor: interactive ? 'pointer' : 'default' }}
+                onClick={interactive ? () => setMoved(moved === cid ? null : cid) : undefined}
+              >
+                {/*
+                  Two engine answers this panel would otherwise invent, and both
+                  had zero callers anywhere in `src/room` before it existed.
+
+                  `cardVisibility` — a delayed trick in somebody's judge zone
+                  can be face-down, and only the engine knows whether this seat
+                  may see it (`MoveCardInBoardBox.qml:108`).
+
+                  `getVirtualEquipData` — a weapon put into play BY a skill is a
+                  virtual card whose printed face is not its name; QML overrides
+                  `virt_name` from it before drawing (`RoomLogic.js:1114-1119`),
+                  keyed on the card's owner, which is its ORIGINAL side.
+                */}
+                <CardItem cid={cid} known={lua.cardVisibility(cid)} virtName={virtName(i)} />
+              </div>
+            )))}
           </div>
         </div>
       ))}
@@ -607,10 +965,30 @@ function GameOverBox({ winner }: { winner: string }) {
  * A request type the room has no dialog for. The spec calls this out as a thing
  * to report rather than paper over, so it renders the payload instead of an
  * empty box.
+ *
+ * IT ALSO HAS TO BE ANSWERABLE. Two of the four commands that land here —
+ * `CustomDialog` and `MiniGame` — expect a QML component a browser has no
+ * analogue for, so this is where they will stay. But a box with no button is a
+ * guaranteed thirty-second freeze for the seat and a liveness FAIL for the
+ * campaign, and the engine already has a name for "I am not answering this":
+ * every `Request:getResult` treats `""` as no answer and applies the caller's
+ * own default (`room.lua:2941`, `:989`, and so on down the file). Declining
+ * immediately is exactly what the timeout would have done, minus the thirty
+ * seconds of a frozen table.
  */
-function UnknownRequest({ command, data }: { command: string; data: unknown }) {
+function UnknownRequest(
+  { command, data, onReply, interactive }:
+  { command: string; data: unknown; onReply?: (v: unknown) => void; interactive?: boolean },
+) {
+  const { lua } = useRoom();
   return (
-    <Dialog title={command} prompt="No dialog is implemented for this request type.">
+    <Dialog
+      title={lua.tr(command)}
+      prompt="No dialog is implemented for this request type."
+      actions={onReply
+        ? <Btn primary disabled={!interactive} onClick={() => onReply('')}>{lua.tr('Cancel')}</Btn>
+        : undefined}
+    >
       <pre style={{ maxWidth: 640, whiteSpace: 'pre-wrap', fontSize: 12 }}>{JSON.stringify(data, null, 2)}</pre>
     </Dialog>
   );

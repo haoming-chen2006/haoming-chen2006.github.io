@@ -202,7 +202,7 @@ function RoomBody(
 
           <TableStage />
           <Indicators seatRefs={refs.current} container={container} />
-          <Presents chat={chat} onChat={onChat} seatRefs={refs.current} container={container} seats={order} />
+          <Presents chat={chat} onChat={onChat} seatRefs={refs.current} container={container} seats={order} ring={metrics} />
           {playback ? <PlaybackBar playback={playback} /> : null}
         </div>
 

@@ -34,7 +34,7 @@
  * pointer-down anywhere, on Escape, and whenever the engine asks the viewer
  * something new.
  */
-import { memo, useCallback, useEffect, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ChatLine } from '../../contract/views';
 import { useRoom, useRoomState } from '../RoomContext';
 import { roomAudio } from '../audio';
@@ -136,10 +136,16 @@ export interface PresentsProps {
   readonly container: HTMLElement | null;
   /** Seats in ring order, so a badge can be drawn for each. */
   readonly seats: readonly number[];
+  /**
+   * The ring's measured metrics, used here as a change token and nothing else:
+   * the seats are laid out from it, so a new one is the only thing that can
+   * have moved a badge. See `badges` below for why that matters.
+   */
+  readonly ring?: unknown;
 }
 
 export const Presents = memo(function Presents(props: PresentsProps) {
-  const { chat, onChat, seatRefs, container, seats } = props;
+  const { chat, onChat, seatRefs, container, seats, ring } = props;
   const { lua, mode, meId } = useRoom();
   const state = useRoomState();
 
@@ -288,16 +294,42 @@ export const Presents = memo(function Presents(props: PresentsProps) {
 
   /* ---------------------------------------------------------------- drawing */
 
-  // Measured on every render rather than cached, exactly as `Indicators` does
-  // it: the ring is re-measured on resize and the seats move with it, and a
-  // badge drawn at last frame's coordinates is a badge on the felt. Eight
-  // rect reads at the table's commit rate is the cost `Indicators` already
-  // pays, and `useRoomState()` above is what makes the render happen.
-  const badges = !canThrow || !container ? [] : seats.flatMap((pid) => {
-    if (pid === meId) return [];
-    const g = geometry(pid);
-    return g ? [{ pid, x: g.cx, y: g.badgeY }] : [];
-  });
+  /**
+   * Where the badges go — measured when the ring moves, not when the table
+   * commits.
+   *
+   * This used to be eight `getBoundingClientRect` pairs taken on every render,
+   * on the reasoning that the seats move on resize and a badge drawn at last
+   * frame's coordinates is a badge on the felt. The first half is true; the
+   * conclusion is not. A rect read during a render is a synchronous
+   * style-and-layout flush of the whole room, and this component subscribes to
+   * the room state, so it rendered on every committed burst — thousands of
+   * times a game — while the seats move only when the window does. Sixteen
+   * forced layouts per commit here, plus `Indicators` doing the same thing for
+   * arrows that mostly did not exist, made `getBoundingClientRect` the largest
+   * named function in a CPU profile of the host seat at 3.4 s. Between the two
+   * fixes it is 0.25 s.
+   *
+   * `ring` is the answer to "when could a seat have moved": `useRingMetrics`
+   * publishes a new object out of its own `ResizeObserver`, and the seats are
+   * laid out from it, so it changes exactly when they do. Measuring inside the
+   * memo rather than in an effect keeps the first paint correct — an effect
+   * would put every badge on screen a frame late, and would put none at all in
+   * a server render.
+   */
+  // The seat *set* rather than the array, because `RoomView` rebuilds the order
+  // array on every render and depending on its identity would defeat the memo.
+  const roster = seats.join(',');
+  const badges = useMemo(() => {
+    if (!canThrow || !container) return [];
+    const out: { pid: number; x: number; y: number }[] = [];
+    for (const pid of roster ? roster.split(',').map(Number) : []) {
+      if (pid === meId) continue;
+      const g = geometry(pid);
+      if (g) out.push({ pid, x: g.cx, y: g.badgeY });
+    }
+    return out;
+  }, [canThrow, container, roster, meId, geometry, ring]);
 
   if (!container) return null;
 

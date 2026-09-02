@@ -138,6 +138,32 @@ export function Lobby({ onEnterRoom }: { onEnterRoom: (roomId: string) => void }
 
         <ModePicker value={modeId} onChange={setModeId} disabled={busy} />
 
+        {/*
+          OUT OF "More options", ON PURPOSE.
+
+          This is the only switch on the page that changes what a player may DO
+          rather than what the deal looks like — with it on, every seat gets a
+          search-the-whole-roster panel when it picks a character. Behind a
+          collapsed section it was, in practice, off for everyone: the room's
+          own host went looking for "choose my own general" and did not find it
+          here or in the room. Room name, character count and package bans are
+          genuinely advanced and stay where they are.
+        */}
+        <label className="field" style={{ display: 'flex', gap: 8, alignItems: 'flex-start', marginTop: 14 }}>
+          <input
+            type="checkbox"
+            checked={freeAssign}
+            style={{ marginTop: 3 }}
+            onChange={(e) => setFreeAssign(e.target.checked)}
+          />
+          <span>
+            {t('lobby.freeAssign')}
+            <span className="lede" style={{ display: 'block', margin: 0, fontSize: 12 }}>
+              {t('lobby.freeAssign.help')}
+            </span>
+          </span>
+        </label>
+
         {advanced ? (
           <div className="mode-advanced">
             <div className="row">
@@ -151,17 +177,6 @@ export function Lobby({ onEnterRoom }: { onEnterRoom: (roomId: string) => void }
                   {generalNumOptions.map((n) => <option key={n} value={n}>{n}</option>)}
                 </select>
               </div>
-            </div>
-            <div className="field" style={{ marginTop: 14 }}>
-              <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                <input
-                  type="checkbox"
-                  checked={freeAssign}
-                  onChange={(e) => setFreeAssign(e.target.checked)}
-                />
-                {t('lobby.freeAssign')}
-              </label>
-              <p className="lede" style={{ margin: '4px 0 0', fontSize: 12 }}>{t('lobby.freeAssign.help')}</p>
             </div>
             <div className="field" style={{ marginTop: 14 }}>
               <label>{t('lobby.packs')}</label>

@@ -553,6 +553,22 @@
   pointer-events: none;
 }
 
+/* WHAT GIVES WHEN THE BAND IS SHORT.
+ *
+ * The band between the seat columns is whatever the ring has left after the top
+ * row of seats, and on a small window that is not much: measured at 1100x650,
+ * the column of counters + cards + strip is ~9px taller than the band, and a
+ * centred flex column overflows *both* ends — which put the pile counters back
+ * over a portrait, the exact bug `--fk-table-top` was introduced to fix.
+ *
+ * So the order of precedence is declared rather than left to chance. The
+ * counters and the card being played never shrink; the recent strip does, and
+ * clips itself if it has to. It is the one surface here whose absence still
+ * leaves a playable, readable table. */
+.fk-piles,
+.fk-table__cards { flex: 0 0 auto; }
+/* `.fk-recent` takes the matching `flex: 0 1 auto` in its own block below. */
+
 /* A card on the table is a stage for the judgement effects the engine plays on
    it — see `TableCard` and `anim/bus.ts`. */
 .fk-table-card { position: relative; }
@@ -665,6 +681,10 @@
   gap: 26px;
   margin-top: 16px;
   max-width: 100%;
+  /* The one surface in the band that yields — see the note by `.fk-table`. */
+  flex: 0 1 auto;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .fk-recent__play {
@@ -923,6 +943,16 @@
 
 .fk-confirm--asking .fk-confirm__prompt { animation: fk-ask-in 220ms ease-out; }
 
+/* The skill's own rules text, under the "do you want to use it?" line. Bounded
+   so a six-line 觉醒技 cannot push the hand off the bottom of the screen. */
+.fk-confirm .fk-detail-line {
+  max-width: min(760px, 92%);
+  max-height: 5.2em;
+  overflow-y: auto;
+  margin: 0;
+  text-align: left;
+}
+
 @keyframes fk-ask-in {
   from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: none; }
@@ -1114,7 +1144,45 @@
 .fk-dialog__title { margin: 0 0 4px; font-size: 16px; color: var(--fk-gold); }
 .fk-dialog__prompt { margin: 0 0 10px; font-size: 13px; color: var(--fk-ink-dim); }
 .fk-dialog__row { display: flex; gap: 10px; flex-wrap: wrap; }
-.fk-dialog__actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 12px; }
+.fk-dialog__actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 12px; flex-wrap: wrap; }
+
+/* An option that says what it does. `DetailedChoiceBox.qml` gives each one a
+   200x290 column with the name on a button and the rules text above it; a
+   browser can put both on the button, which keeps one click target. */
+.fk-option {
+  flex: 0 1 auto;
+  max-width: 260px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  align-items: flex-start;
+  text-align: left;
+  padding: 7px 10px;
+}
+
+.fk-option__name { font-size: 14px; color: #ffe7a8; }
+
+.fk-option__detail {
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--fk-ink-dim);
+  white-space: normal;
+  /* Long skill texts run to a paragraph; the button must not become the page. */
+  max-height: 8.7em;
+  overflow: hidden;
+}
+
+/* What the skill does, under the question that is asking you to fire it. */
+.fk-detail-line {
+  margin: 0 0 10px;
+  padding: 6px 9px;
+  border-left: 2px solid var(--fk-gold);
+  border-radius: 0 4px 4px 0;
+  background: rgba(0, 0, 0, 0.28);
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--fk-ink-dim);
+}
 
 .fk-generals { display: flex; gap: 10px; flex-wrap: wrap; }
 

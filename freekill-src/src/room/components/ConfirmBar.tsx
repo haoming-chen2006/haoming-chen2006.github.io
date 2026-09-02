@@ -27,9 +27,10 @@
  */
 import { memo } from 'react';
 import type { ItemData } from '../../contract/scene';
-import { fillArgs } from '../ltk/prompt';
+import { describe, fillArgs } from '../ltk/prompt';
 import { useRoom, useRoomState, useScene, usePrompt } from '../RoomContext';
 import { cls } from './CardItem';
+import { Detail } from './Detail';
 import { InteractionWidget } from './Interaction';
 
 export const ConfirmBar = memo(function ConfirmBar() {
@@ -51,6 +52,29 @@ export const ConfirmBar = memo(function ConfirmBar() {
     : req.kind === 'scene' && req.promptArg
       ? fillArgs(lua.tr(`#${req.command}`), lua.tr(req.promptArg))
       : '';
+
+  /**
+   * WHAT THE SKILL ACTUALLY DOES, on the panel that asks you to fire it.
+   *
+   * `#AskForSkillInvoke` is "你想发动〖%1〗吗？" — "do you want to use 〖X〗?" —
+   * and `%1` is a two-character literary allusion. 洛神, 苦肉, 反间: the name
+   * tells a player who already knows the general which button to press and
+   * tells everyone else nothing whatsoever. Upstream stops there
+   * (`RoomLogic.js:829`), and the panel survey's verdict on this request was
+   * "Correct, but says nothing about what the skill will do."
+   *
+   * The text exists and is one lookup away: `:<skill>` is the paragraph the
+   * general's own card prints, which is where a player would go to read it if
+   * the question were not blocking the table. So it goes under the question.
+   *
+   * ONLY FOR A SKILL. `promptArg` also carries a card name for
+   * `AskForUseCard` / `AskForResponseCard`, and "play a Jink" does not want the
+   * rules text for 闪 under it every time somebody is Slashed — that is the one
+   * prompt in the game every player has already read.
+   */
+  const skillDetail = req.kind === 'scene' && req.command === 'AskForSkillInvoke' && req.promptArg
+    ? describe(lua, req.promptArg)
+    : '';
 
   const asking = interactive && (promptText !== '' || buttons.OK?.enabled === true);
 
@@ -77,6 +101,9 @@ export const ConfirmBar = memo(function ConfirmBar() {
           reads `.fk-prompt` into every snapshot — it is how a finding quotes the
           question that was on screen when something went wrong. */}
       <div className="fk-confirm__prompt fk-prompt">{promptText}</div>
+      {/* Between the question and the buttons, because that is the order it is
+          read in: what am I being asked, what does saying yes do, yes / no. */}
+      {skillDetail ? <Detail text={skillDetail} /> : null}
 
       <div className="fk-confirm__row">
         {specialSkills?.skills?.length ? (

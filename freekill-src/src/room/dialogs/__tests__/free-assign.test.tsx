@@ -56,6 +56,20 @@ function ask(settings: Record<string, unknown>, mode: RoomMode = 'play'): string
 
 const swaps = (html: string): number => (html.match(/fk-general__swap/g) ?? []).length;
 
+/**
+ * The dialog's own action row — the buttons a player reads on the way to OK.
+ *
+ * A corner badge is not in it, and that distinction is the whole of the
+ * discoverability fix below: `swaps()` counts the shortcut, this counts the
+ * things that announce themselves.
+ */
+function actionLabels(html: string): string[] {
+  const row = /<div class="fk-dialog__actions">([\s\S]*?)<\/div><\/div><\/div>/.exec(html);
+  if (!row) return [];
+  return [...row[1].matchAll(/<button\b[^>]*>([\s\S]*?)<\/button>/g)]
+    .map((m) => m[1].replace(/<[^>]*>/g, ''));
+}
+
 /* ---------------------------------------------------- the setting's journey */
 
 describe('the room settings a seat is told about', () => {
@@ -122,5 +136,55 @@ describe('the choose-general box', () => {
     const html = ask({ enableFreeAssign: true });
     for (const g of OFFER) expect(html).toContain(g);
     expect(html).not.toContain('zhangfei');
+  });
+});
+
+/* ------------------------------------------------------- finding the door */
+
+/**
+ * A feature nobody can find is a feature nobody has.
+ *
+ * This whole panel shipped, worked, and was verified live — behind a 26px ⇄
+ * glyph in the corner of a character card and nothing else. The person who
+ * asked for "let me choose any general" had it running in their own room and
+ * reported it missing. That is not a taste complaint; a corner badge is a
+ * shortcut for someone who already knows the feature exists, and there was
+ * nothing on the screen that could tell them it did.
+ *
+ * So the requirement is not "an affordance exists" — it did — but "a NAMED one
+ * does, in the row a player is already reading". The tests below are written
+ * against the action row for exactly that reason, and would still fail with
+ * every badge in place.
+ */
+describe('finding free assign', () => {
+  it('names it in the action row, not only as a badge on a card', () => {
+    const labels = actionLabels(ask({ enableFreeAssign: true }));
+    expect(labels).toContain('Enable free assign');
+    // The badge stays: it is the fast route once you know it is there.
+    expect(swaps(ask({ enableFreeAssign: true }))).toBe(OFFER.length);
+  });
+
+  it('does not offer the button in an ordinary room', () => {
+    // Same discipline as the badge. The switch decides whether the UI exists,
+    // because the engine never validates the reply (see the header above).
+    expect(actionLabels(ask({ enableFreeAssign: false }))).not.toContain('Enable free assign');
+  });
+
+  it('does not offer it to a seat that is not choosing', () => {
+    expect(actionLabels(ask({ enableFreeAssign: true }, 'observe'))).not.toContain('Enable free assign');
+  });
+
+  it('keeps OK the only primary button in the row', () => {
+    // `scripts/audit/policy.mjs` answers a choose-general dialog by pressing
+    // the primary button. A second one would make "answer the question" and
+    // "open a search box" the same click for the driver and for a player.
+    const html = ask({ enableFreeAssign: true });
+    expect((html.match(/fk-btn--primary/g) ?? []).length).toBe(1);
+  });
+
+  it('still says in the title that this room does not count', () => {
+    // `ChooseGeneralBox.qml:29`. Survives the redesign, in both languages —
+    // the key is the engine's, so English gets it from `src/i18n/engine`.
+    expect(ask({ enableFreeAssign: true })).toContain('(Enable free assign)');
   });
 });

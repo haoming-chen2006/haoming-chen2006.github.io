@@ -4,6 +4,7 @@
 // which contributes zero Han. Our own React source is added on top, because the
 // shell writes Chinese labels the engine tree never contains.
 import { readdirSync, statSync, readFileSync } from 'node:fs';
+import { transformSync } from 'esbuild';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -54,11 +55,45 @@ const HAN = (c) => {
          (n >= 0xf900 && n <= 0xfaff);
 };
 
+/**
+ * One of our own TypeScript sources, with its comments gone.
+ *
+ * A comment is the one kind of Chinese in this tree that cannot reach a screen,
+ * and harvesting it puts glyphs in the shipped face that no player will ever
+ * see. That was theoretical while the annotations were in English; it stopped
+ * being theoretical when `anim/spectacle/signatures/` grew five hundred
+ * researched skill notes and moved the subset by fifty-five Han — a bigger font
+ * for every player, to render prose only the source has.
+ *
+ * Parsed rather than regexed, and with `charset: 'utf8'` so a string keeps its
+ * characters instead of being escaped to `\uXXXX` — the default output would
+ * have silently emptied the harvest of the very thing it is for. A file esbuild
+ * cannot read falls back to its raw text, because over-collecting is a slightly
+ * larger download and under-collecting is tofu on the table.
+ */
+function code(file) {
+  const raw = readFileSync(file, 'utf8');
+  if (!/\.tsx?$/.test(file)) return raw;
+  try {
+    return transformSync(raw, {
+      loader: file.endsWith('.tsx') ? 'tsx' : 'ts',
+      charset: 'utf8',
+      // Comments survive a plain transform inside an object literal, which is
+      // exactly where the skill notes live. Whitespace minification drops them
+      // and touches nothing else — identifiers, syntax and every string are
+      // left alone.
+      minifyWhitespace: true,
+    }).code;
+  } catch {
+    return raw;
+  }
+}
+
 export function glyphSet() {
   const chars = new Set();
   for (const f of sourceFiles()) {
     let text;
-    try { text = readFileSync(f, 'utf8'); } catch { continue; }
+    try { text = code(f); } catch { continue; }
     for (const c of text) {
       const n = c.codePointAt(0);
       if (n < 0x20) continue;           // control characters

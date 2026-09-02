@@ -99,9 +99,11 @@ export const UI = {
   // ask. The label matches the engine's wording so the room's own dialog and
   // the switch that opened it read the same.
   'lobby.freeAssign': { zh_CN: '自由选将', en_US: 'Free character choice' },
+  // Describes the button the room actually draws. It used to name only the ⇄
+  // badge in a card's corner, which is the shortcut, not the way in.
   'lobby.freeAssign.help': {
-    zh_CN: '选将时可把任意武将换进候选，点武将牌左上角的 ⇄。开启后本局不计胜率。',
-    en_US: 'Swap any character into the offer while choosing — the ⇄ badge on a character card. Games with it on do not count towards win rates.',
+    zh_CN: '每位玩家选将时都会多出一个「自由选将」按钮，可以搜索并选择任意武将。开启后本局不计胜率。',
+    en_US: 'Every player gets a “free character choice” button while choosing, and can search the whole roster for anyone they like. Games with it on do not count towards win rates.',
   },
   'lobby.create': { zh_CN: '创建房间', en_US: 'Create room' },
   'lobby.createIn': { zh_CN: '创建{mode}', en_US: 'Create a {mode} room' },

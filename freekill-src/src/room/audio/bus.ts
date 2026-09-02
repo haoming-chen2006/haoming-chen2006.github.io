@@ -369,7 +369,9 @@ export class RoomAudio {
   private note(command: string, cue: Cue, how: string): void {
     const name = cue.kind === 'sound'
       ? `${cue.sound}${cue.variant ? `/${cue.variant}` : ''}${cue.heavy ? '+' : ''}`
-      : cue.kind === 'voice' ? `voice/${cue.bank}` : `music/${cue.scene}`;
+      : cue.kind === 'voice' ? `voice/${cue.bank}`
+        : cue.kind === 'theme' ? `theme/${cue.theme}`
+          : `music/${cue.scene}`;
     this.log.push({ at: Date.now(), command, cue: name, how });
     if (this.log.length > MAX_LOG) this.log.splice(0, this.log.length - MAX_LOG);
   }

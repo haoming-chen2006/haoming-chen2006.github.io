@@ -31,17 +31,19 @@
  * because that is what `Skill.Compulsory` means in the engine.
  */
 import { beatMs } from './budget';
+import type { Cutscene } from './cutscene';
 import { Sky } from './paint';
 import {
   markOf, toCategory, toElement, toKingdom, toRole, toWeight,
   type Element, type Kingdom, type Role,
 } from './palette';
 import {
-  drainBurst, drawBurst, equipBurst, hexBurst, mendBurst, openBurst,
-  skillBurst, slayBurst, strikeBurst, ultBurst, verdictBurst, vigourBurst,
+  cutsceneBurst, drainBurst, drawBurst, equipBurst, faceUrl, hexBurst, mendBurst,
+  openBurst, skillBurst, slayBurst, strikeBurst, ultBurst, verdictBurst, vigourBurst,
 } from './plan';
 import './spectacle.css';
 import './motif.css';
+import './cutscene.css';
 
 /**
  * How long a masochism skill may claim the element of the damage that provoked
@@ -182,6 +184,50 @@ export class Spectacle {
       mark: markOf(kingdom, this.tr),
       ms,
     }), host);
+  }
+
+  /**
+   * One of the four moments the game stops for — see `cutscene.ts`.
+   *
+   * `AnimBus` decides *whether* one happened, because that needs a memory of
+   * what the seat was a message ago; this draws it. `face` resolves a general's
+   * portrait and is handed in for the same reason `seatOf` is handed to `slay`:
+   * nothing in this module reaches for the store or the asset manifest.
+   *
+   * Returns how long the scene runs, or 0 if it was not drawn — which is both
+   * how the caller knows whether to ask for the music and how long to ask for
+   * it. At `?pace=0` — the audit's default, and how a whole game is played in
+   * two minutes — the budget is 0, nothing is drawn, and the music does not
+   * move either.
+   */
+  cutscene(
+    pid: number,
+    host: HTMLElement | undefined,
+    scene: Cutscene,
+    face: (general: string) => string | undefined,
+  ): number {
+    const ms = beatMs('cutscene');
+    if (ms <= 0) return 0;
+    const kingdom = this.kingdomOf(pid);
+    // One line per scene, chosen the way the voice lane chooses a take. The
+    // words and the recording are the same character's; which of the two or
+    // four it is does not need to agree, and pretending it does would mean
+    // reading `PlaySkillSound.i` across two messages for no gain a player sees.
+    const key = scene.lines.length
+      ? scene.lines[Math.floor(Math.random() * scene.lines.length)]
+      : '';
+    this.sky.play(cutsceneBurst({
+      scene,
+      title: this.tr(scene.skill),
+      gained: this.prose(scene.gains),
+      line: this.prose(key),
+      mark: markOf(kingdom, this.tr),
+      kingdom,
+      face: faceUrl(face(scene.general)),
+      faceAfter: scene.becomes ? faceUrl(face(scene.becomes)) : undefined,
+      ms,
+    }), host);
+    return ms;
   }
 
   /* --------------------------------------------------------------- the hit */
@@ -350,6 +396,26 @@ export class Spectacle {
     const dy = (b.top + b.height / 2) - (a.top + a.height / 2);
     if (Math.abs(dx) < 1 && Math.abs(dy) < 1) return undefined;
     return Math.atan2(dy, dx) * 180 / Math.PI;
+  }
+
+  /**
+   * A translated string, or nothing at all.
+   *
+   * `Fk:translate` answers an unknown key with the key, which is right for a
+   * plaque — a skill name the packages forgot is still better shown than
+   * hidden — and wrong for a cutscene, where the same behaviour would print
+   * `kunfen` across the middle of the screen in 40 px type.
+   *
+   * That is not hypothetical. 忠傲's failure branch hands Wei Yan 困奋; the
+   * mobile package ships four voice recordings for it and references it from
+   * 忠傲's own description, and defines the skill nowhere. So the failure scene
+   * prints a title, a face and a line, and no subtitle, until somebody upstream
+   * adds the string — at which point it appears with no change here.
+   */
+  private prose(key: string | undefined): string {
+    if (!key) return '';
+    const text = this.tr(key);
+    return text && text !== key ? text : '';
   }
 
   private kingdomOf(pid: number): Kingdom {

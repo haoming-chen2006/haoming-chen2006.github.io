@@ -1784,11 +1784,37 @@
     animation-delay: 0ms !important;
   }
 
-  .fk-spec__plaque,
-  .fk-spec__ult-name,
-  .fk-spec__verdict-mark,
-  .fk-spec__pip {
-    /* The words are the part worth keeping. */
+  /*
+   * ...except the root's own lifetime, which is not motion.
+   *
+   * `fk-spec-life` is what keeps the node on the layer: `Sky.play` removes the
+   * effect on the root's `animationend`, so collapsing THAT to 1 ms deleted
+   * every effect a millisecond after it was created — including the words the
+   * rule below exists to keep. Measured in headless Chrome with
+   * `prefers-reduced-motion: reduce`: a skill banner, a limited-skill takeover
+   * and a cutscene each left an empty layer, and `fk-spec-say` had never once
+   * put a character on screen. Everything INSIDE the effect still collapses,
+   * which is the intent; the effect simply lives long enough to be read.
+   */
+  .fk-spec {
+    animation-duration: var(--fk-spec-ms) !important;
+  }
+
+  /*
+   * The words are the part worth keeping.
+   *
+   * `.fk-spec i` above is one class and one type; a bare `.fk-spec__plaque` is
+   * one class, so the collapse outranked it and won on `animation-duration`
+   * even though both are `!important` — which meant this rule ran its keyframes
+   * in a millisecond, landed on `both`'s final frame, and held the plaque at
+   * `opacity: 0`. Every effect in the lane was therefore invisible under this
+   * setting, not merely still. Naming the element type here makes it two
+   * classes and a type, which wins.
+   */
+  .fk-spec i.fk-spec__plaque,
+  .fk-spec i.fk-spec__ult-name,
+  .fk-spec i.fk-spec__verdict-mark,
+  .fk-spec i.fk-spec__pip {
     animation: fk-spec-say var(--fk-spec-ms) ease-out both !important;
   }
 

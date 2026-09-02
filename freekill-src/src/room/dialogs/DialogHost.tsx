@@ -15,6 +15,7 @@ import { useMemo, useState } from 'react';
 import { useRoom, useRoomState, usePrompt } from '../RoomContext';
 import { CardItem, cls } from '../components/CardItem';
 import { describe, fillArgs } from '../ltk/prompt';
+import { moveOut, shift, tap, zoneWithRoom, type ArrangeState } from './arrange';
 import { FreeAssign, freeAssignEnabled } from './FreeAssign';
 import { GeneralDetail } from './GeneralDetail';
 import { Btn, Dialog, GeneralCard, OptionBtn, Panel } from './parts';
@@ -264,6 +265,16 @@ interface ArrangePayload {
  *
  * Click-to-move rather than drag-and-drop — it works on a tablet and it makes
  * the reply order explicit, which is the whole point of guanxing.
+ *
+ * TWO CLICKS ARE THE DRAG. QML offers one gesture that means two things: drop a
+ * card on a slot in a zone with room and it moves there, drop it on a slot in a
+ * zone that is full and the two cards trade places (`updateCardReleased`; see
+ * `./arrange`). Without the second of those, every zone in 星魂's box is at
+ * capacity the moment it opens and no card can go anywhere — which is what
+ * 神姜维 shipped with. So a card is picked up by clicking it and put down by
+ * clicking where it goes, and `place()` decides which of the two that is,
+ * exactly as the drag does. ◀ ▶ stay for fine ordering and ⇄ stays as the
+ * one-click move for the common guanxing case, where the far zone starts empty.
  */
 function ArrangeBox(
   { data, onReply, interactive, kind }:
@@ -298,24 +309,13 @@ function ArrangeBox(
     };
   }, [data]);
 
-  const [zones, setZones] = useState<number[][]>(() => {
+  // The arrangement and the card picked up out of it, moved only by the three
+  // functions in `./arrange` — so what this box lets a player do is one small
+  // pure module that can be measured against the QML it came from.
+  const [{ zones, picked }, setState] = useState<ArrangeState>(() => {
     const initial = names.map((_, i) => [...(rows[i] ?? [])]);
-    return initial.length ? initial : [[...rows.flat()]];
+    return { zones: initial.length ? initial : [[...rows.flat()]], picked: null };
   });
-
-  const move = (from: number, cid: number, to: number) => {
-    if (from === to) return;
-    if (zones[to].length >= (capacities[to] ?? 99)) return;
-    setZones(zones.map((z, i) => (i === from ? z.filter((c) => c !== cid) : i === to ? [...z, cid] : z)));
-  };
-  const shift = (zone: number, cid: number, delta: number) => {
-    const z = [...zones[zone]];
-    const i = z.indexOf(cid);
-    const j = i + delta;
-    if (i < 0 || j < 0 || j >= z.length) return;
-    [z[i], z[j]] = [z[j], z[i]];
-    setZones(zones.map((x, k) => (k === zone ? z : x)));
-  };
 
   // The zone minimums are the request's own arity, stated in its payload.
   const ok = zones.every((z, i) => z.length >= (limits[i] ?? 0) && z.length <= (capacities[i] ?? 99));
@@ -324,36 +324,54 @@ function ArrangeBox(
     <Dialog
       title={lua.tr(kind === 'guanxing' ? 'AskForGuanxing' : 'AskForArrangeCards')}
       prompt={d.prompt ? prompt(d.prompt) : undefined}
+      // The gesture, said out loud: two clicks are not guessable from a card.
+      detail={interactive ? lua.tr('Please click to move card') : undefined}
       actions={<>
         {d.cancelable ? <Btn disabled={!interactive} onClick={() => onReply('')}>{lua.tr('Cancel')}</Btn> : null}
         <Btn primary disabled={!interactive || !ok} onClick={() => onReply(zones)}>{lua.tr('OK')}</Btn>
       </>}
     >
       <div className="fk-dialog__row">
-        {zones.map((z, zi) => (
-          <div className="fk-zone" key={zi}>
-            <div className="fk-zone__title">
-              {names[zi] ?? `#${zi + 1}`} — {z.length}/{capacities[zi] ?? '∞'}
-              {limits[zi] ? ` (\u2265 ${limits[zi]})` : ''}
-            </div>
-            <div className="fk-zone__cards">
-              {z.map((cid) => (
-                <div key={cid} style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                  <CardItem cid={cid} known />
-                  {interactive ? (
-                    <div style={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
-                      <button type="button" className="fk-chip" onClick={() => shift(zi, cid, -1)}>◀</button>
-                      {zones.length > 1 ? (
-                        <button type="button" className="fk-chip" onClick={() => move(zi, cid, (zi + 1) % zones.length)}>⇄</button>
-                      ) : null}
-                      <button type="button" className="fk-chip" onClick={() => shift(zi, cid, 1)}>▶</button>
+        {zones.map((z, zi) => {
+          // Where ⇄ would send a card out of this zone, if anywhere can take one.
+          const dest = zones.length > 1 ? zoneWithRoom(zones, capacities, zi) : null;
+          return (
+            <div className="fk-zone" key={zi}>
+              <div className="fk-zone__title">
+                {names[zi] ?? `#${zi + 1}`} — {z.length}/{capacities[zi] ?? '∞'}
+                {limits[zi] ? ` (≥ ${limits[zi]})` : ''}
+              </div>
+              <div className="fk-zone__cards">
+                {z.map((cid) => (
+                  // The slot, not the card: `fk-card--selected` on the wrapper is
+                  // how `PlayerCardBox` marks a pick too, and how the audit probe
+                  // reads one back off a zone (`scripts/audit/probe.mjs:862`).
+                  <div
+                    key={cid}
+                    className={cls('fk-zone__slot', picked === cid && 'fk-card--selected')}
+                    style={{ display: 'flex', flexDirection: 'column', gap: 2 }}
+                  >
+                    <div
+                      onClick={interactive ? () => setState((s) => tap(s, capacities, cid)) : undefined}
+                      style={{ cursor: interactive ? 'pointer' : 'default' }}
+                    >
+                      <CardItem cid={cid} known />
                     </div>
-                  ) : null}
-                </div>
-              ))}
+                    {interactive ? (
+                      <div style={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
+                        <button type="button" className="fk-chip" onClick={() => setState((s) => shift(s, cid, -1))}>◀</button>
+                        {dest !== null ? (
+                          <button type="button" className="fk-chip" onClick={() => setState((s) => moveOut(s, capacities, cid, dest))}>⇄</button>
+                        ) : null}
+                        <button type="button" className="fk-chip" onClick={() => setState((s) => shift(s, cid, 1))}>▶</button>
+                      </div>
+                    ) : null}
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </Dialog>
   );

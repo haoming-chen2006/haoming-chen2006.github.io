@@ -22,15 +22,17 @@
  * bar, the name, the hand count and the thinking ring, and the hp bar and hand
  * count are being made *larger*. There is no corner left that would not be
  * taken from something a player needs mid-hand. So the badge is placed by this
- * overlay instead, in the strip below the portrait where the equipment rows go,
- * and it is faint until the pointer is on it. `Photo.tsx` does not know this
- * exists and does not have to.
+ * overlay instead, in the strip below the portrait where the equipment rows go.
+ * `Photo.tsx` does not know this exists and does not have to.
+ *
+ * It used to be faint there until the pointer crossed it, and that turned out
+ * to be the whole feature's undoing — see `HINT_KEY` below.
  *
  * WHAT IT REFUSES TO DO. It never covers the table. Nothing here is
  * `pointer-events: auto` except the badges themselves and the picker's own two
  * buttons — the flights, the captions and the container are inert, so a present
  * in the air cannot eat a click on a seat, and a picker that somehow got stuck
- * open costs a 22px circle rather than the game. The picker closes on the next
+ * open costs a 26px circle rather than the game. The picker closes on the next
  * pointer-down anywhere, on Escape, and whenever the engine asks the viewer
  * something new.
  */
@@ -38,10 +40,11 @@ import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ChatLine } from '../../contract/views';
 import { useRoom, useRoomState } from '../RoomContext';
 import { roomAudio } from '../audio';
+import { ChatBudget } from '../chat';
 import { cls } from './CardItem';
 import type { SeatRefs } from './Indicators';
 import {
-  encodePresent, decodePresent, rollKind, PresentBudget,
+  encodePresent, decodePresent, rollKind,
   MAX_IN_FLIGHT, PRESENT_LABEL, RECEIVE_BURST, RECEIVE_GAP_MS, SEND_BURST, SEND_GAP_MS,
   type Present, type PresentKind, type ThrownKind,
 } from './present';
@@ -67,6 +70,45 @@ const eggHits = ['egg-hit1.webp', 'egg-hit2.webp', 'egg-hit3.webp'].map(art) as 
 const flowerShot = art('flower-shot.webp');
 const flowerHits = ['flower-hit1.webp', 'flower-hit2.webp', 'flower-hit3.webp'].map(art) as [string, string, string];
 const flowerStar = art('flower-star.webp');
+
+/**
+ * The hint, and why a shipped, working feature needed one.
+ *
+ * This build has now twice put a feature on the table whose only entry point
+ * was a small badge, and twice had the person who asked for it report it as
+ * missing — free assign first, then this. The art was on the server, the
+ * markup was in the DOM, the CSS was in the chunk, and none of that is
+ * discoverability. A 22 px circle at 42% opacity, under a portrait, on a table
+ * with eight of everything, is not something anybody finds by looking.
+ *
+ * The fix is two things and neither of them takes a pixel of the table.
+ *
+ *   The badge is now legible on its own — bigger, gold, and not hiding until
+ *   the pointer happens to cross it (`present.css`).
+ *
+ *   And the first time a player ever sits at a table in this browser, the
+ *   badges glow for nine seconds. Once. It stops the moment they open one, and
+ *   it never comes back on that browser, because a permanent attention-getter
+ *   is just clutter with a longer fuse.
+ *
+ * It is a CSS animation on an element that was already there, at coordinates
+ * that were already measured — no new geometry, no new layout read, and
+ * nothing that can take a pointer event. See the header on `badges` for why
+ * that last part is not negotiable.
+ */
+const HINT_KEY = 'fk.present.found';
+const HINT_MS = 9000;
+
+function hintWanted(): boolean {
+  if (typeof window === 'undefined') return false;
+  // A browser that refuses storage (Safari private mode throws on read) gets
+  // the hint every time, which is the harmless side to fail towards.
+  try { return window.localStorage.getItem(HINT_KEY) !== '1'; } catch { return true; }
+}
+
+function rememberFound(): void {
+  try { window.localStorage.setItem(HINT_KEY, '1'); } catch { /* nothing to do */ }
+}
 
 /**
  * The shape of a throw, in milliseconds and multipliers.
@@ -152,14 +194,15 @@ export const Presents = memo(function Presents(props: PresentsProps) {
   const [flights, setFlights] = useState<readonly Flight[]>([]);
   const [picking, setPicking] = useState<number | null>(null);
   const [cooling, setCooling] = useState(false);
+  const [hint, setHint] = useState(hintWanted);
 
   /** Every chat id this component has already looked at. Seeded from whatever
    *  was on screen when it mounted, so joining a room part-way through does not
    *  replay an hour of other people's flowers at you. */
   const seen = useRef<Set<string> | null>(null);
   const timers = useRef(new Set<ReturnType<typeof setTimeout>>());
-  const incoming = useRef(new PresentBudget(RECEIVE_GAP_MS, RECEIVE_BURST));
-  const outgoing = useRef(new PresentBudget(SEND_GAP_MS, SEND_BURST));
+  const incoming = useRef(new ChatBudget(RECEIVE_GAP_MS, RECEIVE_BURST));
+  const outgoing = useRef(new ChatBudget(SEND_GAP_MS, SEND_BURST));
 
   useEffect(() => () => {
     for (const t of timers.current) clearTimeout(t);
@@ -331,6 +374,27 @@ export const Presents = memo(function Presents(props: PresentsProps) {
     return out;
   }, [canThrow, container, roster, meId, geometry, ring]);
 
+  /** Nine seconds from when the badges are actually on screen, not from mount:
+   *  a seat gets its `meId` some way into joining, and a hint that expired
+   *  before it could be seen is worse than none. */
+  const showing = badges.length > 0;
+  useEffect(() => {
+    if (!hint || !showing) return;
+    const t = setTimeout(() => setHint(false), HINT_MS);
+    return () => clearTimeout(t);
+  }, [hint, showing]);
+
+  /** They found it. Stop glowing, here and in every later room. */
+  const found = useCallback(() => {
+    if (!hint) return;
+    rememberFound();
+    setHint(false);
+  }, [hint]);
+
+  /** Both words, because the badge is one button that offers two things and the
+   *  engine has a name for each. `lua.tr` is cached, so this is a map lookup. */
+  const offer = `${lua.tr(PRESENT_LABEL.Flower)} / ${lua.tr(PRESENT_LABEL.Egg)}`;
+
   if (!container) return null;
 
   return (
@@ -343,14 +407,19 @@ export const Presents = memo(function Presents(props: PresentsProps) {
         >
           <button
             type="button"
-            className={cls('fk-present-badge__btn', picking === b.pid && 'fk-present-badge__btn--on')}
-            title={lua.tr('Give Flower')}
+            className={cls(
+              'fk-present-badge__btn',
+              picking === b.pid && 'fk-present-badge__btn--on',
+              hint && 'fk-present-badge__btn--hint',
+            )}
+            title={offer}
+            aria-label={offer}
             disabled={cooling}
-            onClick={() => setPicking(picking === b.pid ? null : b.pid)}
+            onClick={() => { found(); setPicking(picking === b.pid ? null : b.pid); }}
           >
             {/* A wrapped present. The engine ships no icon for this — its own
                 button is a text label in a panel that does not exist here. */}
-            <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true">
+            <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
               <path d="M1.5 7h13v7.5h-13z" />
               <path d="M0.8 4.2h14.4V7H0.8z" />
               <path d="M7 4.2h2V15H7z" className="fk-present-badge__ribbon" />

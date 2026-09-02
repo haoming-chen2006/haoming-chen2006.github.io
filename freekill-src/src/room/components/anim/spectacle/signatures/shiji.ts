@@ -566,6 +566,23 @@ export const SHIJI: Readonly<Record<string, Motif>> = {
     hue: 'violet', hue2: 'jade', stance: 'lift', tempo: 'toll', n: 16, spread: 1.3, glyph: true,
   },
 
+  /**
+   * 回天 — what 神霈 hands him for standing back up. When a character with more
+   * hp than you ends their turn you may draw and take an extra turn; at the top
+   * of any round in which you did, you die.
+   *
+   * Not on his character card, so the roster sweep never saw it: 神霈 grants it
+   * at run time. 回 is to turn something back and 天 is the sky, and the rule is
+   * exactly that — the turn order runs backwards for one more turn and then the
+   * bill arrives. So the spiral turns against the direction everything else in
+   * his kit goes, the rain curls back INTO the seat rather than falling on it,
+   * and 何妨后人评说，维自无愧苍生 is said on the way.
+   */
+  huitian: {
+    figure: 'spiral', swarm: 'drop', flight: 'curl', ground: 'ripple',
+    hue: 'jade', hue2: 'violet', stance: 'lift', tempo: 'toll', n: 14, turn: -18, glyph: true,
+  },
+
   /* --------------------------------------------------------------------- *
    * 神马超 · 势震九天 — the Liang cavalryman turned into weather. 曹操 after
    * Tong Pass: 马儿不死，吾无葬地也. Every skill on the card is the same

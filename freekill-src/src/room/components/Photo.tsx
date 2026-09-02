@@ -19,6 +19,7 @@ import { CARD_TYPE, PHASE } from '../ltk/types';
 import { SkinLayer, useSkinChoices, useSkinMode } from '../skins';
 import type { FocusState, PlayerState } from '../state/types';
 import { seatStage } from './anim/bus';
+import { DAOXIN_MARK, DAOXIN_MAX, DAOXIN_STEPS } from './anim/spectacle/cutscene';
 import { EffectStage, useAnimBus } from './anim/Stage';
 import { cls } from './CardItem';
 import { HpReadout } from '../seat/HpReadout';
@@ -274,6 +275,46 @@ function markValue(
   return lua.tr(String(value));
 }
 
+/**
+ * 曹髦's 道心值, drawn as the gauge it is upstream instead of as a text chip.
+ *
+ * A PORT OF `packages/mobile/qml/personalMark/qianlong.qml`, the one piece of
+ * bespoke per-general UI in the whole FreeKill checkout: a bar in `#6dffcd`
+ * with four notches over it and the number in `#f5ca53`, on a painted plate.
+ * The plate is not in this build's asset pipeline (the mark images are not
+ * `image/generals/` and nothing else references them) so the frame is drawn
+ * rather than fetched; the colours, the four notches and the proportions are
+ * the QML's.
+ *
+ * ONE DELIBERATE DEVIATION. The QML lights its notches at `index * 33` — 0, 33,
+ * 66, 99, four evenly spaced marks along the bar. The numbers a player actually
+ * needs are 25, 50, 75 and 99, because those are where `qianlong.lua` hands
+ * over 清正, 酒诗, 放逐 and 决进, and a gauge whose marks are not the thresholds
+ * is a gauge that answers the wrong question. `DAOXIN_STEPS` is the engine's
+ * own list, read from the same file the skill is.
+ *
+ * It is a bar and not a cutscene on purpose: see the note in `cutscene.ts` on
+ * why nothing fires at 25, 50 or 75.
+ */
+function Daoxin({ value }: { value: unknown }) {
+  const n = Math.max(0, Math.min(DAOXIN_MAX, Number(value) || 0));
+  return (
+    <span className="fk-daoxin" title={String(n)}>
+      <span className="fk-daoxin__track">
+        <span className="fk-daoxin__fill" style={{ width: `${(n / DAOXIN_MAX) * 100}%` }} />
+        {DAOXIN_STEPS.map((step) => (
+          <span
+            key={step}
+            className={`fk-daoxin__notch${n >= step ? ' fk-daoxin__notch--lit' : ''}`}
+            style={{ left: `${(step / DAOXIN_MAX) * 100}%` }}
+          />
+        ))}
+      </span>
+      <b className="fk-daoxin__num">{n}</b>
+    </span>
+  );
+}
+
 function MarkRow({ player }: { player: PlayerState }) {
   const { lua } = useRoom();
   const entries = Object.entries(player.marks);
@@ -281,6 +322,13 @@ function MarkRow({ player }: { player: PlayerState }) {
   return (
     <div className="fk-marks">
       {entries.map(([k, v]) => {
+        if (k === DAOXIN_MARK) {
+          return (
+            <span className="fk-mark fk-mark--gauge" key={k}>
+              {lua.tr(k)}<Daoxin value={v} />
+            </span>
+          );
+        }
         const shown = markValue(lua, k, v, player.id);
         return (
           <span className="fk-mark" key={k}>

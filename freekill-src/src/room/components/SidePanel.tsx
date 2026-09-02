@@ -13,7 +13,7 @@ import { useLanguage } from '../../i18n';
 import type { Language } from '../../i18n';
 import { localize } from '../../i18n/localized';
 import type { RoomState } from '../state/types';
-import { ChatComposer, ChatText, useEmoji } from '../chat';
+import { ChatComposer, ChatText, useEmoji, useQuickLines } from '../chat';
 import { useRoom, useRoomState } from '../RoomContext';
 import { cls } from './CardItem';
 import { sanitizeMarkup } from './markup';
@@ -89,6 +89,9 @@ export const SidePanel = memo(function SidePanel(
   const logRef = useRef<HTMLDivElement>(null);
   const chatRef = useRef<HTMLDivElement>(null);
   const emoji = useEmoji();
+  // Memoised on the viewer's general and the language, so the panel's 5 Hz
+  // re-render does not retranslate 23 lines or re-enter the Lua VM.
+  const quick = useQuickLines();
 
   useEffect(() => {
     const el = tab === 'log' ? logRef.current : chatRef.current;
@@ -135,6 +138,8 @@ export const SidePanel = memo(function SidePanel(
             resolve={emoji.resolve}
             onSend={send}
             placeholder={lua.tr('Chat')}
+            quick={quick}
+            quickLabel={lua.tr('fastchat_m')}
           />
         </div>
       )}

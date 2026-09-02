@@ -117,11 +117,19 @@ export interface SoundCue {
  * announces itself in no other way — the engine fires it with no prompt, no
  * choice and, until `lua/web/skillwire.lua` put `compulsory` on the wire, no
  * signal a client could read. For those, the voice line is the whole tell.
+ *
+ * `chat` IS THE ONLY RANK THAT IS NOT THE GAME TALKING. A quick chat is a
+ * *player* being funny while a game is going on (`chat/quickchat.ts`), so it
+ * sits below everything the engine can say: it may never cut a skill, and any
+ * skill may cut it. It also cannot cut another quick chat, since `claim` only
+ * yields to a strictly higher rank — which is what actually bounds a table
+ * where four people spam at once to one voice at a time, whatever the per-sender
+ * budget let through.
  */
-export type VoiceRank = 'skill' | 'compulsory' | 'ult' | 'win' | 'death';
+export type VoiceRank = 'chat' | 'skill' | 'compulsory' | 'ult' | 'win' | 'death';
 
 export const RANK_ORDER: Readonly<Record<VoiceRank, number>> = {
-  skill: 20, compulsory: 26, ult: 32, win: 38, death: 44,
+  chat: 10, skill: 20, compulsory: 26, ult: 32, win: 38, death: 44,
 };
 
 export interface VoiceCue {
@@ -145,7 +153,25 @@ export interface VoiceCue {
   readonly then: SoundCue;
 }
 
-export type Cue = SoundCue | VoiceCue | { readonly kind: 'music'; readonly scene: Scene };
+/**
+ * The soundtrack stepping aside for one moment's own music.
+ *
+ * `scene` in a `music` cue is where the game is; this is not that. It does not
+ * change the scene, it displaces whatever the scene is playing for `ms` and
+ * then hands it back — which is what makes it the right shape for the four
+ * cutscenes and the wrong one for anything else.
+ */
+export interface ThemeCue {
+  readonly kind: 'theme';
+  /** A key into `themes.ts`. Unknown names are silence, not a throw. */
+  readonly theme: string;
+  /** How long to hold it, in ms, before the soundtrack comes back. */
+  readonly ms: number;
+}
+
+export type Cue =
+  | SoundCue | VoiceCue | ThemeCue
+  | { readonly kind: 'music'; readonly scene: Scene };
 
 /** What a cue needs to know that only the live room knows. */
 export interface CueContext {
@@ -255,8 +281,69 @@ export function cueFor(command: string, data: unknown, ctx: CueContext = NO_CONT
     ];
     case 'GameOver': return gameOverCues(data, ctx);
     case 'Present': return presentCues(data);
+    case 'QuickChat': return quickChatCues(data);
+    case 'Cutscene': return cutsceneCues(data);
     default: return [];
   }
+}
+
+/**
+ * Somebody picked one of the 23 canned lines.
+ *
+ * THE THIRD COMMAND HERE THAT NO SERVER SENDS — see `presentCues` and
+ * `cutsceneCues`. A quick chat travels as a chat line (`chat/quickchat.ts`), so
+ * the room's own chat watcher calls `roomAudio.notify('QuickChat', …)`, which is
+ * why the name is not in `OBSERVED_WIRE_COMMANDS` and never will be.
+ *
+ * The recording is `audio/skill/fastchat_m<idx>` — a real line in the pack's
+ * skill bank, 23 takes deep, addressed exactly as any skill line is, which is
+ * why this is a `VoiceCue` and not a `sample` path. `bank` and `idx` come off
+ * the wire rather than being recomputed here: the sender's client chose the
+ * reading, and the text every receiver shows is chosen the same way, so audio
+ * and caption cannot disagree.
+ *
+ * `general` is only ever used to pitch a stand-in, and there is deliberately no
+ * stand-in: a `then` with no gain resolves to `voice-none` (`runtime.standIn`),
+ * so a build whose pack lost the 46 files shows the sentence and says nothing.
+ * A synthesised approximation of a joke is not a joke.
+ */
+export function quickChatCues(data: unknown): readonly Cue[] {
+  const d = (data ?? {}) as { bank?: unknown; idx?: unknown; general?: unknown };
+  const bank = str(d.bank);
+  if (bank !== 'fastchat_m' && bank !== 'fastchat_f') return [];
+  const idx = num(d.idx);
+  if (!Number.isInteger(idx) || idx < 1) return [];
+  return [{
+    kind: 'voice',
+    bank: 'skill',
+    names: [bank],
+    index: idx,
+    general: str(d.general),
+    rank: 'chat',
+    then: { kind: 'sound', sound: 'generic', seed: 0, gain: 0, tag: 'quickchat' },
+  }];
+}
+
+/**
+ * One of the four generals whose signature moment has its own music.
+ *
+ * NOT AN ENGINE COMMAND, and the second one here that is not — see
+ * `presentCues`. The moment is a general transforming, a 使命技 resolving or a
+ * counter crossing 99, and working that out needs a memory of what the seat was
+ * one message ago, which a pure function of one message does not have. The
+ * animation lane already keeps that memory in order to draw the scene, so it
+ * calls `roomAudio.notify('Cutscene', …)` itself rather than making this file
+ * derive the same thing a second time and risk deriving it differently.
+ *
+ * The music moves and nothing else does. The character is already speaking —
+ * `PlaySkillSound` fires for 忠傲, 雄姿 and 神霈 on the beat before this — and a
+ * sting under a voice line is a sting over a voice line.
+ */
+export function cutsceneCues(data: unknown): readonly Cue[] {
+  const d = (data ?? {}) as { theme?: unknown; ms?: unknown };
+  const theme = str(d.theme);
+  const ms = num(d.ms);
+  return theme && ms > 0 ? [{ kind: 'theme', theme, ms }] : [];
 }
 
 /**

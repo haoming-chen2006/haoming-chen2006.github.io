@@ -213,7 +213,11 @@ describe('the picker', () => {
     expect(html).not.toContain('<img');
 
     const composer = readFileSync(new URL('../ChatComposer.tsx', import.meta.url), 'utf8');
-    expect(composer).toMatch(/\{picking \? <EmojiGrid/);
+    // One slot above the input, two things that can be in it — the emoji grid
+    // and the quick-chat list — so `picking` names which rather than being a
+    // boolean. Neither is mounted while it is `'none'`.
+    expect(composer).toMatch(/\{picking === 'emoji' \? <EmojiGrid/);
+    expect(composer).toMatch(/\{picking === 'quick' \? <QuickChatList/);
   });
 
   it('offers exactly what the build shipped, once opened', () => {
@@ -301,7 +305,12 @@ describe('the chat panel', () => {
     const composer = readFileSync(new URL('../ChatComposer.tsx', import.meta.url), 'utf8')
       .replace(/\/\*[\s\S]*?\*\//g, ' ')
       .replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
-    expect(composer).not.toMatch(/requestAnimationFrame|setTimeout/);
+    // Scoped to the insertion path rather than the whole file: the quick-chat
+    // send cooldown is a legitimate `setTimeout` in here, and it never touches
+    // the caret. What must not exist is a deferred write to `pendingCaret` or a
+    // deferred `setSelectionRange`.
+    expect(composer).not.toMatch(/requestAnimationFrame/);
+    expect(composer).not.toMatch(/setTimeout\([^)]*(?:pendingCaret|setSelectionRange)/);
     expect(composer).toMatch(/useLayoutEffect\([\s\S]*?\}, \[draft\]\)/);
   });
 });

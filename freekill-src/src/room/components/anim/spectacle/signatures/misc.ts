@@ -1601,6 +1601,74 @@ export const MISC: Readonly<Record<string, Motif>> = {
     hue: 'gold', hue2: 'indigo', stance: 'brace', tempo: 'toll', n: 9, spread: 1.1, glyph: true,
   },
 
+  /* ------------------------------------------- 曹髦, as 道心 buys them ----
+   *
+   * The four skills 潜龙 hands over at 25, 50, 75 and 99. None of them is on
+   * his character card, so the roster-wide sweep never saw them — a general's
+   * `skills` list is what he starts with — and all four fire under their own
+   * names the moment the counter reaches them.
+   *
+   * They are also the arc: a clean magistrate, a drunk poet, a man exiling his
+   * ministers, and a man driving a chariot at the person who has taken his
+   * throne. So they are deliberately four different temperatures rather than
+   * four shades of the well 潜龙 draws him at the bottom of.
+   */
+
+  /**
+   * 清正 — 25 道心. Discard your hand cards of one suit, then look at somebody's
+   * hand and discard a suit from it; if that came to less than yours, he takes
+   * damage.
+   *
+   * 曹髦's own line for it: 朕虽不德，昧于大道，思与宇内共臻兹路. A young emperor
+   * being scrupulous. A balance beam that tips and settles, cards falling out of
+   * both pans, frost creeping in — it is an audit, and it is cold.
+   */
+  mobile_qianlong__qingzheng: {
+    figure: 'scale', swarm: 'card', flight: 'fall', ground: 'frost',
+    hue: 'frost', hue2: 'silver', stance: 'brace', tempo: 'toll', n: 10, glyph: true,
+  },
+
+  /**
+   * 酒诗 — 50 道心. Turn your own character card face down; it counts as using
+   * an 【酒】.
+   *
+   * 心愤无所表，下笔即成篇。弃忧但求醉，醒后寻复来. He wrote the 潜龙诗 and got
+   * himself watched for it. The frame doubles and one copy turns over, which is
+   * literally the rule, and what falls off it is amber.
+   */
+  mobile_qianlong__jiushi: {
+    figure: 'mirror', swarm: 'drop', flight: 'fall', ground: 'smoke',
+    hue: 'amber', hue2: 'plum', stance: 'turn', tempo: 'even', n: 9, glyph: true,
+  },
+
+  /**
+   * 放逐 — 75 道心. Name somebody and put a restriction on them.
+   *
+   * 卿当竭命纳忠，何为此逾矩之举. The one skill of the four that reaches another
+   * seat: two panels slide shut across the table at full spread and the decree
+   * travels along the same heading. He does not move — an exile is signed, not
+   * fought.
+   */
+  mobile_qianlong__fangzhu: {
+    figure: 'gate', swarm: 'rune', flight: 'across', ground: 'shade',
+    hue: 'indigo', hue2: 'ash', stance: 'still', tempo: 'slow', n: 8, spread: 1.4, glyph: true,
+  },
+
+  /**
+   * 决进 — 99 道心, and the end of him. Every player drops to 1 hp and keeps the
+   * difference as armour, and every 【桃】, 【酒】 and 【闪】 leaves the game.
+   *
+   * 朕安可坐受废辱，今日当与卿自出讨之. He came out of the palace on a chariot
+   * with a drawn sword and 成济 ran him through in the street. A wedge going
+   * out at everybody at once, in flame over gold, throwing cinders — the same
+   * two colours as his cutscene, because they are the same moment and the scene
+   * is this drawing at the size of the room.
+   */
+  juejin: {
+    figure: 'wedge', swarm: 'cinder', flight: 'out', ground: 'rays',
+    hue: 'flame', hue2: 'gold', stance: 'lunge', tempo: 'toll', n: 16, spread: 1.45, glyph: true,
+  },
+
   /* ---------------------------------------------------------------------- */
   /**
    * 贾充 — the man in the street who turned to 成济 and said 公畜养汝等，正为

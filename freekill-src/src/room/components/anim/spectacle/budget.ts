@@ -33,6 +33,8 @@ export type Beat =
   | 'skill'
   /** The engine's reserved two-second window for a limited skill. */
   | 'ult'
+  /** One of the four generals whose signature moment is a whole scene. */
+  | 'cutscene'
   /** Damage landing — a hit has to punch and be gone. */
   | 'strike'
   /** A player falling. The largest single moment in a game. */
@@ -58,6 +60,23 @@ const BUDGET: Readonly<Record<Beat, Budget>> = {
   skill: { share: 0.78, ceiling: 620 },
   // The engine has stopped the room for 2000 ms. Use 1900 of it.
   ult: { share: 2.4, ceiling: 1900 },
+  // The longest thing in the lane, and the second deliberate exception to the
+  // one-beat rule after `slay`. Two of the four moments it covers arrive on the
+  // engine's own 2 000 ms `InvokeUltSkill` pause and could have lived inside
+  // `ult`; the other two — 忠傲 flipping Wei Yan's portrait, 潜龙 crossing 99 —
+  // arrive on a `PropertyUpdate` and a `SetPlayerMark` with no pause at all.
+  //
+  // The exception is affordable for the same two reasons a death's is. It is
+  // RARE: four generals out of 274, at most a handful of scenes in a game where
+  // `Animate` alone lands 1 256 times. And it CANNOT COST A DECISION — every
+  // node is `pointer-events: none` on a layer above the room, so a seat that
+  // owes the engine an answer can still be clicked through a scene that is
+  // still playing. It overlaps whatever comes next rather than delaying it,
+  // which is what this lane has always done.
+  //
+  // 2 600 ms at the default pace, which is the takeover, the face turning over
+  // and one line of the character's own words at a readable speed.
+  cutscene: { share: 3.25, ceiling: 2600 },
   strike: { share: 0.58, ceiling: 460 },
   // A death is the one place the "fit inside one beat" rule is broken on
   // purpose. The engine does NOT pause here — it passes 150 ms through — but a

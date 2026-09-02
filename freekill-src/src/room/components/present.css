@@ -28,20 +28,26 @@
   pointer-events: auto;
 }
 
+/* Legible on its own, which it was not.
+ *
+ * It used to be 22 px at 42% opacity — quiet, on the reasoning that the strip
+ * under the portrait belongs to the equipment rows. The reasoning was right and
+ * the number was wrong: the person who asked for this feature could not find
+ * it, twice. It is now 26 px, gold-rimmed and fully opaque, which reads as a
+ * control at a glance and still occupies exactly the space it always did.
+ * `Presents.tsx` explains the rest of the answer, which is the one-time glow. */
 .fk-present-badge__btn {
   display: grid;
   place-items: center;
-  width: 22px;
-  height: 22px;
+  width: 26px;
+  height: 26px;
   padding: 0;
-  border: 1px solid var(--fk-line);
+  border: 1px solid var(--fk-gold);
   border-radius: 50%;
-  background: rgba(12, 10, 8, 0.62);
+  background: rgba(12, 10, 8, 0.82);
   color: var(--fk-gold);
   cursor: pointer;
-  /* Quiet by default. The seat below the portrait is where the equipment rows
-     go, so this has to be readable without competing with them. */
-  opacity: 0.42;
+  opacity: 0.88;
   transition: opacity 140ms ease, transform 140ms ease, background 140ms ease;
 }
 
@@ -62,6 +68,20 @@
 }
 
 .fk-present-badge__btn:disabled { opacity: 0.16; cursor: default; }
+
+/* The one-time glow. Nine seconds, the first table a player ever sits at in
+   this browser, and never again once they open one — `Presents.tsx`. It is a
+   box-shadow on an element that was already at these coordinates, so it costs
+   no layout and cannot take a pointer. */
+.fk-present-badge__btn--hint {
+  opacity: 1;
+  animation: fk-present-hint 1.6s ease-in-out infinite;
+}
+
+@keyframes fk-present-hint {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(216, 178, 106, 0.55); }
+  50% { box-shadow: 0 0 0 6px rgba(216, 178, 106, 0); }
+}
 
 /* ------------------------------------------------------------------ picker */
 
@@ -283,4 +303,12 @@
 
   .fk-present-badge__btn { transition: none; }
   .fk-present-pick { animation: none; }
+
+  /* The hint still has to say "this is here", so it becomes a standing ring
+     rather than nothing. A player who asked for no motion did not ask to be
+     left unable to find the feature. */
+  .fk-present-badge__btn--hint {
+    animation: none;
+    box-shadow: 0 0 0 3px rgba(216, 178, 106, 0.4);
+  }
 }

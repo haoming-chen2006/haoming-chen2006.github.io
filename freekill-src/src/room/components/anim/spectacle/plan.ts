@@ -14,8 +14,9 @@
  * and is the only thing ever written with `innerHTML`. Nothing that came off
  * the wire can reach the second path.
  */
-import { motifClasses, motifParts, motifVars } from './compose';
-import { resolveMotif, type Motif } from './motif';
+import { brushChar, motifClasses, motifParts, motifVars } from './compose';
+import type { Cutscene } from './cutscene';
+import { PALETTES, resolveMotif, type Motif } from './motif';
 import {
   ELEMENT_LIT, ELEMENT_RGB, KINGDOM_BANNER, ROLE_RITE, SIGNATURE,
   type Element, type Kingdom, type Role, type SkillCategory,
@@ -369,6 +370,131 @@ export function ultBurst(o: UltOptions): Burst {
       { cls: 'fk-spec__ult-mark', vars: { '--fk-spec-mark': quote(o.mark) } },
     ],
   };
+}
+
+/* ---------------------------------------------------------------- cutscene */
+
+export interface CutsceneOptions {
+  readonly scene: Cutscene;
+  /** The skill's translated name — the title. Engine text. */
+  readonly title: string;
+  /** The translated name of the skill gained, or `''`. Engine text. */
+  readonly gained: string;
+  /** One of the character's own lines, translated, or `''`. Engine text. */
+  readonly line: string;
+  /** The kingdom's own character, from `markOf`. */
+  readonly mark: string;
+  readonly kingdom: Kingdom;
+  /** Portrait URLs, already resolved and already checked by `faceUrl`. */
+  readonly face?: string;
+  readonly faceAfter?: string;
+  readonly ms: number;
+}
+
+/**
+ * One of the four moments the game stops for.
+ *
+ * WHAT MAKES IT DIFFERENT FROM `ultBurst`, WHICH IS ALREADY A TAKEOVER. Three
+ * things, and they are the three the mobile game spends its budget on:
+ *
+ *   the face   these are the only skills in the build that change *who is
+ *              sitting there*. 忠傲 writes `player.general = "m_shi2__weiyan"`
+ *              or `"m_shi3__weiyan"`; 雄姿 writes `"m_shi2__zhouyu"`. So the
+ *              scene is built around two portraits: the man who sat down, and
+ *              the man the table is looking at now. Where there is only one
+ *              (曹髦, 神姜维) the plate holds and the light changes behind it.
+ *   the words  a line the character actually says, printed. `ultBurst` scrolls
+ *              the skill name because there was nothing else to scroll; here
+ *              there is — `$zhongao4`, `$xiongzi3`, `$shenpeij1` are engine
+ *              keys with prose behind them, and the voice lane is speaking the
+ *              same line at the same moment.
+ *   the music  see `audio/themes.ts`. Two of these displace the soundtrack.
+ *
+ * It also runs longer than anything else in the lane, and that is a deliberate
+ * exception rather than an oversight — see `budget.ts`'s `cutscene` entry.
+ *
+ * THIS DOES NOT REPLACE THE SIGNATURE. The same moment already produced one:
+ * 雄姿 and 神霈 send `InvokeUltSkill`, 潜龙 sends `InvokeSkill` every time the
+ * counter moves, and both draw on the seat. This is the layer above them, and
+ * it is coloured out of the same `motif.ts` palettes so that the two read as
+ * one event rather than as two effects that happened to collide.
+ */
+export function cutsceneBurst(o: CutsceneOptions): Burst {
+  const { scene } = o;
+  const a = PALETTES[scene.hue];
+  const b = PALETTES[scene.hue2];
+  const banner = KINGDOM_BANNER[o.kingdom];
+  const sky = scene.scope === 'sky';
+
+  const vars: Record<string, string> = {
+    '--fk-spec-ms': `${o.ms}ms`,
+    '--fk-spec-rgb': a.rgb,
+    '--fk-spec-lit': a.lit,
+    '--fk-spec-rgb2': b.rgb,
+    '--fk-spec-lit2': b.lit,
+    '--fk-spec-rim': banner.rim,
+    '--fk-spec-seal': banner.seal,
+    '--fk-spec-mark': quote(o.mark),
+  };
+  if (o.face) vars['--fk-cut-face'] = `url("${o.face}")`;
+  if (o.faceAfter) vars['--fk-cut-face2'] = `url("${o.faceAfter}")`;
+
+  const parts: Part[] = [];
+
+  if (sky) {
+    parts.push({ cls: 'fk-cut__dim' });
+    parts.push({ cls: 'fk-cut__rays' });
+    parts.push({ cls: 'fk-cut__streak', n: 14 });
+    // The skill's own first character, brushed across the whole room behind
+    // everything. Free, exactly as it is for a signature: the character is
+    // already in the shipped font subset because the plaque prints it.
+    const ch = brushChar(o.title);
+    if (ch) parts.push({ cls: 'fk-cut__brush', text: ch });
+    if (o.face) {
+      parts.push({ cls: 'fk-cut__face' });
+      // Two plates, cross-dissolving, only when the engine actually said the
+      // seat became somebody else. One plate is not a transformation and must
+      // not be dressed as one.
+      if (o.faceAfter) parts.push({ cls: 'fk-cut__face fk-cut__face--after' });
+    }
+    parts.push({ cls: 'fk-cut__rule' });
+  }
+
+  parts.push({ cls: 'fk-cut__title', text: o.title });
+  if (o.gained) parts.push({ cls: 'fk-cut__gain', text: o.gained });
+  if (sky && o.line) parts.push({ cls: 'fk-cut__line', text: o.line });
+  parts.push({ cls: 'fk-cut__flare' });
+
+  return {
+    cls: [
+      'fk-spec', 'fk-cut', `fk-cut--${scene.scope}`, `fk-cut--${scene.key}`,
+      o.faceAfter ? 'fk-cut--turns' : '',
+    ].filter(Boolean).join(' '),
+    vars,
+    ms: o.ms,
+    scope: scene.scope,
+    // The seat itself lifts under a scene it is the subject of. On the small
+    // 潜龙 thresholds that is the whole of the reaction.
+    host: 'lift',
+    parts,
+  };
+}
+
+/**
+ * A portrait URL, or nothing.
+ *
+ * The value goes into a CSS `url()` through a custom property, so this is the
+ * one place in the lane where a string reaches a stylesheet. Everything the
+ * manifest holds is a content-hashed relative path under the deployment's own
+ * base — `assets/f771cbbeeeac.webp` — and nothing else is accepted: no scheme,
+ * no protocol-relative `//host`, no quote, no parenthesis, no whitespace. A URL
+ * that fails is dropped and the plate simply does not draw, which is a scene
+ * without a face rather than a page with an injected style.
+ */
+export function faceUrl(raw: string | undefined): string | undefined {
+  if (!raw) return undefined;
+  if (raw.startsWith('//') || /^[a-z][a-z0-9+.-]*:/i.test(raw)) return undefined;
+  return /^[\w./-]+$/.test(raw) ? raw : undefined;
 }
 
 /* ---------------------------------------------------------- general events */

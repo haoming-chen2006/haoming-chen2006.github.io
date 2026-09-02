@@ -110,51 +110,9 @@ function seat(s: string): number | null {
 
 /* --------------------------------------------------------------- the budget */
 
-/**
- * A token bucket, per thrower.
- *
- * This exists twice on purpose, and the two copies are not the same mechanism.
- *
- * The SEND side is manners: it greys the button out so a player can see they
- * are throwing too fast, and it is the only one a player can feel.
- *
- * The RECEIVE side is the defence, and it is the one that matters. The send
- * limit lives in the sender's own browser, which means it is advice — anybody
- * who can open a console can send a hundred chat lines a second. A table where
- * that turns into a hundred animations is a table you cannot play at, so every
- * client independently refuses to draw more than one present per sender per
- * `RECEIVE_GAP_MS`, whatever arrives. The griefer's flood is then a flood of
- * chat rows nobody renders.
- */
-export class PresentBudget {
-  /** When each key's bucket was last full, in the token-bucket sense. */
-  private readonly at = new Map<string, number>();
-
-  constructor(
-    /** Milliseconds a single token takes to refill. */
-    private readonly gapMs: number,
-    /** How many may be spent back to back before the gap bites. */
-    private readonly burst: number,
-  ) {}
-
-  /** Milliseconds until `key` may throw again; 0 when it may throw now. */
-  waitMs(key: string, now: number): number {
-    const floor = now - this.gapMs * this.burst;
-    const last = Math.max(this.at.get(key) ?? floor, floor);
-    return Math.max(0, last + this.gapMs - now);
-  }
-
-  /** Spend a token if there is one. False means refused, and nothing changed. */
-  take(key: string, now: number): boolean {
-    if (this.waitMs(key, now) > 0) return false;
-    const floor = now - this.gapMs * this.burst;
-    const last = Math.max(this.at.get(key) ?? floor, floor);
-    this.at.set(key, last + this.gapMs);
-    return true;
-  }
-
-  forget(key: string): void { this.at.delete(key); }
-}
+/* The token bucket itself is `chat/budget.ts`: a quick chat needs exactly the
+ * same defence for exactly the same reason, and both ride the chat channel.
+ * What stays here is how hard it is turned up for a present. */
 
 /** One throw every 2.5 s, three back to back. Slow enough that a stream of them
  *  is a choice, fast enough that a flower and an egg is one gesture. */

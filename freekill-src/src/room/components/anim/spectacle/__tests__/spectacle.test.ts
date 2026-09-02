@@ -342,6 +342,18 @@ describe('particle scatter', () => {
  * The roster the build actually ships, read the same way the contact sheet
  * reads it. A signature keyed to a skill no general has is a design nobody will
  * ever see, and the way that happens is a typo in a key nothing checks.
+ *
+ * A GENERAL'S `skills` IS WHAT HE STARTS WITH, NOT WHAT HE CAN FIRE. Seven
+ * skills in this build are handed over during a game and appear on nobody's
+ * character card: 忠傲 grants 狂骨, 潜龙 grants 清正, 酒诗, 放逐 and 决进 as its
+ * counter climbs, and 神霈 grants 回天. All of them fire `InvokeSkill` under
+ * their own names, so a signature for one is a design players do see — and the
+ * roster alone would call it an orphan.
+ *
+ * So the check is against the roster PLUS the engine's own translation table,
+ * which is the authority on whether a name is a skill at all. That is a
+ * stronger typo guard than the roster was, not a weaker one: `juejin` passes
+ * because the engine defines it, and `juejjn` would fail against either set.
  */
 const ROSTER: { generals: { skills: string[] }[] } = JSON.parse(
   readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../../../../../../public/overview.json'), 'utf8'),
@@ -349,9 +361,32 @@ const ROSTER: { generals: { skills: string[] }[] } = JSON.parse(
 const SHIPPED = new Set(ROSTER.generals.flatMap((g) => g.skills));
 
 describe('the signature table', () => {
-  it('is keyed to skills this build actually ships', () => {
-    const orphans = Object.keys(SIGNATURES).filter((k) => !SHIPPED.has(k));
+  it('is keyed to skills this build actually ships', async () => {
+    const { EN_US } = await import('../../../../../i18n/engine');
+    const known = (k: string) => SHIPPED.has(k) || Object.prototype.hasOwnProperty.call(EN_US, k);
+    const orphans = Object.keys(SIGNATURES).filter((k) => !known(k));
     expect(orphans).toEqual([]);
+  });
+
+  it('has a design for every skill the four cutscene generals are handed', async () => {
+    // The other half of the same fact. These are drawn on the seat immediately
+    // after a scene names them, so a missing one is the takeover being followed
+    // by a generic category seal for the skill it just announced.
+    for (const k of [
+      'm_shi__kuanggu',
+      'mobile_qianlong__qingzheng', 'mobile_qianlong__jiushi',
+      'mobile_qianlong__fangzhu', 'juejin',
+      'huitian',
+    ]) {
+      expect(SIGNATURES, k).toHaveProperty([k]);
+    }
+    // 困奋 is the exception and it is the engine's, not this table's:
+    // `zhongao.lua` hands it over by name, the package ships four voice
+    // recordings for it, and it defines the skill nowhere. Nothing can fire
+    // under that name in this build, so a design for it would be unreachable.
+    const { EN_US } = await import('../../../../../i18n/engine');
+    expect(EN_US).not.toHaveProperty(['kunfen']);
+    expect(SIGNATURES).not.toHaveProperty(['kunfen']);
   });
 
   it('draws the engine\'s generated sub-skills as the skill they belong to', () => {

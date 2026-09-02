@@ -50,7 +50,29 @@ const tr = (key: string): string => words[key] ?? key;
 // answer for a second.
 (window as unknown as { __fkPace?: number }).__fkPace = Number(q.get('pace') ?? 800);
 
-const bus = new AnimBus(tr);
+/**
+ * Portraits, for the four cutscenes that put one on screen.
+ *
+ * The manifest is fetched rather than imported: `public/asset-manifest.json` is
+ * the deployed build's own index, the dev server serves it at the same path the
+ * room reads it from, and the alternative — importing `src/room/dev/data/` —
+ * would be a second, differently-hashed tree that the room never sees. It is
+ * also allowed to fail: this is a dev page and every other case on the bar
+ * works without it.
+ */
+const faces = new Map<string, string>();
+const bus = new AnimBus(tr, (g) => faces.get(g));
+
+void fetch(`${import.meta.env.BASE_URL}asset-manifest.json`)
+  .then((r) => r.json())
+  .then((m: { base?: string; entries: { key: string; href: string }[] }) => {
+    const base = m.base ?? '';
+    for (const e of m.entries) {
+      const hit = /^packages\/[^/]+\/image\/generals\/([^/]+)\.jpg$/.exec(e.key);
+      if (hit) faces.set(hit[1], base + e.href);
+    }
+  })
+  .catch(() => { /* no manifest served; the scenes draw without a plate */ });
 
 // Nine, not eight: there are nine categories and "all nine" must give each one
 // its own seat, or the ninth lands on the first and the cap drops one of them.
@@ -182,6 +204,68 @@ button('judge fail', () => bus.notify('Animate', { type: 'Emotion', player: 9, e
 group('slay');
 ROLES.forEach((role, i) => button(role, () => kill(((i + 4) % SEATS) + 1, (i % SEATS) + 1, role), true));
 button('unknown', () => kill(5, 1, 'x'), true);
+
+/* -------------------------------------------------------------- cutscenes */
+
+/**
+ * The four generals whose signature moment is a whole scene.
+ *
+ * Each button sends the exact message the engine sends, in the order it sends
+ * it — which for three of the six is a `PropertyUpdate` naming the general the
+ * seat has BECOME, and that only fires if the seat was already the general it
+ * came from. So each case seats the base general first, exactly the way
+ * `gamelogic.lua` does at the top of a game, and then transforms it.
+ *
+ * Two things do not work here and both are the workbench rather than the code:
+ * the portraits are `undefined`, because a dev page has no asset manifest, so
+ * the plate does not draw; and the `$`-prefixed lines resolve to their own keys,
+ * because `lua-data.json` is a partial dump of the standard package. The
+ * composition, the rhythm, the wipe and the colours are all real. See the
+ * header of `cutscene.ts` for the wire messages these are built from.
+ */
+group('cutscene');
+
+/** `zhongao.lua` / `xiongzi.lua` / `juejin.lua`'s `broadcastProperty`. */
+function becomes(seat: number, from: string, to: string): void {
+  bus.notify('PropertyUpdate', [seat, 'general', from]);
+  bus.notify('PropertyUpdate', [seat, 'general', to]);
+}
+
+button('忠傲 成功', () => becomes(1, 'm_shi__weiyan', 'm_shi2__weiyan'), true);
+button('忠傲 失败', () => becomes(2, 'm_shi__weiyan', 'm_shi3__weiyan'), true);
+// 雄姿 is the engine's own sequence: the limited-skill banner on the 2 000 ms
+// pause, then the portrait and the branch mark once `on_use` runs.
+button('雄姿 火', () => {
+  bus.notify('Animate', { type: 'InvokeUltSkill', player: 3, name: 'xiongzi' });
+  window.setTimeout(() => {
+    bus.notify('PropertyUpdate', [3, 'general', 'm_shi2__zhouyu']);
+    bus.notify('SetPlayerMark', [3, '@xiongzi-noclear', 'xiongzi_2']);
+  }, 2000);
+}, true);
+button('雄姿 水', () => {
+  bus.notify('Animate', { type: 'InvokeUltSkill', player: 4, name: 'xiongzi' });
+  window.setTimeout(() => {
+    bus.notify('PropertyUpdate', [4, 'general', 'm_shi2__zhouyu']);
+    bus.notify('SetPlayerMark', [4, '@xiongzi-noclear', 'xiongzi_1']);
+  }, 2000);
+}, true);
+button('决进', () => {
+  bus.notify('Animate', { type: 'InvokeUltSkill', player: 5, name: 'juejin' });
+  window.setTimeout(() => becomes(5, 'mobile__caomao', 'mobile2__caomao'), 2000);
+}, true);
+button('神霈', () => {
+  bus.notify('PropertyUpdate', [6, 'general', 'mobile__godjiangwei']);
+  bus.notify('Animate', { type: 'InvokeUltSkill', player: 6, name: 'shenpeij' });
+}, true);
+// `qianlong.lua`'s counter climbing past every threshold it unlocks a skill at.
+// No scene fires: `Photo`'s gauge is what these are for, and the workbench has
+// no seat chrome to draw it on. Kept so the "nothing happens" is deliberate and
+// visible rather than assumed.
+button('道心 20→99', () => {
+  [20, 30, 55, 80, 99].forEach((n, i) => {
+    window.setTimeout(() => bus.notify('SetPlayerMark', [7, '@mobile__qianlong_daoxin', n]), i * 300);
+  });
+});
 
 /* ------------------------------------------------------------------- stills */
 

@@ -71,3 +71,66 @@
 
 .fk-emoji-grid__cell:hover { background: rgba(216, 178, 106, 0.22); }
 .fk-emoji-grid__cell:focus-visible { outline: 1px solid var(--fk-gold); }
+
+/* ------------------------------------------------------------ quick chats */
+
+/* The toggle carries a word as well as a glyph — see `QuickChatPicker.tsx` for
+   why. It is the only thing in this row allowed to shrink, so the message box
+   keeps its width when the panel is narrow and the label is what goes. */
+.fk-quick-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  /* The one control in the row that may give width back — the message box has
+     first claim on it, and a clipped word still says what the button is. */
+  flex: 0 1 auto;
+  padding-left: 6px;
+  padding-right: 6px;
+  overflow: hidden;
+  font-size: 13px;
+}
+
+.fk-quick-toggle__label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+  letter-spacing: 0.02em;
+}
+
+.fk-quick-toggle[aria-expanded='true'] {
+  border-color: var(--fk-gold);
+  color: var(--fk-gold);
+}
+
+/* `ChatBox.qml`'s 180 px `ListView`, in the flow above the input exactly as the
+   emoji grid is. Scrolls itself rather than growing the panel. */
+.fk-quick-list {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  max-height: 172px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  margin-bottom: 4px;
+  padding-top: 4px;
+  border-top: 1px solid var(--fk-line);
+}
+
+.fk-quick-list__row {
+  padding: 4px 6px;
+  border: none;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--fk-ink);
+  font: inherit;
+  font-size: 12px;
+  line-height: 1.35;
+  text-align: left;
+  cursor: pointer;
+}
+
+.fk-quick-list__row:hover { background: rgba(216, 178, 106, 0.22); }
+.fk-quick-list__row:focus-visible { outline: 1px solid var(--fk-gold); }

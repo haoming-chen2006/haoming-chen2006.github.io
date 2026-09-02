@@ -84,12 +84,12 @@ const PANELS = {
     ui: 'PoxiBox', status: 'ok',
     note: 'Filter, feasibility and card visibility are all the engine\'s answers. The prompt — already-translated text ending in `:<targetId>` — goes through processPrompt, as PoxiBox.qml:13 does.',
   },
-  AskForGuanxing: { ui: 'ArrangeBox', status: 'ok', note: 'Click-to-move zones with capacity and minimum. The bottom zone starts empty, so the move button works.' },
+  AskForGuanxing: { ui: 'ArrangeBox', status: 'ok', note: 'Click-to-move zones with capacity and minimum. The bottom zone starts empty, so ⇄ moves a card outright; clicking two cards trades them.' },
   AskForArrangeCards: {
     ui: 'ArrangeBox', status: 'weak',
-    note: 'The move button refuses any zone already at capacity, and `max_limit` defaults to the current row sizes (room.lua:1695) — so a two-row arrange that does not override it cannot move a card at all. `is_free`, `pattern` and `poxi_type` are never read, so illegal arrangements can be confirmed.',
+    note: 'Clicking a card picks it up and clicking a second puts it down, which trades places across a row at capacity exactly as ArrangeCardsBox.qml updateCardReleased does — and that is the only operation there is once `max_limit` defaults to the current row sizes (room.lua:1695), as it does for 星魂. `is_free`, `pattern` and `poxi_type` are still never read, so an arrangement the QML would forbid can still be confirmed.',
   },
-  AskForExchange: { ui: 'ArrangeBox via ExchangeBox', status: 'weak', note: 'Every pile is mapped to a zone whose capacity equals its own length, so no card can ever move. No roster skill reaches it today.' },
+  AskForExchange: { ui: 'ArrangeBox via ExchangeBox', status: 'ok', note: 'Every pile is a zone whose capacity equals its own length, so a trade is the only move it has — which is what the box now offers. No roster skill reaches it today.' },
   AskForAG: { ui: 'AgBox floating panel', status: 'ok', note: 'Non-modal, table stays clickable.' },
   AskForGeneral: { ui: 'ChooseGeneralBox', status: 'ok', note: 'With per-general detail popup.' },
   AskForMoveCardInBoard: {

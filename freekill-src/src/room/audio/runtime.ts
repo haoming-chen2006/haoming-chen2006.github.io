@@ -47,13 +47,38 @@
 import { Bank } from './bank';
 import { BEDS, Bed, type BedSpec } from './generative';
 import { pickTake, type Clip } from './clips';
-import { RANK_ORDER, type Beatmark, type Cue, type Scene, type SoundCue, type VoiceCue } from './cues';
+import {
+  RANK_ORDER,
+  type Beatmark, type Cue, type Scene, type SoundCue, type ThemeCue, type VoiceCue,
+} from './cues';
 import { lengthOf, play as playPatch, type Voice } from './sfx';
+import { themeOf, type Theme } from './themes';
 import { speak, utteranceSeconds } from './voicebox';
 import { SLAY_PHASE, beatMs } from '../components/anim/spectacle/budget';
 
 /** Seconds of overlap when one track hands over to the next. Never a cut. */
 const CROSSFADE = 4;
+/**
+ * The two fades a cutscene's theme gets, in seconds.
+ *
+ * A rotation hands over across four seconds because nobody is meant to notice
+ * it. A theme is the opposite: it has to be audibly present by the time the
+ * character's name lands, which is about 600 ms into a 2 600 ms scene, so it
+ * arrives in a third of a second. It leaves more slowly than it came, because
+ * the soundtrack returning IS the moment ending and a hard return would sound
+ * like an interruption of the interruption.
+ */
+const THEME_IN = 0.34;
+const THEME_OUT = 1.6;
+/**
+ * How long the theme outlives the picture.
+ *
+ * The scene's last third is everything leaving the screen. Handing the
+ * soundtrack back on the frame the last word fades would make the music the
+ * thing that ended rather than the moment, and it is also what `THEME_OUT` is
+ * spent on.
+ */
+const THEME_TAIL_MS = 900;
 /** How long a generated bed runs before the rotation moves on. */
 const BED_SECONDS = 165;
 /** One-shots alive at once. Past this the newest is dropped: the ear cannot
@@ -199,6 +224,9 @@ export class AudioRuntime {
   private current: { track: Track; bed?: Bed; source?: AudioBufferSourceNode; gain: GainNode } | null = null;
   private rotateTimer: ReturnType<typeof setTimeout> | null = null;
   private lastTrackId = '';
+  /** One cutscene's own music, while it is playing. See `fireTheme`. */
+  private override: Theme | null = null;
+  private themeTimer: ReturnType<typeof setTimeout> | null = null;
 
   private voices = 0;
   private readonly lastFired = new Map<string, number>();
@@ -373,14 +401,20 @@ export class AudioRuntime {
     return this.bank?.clip('audio/system/bgm');
   }
 
-  /** Start, or hand over to the next track in the current scene's playlist. */
-  private rotate(immediate = false): void {
+  /**
+   * Start, or hand over to the next track in the current scene's playlist.
+   *
+   * `seconds` overrides the crossfade. Only a theme passes it: a rotation is
+   * meant to be unnoticed and takes four seconds over it, and a moment's own
+   * music has to be there before the moment is over.
+   */
+  private rotate(immediate = false, seconds?: number): void {
     if (this.rotateTimer) { clearTimeout(this.rotateTimer); this.rotateTimer = null; }
     const next = this.pickTrack();
     const outgoing = this.current;
     this.current = null;
 
-    const fade = immediate ? CROSSFADE / 2 : CROSSFADE;
+    const fade = seconds ?? (immediate ? CROSSFADE / 2 : CROSSFADE);
     if (outgoing) {
       outgoing.bed?.fadeOut(fade);
       if (outgoing.source) {
@@ -430,6 +464,17 @@ export class AudioRuntime {
 
   /** Shuffle, not cycle — but never the same track twice running. */
   private pickTrack(): Track | null {
+    // One moment's own music, while it is playing. Above the soundtrack because
+    // that is the entire point of it: 势魏延's 使命 resolving is not a scene
+    // change, it is the two and a half seconds the game belongs to him.
+    const theme = this.override;
+    if (theme) {
+      const clip = theme.clip ? this.bank?.clip(theme.clip) : undefined;
+      return clip
+        ? { kind: 'clip', id: `theme:${theme.bed.name}`, clip }
+        : { kind: 'bed', id: `theme:${theme.bed.name}`, spec: theme.bed };
+    }
+
     // The soundtrack, wherever there is music at all.
     //
     // This used to be one entry in a pool of three synthesised beds, and only
@@ -480,8 +525,41 @@ export class AudioRuntime {
   /** One cue. Returns what it did, which is what the audit reads. */
   fire(cue: Cue): string {
     if (cue.kind === 'music') { this.setScene(cue.scene); return `music:${cue.scene}`; }
+    if (cue.kind === 'theme') return this.fireTheme(cue);
     if (cue.kind === 'voice') return this.fireVoice(cue);
     return this.fireSound(cue);
+  }
+
+  /**
+   * The soundtrack steps aside for one moment's own music.
+   *
+   * A THIRD KIND OF TRACK, NOT A SECOND MUSIC SYSTEM. It goes through
+   * `pickTrack` and `rotate` like everything else, which is what buys it the
+   * crossfade, the single music bus, the fader, the duck under a voice line and
+   * the correct behaviour when the player turns the music off mid-scene. The
+   * whole mechanism is one nullable field consulted at the top of `pickTrack`
+   * and a timer that clears it.
+   *
+   * FIVE HUNDRED MILLISECONDS LONGER THAN THE PICTURE. The scene's last third
+   * is everything leaving the screen; handing the soundtrack back on the frame
+   * the last word fades would make the music the thing that ended, rather than
+   * the moment. The tail is also what the outgoing crossfade is spent on.
+   */
+  private fireTheme(cue: ThemeCue): string {
+    const theme = themeOf(cue.theme);
+    if (!theme) return 'no-theme';
+    // The music fader at zero is a player who has asked for no music. A theme
+    // is still music.
+    if (this.musicLevel <= 0.02) return 'muted';
+    if (this.themeTimer) clearTimeout(this.themeTimer);
+    this.override = theme;
+    this.rotate(true, THEME_IN);
+    this.themeTimer = setTimeout(() => {
+      this.themeTimer = null;
+      this.override = null;
+      this.rotate(true, THEME_OUT);
+    }, Math.max(0, cue.ms) + THEME_TAIL_MS);
+    return `theme:${cue.theme}`;
   }
 
   private fireSound(cue: SoundCue): string {
@@ -869,7 +947,9 @@ export class AudioRuntime {
   /** Everything released. The context is closed; a new one is cheap. */
   dispose(): void {
     if (this.rotateTimer) clearTimeout(this.rotateTimer);
+    if (this.themeTimer) clearTimeout(this.themeTimer);
     if (this.queueTimer) clearTimeout(this.queueTimer);
+    this.override = null;
     this.current?.bed?.stop();
     try { this.current?.source?.stop(); } catch { /* already stopped */ }
     this.current = null;

@@ -172,6 +172,20 @@ export async function answerOnce(seat, ctx, a) {
   if (zoneCards.length) {
     const chips = of(a, 'zoneChip').filter((c) => c.box);
     if (chips.length) {
+      // A cross-zone trade first: pick a card up in one row and put it down on
+      // a card in another. That is the only operation an arrange box whose
+      // every row is at capacity has — 星魂 opens with both rows full — and it
+      // is the one the panel used to refuse outright, so the campaign has to
+      // press it rather than only shuffling within a row.
+      const rows = [...new Set(zoneCards.filter((c) => c.box).map((c) => c.zone))];
+      if (rows.length > 1 && rng() < 0.7) {
+        const [from, onto] = shuffled(rng, rows);
+        const grab = pick(rng, zoneCards.filter((c) => c.zone === from && c.box));
+        await clickOne(grab, 'arrange-pick');
+        const live = of(await refresh(), 'zoneCard').filter((c) => c.zone === onto && c.box);
+        if (live.length) await clickOne(pick(rng, live), 'arrange-trade');
+      }
+
       // Guanxing / arrange: shuffle the zones a little so the reply is a real
       // rearrangement rather than "accept whatever the engine handed me".
       const n = Math.floor(rng() * 4);

@@ -14,6 +14,7 @@ import { roomAudio } from './audio';
 import { AnimBus } from './components/anim/bus';
 import { AnimProvider } from './components/anim/Stage';
 import { warmCommonSheets } from './components/anim/sheets';
+import { spokenChat, useQuickChatVoice } from './chat';
 import { Boundary } from './components/Boundary';
 import { ConfirmBar } from './components/ConfirmBar';
 import { Dashboard } from './components/Dashboard';
@@ -21,7 +22,6 @@ import { GeneralDetail } from './dialogs/GeneralDetail';
 import { Indicators, type SeatRefs } from './components/Indicators';
 import { Photo } from './components/Photo';
 import { Presents } from './components/Presents';
-import { isPresentText } from './components/present';
 import { seatStyle, tableInset, tableTop } from './components/SeatRing';
 import { useRingMetrics } from './components/useRingMetrics';
 import { SidePanel } from './components/SidePanel';
@@ -30,6 +30,7 @@ import { DialogHost } from './dialogs/DialogHost';
 import { makeReply } from './dialogs/reply';
 import { LtkLua } from './ltk/LtkLua';
 import { makeNaming, RoomProvider, useRoom, useRoomState, useScene, type RoomServices } from './RoomContext';
+import { SkinPicker } from './skins';
 import { RoomStore } from './state/store';
 import './room.css';
 
@@ -55,7 +56,16 @@ export function RoomView(props: RoomViewProps) {
    * and `Animate.is_card`, which says the effect belongs on a card rather than
    * a seat. See `components/anim/bus.ts`.
    */
-  const anim = useMemo(() => new AnimBus((s: string) => services.lua.tr(s)), [services]);
+  const anim = useMemo(() => new AnimBus(
+    (s: string) => services.lua.tr(s),
+    // The four cutscenes put a general's portrait on screen — and two of them
+    // put up the portrait the seat just *became*. `mobile` because every one of
+    // the eight scenes belongs to a general in that pack; `generalPortrait`
+    // falls back to `standard` and then to a bare key on its own, and answers
+    // `undefined` for anything the pipeline did not ship, which draws no plate
+    // rather than a broken one.
+    (general: string) => services.assets.generalPortrait(general, 'mobile'),
+  ), [services]);
   useEffect(() => () => anim.dispose(), [anim]);
 
   /**
@@ -147,11 +157,16 @@ function RoomBody(
   const reply = useMemo(() => makeReply(store, lua), [store, lua]);
 
   const order = state.circle.length ? state.circle : Object.keys(state.players).map(Number);
-  // A thrown flower travels as a chat line (`components/present.ts`), so the
-  // raw feed contains messages nobody should ever read as text. `Presents` gets
-  // the whole feed; the log and the bubbles get what was actually said.
-  const spoken = useMemo(() => chat.filter((c) => !isPresentText(c.text)), [chat]);
+  // Two features ride the chat channel, so the raw feed carries messages nobody
+  // should read as they arrive: a thrown flower is dropped and a quick chat is
+  // rewritten to the sentence it stands for. `chat/feed.ts` is both, and is why
+  // the log and the bubbles need to know about neither. `Presents` still gets
+  // the raw list — the arc it draws is a present's whole appearance.
+  const spoken = useMemo(() => spokenChat(chat, (key) => lua.tr(key)), [chat, lua]);
   const bubbles = useChatBubbles(spoken);
+  // And the sound of one, on every client that sees it. Not tied to the panel:
+  // the table hears a quick chat whether or not anybody is on the chat tab.
+  useQuickChatVoice(chat);
 
   return (
     <div
@@ -209,6 +224,13 @@ function RoomBody(
         <SidePanel chat={spoken} onChat={onChat} />
         {statusSlot ? <div style={{ position: 'absolute', right: 8, bottom: 8, zIndex: 20 }}>{statusSlot}</div> : null}
       </div>
+
+      {/* Alternate artwork for the viewer's own general. It offers itself once,
+          the first time this seat is given a general the catalogue has art for,
+          and is reachable from its corner chip for the rest of the game. Given
+          only the general — a skin is a local preference and has no business
+          knowing anything else about the table. See `skins/SkinPicker.tsx`. */}
+      <SkinPicker general={state.selfId == null ? undefined : state.players[state.selfId]?.general} />
 
       {/* The question, then the cards it is about. See `ConfirmBar.tsx`. */}
       <ConfirmBar />

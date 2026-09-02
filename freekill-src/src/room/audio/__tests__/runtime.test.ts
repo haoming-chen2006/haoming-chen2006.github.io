@@ -440,3 +440,144 @@ describe('choosing the background music', () => {
     expect(track(rt, 'over')).toBeNull();
   });
 });
+
+/* --------------------------------------------------- one moment's own music
+ *
+ * Four generals in this roster have a signature moment the mobile game swaps
+ * the battle music for, and two of them swap it per form. `themes.ts` says what
+ * each one sounds like; this is the mechanism that lets it displace the
+ * soundtrack and, more importantly, always give it back.
+ *
+ * The property that matters is the last one. A theme that fails to stand down —
+ * because the timer was cleared, because the game ended under it, because the
+ * runtime was disposed mid-scene — is a table that plays 势魏延's march for the
+ * rest of the session. */
+
+describe('a cutscene’s theme', () => {
+  const theme = (name: string, ms = 2600) =>
+    ({ kind: 'theme', theme: name, ms }) as const;
+
+  it('takes the music over and hands it back', async () => {
+    const rt = await makeRuntime();
+    rt.setVolumes(0.8, 0.8, 0.8);
+    rt.setScene('table');
+    const before = rt.report().track;
+    expect(before).toMatch(/^bed:/);
+
+    expect(rt.fire(theme('oath-kept'))).toBe('theme:oath-kept');
+    expect(rt.report().track).toBe('theme:oath-kept');
+
+    // 2 600 ms of picture plus the 900 ms tail the soundtrack returns over.
+    vi.advanceTimersByTime(3600);
+    expect(rt.report().track).not.toBe('theme:oath-kept');
+    expect(rt.report().track).toMatch(/^bed:/);
+  });
+
+  it('arrives fast enough to be there for the moment it belongs to', async () => {
+    // The rotation crossfades over four seconds because nobody is meant to
+    // notice it. A theme has to be audibly present by the time the character's
+    // name lands, about 600 ms into the scene — a four-second ramp would peak
+    // after the scene had finished.
+    const rt = await makeRuntime();
+    rt.setVolumes(0.8, 0.8, 0.8);
+    rt.setScene('table');
+    const before = rec.of('gain').length;
+    rt.fire(theme('daoxin'));
+    // `Bed.fadeIn(1, seconds)` is the only ramp in the graph that goes to
+    // exactly 1 — a pluck peaks around 0.05 and the drum at 0.16 — so this is
+    // the incoming theme's own fade and nothing else.
+    const arrival = rec.of('gain').slice(before - 1)
+      .flatMap((n) => n.gain.calls)
+      .filter((c) => c.kind === 'linear' && c.value === 1);
+    expect(arrival.length).toBeGreaterThan(0);
+    expect(Math.min(...arrival.map((c) => c.at))).toBeLessThanOrEqual(0.6);
+    // Still a ramp, never a step: a theme appearing at full is a click.
+    expect(arrival.every((c) => c.at > 0)).toBe(true);
+  });
+
+  it('gives each of the six moments its own music', async () => {
+    const rt = await makeRuntime();
+    rt.setVolumes(0.8, 0.8, 0.8);
+    rt.setScene('table');
+    const { THEMES } = await import('../themes');
+    const seen = new Set<string>();
+    for (const name of Object.keys(THEMES)) {
+      expect(rt.fire(theme(name))).toBe(`theme:${name}`);
+      const id = rt.report().track;
+      expect(id, name).toBe(`theme:${name}`);
+      seen.add(id!);
+      vi.advanceTimersByTime(3600);
+    }
+    expect(seen.size).toBe(Object.keys(THEMES).length);
+  });
+
+  it('is silence when the player has turned the music off', async () => {
+    // A theme is music. Someone who has asked for none should not be given the
+    // loudest two seconds in the game as an exception.
+    const rt = await makeRuntime();
+    rt.setVolumes(0, 0.8, 0.8);
+    rt.setScene('table');
+    expect(rt.fire(theme('river-fire'))).toBe('muted');
+  });
+
+  it('ignores a name no theme was written for', async () => {
+    const rt = await makeRuntime();
+    rt.setVolumes(0.8, 0.8, 0.8);
+    rt.setScene('table');
+    const before = rt.report().track;
+    expect(rt.fire(theme('a-general-from-2027'))).toBe('no-theme');
+    expect(rt.report().track).toBe(before);
+  });
+
+  it('does not strand the soundtrack when two scenes overlap', async () => {
+    // Two seats can transform inside one beat — a 决进 that kills somebody
+    // whose 忠傲 then resolves. The second theme wins and the FIRST one's timer
+    // must not stand the second one down early or leave it running.
+    const rt = await makeRuntime();
+    rt.setVolumes(0.8, 0.8, 0.8);
+    rt.setScene('table');
+    rt.fire(theme('oath-kept'));
+    vi.advanceTimersByTime(400);
+    rt.fire(theme('rain-owed'));
+    expect(rt.report().track).toBe('theme:rain-owed');
+    // The first theme's own deadline passes; the second is still playing.
+    vi.advanceTimersByTime(3100);
+    expect(rt.report().track).toBe('theme:rain-owed');
+    vi.advanceTimersByTime(1000);
+    expect(rt.report().track).toMatch(/^bed:/);
+  });
+
+  it('lets go of the timer when the runtime does', async () => {
+    const rt = await makeRuntime();
+    rt.setVolumes(0.8, 0.8, 0.8);
+    rt.setScene('table');
+    rt.fire(theme('river-tide'));
+    rt.dispose();
+    // A disposed runtime waking up 3 s later to rotate a context it has closed
+    // is an unhandled rejection in a tab the player has already left.
+    expect(() => vi.advanceTimersByTime(10_000)).not.toThrow();
+    expect(rt.report().track).toBeNull();
+  });
+
+  it('prefers a real recording over the bed if this build ever ships one', async () => {
+    // The seam licensing leaves open. `themes.ts` names no clip today, because
+    // there is no source for these tracks this repository can point at; the day
+    // there is, it is one field and the runtime already reaches for it.
+    const rt = await makeRuntime();
+    const { Bank } = await import('../bank');
+    (rt as unknown as { bank: unknown }).bank = Bank.of('/audio/', {
+      v: 1, files: { 'system/theme/daoxin': 90000 },
+    });
+    rt.setVolumes(0.8, 0.8, 0.8);
+    rt.setScene('table');
+    const r = rt as unknown as {
+      override: unknown; pickTrack(): { kind: string; id: string } | null;
+    };
+    const { THEMES } = await import('../themes');
+    r.override = { ...THEMES.daoxin, clip: 'audio/system/theme/daoxin' };
+    expect(r.pickTrack()?.kind).toBe('clip');
+    // And falls straight back to the bed when the pack does not have it.
+    r.override = { ...THEMES.daoxin, clip: 'audio/system/theme/nope' };
+    expect(r.pickTrack()?.kind).toBe('bed');
+  });
+});

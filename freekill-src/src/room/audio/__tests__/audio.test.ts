@@ -512,3 +512,47 @@ describe('the bus, on a stream with no speakers attached', () => {
     expect(audio.log.length).toBeLessThanOrEqual(300);
   });
 });
+
+/* ------------------------------------------------- a cutscene asks for music */
+
+describe('a cutscene’s music', () => {
+  const theme = (cues: readonly Cue[]) => cues.find((c) => c.kind === 'theme');
+
+  it('turns the animation lane’s own command into a theme cue', () => {
+    // Not an engine command, and the second one that is not — a thrown flower
+    // is the other. Working out that 势魏延's mission just resolved needs a
+    // memory of what the seat was a message ago, which a pure function of one
+    // message does not have, so the lane that already keeps that memory in
+    // order to draw the scene asks for the music itself.
+    const cues = cueFor('Cutscene', { theme: 'oath-kept', ms: 2600 });
+    expect(theme(cues)).toEqual({ kind: 'theme', theme: 'oath-kept', ms: 2600 });
+  });
+
+  it('moves the music and makes no other noise', () => {
+    // The character is already speaking — `PlaySkillSound` fires for 忠傲, 雄姿
+    // and 神霈 on the beat before this — and a sting under a voice line is a
+    // sting over a voice line.
+    expect(cueFor('Cutscene', { theme: 'daoxin', ms: 2600 })).toHaveLength(1);
+  });
+
+  it('asks for nothing when the scene was not drawn', () => {
+    // `?pace=0` is the audit playing a whole game in two minutes: every budget
+    // resolves to 0, no scene is painted, and the soundtrack must not lurch for
+    // a scene nobody saw.
+    expect(cueFor('Cutscene', { theme: 'oath-kept', ms: 0 })).toEqual([]);
+    expect(cueFor('Cutscene', { theme: '', ms: 2600 })).toEqual([]);
+    expect(cueFor('Cutscene', {})).toEqual([]);
+    expect(cueFor('Cutscene', null)).toEqual([]);
+  });
+
+  it('names a theme that exists for every scene that asks for one', async () => {
+    // The two tables are written apart on purpose — one is art direction, one
+    // is music — so nothing but this stops a renamed theme from becoming a
+    // silent cutscene that no type checker complains about.
+    const { CUTSCENES } = await import('../../components/anim/spectacle/cutscene');
+    const { THEMES } = await import('../themes');
+    for (const c of Object.values(CUTSCENES)) {
+      if (c.theme) expect(THEMES, c.key).toHaveProperty([c.theme]);
+    }
+  });
+});

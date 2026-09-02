@@ -48,12 +48,18 @@
  * said had happened. Nothing decides whether it should have.
  */
 import type { WireCommand } from '../../../contract/protocol';
+import { roomAudio } from '../../audio';
 import { CARD_AREA } from '../../ltk/types';
 import type { AnimSheet } from '../../assets/anim/sheets.generated';
 import { CARD_FX, GEAR_FX, GENERIC_FX, HIT_FX, readCue, type CardCue, type CardRecipe } from './cards';
 import type { Build, Scene } from './parts';
 import { isReady, loadSheet, resolveSheet, sheetUrl } from './sheets';
 import { Spectacle } from './spectacle';
+import { beatMs } from './spectacle/budget';
+import {
+  afterPortraits, invoked, marked, transformed, CUTSCENE_GENERALS, WATCHED_MARKS,
+  type Cutscene,
+} from './spectacle/cutscene';
 import { bearing, dropTableLayer, pointOf, spanOf, tableLayer, type Point } from './table';
 import { animationsOff, effectMs, type EffectKind } from './timing';
 import './effects.css';
@@ -115,6 +121,26 @@ export class AnimBus {
   private readonly spec: Spectacle;
   /** Last chain state seen per player, so only the moment it changes animates. */
   private readonly chained = new Map<number, boolean>();
+  /**
+   * Last `general` and `deputyGeneral` seen per seat, and the last value of the
+   * two marks a cutscene watches.
+   *
+   * All four exist for one reason: a cutscene fires on a CHANGE, never on an
+   * arrival. Every one of these values is re-broadcast when a seat is dealt its
+   * general, when a client reconnects, and — for the marks — five times a
+   * second for as long as the game lasts, because `refreshStatusSkills` resends
+   * every visible `@` mark on every living seat. Without the previous value
+   * there is no difference between "Wei Yan just turned" and "somebody opened
+   * the page", and the second one would take over their screen.
+   *
+   * Keyed `<seat>:<what>`, because a seat has four of them and a `Map` per
+   * thing would be four maps that always move together.
+   */
+  private readonly seen = new Map<string, unknown>();
+  /** Cutscenes already played this session, by seat and key. See `cutscene`. */
+  private readonly played = new Set<string>();
+  /** Portraits already fetched for a cutscene. See `warmCutscene`. */
+  private readonly warmed = new Set<string>();
   /** The card whose sound just arrived, still looking for its seat. */
   private cue: Cue | null = null;
   /** The measured photo width, and when. Every length in an effect is a
@@ -130,7 +156,17 @@ export class AnimBus {
    */
   replaying = true;
 
-  constructor(private readonly tr: (s: string) => string) {
+  /**
+   * A general's portrait URL, for the four cutscenes that put one on screen.
+   *
+   * Optional because the two dev pages that drive this bus — the workbench and
+   * the effect preview — have no asset manifest, and a scene without a face is
+   * still a scene. `RoomView` hands over `Assets.generalPortrait`.
+   */
+  constructor(
+    private readonly tr: (s: string) => string,
+    private readonly face: (general: string) => string | undefined = () => undefined,
+  ) {
     this.spec = new Spectacle(tr);
   }
 
@@ -164,6 +200,7 @@ export class AnimBus {
         case 'Animate': return this.onAnimate(data as Record<string, unknown>);
         case 'LogEvent': return this.onLogEvent(data as Record<string, unknown>);
         case 'PropertyUpdate': return this.onProperty(data as [number, string, unknown]);
+        case 'SetPlayerMark': return this.onMark(data as [number, string, unknown]);
         case 'MoveCards': return this.onMoveCards(data as Record<string, unknown>);
         default: return;
       }
@@ -220,6 +257,14 @@ export class AnimBus {
         const id = Number(d.player);
         if (!Number.isFinite(id)) return;
         const host = this.hosts.get(seatStage(id));
+        // 神霈 answers this message with a whole scene, so the banner stands
+        // down: it is the same moment, and both of them scroll the same skill
+        // name across the same room at the same time. 雄姿 and 决进 also send
+        // this message and their scenes arrive two seconds later on the
+        // transformation, so they keep the banner — an announcement, and then
+        // the thing it announced.
+        const scene = invoked(d.name);
+        if (scene) { this.cutscene(id, scene); return; }
         if (host) this.spec.ult(id, host, d.name);
         return;
       }
@@ -317,6 +362,24 @@ export class AnimBus {
     if (prop === 'kingdom') { this.spec.setKingdom(id, value); return; }
     if (prop === 'role') { this.spec.setRole(id, value); return; }
 
+    // 忠傲 is a 使命技, and the way the engine reports its outcome is by making
+    // the seat a different character: `zhongao.lua` writes `player.general =
+    // "m_shi2__weiyan"` on success and `"m_shi3__weiyan"` on failure and
+    // broadcasts the property. Either half of the pair can be the one that
+    // moves, because 忠傲 checks `general` and then `deputyGeneral`.
+    if (prop === 'general' || prop === 'deputyGeneral') {
+      const key = `${id}:${prop}`;
+      const was = this.seen.get(key);
+      this.seen.set(key, value);
+      const scene = transformed(was, value);
+      if (scene) this.cutscene(id, scene);
+      // Decode the portrait this seat may turn into, minutes before it does.
+      // A 16 kB webp fetched and decoded while the scene is already on screen
+      // shows an empty plate for the first third of it.
+      else if (typeof value === 'string') this.warmCutscene(value);
+      return;
+    }
+
     if (prop === 'hp') {
       const now = Number(value);
       const was = this.hp.get(id);
@@ -354,6 +417,97 @@ export class AnimBus {
       // seat size.
       const host = this.hosts.get(seatStage(id));
       if (host) this.spec.open(id, host);
+    }
+  }
+
+  /**
+   * `SetPlayerMark[id, mark, value]` — the two marks a cutscene watches.
+   *
+   * The status poll resends every visible `@` mark on every living seat five
+   * times a second (`RoomView`'s 200 ms `refreshStatusSkills`), so this runs
+   * about forty times a second on an eight-seat table and has to be cheap:
+   * two string compares against `WATCHED_MARKS` and nothing else for every mark
+   * that is not one of the two. `RoomStore` does its own comparison for its own
+   * reasons; this one cannot borrow it, because by the time the store has
+   * decided the value did not change it has also forgotten what it was.
+   */
+  private onMark(d: [number, string, unknown]): void {
+    if (!Array.isArray(d)) return;
+    const [id, mark, value] = d;
+    if (!WATCHED_MARKS.includes(mark)) return;
+    const key = `${id}:${mark}`;
+    const was = this.seen.get(key);
+    // The engine drops a mark by setting it to 0 or nil; remember it as absent
+    // rather than as the number zero, or 潜龙 being taken off a dying 曹髦 and
+    // handed back would read as a climb from 0 and replay every threshold.
+    if (value === 0 || value == null) this.seen.delete(key);
+    else this.seen.set(key, value);
+    const scene = marked(mark, was, value);
+    if (scene) this.cutscene(id, scene);
+  }
+
+  /**
+   * Draw one of the four, and ask the music to move.
+   *
+   * ONCE PER SEAT PER SCENE, FOR THE WHOLE SESSION. Every trigger already
+   * compares against a previous value, so a repeat should be impossible; this
+   * is the belt to that pair of braces, and it is cheap. The failure it exists
+   * to make unreachable is the expensive one — a reconnect, a remount, or a
+   * package that resends a property, turning the biggest moment in the game
+   * into a stutter.
+   *
+   * It records a scene that was SHOWN, not one that was decided: at `?pace=0`
+   * nothing is drawn at all, and a seat should not be marked as having had its
+   * moment because the table happened to be running unpaced when it arrived.
+   *
+   * The music is asked for through the same synthetic-command channel
+   * `Presents.tsx` uses for a thrown flower: this is not an engine event, the
+   * sound lane must not have to re-derive it, and `cues.ts` stays the one place
+   * that turns a moment into a noise. It is asked for only if something was
+   * actually drawn — at `?pace=0` the budget is 0, no scene is painted, and the
+   * soundtrack should not lurch for a scene nobody saw.
+   */
+  private cutscene(id: number, scene: Cutscene): void {
+    const once = `${id}:${scene.key}`;
+    if (this.played.has(once)) return;
+    const host = this.hosts.get(seatStage(id));
+    // A `sky` scene does not need a host — `Sky.place` falls back to the middle
+    // of the room — but a `seat` one does, and neither should throw without it.
+    if (!host && scene.scope === 'seat') return;
+    const ms = this.spec.cutscene(id, host, scene, this.face);
+    if (ms <= 0) return;
+    this.played.add(once);
+    // The music holds for exactly as long as the picture, which the scene has
+    // just told us; asking the budget a second time could disagree with it if
+    // the pace moved between the two calls.
+    if (scene.theme) roomAudio.notify('Cutscene', { theme: scene.theme, ms });
+  }
+
+  /**
+   * Fetch and decode the portraits a general may turn into.
+   *
+   * Called when a general appears at a seat, which is the top of the game. The
+   * browser caches the decoded bitmap, so by the time the scene asks for it as
+   * a `background-image` it is a cache hit and a paint rather than a fetch.
+   * Everything here is best-effort: a portrait that never arrives costs the
+   * scene its plate and nothing else.
+   */
+  private warmCutscene(general: string): void {
+    if (!CUTSCENE_GENERALS.has(general)) return;
+    for (const after of afterPortraits(general)) {
+      if (this.warmed.has(after)) continue;
+      this.warmed.add(after);
+      const url = this.face(after);
+      if (!url) continue;
+      try {
+        const img = new Image();
+        img.decoding = 'async';
+        img.src = url;
+        // `decode()` does the expensive half off the main thread's critical
+        // path. Rejection is normal — a cancelled load, a decode the browser
+        // declined — and means only that the scene pays for it later.
+        void img.decode?.().catch(() => undefined);
+      } catch { /* no `Image` in this environment; the plate goes without */ }
     }
   }
 
@@ -716,6 +870,9 @@ export class AnimBus {
     dropTableLayer(this.hosts.values().next().value);
     this.stages.clear();
     this.hosts.clear();
+    this.seen.clear();
+    this.played.clear();
+    this.warmed.clear();
     this.cue = null;
   }
 }

@@ -109,6 +109,26 @@ export function Harness() {
     [language, epoch],
   );
 
+  /**
+   * The fixture client, reachable from the console.
+   *
+   * `__fkInject('PropertyUpdate', [3, 'general', 'm_shi2__weiyan'])` puts one
+   * engine message into a REAL room — the real `RoomView`, the real store, the
+   * real `AnimBus`, the real asset manifest — which is how a moment the
+   * recorded stream does not contain can still be watched happening rather than
+   * asserted about. The four cutscenes are the reason it exists: none of the
+   * four generals is in the recording, and the alternative is playing games
+   * until one of them resolves a 使命技.
+   *
+   * Dev only. `harness.html` is not an entry in `vite.config.ts`, so this file
+   * is never built and never shipped.
+   */
+  useEffect(() => {
+    (window as unknown as { __fkInject?: unknown }).__fkInject =
+      (command: string, data: unknown) => client.inject(command, data);
+    return () => { Reflect.deleteProperty(window, '__fkInject'); };
+  }, [client]);
+
   const manifest = useMemo<AssetManifest>(() => {
     const src = (assetSource === 'fixture' ? fixtureManifest : devManifest) as unknown as AssetManifest;
     return { ...src, base: assetBase || (assetSource === 'fixture' ? src.base : '') };

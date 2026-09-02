@@ -26,8 +26,8 @@ export { GameAudio } from './GameAudio';
 export { RoomAudio, roomAudio } from './bus';
 export type { AudioStatus, SoundSource } from './bus';
 export {
-  cueFor, logEventCues, moveCues, animateCues, gameOverCues, presentCues, readPath, soundKey,
-  RANK_ORDER,
+  cueFor, logEventCues, moveCues, animateCues, gameOverCues, presentCues, quickChatCues,
+  readPath, soundKey, RANK_ORDER,
 } from './cues';
 export type { Beatmark, Cue, CueContext, Scene, SoundCue, SoundName, VoiceCue, VoiceRank } from './cues';
 export { DEFAULT_SETTINGS, readSettings, writeSettings, resetSettings } from './settings';

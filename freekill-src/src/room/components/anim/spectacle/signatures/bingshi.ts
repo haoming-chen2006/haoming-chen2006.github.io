@@ -631,6 +631,29 @@ export const BINGSHI: Readonly<Record<string, Motif>> = {
     hue: 'bone', hue2: 'blood', stance: 'reel', tempo: 'toll', n: 10, turn: 40, glyph: true,
   },
 
+  /* ------------------------------------------ 势魏延, after 忠傲 resolves ----
+   *
+   * Neither of these two is on anybody's character card, which is why the
+   * roster-wide sweep that gave all 537 skills a signature never saw them:
+   * `overview.json` lists what a general STARTS with, and 忠傲 hands these out
+   * at run time. They fire under their own names all the same, and they are the
+   * skills the two halves of 势魏延's cutscene name.
+   */
+
+  /**
+   * 狂骨 — damage somebody within distance 1 and heal or draw for it. At level
+   * two, upgraded by 忠傲 succeeding, it also buys an extra 杀 for a card.
+   *
+   * The whole skill is the reach: 距离1以内 is the man in front of him and
+   * nobody else, so `spread: 0.7` keeps every particle inside his own air.
+   * `recoil` because it is a two-beat thing — the blow lands and comes back as
+   * hp — and `swell`, because what returns goes into him.
+   */
+  m_shi__kuanggu: {
+    figure: 'ring', swarm: 'drop', flight: 'recoil', ground: 'wash',
+    hue: 'blood', hue2: 'bone', stance: 'swell', tempo: 'quick', n: 12, spread: 0.7, glyph: true,
+  },
+
   /* ---------------------------------------------------------- 势夏侯尚 ---- */
 
   /**

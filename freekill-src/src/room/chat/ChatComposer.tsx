@@ -24,13 +24,21 @@
  * that carries the new value, so there is no window for anything to get between
  * them and no frame to arrive late.
  */
-import { memo, useLayoutEffect, useRef, useState } from 'react';
+import { memo, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { ChatBudget } from './budget';
 import { insertToken, type EmojiResolver } from './emoji';
 import { EmojiGrid, EmojiToggle } from './EmojiPicker';
+import { QuickChatList, QuickChatToggle } from './QuickChatPicker';
+import { QUICK_SEND_BURST, QUICK_SEND_GAP_MS } from './quickchat';
+import type { QuickLine } from './useQuickChat';
 import './chat.css';
 
 /** `ChatBox.qml`'s `maximumLength: 300`. */
 export const CHAT_MAX = 300;
+
+/** Which picker is open above the input. `ChatBox.qml` closes each when the
+ *  other opens, because they are the same slot in the same column. */
+type Picker = 'none' | 'emoji' | 'quick';
 
 export interface ChatComposerProps {
   readonly ids: readonly string[];
@@ -38,15 +46,31 @@ export interface ChatComposerProps {
   /** Stable across renders, or the memo below stops working. */
   readonly onSend: (text: string) => void;
   readonly placeholder: string;
+  /** The 23 canned lines as the viewer's own general says them. Empty in a
+   *  build whose i18n has none, which removes the button. See `useQuickLines`. */
+  readonly quick: readonly QuickLine[];
+  /** The engine's own word for them: 快捷短语 / "quick chats". */
+  readonly quickLabel: string;
 }
 
 export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps) {
-  const { ids, resolve, onSend, placeholder } = props;
+  const { ids, resolve, onSend, placeholder, quick, quickLabel } = props;
   const inputRef = useRef<HTMLInputElement>(null);
   const [draft, setDraft] = useState('');
-  const [picking, setPicking] = useState(false);
+  const [picking, setPicking] = useState<Picker>('none');
   /** Where the caret goes once the draft this render carries is on screen. */
   const pendingCaret = useRef<number | null>(null);
+
+  /**
+   * The send-side limit on quick chats, which is manners rather than defence:
+   * it is `ChatBox.qml`'s own 1.5 s `opTimer`, and like it, all it does is grey
+   * the button out so a player can see they are going too fast. The limit that
+   * has to hold is in `useQuickChatVoice`, on every receiver.
+   */
+  const outgoing = useRef(new ChatBudget(QUICK_SEND_GAP_MS, QUICK_SEND_BURST));
+  const [cooling, setCooling] = useState(false);
+  const coolTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (coolTimer.current) clearTimeout(coolTimer.current); }, []);
 
   useLayoutEffect(() => {
     const caret = pendingCaret.current;
@@ -64,13 +88,26 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
     if (next.text === draft) return; // no room left; leave the caret alone
     pendingCaret.current = next.caret;
     setDraft(next.text);
-    setPicking(false);
+    setPicking('none');
+  };
+
+  /** A quick line is not inserted into the draft — it *is* the message. */
+  const say = (token: string): void => {
+    if (!outgoing.current.take('me', Date.now())) return;
+    onSend(token);
+    setPicking('none');
+    const wait = outgoing.current.waitMs('me', Date.now());
+    if (wait <= 0) return;
+    setCooling(true);
+    if (coolTimer.current) clearTimeout(coolTimer.current);
+    coolTimer.current = setTimeout(() => { coolTimer.current = null; setCooling(false); }, wait);
   };
 
   return (
     <>
       {/* Above the input, inside the panel — `ChatBox.qml`'s own placement. */}
-      {picking ? <EmojiGrid ids={ids} resolve={resolve} onPick={insert} /> : null}
+      {picking === 'emoji' ? <EmojiGrid ids={ids} resolve={resolve} onPick={insert} /> : null}
+      {picking === 'quick' ? <QuickChatList lines={quick} onPick={say} /> : null}
 
       <form
         className="fk-chat__input"
@@ -80,9 +117,9 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
           if (!t) return;
           onSend(t);
           setDraft('');
-          setPicking(false);
+          setPicking('none');
         }}
-        onKeyDown={(e) => { if (e.key === 'Escape') setPicking(false); }}
+        onKeyDown={(e) => { if (e.key === 'Escape') setPicking('none'); }}
       >
         <input
           ref={inputRef}
@@ -91,7 +128,19 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
           placeholder={placeholder}
           maxLength={CHAT_MAX}
         />
-        <EmojiToggle ids={ids} open={picking} onToggle={() => setPicking((v) => !v)} />
+        {quick.length ? (
+          <QuickChatToggle
+            label={quickLabel}
+            open={picking === 'quick'}
+            disabled={cooling}
+            onToggle={() => setPicking((v) => (v === 'quick' ? 'none' : 'quick'))}
+          />
+        ) : null}
+        <EmojiToggle
+          ids={ids}
+          open={picking === 'emoji'}
+          onToggle={() => setPicking((v) => (v === 'emoji' ? 'none' : 'emoji'))}
+        />
         <button type="submit" className="fk-btn" aria-label="send">➤</button>
       </form>
     </>

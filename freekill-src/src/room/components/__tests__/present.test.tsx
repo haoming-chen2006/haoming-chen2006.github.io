@@ -13,8 +13,11 @@
  *  * The badge placement, because it is the one piece of layout that reaches
  *    outside its own component. It is measured off the live seat elements, and
  *    it has to land under the portrait rather than on it.
+ *  * Whether the badge can be *found*, because that is what actually failed:
+ *    the feature shipped, worked, and was reported missing. See the last block.
  */
-import { describe, expect, it } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
 import type { AssetManifest } from '../../../contract/manifest';
 import type { ChatLine, RoomMode } from '../../../contract/views';
@@ -25,9 +28,10 @@ import { RoomStore } from '../../state/store';
 import { Presents } from '../Presents';
 import type { SeatRefs } from '../Indicators';
 import { photoHeight } from '../SeatRing';
+import { ChatBudget } from '../../chat/budget';
 import {
   decodePresent, encodePresent, isPresentText, rollKind,
-  PresentBudget, GIANT_EGG_CHANCE, RECEIVE_BURST, RECEIVE_GAP_MS,
+  GIANT_EGG_CHANCE, RECEIVE_BURST, RECEIVE_GAP_MS,
 } from '../present';
 
 /* ------------------------------------------------------------- the format */
@@ -88,7 +92,7 @@ describe('the present format', () => {
 
 describe('the throwing budget', () => {
   it('allows a burst, then makes you wait', () => {
-    const b = new PresentBudget(1000, 3);
+    const b = new ChatBudget(1000, 3);
     const t0 = 10_000;
     expect(b.take('a', t0)).toBe(true);
     expect(b.take('a', t0)).toBe(true);
@@ -98,7 +102,7 @@ describe('the throwing budget', () => {
   });
 
   it('refills one at a time', () => {
-    const b = new PresentBudget(1000, 2);
+    const b = new ChatBudget(1000, 2);
     const t0 = 10_000;
     b.take('a', t0);
     b.take('a', t0);
@@ -109,7 +113,7 @@ describe('the throwing budget', () => {
 
   it('never lets a long quiet spell bank more than the burst', () => {
     // Otherwise going away for ten minutes buys six hundred eggs.
-    const b = new PresentBudget(1000, 3);
+    const b = new ChatBudget(1000, 3);
     const t0 = 10_000;
     b.take('a', t0);
     let n = 0;
@@ -119,7 +123,7 @@ describe('the throwing budget', () => {
   });
 
   it('budgets each thrower separately', () => {
-    const b = new PresentBudget(1000, 1);
+    const b = new ChatBudget(1000, 1);
     expect(b.take('a', 0)).toBe(true);
     expect(b.take('a', 0)).toBe(false);
     expect(b.take('b', 0)).toBe(true);
@@ -129,7 +133,7 @@ describe('the throwing budget', () => {
     // The real griefing shape: one client ignores its own send limit and puts
     // a hundred chat rows on the wire in a second. Every other client refuses
     // to draw more than the burst until the gap has passed.
-    const b = new PresentBudget(RECEIVE_GAP_MS, RECEIVE_BURST);
+    const b = new ChatBudget(RECEIVE_GAP_MS, RECEIVE_BURST);
     let drawn = 0;
     for (let i = 0; i < 100; i += 1) if (b.take('griefer', 50_000 + i * 10)) drawn += 1;
     expect(drawn).toBe(RECEIVE_BURST);
@@ -207,5 +211,70 @@ describe('the throw badge', () => {
       </RoomProvider>,
     );
     expect(html).toBe('');
+  });
+});
+
+/* --------------------------------------------------------------- finding it */
+
+/**
+ * The part that actually failed.
+ *
+ * Everything above this block passed while the feature was, from the user's
+ * seat, missing: the badge was in the DOM, the art was on the server, and a
+ * 22 px circle at 42% opacity under a portrait is not something anybody finds.
+ * This is the guard on the fix — see the header on `HINT_KEY` in `Presents.tsx`.
+ */
+const badgeRule = (): string => {
+  const css = readFileSync(new URL('../present.css', import.meta.url), 'utf8');
+  return /\.fk-present-badge__btn \{([\s\S]*?)\n\}/.exec(css)?.[1] ?? '';
+};
+
+/** A `window` with a localStorage that answers, since the tests render on the
+ *  server and `hintWanted` reads one. */
+function stubWindow(found: boolean): void {
+  const store = new Map<string, string>(found ? [['fk.present.found', '1']] : []);
+  vi.stubGlobal('window', {
+    localStorage: {
+      getItem: (k: string) => store.get(k) ?? null,
+      setItem: (k: string, v: string) => { store.set(k, v); },
+    },
+  });
+}
+
+describe('finding the badge at all', () => {
+  afterEach(() => { vi.unstubAllGlobals(); });
+
+  it('is legible before anybody hovers it', () => {
+    const rule = badgeRule();
+    expect(Number(/opacity:\s*([\d.]+)/.exec(rule)?.[1])).toBeGreaterThanOrEqual(0.8);
+    expect(Number(/width:\s*(\d+)px/.exec(rule)?.[1])).toBeGreaterThanOrEqual(26);
+    // A gold rim, so it reads as a control rather than as a smudge on the felt.
+    expect(rule).toMatch(/border:[^;]*var\(--fk-gold\)/);
+  });
+
+  it('glows once for a browser that has never opened one', () => {
+    stubWindow(false);
+    expect(table('play', 1, [1, 2, 3])).toContain('fk-present-badge__btn--hint');
+  });
+
+  it('never glows again once somebody has found it', () => {
+    stubWindow(true);
+    expect(table('play', 1, [1, 2, 3])).not.toContain('fk-present-badge__btn--hint');
+  });
+
+  it('says what it offers, in the engine\'s own words, in both languages', () => {
+    // `stubLua.tr` is the identity, so this is the pair of keys rather than the
+    // pair of sentences — `zh_CN.lua:124` translates both.
+    stubWindow(true);
+    expect(table('play', 1, [1, 2])).toContain('Give Flower / Give Egg');
+  });
+
+  it('still takes no pointer event it was not offered', () => {
+    // The reason the badge is placed by this overlay and not by `Photo` is that
+    // nothing here may cover the table. A hint that changed that would be a
+    // worse bug than the one it fixes.
+    const css = readFileSync(new URL('../present.css', import.meta.url), 'utf8');
+    expect(/\.fk-presents \{([\s\S]*?)\n\}/.exec(css)?.[1]).toMatch(/pointer-events:\s*none/);
+    expect(/--hint \{([\s\S]*?)\n\}/.exec(css)?.[1]).not.toMatch(/pointer-events/);
   });
 });

@@ -1,0 +1,514 @@
+/* ============================================================ the cutscene ==
+ *
+ * The four moments the game stops for. See `cutscene.ts` for which four and why
+ * those and no others; this file is only what they look like.
+ *
+ * ONE SHAPE, FIVE BEATS, and the whole file is that sequence expressed as
+ * percentages of `--fk-spec-ms` so it keeps its proportions at any pace:
+ *
+ *    0%  the room goes dark from the seat outward and the light lines leave it
+ *   12%  the character's own word lands, brushed across the whole room
+ *   22%  the plate arrives — the face the table has been looking at all game
+ *   44%  it TURNS OVER. Where the engine said the seat became somebody else,
+ *        this is the moment: the old portrait falls away edge-first and the new
+ *        one is under it. Where it did not, the plate simply holds and the
+ *        light behind it changes.
+ *   58%  the title, the skill that was gained, and the line he says
+ *  100%  everything leaves upward and the room comes back
+ *
+ * WHY THE FACE IS A BACKGROUND AND NOT AN `<img>`. `paint.ts` builds every part
+ * as an `<i>` with `textContent` or an authored SVG constant, and that is a rule
+ * worth more than a picture: nothing that came off the wire ever reaches
+ * `innerHTML`. A portrait arrives instead as `--fk-cut-face`, a custom property
+ * whose value `plan.ts`'s `faceUrl` has already restricted to a relative,
+ * content-hashed path out of the asset manifest.
+ *
+ * PERFORMANCE. Every animated property below is `opacity`, `transform` or
+ * `clip-path` — never `width`, `top`, `box-shadow`, or a `filter` on anything
+ * bigger than a portrait, all of which put a room-sized repaint on the main
+ * thread on every frame they interpolate. The two room-sized layers, `__dim`
+ * and `__rays`, animate opacity and (for the rays) a rotation; their gradients
+ * are painted once and composited after that. The face plates are the only
+ * decoded images, they are 16 kB webp, and `AnimBus` has already decoded the
+ * one it is about to swap in — see `warmCutscene` there.
+ *
+ * Measured, rather than asserted: six scenes fired back to back in a real room
+ * moved a 50 ms timer's worst overshoot from 2 ms (idle) to 3 ms, cold, with
+ * the portraits decoding inside the window. The table was rescued from an 11 s
+ * freeze once; nothing here is allowed to give it back.
+ */
+
+/* ------------------------------------------------------------------- root */
+
+.fk-cut {
+  /* Above `.fk-spec--ult`'s 2. Two big moments can genuinely coincide — 雄姿
+     sends `InvokeUltSkill` and this scene on the same beat — and when they do
+     the scene is the one that must be on top. */
+  z-index: 3;
+  /* One easing for everything that arrives, one for everything that leaves.
+     Named here so a beat can be moved without hunting through twenty blocks. */
+  --fk-cut-in: cubic-bezier(0.16, 0.86, 0.24, 1);
+  --fk-cut-out: cubic-bezier(0.5, 0, 0.75, 0);
+  /* The plate's own size — and, through it, the whole vertical rhythm.
+   *
+   * OFF THE ROOM, NOT THE VIEWPORT. `--fk-spec-w/h` is the measured rectangle
+   * of `.fk-room`, which is what a `sky` burst is drawn over; `vmin` is the
+   * window, and the two are not the same thing wherever the page has chrome
+   * beside the table. Sized in `vmin` the stack was correctly centred in the
+   * browser and two thirds of the way down the room, which is exactly the class
+   * of mistake that only shows up in a screenshot of the real thing.
+   *
+   * The height term keeps the composition inside a short room; the width term
+   * keeps the plate from swallowing a wide one; the clamp keeps it legible on a
+   * phone and stops it becoming a poster on a 4K display. */
+  --fk-cut-plate: clamp(110px, min(var(--fk-spec-h) * 0.34, var(--fk-spec-w) * 0.20), 250px);
+}
+
+/* A scene drawn over one seat rather than the room. Nothing uses it today —
+   every one of the four turned out to be a whole-table moment — and it is kept
+   because `Cutscene.scope` is the knob a fifth would reach for, and because a
+   scope with no styles is a scope that fails silently. */
+.fk-cut--seat {
+  z-index: 3;
+}
+
+/* 决进 · 曹髦. The one scene of the four with a published description, and what
+   it describes is a change of temperature: the 阴 painting is the council
+   chamber under 电闪雷鸣、骤雨斜侵, and the 阳 painting is him alone on a war
+   chariot in 明亮的暖色调 with the gold 英魂 of his house behind him. So the
+   room starts cold and catches — 整个牌局背景也将燃起熊熊的火焰特效 — on the
+   same frame the portrait turns over.
+ *
+ * TWO PSEUDO-ELEMENTS, NOT A `filter`. `hue-rotate` on a layer this size is a
+ * full-screen repaint on every frame it interpolates, on a main thread that is
+ * also running a Lua VM. Two stacked gradients cross-fading by `opacity` is the
+ * same picture as a pair of composited layers, and the pseudo-elements cost no
+ * DOM: `plan.ts` still emits exactly one node. */
+.fk-cut--caomao-juejin .fk-cut__dim {
+  background: none;
+}
+
+.fk-cut--caomao-juejin .fk-cut__dim::before,
+.fk-cut--caomao-juejin .fk-cut__dim::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+}
+
+/* 阴 — the council chamber, storm-lit and closing in. */
+.fk-cut--caomao-juejin .fk-cut__dim::before {
+  background:
+    radial-gradient(60% 46% at var(--fk-spec-ox) var(--fk-spec-oy),
+      rgba(84, 108, 220, 0.24), transparent 70%),
+    radial-gradient(130% 100% at 50% 0%,
+      rgba(10, 14, 34, 0.62), rgba(2, 3, 8, 0.92) 66%);
+  animation: fk-cut-yin var(--fk-spec-ms) linear both;
+}
+
+/* 阳 — the whole table alight. */
+.fk-cut--caomao-juejin .fk-cut__dim::after {
+  background:
+    radial-gradient(70% 52% at var(--fk-spec-ox) var(--fk-spec-oy),
+      rgba(255, 128, 36, 0.34), transparent 72%),
+    radial-gradient(130% 100% at 50% 100%,
+      rgba(84, 24, 6, 0.66), rgba(10, 4, 2, 0.9) 70%);
+  animation: fk-cut-yang var(--fk-spec-ms) linear both;
+}
+
+@keyframes fk-cut-yin {
+  0% { opacity: 0; }
+  10%, 42% { opacity: 1; }
+  /* Goes out over the wipe, which runs 42% -> 60%. */
+  60%, 100% { opacity: 0; }
+}
+
+@keyframes fk-cut-yang {
+  0%, 42% { opacity: 0; }
+  60%, 84% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* ---------------------------------------------------------------- the dark */
+
+.fk-cut__dim {
+  inset: 0;
+  background:
+    radial-gradient(58% 44% at var(--fk-spec-ox) var(--fk-spec-oy),
+      rgba(var(--fk-spec-rgb), 0.20), transparent 72%),
+    radial-gradient(130% 100% at var(--fk-spec-ox) var(--fk-spec-oy),
+      rgba(4, 6, 10, 0.42), rgba(2, 3, 6, 0.86) 68%);
+  animation: fk-cut-dim var(--fk-spec-ms) ease-in-out both;
+}
+
+@keyframes fk-cut-dim {
+  0% { opacity: 0; }
+  10% { opacity: 1; }
+  84% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* A fan of light from behind the seat that fired, turning slowly. `conic` and
+   not a stack of skewed divs: one element, one paint, and both the rotation and
+   the fade run on the compositor.
+ *
+ * 130vmax IS A BUDGET, NOT A LAYOUT. This is the largest single surface the
+ * animation lane creates, and a raster layer costs width x height x 4 bytes at
+ * the device pixel ratio whatever is drawn on it — at 200vmax on a 2x display
+ * that is over 200 MB of texture for a fan whose own mask hides most of it. The
+ * seat can be anywhere in the room, so the fan has to reach the opposite corner
+ * from a corner: the room diagonal is at most about 1.42 vmax-lengths, and
+ * 130vmax covers that with room to spare. */
+.fk-cut__rays {
+  left: var(--fk-spec-ox);
+  top: var(--fk-spec-oy);
+  width: 130vmax;
+  height: 130vmax;
+  margin: -65vmax 0 0 -65vmax;
+  background: repeating-conic-gradient(from 0deg at 50% 50%,
+    rgba(var(--fk-spec-lit), 0.075) 0deg 3deg,
+    transparent 3deg 13deg);
+  mask-image: radial-gradient(closest-side, rgba(0, 0, 0, 0.9), transparent 62%);
+  animation: fk-cut-rays var(--fk-spec-ms) linear both;
+}
+
+@keyframes fk-cut-rays {
+  0% { opacity: 0; transform: rotate(0deg) scale(0.55); }
+  16% { opacity: 1; }
+  80% { opacity: 0.8; }
+  100% { opacity: 0; transform: rotate(26deg) scale(1); }
+}
+
+/* Speed lines out of the seat, exactly as the ult burst draws them — this is
+   the same room and the same event, one size larger. */
+.fk-cut__streak {
+  left: var(--fk-spec-ox);
+  top: var(--fk-spec-oy);
+  width: 2px;
+  height: 44vmax;
+  background: linear-gradient(rgba(var(--fk-spec-lit), 0.6), transparent 58%);
+  --fk-a: calc(var(--fk-i) * 360deg / var(--fk-n) + var(--fk-j) * 11deg);
+  animation: fk-cut-streak calc(var(--fk-spec-ms) * 0.42) cubic-bezier(0.1, 0.8, 0.2, 1) both;
+  animation-delay: calc(var(--fk-i) * var(--fk-spec-ms) * 0.006);
+}
+
+@keyframes fk-cut-streak {
+  0% { opacity: 0; transform: translate(-50%, -50%) rotate(var(--fk-a)) translateY(-3vmax) scaleY(0.08); }
+  22% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, -50%) rotate(var(--fk-a)) translateY(-34vmax) scaleY(1); }
+}
+
+/* --------------------------------------------------------------- the word */
+
+/* The skill's own first character, across the whole room. Free: the glyph is
+   already in the shipped font subset because the plaque under every ordinary
+   invocation prints the same string. */
+.fk-cut__brush {
+  left: 50%;
+  top: 50%;
+  font-weight: 900;
+  font-size: calc(min(var(--fk-spec-h), var(--fk-spec-w)) * 0.86);
+  line-height: 1;
+  color: rgba(var(--fk-spec-rgb), 0.13);
+  animation: fk-cut-brush var(--fk-spec-ms) var(--fk-cut-in) both;
+}
+
+@keyframes fk-cut-brush {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(1.5) rotate(-5deg); }
+  18% { opacity: 1; transform: translate(-50%, -50%) scale(1) rotate(0deg); }
+  84% { opacity: 1; transform: translate(-50%, -50%) scale(1.02) rotate(0deg); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1.1) rotate(3deg); }
+}
+
+/* -------------------------------------------------------------- the plate */
+
+/* The portrait, framed. Two of these stack when the seat became somebody else;
+   the second is on top and takes the first's place at the turn. */
+.fk-cut__face {
+  left: 50%;
+  top: calc(50% - var(--fk-cut-plate) * 0.38);
+  width: var(--fk-cut-plate);
+  height: calc(var(--fk-cut-plate) * 1.28);
+  margin: 0;
+  border-radius: 5px;
+  background-image: var(--fk-cut-face, none);
+  background-size: cover;
+  background-position: center top;
+  box-shadow:
+    0 0 0 2px rgba(var(--fk-spec-rim), 0.9),
+    0 0 0 5px rgba(var(--fk-spec-seal), 0.9),
+    0 18px 46px rgba(0, 0, 0, 0.72);
+  animation: fk-cut-face var(--fk-spec-ms) var(--fk-cut-in) both;
+}
+
+@keyframes fk-cut-face {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(1.55); }
+  26% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  86% { opacity: 1; transform: translate(-50%, -50%) scale(1.03); }
+  100% { opacity: 0; transform: translate(-50%, calc(-50% - 30px)) scale(1.06); }
+}
+
+/* THE TURN. `m_shi__weiyan` -> `m_shi2__weiyan`, or `m_shi3__weiyan`; 势周瑜 ->
+   `m_shi2__zhouyu`. The engine said the seat is somebody else now, so the new
+   face wipes across the old one from the leading edge rather than dissolving
+   into it — a dissolve reads as a lighting change, a wipe reads as a change of
+   person, and this is the only skill family in the build where it is one. */
+.fk-cut__face--after {
+  background-image: var(--fk-cut-face2, none);
+  animation: fk-cut-face-after var(--fk-spec-ms) var(--fk-cut-in) both;
+}
+
+@keyframes fk-cut-face-after {
+  0%, 40% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1);
+    clip-path: inset(0 100% 0 0);
+  }
+  42% { opacity: 1; clip-path: inset(0 100% 0 0); }
+  60% { opacity: 1; transform: translate(-50%, -50%) scale(1); clip-path: inset(0 0 0 0); }
+  86% { opacity: 1; transform: translate(-50%, -50%) scale(1.03); clip-path: inset(0 0 0 0); }
+  100% { opacity: 0; transform: translate(-50%, calc(-50% - 30px)) scale(1.06); clip-path: inset(0 0 0 0); }
+}
+
+/* The seam, riding the wipe. Only drawn when there is a wipe to ride. */
+.fk-cut--turns .fk-cut__flare {
+  left: 50%;
+  top: calc(50% - var(--fk-cut-plate) * 0.38);
+  width: calc(var(--fk-cut-plate) * 0.10);
+  height: calc(var(--fk-cut-plate) * 1.42);
+  background: linear-gradient(90deg,
+    transparent, rgba(var(--fk-spec-lit2), 0.95), transparent);
+  animation: fk-cut-seam var(--fk-spec-ms) var(--fk-cut-in) both;
+}
+
+@keyframes fk-cut-seam {
+  0%, 40% { opacity: 0; transform: translate(calc(-50% - var(--fk-cut-plate) * 0.5), -50%); }
+  44% { opacity: 1; }
+  60% { opacity: 0; transform: translate(calc(-50% + var(--fk-cut-plate) * 0.5), -50%); }
+  100% { opacity: 0; transform: translate(calc(-50% + var(--fk-cut-plate) * 0.5), -50%); }
+}
+
+/* Where nothing turns over, the same node is a single pulse of light off the
+   seat at the moment the words land. */
+.fk-cut__flare {
+  left: var(--fk-spec-ox);
+  top: var(--fk-spec-oy);
+  width: 14vmax;
+  height: 14vmax;
+  margin: -7vmax 0 0 -7vmax;
+  border-radius: 50%;
+  border: 2px solid rgba(var(--fk-spec-lit), 0.8);
+  animation: fk-cut-ring calc(var(--fk-spec-ms) * 0.5) cubic-bezier(0.05, 0.85, 0.2, 1) both;
+}
+
+@keyframes fk-cut-ring {
+  0% { opacity: 0; transform: scale(0.05); }
+  12% { opacity: 1; }
+  100% { opacity: 0; transform: scale(5); }
+}
+
+/* A rule under the plate, drawn outward from the middle. It is what the title
+   sits on, and it is what stops the words floating in an empty room. */
+.fk-cut__rule {
+  left: 50%;
+  top: calc(50% + var(--fk-cut-plate) * 0.36);
+  width: min(calc(var(--fk-spec-w) * 0.78), 720px);
+  height: 2px;
+  background: linear-gradient(90deg,
+    transparent, rgba(var(--fk-spec-rim), 0.85) 22%,
+    rgba(var(--fk-spec-lit), 0.95) 50%,
+    rgba(var(--fk-spec-rim), 0.85) 78%, transparent);
+  animation: fk-cut-rule var(--fk-spec-ms) var(--fk-cut-in) both;
+}
+
+@keyframes fk-cut-rule {
+  0% { opacity: 0; transform: translate(-50%, -50%) scaleX(0); }
+  34% { opacity: 1; transform: translate(-50%, -50%) scaleX(1); }
+  86% { opacity: 1; transform: translate(-50%, -50%) scaleX(1); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scaleX(1); }
+}
+
+/* -------------------------------------------------------------- the words */
+
+.fk-cut__title {
+  left: 50%;
+  top: calc(50% + var(--fk-cut-plate) * 0.56);
+  /* Wraps rather than `nowrap`. Two Han characters never come close, but the
+     same key in an English room is "Majestic Bearing", and a title that runs
+     off the side of a phone is worse than one on two lines. */
+  max-width: calc(var(--fk-spec-w) * 0.9);
+  text-align: center;
+  font-weight: 900;
+  font-size: clamp(26px, calc(var(--fk-cut-plate) * 0.30), 78px);
+  line-height: 1.08;
+  letter-spacing: 0.1em;
+  color: #fffaf0;
+  text-shadow:
+    0 2px 0 #1c1408, 0 -2px 0 #1c1408, 2px 0 0 #1c1408, -2px 0 0 #1c1408,
+    0 0 30px rgba(var(--fk-spec-rgb), 0.95),
+    0 0 72px rgba(var(--fk-spec-lit), 0.6);
+  animation: fk-cut-title var(--fk-spec-ms) var(--fk-cut-in) both;
+}
+
+@keyframes fk-cut-title {
+  0%, 46% { opacity: 0; transform: translate(-50%, calc(-50% + 26px)) scale(1.5); }
+  62% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  86% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, calc(-50% - 22px)) scale(1.04); }
+}
+
+/* What the character came away with — the skill gained, upgraded or unlocked.
+   An engine skill name, because FreeKill has no string for "mission complete"
+   and naming the skill that actually changed says more anyway. */
+.fk-cut__gain {
+  left: 50%;
+  top: calc(50% + var(--fk-cut-plate) * 0.88);
+  max-width: calc(var(--fk-spec-w) * 0.86);
+  text-align: center;
+  font-weight: 700;
+  font-size: clamp(13px, calc(var(--fk-cut-plate) * 0.095), 24px);
+  letter-spacing: 0.42em;
+  /* The trailing letter-space pushes the text half a character left of centre;
+     taking it back is the difference between centred and nearly centred. */
+  text-indent: 0.42em;
+  color: rgba(var(--fk-spec-lit2), 0.95);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+  animation: fk-cut-gain var(--fk-spec-ms) var(--fk-cut-in) both;
+}
+
+@keyframes fk-cut-gain {
+  0%, 56% { opacity: 0; transform: translate(-50%, -50%) scale(0.94); }
+  70% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  86% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, calc(-50% - 14px)) scale(1); }
+}
+
+/* His own words. `$zhongao4`, `$xiongzi3`, `$shenpeij1` — engine keys with
+   prose behind them, and the voice lane is speaking the same line. Wrapped
+   rather than `nowrap`: these run to sixteen characters of Chinese and rather
+   more of English, and a line that runs off a phone is a line nobody read. */
+.fk-cut__line {
+  left: 50%;
+  top: calc(50% + var(--fk-cut-plate) * 1.09);
+  width: min(calc(var(--fk-spec-w) * 0.82), 760px);
+  text-align: center;
+  font-size: clamp(12px, calc(var(--fk-cut-plate) * 0.082), 21px);
+  line-height: 1.5;
+  letter-spacing: 0.06em;
+  color: rgba(var(--fk-spec-lit), 0.9);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.95);
+  animation: fk-cut-line var(--fk-spec-ms) var(--fk-cut-in) both;
+}
+
+@keyframes fk-cut-line {
+  0%, 62% { opacity: 0; transform: translate(-50%, -50%); }
+  76% { opacity: 1; transform: translate(-50%, calc(-50% - 4px)); }
+  88% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, calc(-50% - 14px)); }
+}
+
+/* ------------------------------------------------------------- the small one
+ *
+ * `scope: 'seat'` — the same vocabulary drawn over one photo instead of the
+ * room, with none of the room-scale layers, because `plan.ts` does not emit
+ * them for this scope.
+ *
+ * NOTHING USES IT TODAY. It was written for 潜龙's lower thresholds, and the
+ * research said not to: every published description of 曹髦's presentation
+ * attaches to 99 alone, and 99 arrives as 决进, which is a transformation and
+ * takes the room. It is kept rather than deleted because it is the shape a
+ * fifth scene would want — a moment that belongs to one player rather than to
+ * the table — and because `Cutscene.scope` offering a value with no styles
+ * behind it would fail silently. */
+
+.fk-cut--seat .fk-cut__title {
+  top: calc(50% - var(--fk-spec-h) * 0.16);
+  font-size: calc(var(--fk-spec-w) * 0.26);
+  letter-spacing: 0.04em;
+  text-shadow:
+    0 1px 0 #1c1408, 0 -1px 0 #1c1408, 1px 0 0 #1c1408, -1px 0 0 #1c1408,
+    0 0 16px rgba(var(--fk-spec-rgb), 0.9);
+}
+
+.fk-cut--seat .fk-cut__gain {
+  top: calc(50% + var(--fk-spec-h) * 0.12);
+  font-size: calc(var(--fk-spec-w) * 0.15);
+  letter-spacing: 0.16em;
+  text-indent: 0.16em;
+}
+
+.fk-cut--seat .fk-cut__flare {
+  left: 50%;
+  top: 50%;
+  width: calc(var(--fk-spec-w) * 1.1);
+  height: calc(var(--fk-spec-w) * 1.1);
+  margin: calc(var(--fk-spec-w) * -0.55) 0 0 calc(var(--fk-spec-w) * -0.55);
+}
+
+/* ------------------------------------------------------- the seat's own lift
+ *
+ * `Burst.host` is `lift`, which `spectacle.css` already styles on the portrait
+ * itself. Nothing to add here; it is named so a reader looking for what the
+ * seat does during a scene finds the answer rather than concluding it does
+ * nothing. */
+
+/* --------------------------------------------------------- reduced motion */
+
+@media (prefers-reduced-motion: reduce) {
+  /*
+   * `spectacle.css` collapses every animation in the lane to 1 ms here and
+   * keeps only the words at full duration — see its own reduced-motion block,
+   * and the note there about why the root is exempt. This follows the same
+   * rule, with one addition: for a scene whose whole content is that the seat
+   * became somebody else, the FACE is a word.
+   *
+   * `!important` for the same reason the plaque needs it: the collapse above is
+   * `!important` and would otherwise win on duration whatever name is set here.
+   */
+  /* Two classes, because `.fk-spec i { display: block }` in `spectacle.css` is
+     one class and one type and would otherwise win. */
+  .fk-cut .fk-cut__rays,
+  .fk-cut .fk-cut__streak,
+  .fk-cut .fk-cut__flare {
+    display: none;
+  }
+
+  .fk-cut i.fk-cut__dim,
+  .fk-cut i.fk-cut__brush,
+  .fk-cut i.fk-cut__face,
+  .fk-cut i.fk-cut__rule,
+  .fk-cut i.fk-cut__title,
+  .fk-cut i.fk-cut__gain,
+  .fk-cut i.fk-cut__line {
+    animation: fk-cut-hold var(--fk-spec-ms) linear both !important;
+  }
+
+  /* The wipe is the one piece of motion kept, because it IS the information:
+     without it the two portraits are one portrait that changed its lighting.
+     It is a `clip-path` on a 250 px element and it does not travel. */
+  .fk-cut i.fk-cut__face--after {
+    animation: fk-cut-hold-wipe var(--fk-spec-ms) linear both !important;
+  }
+
+  .fk-cut__brush,
+  .fk-cut__face,
+  .fk-cut__rule,
+  .fk-cut__title,
+  .fk-cut__gain,
+  .fk-cut__line {
+    transform: translate(-50%, -50%);
+  }
+}
+
+@keyframes fk-cut-hold {
+  0% { opacity: 0; }
+  12% { opacity: 1; }
+  88% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@keyframes fk-cut-hold-wipe {
+  0%, 44% { opacity: 0; clip-path: inset(0 100% 0 0); }
+  46% { opacity: 1; clip-path: inset(0 100% 0 0); }
+  60%, 88% { opacity: 1; clip-path: inset(0 0 0 0); }
+  100% { opacity: 0; clip-path: inset(0 0 0 0); }
+}

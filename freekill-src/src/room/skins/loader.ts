@@ -154,6 +154,21 @@ function eligible(entry: SkinEntry, mode: SkinMode): boolean {
 }
 
 /**
+ * A pin meaning "this general wears the game's own portrait".
+ *
+ * Distinct from no pin at all, which means "whatever the catalogue offers
+ * first", and distinct from `mode: 'off'`, which is the same answer for every
+ * general at once. The picker needs all three: somebody who likes the artwork in
+ * general and dislikes what the pack chose for one character has no other way to
+ * say so, and switching the whole feature off to escape one portrait is not a
+ * setting, it is a workaround.
+ *
+ * It is a bare word rather than a URL, and every real pin is an absolute
+ * `https://` URL, so the two can never collide in the stored map.
+ */
+export const NO_SKIN = 'none';
+
+/**
  * The skin to try for a general, or `undefined` to leave the default portrait
  * alone.
  *
@@ -162,16 +177,17 @@ function eligible(entry: SkinEntry, mode: SkinMode): boolean {
  * the same on every render and across a reconnect -- a portrait that reshuffles
  * itself mid-game reads as a bug.
  *
- * `preferred` lets a caller pin one specific URL (a future skin picker); an
- * unusable or ineligible pin falls through to the normal choice rather than
- * leaving the seat with nothing.
+ * `preferred` lets a caller pin one specific URL (`SkinPicker.tsx`); an unusable
+ * or ineligible pin falls through to the normal choice rather than leaving the
+ * seat with nothing, so a pinned URL that later 404s degrades to the next skin
+ * rather than to no skin.
  */
 export function pickSkin(
   general: string | undefined,
   mode: SkinMode,
   preferred?: string,
 ): ResolvedSkin | undefined {
-  if (!general || mode === 'off') return undefined;
+  if (!general || mode === 'off' || preferred === NO_SKIN) return undefined;
   const entries = SKIN_CATALOG[general];
   if (!entries?.length) return undefined;
 

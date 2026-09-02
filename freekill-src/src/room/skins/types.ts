@@ -9,9 +9,10 @@ export interface SkinEntry {
 /**
  * How much third-party artwork the player has agreed to load.
  *
- * `off` is the default, and deliberately so -- see README.md. Skins pull every
- * viewer's browser to a host we do not run, and the video tier is ~10x the
- * bytes of a still. Both are the player's call to make, not ours.
+ * `all` is the default -- see `policy.ts` for why, and for the two costs that
+ * make it a setting rather than a constant. Skins pull every viewer's browser to
+ * a host we do not run, and the video tier is ~10x the bytes of a still. Both
+ * stay the player's call to make, one click away in `SkinPicker.tsx`.
  */
 export type SkinMode = 'off' | 'static' | 'all';
 

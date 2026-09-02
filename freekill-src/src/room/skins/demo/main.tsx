@@ -4,9 +4,10 @@
  *
  *     npm run dev   ->   /src/room/skins/demo/index.html
  *
- * It exists because the feature is off by default and the table integration is
- * a one-line diff owned by another lane, so there would otherwise be no way to
- * look at this before deciding whether to turn it on. It renders real seats --
+ * It exists to look at a lot of the catalogue at once, which the table cannot
+ * do: eight seats show eight generals, and the interesting questions -- how much
+ * of the catalogue actually resolves, what a host outage costs, how the tiers
+ * differ -- are questions about a hundred of them. It renders real seats --
  * the real `.fk-photo` markup and `room.css`, the real portraits out of
  * `asset-manifest.json` -- with `<SkinLayer>` over them, exactly as `Photo.tsx`
  * would. Switching the mode switches what the seats load, live.

@@ -1,0 +1,40 @@
+{
+  "$comment": [
+    "The skin picker's own words, in both languages.",
+    "",
+    "Everything the room says normally comes from the engine's own translation",
+    "tables, and `src/room/__tests__/i18n.test.ts` enforces that: a `lua.tr('...')`",
+    "key that the engine does not define fails the suite. The picker uses those keys",
+    "wherever they exist — `Change Skin` (换肤), `default`, `Illustrator` — but the",
+    "engine has no word for 'stills only' or for what a third-party image host learns",
+    "about you, because upstream ships its artwork in the client and has no such",
+    "setting to describe.",
+    "",
+    "So the handful it has to say for itself lives here, following the precedent set",
+    "by `src/room/audio/labels.json` and for the same reason: JSON rather than a `.ts`",
+    "module, because `src/i18n/__tests__/coverage.test.ts` fails the suite for a",
+    "Chinese string literal anywhere under `src/**/*.ts(x)`, and it is right to — a",
+    "hardcoded string is a string the language toggle cannot reach. This file is read",
+    "through the same `useLanguage()` subscription the toggle drives, so switching",
+    "language repaints it like everything else.",
+    "",
+    "Every Han here is already in the committed font subset (`scripts/glyphset.mjs`",
+    "walks `src/**/*.json` precisely so it can be), so no font rebuild is owed.",
+    "",
+    "To adopt: move each row into `src/i18n/ui.ts` under the same key, delete this",
+    "file, and swap `label(lang, k)` for `t(k)` in SkinPicker.tsx."
+  ],
+  "skins.mode.off": { "zh_CN": "不使用皮肤", "en_US": "No skins" },
+  "skins.mode.static": { "zh_CN": "仅静态皮肤", "en_US": "Stills only" },
+  "skins.mode.all": { "zh_CN": "静态与动态皮肤", "en_US": "Stills and video" },
+  "skins.still": { "zh_CN": "静态", "en_US": "Still" },
+  "skins.video": { "zh_CN": "动态", "en_US": "Video" },
+  "skins.note": {
+    "zh_CN": "皮肤由第三方服务器加载，会向对方暴露你的 IP 地址。",
+    "en_US": "Skins are fetched from servers we do not run, which will see your IP address."
+  },
+  "skins.hint": {
+    "zh_CN": "只有你能看到，随时可以更改；其他座位不受影响。",
+    "en_US": "Only you see this. Change it whenever you like — no other seat is affected."
+  }
+}

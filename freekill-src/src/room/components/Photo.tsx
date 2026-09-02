@@ -16,7 +16,7 @@ import { useRoom } from '../RoomContext';
 import type { LtkLua } from '../ltk/LtkLua';
 import { seatChar } from '../ltk/prompt';
 import { CARD_TYPE, PHASE } from '../ltk/types';
-import { SkinLayer, useSkinMode } from '../skins';
+import { SkinLayer, useSkinChoices, useSkinMode } from '../skins';
 import type { FocusState, PlayerState } from '../state/types';
 import { seatStage } from './anim/bus';
 import { EffectStage, useAnimBus } from './anim/Stage';
@@ -48,6 +48,10 @@ export const Photo = memo(function Photo(props: PhotoProps) {
   const { lua, assets } = useRoom();
   const emoji = useEmoji();
   const [skinMode] = useSkinMode();
+  // Both hooks are window-event subscriptions over one `localStorage` key, not
+  // store reads, so neither puts this seat back in the path of the 5 Hz commit
+  // that `memo` above exists to bail out of. See `skins/choice.ts`.
+  const [skinChoices] = useSkinChoices();
 
   const general = player.general;
   const art = general ? assets.generalPortrait(general, generalPack(lua, general)) : undefined;
@@ -103,9 +107,16 @@ export const Photo = memo(function Photo(props: PhotoProps) {
         {art
           ? <img className="fk-photo__art" src={art} alt="" draggable={false} />
           : <div className="fk-photo__art fk-photo__art--none">{displayName.slice(0, 1) || '?'}</div>}
-        {/* Ships defaulted to `off` for licensing reasons: this renders nothing
-            until a player opts in. See `src/room/skins/policy.ts`. */}
-        <SkinLayer general={player.general} mode={skinMode} className="fk-photo__art" />
+        {/* Alternate artwork, on by default and switchable from the picker in
+            the corner. `preferred` is this browser's pin for this general and
+            reaches nothing but the overlay: no other seat sees it, and it never
+            leaves the tab. See `src/room/skins/`. */}
+        <SkinLayer
+          general={player.general}
+          mode={skinMode}
+          preferred={skinChoices[player.general]}
+          className="fk-photo__art"
+        />
 
         <div className="fk-photo__scrim" />
 

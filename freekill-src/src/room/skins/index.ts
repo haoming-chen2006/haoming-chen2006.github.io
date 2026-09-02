@@ -60,11 +60,33 @@
  *
  * ── THEREFORE ─────────────────────────────────────────────────────────────────
  *
- * The default is `off`. Everything here is built, tested, and ready; the switch
- * is `writeSkinMode('static' | 'all')`. Turning it on is an operator decision
- * that should be made with the licensing paragraph above in hand.
+ * The default was `off` while that decision was open. The operator has now taken
+ * it, with the paragraph above in hand, and the default is `all`. What that
+ * changes is only the answer: the licensing exposure is the same exposure, the
+ * privacy cost is the same cost, and the way out is one click away in the
+ * picker's own panel rather than buried in a settings page — `off`, `static` and
+ * `all` sit under the artwork they buy, which is the only place a player is
+ * actually thinking about the question. See `policy.ts` and `SkinPicker.tsx`.
+ *
+ * ── WHAT A PLAYER SEES ────────────────────────────────────────────────────────
+ *
+ *   <SkinPicker general={mine} />   a chip in the room's corner. It opens itself
+ *                                   once, the first time this seat is given a
+ *                                   general with artwork, and stays reachable
+ *                                   for the rest of the game.
+ *   <SkinLayer general mode preferred />
+ *                                   the overlay `Photo` already drops over every
+ *                                   seat. `preferred` is this browser's pin.
+ *
+ * A pin is local to one browser and one viewer. It is written to `localStorage`,
+ * read back by every `SkinLayer` in the document, and reaches the engine, the
+ * store and the wire exactly never; the other seven seats cannot tell that it
+ * happened. `__tests__/skins.test.ts` enforces that by reading this directory's
+ * source, because "make it shared" is a one-line change that would look
+ * reasonable in review.
  */
 export { SkinLayer, type SkinLayerProps } from './SkinLayer';
+export { SkinPicker, skinName, resetSkinOffers, type SkinPickerProps } from './SkinPicker';
 export { useSkinMode } from './useSkinMode';
 export {
   pickSkin,
@@ -78,7 +100,17 @@ export {
   skinHealthSnapshot,
   DEADLINE_MS,
   FAILURE_THRESHOLD,
+  NO_SKIN,
 } from './loader';
 export { readSkinMode, writeSkinMode, DEFAULT_SKIN_MODE, SKIN_MODE_KEY } from './policy';
+export {
+  readSkinChoices,
+  writeSkinChoice,
+  clearSkinChoices,
+  useSkinChoices,
+  SKIN_CHOICE_KEY,
+  SKIN_CHOICE_EVENT,
+  type SkinChoices,
+} from './choice';
 export { SKIN_CATALOG, SKIN_HOSTS } from './catalog.generated';
 export { skinKind, isSkinMode, SKIN_MODES, type SkinMode, type SkinEntry, type ResolvedSkin } from './types';

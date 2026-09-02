@@ -18,7 +18,7 @@ import type { SceneChange, ItemData } from '../../contract/scene';
 import { CARD_AREA, type CardArea } from '../ltk/types';
 import { asLocalized, type Localized } from '../../i18n/localized';
 import type {
-  AgState, CardState, LogLine, PlayerState, RoomState, SceneState,
+  AgState, CardState, LogLine, PlayerState, RoomState, SceneState, ToastLine,
 } from './types';
 import { EMPTY_SCENE } from './types';
 
@@ -42,7 +42,7 @@ export function initialRoomState(selfId: number | null): RoomState {
     players: {}, circle: [],
     cardArea: {}, hands: {}, equips: {}, judge: {}, piles: {},
     table: [], cards: {}, drawPileCount: 0, discardCount: 0,
-    log: [], banners: {}, focus: null, indicators: [], effects: [],
+    log: [], toasts: [], banners: {}, focus: null, indicators: [], effects: [],
     ag: null, request: { kind: 'none' }, gameOver: null, tick: 0,
   };
 }
@@ -108,6 +108,7 @@ export class RoomStore {
   private version = 0;
   private readonly listeners = new Set<() => void>();
   private logSeq = 0;
+  private toastSeq = 0;
   private effectSeq = 0;
   /**
    * Whether anything has actually moved since the last publish. See
@@ -694,6 +695,25 @@ export class RoomStore {
         // `lua/web/client.lua` renders it once per language and sends a map;
         // an older recording sends one string, which normalises to both.
         this.appendLog(asLocalized(data));
+        return;
+      }
+      /**
+       * The same line again, on the channel that means "announce it".
+       *
+       * `#NoCardDraw`, `#TimeOutDraw` and `#NoGeneralDraw` are how a game says
+       * why it just ended in a draw; `#ChangePindianNumber`, 议事's result and
+       * 谷虎's claim are how a skill says what it just decided. All of them are
+       * flagged `toast = true` and all of them were arriving as one more line
+       * scrolling past in a log the player is not reading during a resolution.
+       *
+       * Capped at four because they stack and the newest is the one that
+       * matters; `Toasts` fades each out on its own clock.
+       */
+      case 'ShowToast': {
+        this.toastSeq += 1;
+        const line: ToastLine = { id: this.toastSeq, html: asLocalized(data), at: Date.now() };
+        const next = [...s.toasts, line];
+        s.toasts = next.length > 4 ? next.slice(next.length - 4) : next;
         return;
       }
       case 'LogEvent': {

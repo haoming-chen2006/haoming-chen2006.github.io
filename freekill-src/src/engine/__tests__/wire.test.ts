@@ -3,7 +3,7 @@ import { CBOR_TAG, isTaggedRef, type TaggedRef } from '../../contract/protocol.t
 import { MainThreadLuaClient } from '../luaClient.ts';
 import { InProcessLuaHost, allBotSeats } from '../luaHost.ts';
 import { RoomSession } from '../roomSession.ts';
-import { bundle, SEED } from './support.ts';
+import { bundle, SEED, STANDARD_ROSTER_ONLY } from './support.ts';
 
 const LONG = 300_000;
 
@@ -180,7 +180,14 @@ describe('what the client VM puts on the wire', () => {
       });
       const session = await RoomSession.start(host, {
         roomId: 'wire-3', seed: SEED, seats: allBotSeats(8), ownerId: 1, timeout: 15,
-        settings: { gameMode: 'aaa_role_mode' },
+        // Pinned to the standard roster. The two named skills above are
+        // standard-pack on purpose, but the GAME was not pinned, so the
+        // "saw both kinds" guard at the end rested on whatever this seed
+        // happened to draw from the whole pool — and it stopped drawing a
+        // non-compulsory invocation the moment the roster changed size. What
+        // this test is about is one predicate agreeing across two VMs, which
+        // the standard 25 exercise perfectly well.
+        settings: { gameMode: 'aaa_role_mode', ...STANDARD_ROSTER_ONLY },
       }, {
         onEnvelope: (e) => {
           if (e.to === null || e.to === 1) c.deliverEnvelope(e);

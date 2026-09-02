@@ -98,6 +98,25 @@ export interface LogLine {
   readonly html: Localized;
 }
 
+/**
+ * A line the engine wanted said out loud rather than filed.
+ *
+ * `Client:appendLog` sends `ShowToast` alongside `GameLog` for every log
+ * message flagged `toast = true` (`lua/lunarltk/client/client.lua:234`, mirrored
+ * by `lua/web/client.lua:187`) — the same rendered markup, a second time, on a
+ * channel whose only purpose is "look at this now". Upstream shows it as a
+ * fading plate over the table (`Fk/Base/ToastManager.qml`).
+ *
+ * It is the same `Localized` pair as a log line, because it is literally the
+ * same string.
+ */
+export interface ToastLine {
+  readonly id: number;
+  readonly html: Localized;
+  /** `Date.now()` when it arrived; the renderer fades it out from here. */
+  readonly at: number;
+}
+
 /** A transient arrow between seats (`Animate` / `Indicate`). */
 export interface IndicatorState {
   readonly id: number;
@@ -176,6 +195,8 @@ export interface RoomState {
   discardCount: number;
 
   log: readonly LogLine[];
+  /** `ShowToast` — the log lines the engine also wanted announced. */
+  toasts: readonly ToastLine[];
   banners: Readonly<Record<string, unknown>>;
   focus: FocusState | null;
   indicators: readonly IndicatorState[];

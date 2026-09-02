@@ -88,6 +88,27 @@ export interface LuaClient {
   /** Resolve a `TaggedRef` from the wire into renderable data. */
   resolve(ref: unknown): unknown;
 
+  /**
+   * Deliver whatever the client VM has queued for the UI right now.
+   *
+   * `notifyUI` writes into a buffer inside the VM, and the buffer is normally
+   * drained as a side effect of the three calls that already cross the seam:
+   * feeding a flush in, an interaction, and a reply. `call` deliberately does
+   * NOT drain it — a `Translate` happens inside a React render, and dispatching
+   * notifications from there would mutate the store mid-render.
+   *
+   * That is fine for `RefreshStatusSkills`, whose output is a poll that the next
+   * envelope carries along a beat later. It is not fine for a `call` a player
+   * PRESSED: `RevertSelection` rewrites the whole card selection inside the VM
+   * and announces it with one `UpdateRequestUI`, and without this the board
+   * would not repaint until the player's next click.
+   *
+   * Optional because it is a property of a real VM and not of the contract: a
+   * fixture client has no buffer to drain. Never call it from inside a notify
+   * handler — that would interleave a newer message into an older batch.
+   */
+  flushUi?(): void;
+
   dispose(): void;
 }
 

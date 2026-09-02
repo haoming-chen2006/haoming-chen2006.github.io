@@ -339,9 +339,20 @@ export class LtkLua {
     return !!this.client.call<boolean>('HasVisibleCard', me, other, specialName);
   }
 
-  /** Forwarder. The per-target hint the engine wants shown on a photo. */
+  /**
+   * Forwarder. The per-target hint the engine wants shown on a photo.
+   *
+   * `client_util.lua:969` has three exits and only one of them is a list: it
+   * answers `""` when the open request is not an active skill, `{}` when the
+   * scene has no `Photo` item for that id, and the accumulated tips otherwise.
+   * The empty table crosses as `[]` or `{}` depending on the bridge, and the
+   * empty *string* crosses as `""` — none of which `?? []` catches, so a caller
+   * that trusted the type would have mapped over a string and drawn one chip per
+   * character. Every non-array is "no tip".
+   */
   getTargetTip(pid: number): readonly TargetTip[] {
-    return this.client.call<TargetTip[]>('GetTargetTip', pid) ?? [];
+    const tips = this.client.call<TargetTip[]>('GetTargetTip', pid);
+    return Array.isArray(tips) ? tips : [];
   }
 
   canSortHandcards(pid: number): boolean {
@@ -395,9 +406,21 @@ export class LtkLua {
     this.client.interact({ elemType, id, action, data } satisfies SceneInteraction);
   }
 
-  /** `RevertSelection` — invert the current pending selection, in Lua. */
+  /**
+   * `RevertSelection` — invert the current pending selection, in Lua.
+   *
+   * `client_util.lua:1123` unselects every pending card, offers the scene every
+   * card that was not selected, and replays one real click so the targets and
+   * the buttons settle. Every one of those decisions is the request handler's.
+   *
+   * The flush is not optional. This is the only `call` in this facade that a
+   * player *presses*, and the diff it produces is queued in the VM rather than
+   * pushed — see `LuaClient.flushUi`. Without it the inversion happens and the
+   * board keeps drawing the old selection until the next click.
+   */
   revertSelection(): void {
     this.client.call('RevertSelection');
+    this.client.flushUi?.();
   }
 
   /** `FinishRequestUI` — the room leaving the "active" state. */

@@ -486,12 +486,27 @@
   margin-top: 2px;
 }
 
+/* A chip, and — since `MarkArea.qml` hangs a `TapHandler` off every row — a
+   button. `appearance: none` and the explicit font keep it drawing exactly as
+   the `<span>` did; only the cursor and the hover say it can be opened. */
 .fk-mark {
+  appearance: none;
+  display: inline-block;
+  margin: 0;
+  border: 0;
   padding: 0 4px;
+  font: inherit;
   font-size: 10px;
+  line-height: 1.5;
   border-radius: 2px;
   background: rgba(131, 138, 234, 0.72);
   color: #0d0c14;
+  cursor: pointer;
+  text-align: left;
+}
+
+.fk-mark:hover {
+  background: rgba(160, 166, 245, 0.9);
 }
 
 /* ------------------------------------------------------------ 曹髦's 道心值
@@ -1531,4 +1546,177 @@
 @keyframes fk-bubble-in {
   from { opacity: 0; transform: translate(-50%, -85%) scale(0.9); }
   to { opacity: 1; transform: translate(-50%, -100%) scale(1); }
+}
+
+/* ---------------------------------------------------------------- toasts
+ *
+ * `Fk/Base/ToastManager.qml`: a bottom-anchored stack, newest lowest, over the
+ * table. It sits inside the ring rather than over the whole room so it never
+ * covers the hand a player may be about to answer a question with — the same
+ * reason `.fk-float` stops at the side panel.
+ *
+ * z-index 45 puts it over `.fk-modal` (40), which is upstream's `z: Infinity`:
+ * a draw announcement has to be readable over the game-over box it explains.
+ * `pointer-events: none` throughout — a toast is never a target. */
+
+.fk-toasts {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 12px;
+  z-index: 45;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  pointer-events: none;
+}
+
+.fk-toast {
+  max-width: min(72%, 520px);
+  padding: 7px 18px;
+  border-radius: 16px;
+  font-size: 15px;
+  line-height: 1.35;
+  text-align: center;
+  color: var(--fk-ink);
+  background: rgba(12, 10, 8, 0.92);
+  border: 1px solid var(--fk-line);
+  box-shadow: 0 2px 14px rgba(0, 0, 0, 0.45);
+}
+
+/* -------------------------------------------------------- the pile drawer
+ *
+ * `Fk/Components/LunarLTK/Cheat/ViewPile.qml` in the room's right drawer.
+ * Deliberately NOT a `.fk-modal`: the table stays live and clickable behind it
+ * — see the header of `dialogs/MarkViewer.tsx` for what happened the last time
+ * a floating box in this room took clicks it was not under. */
+
+.fk-drawer {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 12px;
+  z-index: 42;
+  pointer-events: none;
+}
+
+.fk-drawer__box {
+  pointer-events: auto;
+  max-width: min(58%, 620px);
+  max-height: 84%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--fk-line);
+  background: var(--fk-panel-solid);
+  box-shadow: 0 6px 26px rgba(0, 0, 0, 0.55);
+}
+
+.fk-drawer__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.fk-drawer__title {
+  margin: 0;
+  font-size: 16px;
+  color: var(--fk-gold);
+}
+
+.fk-drawer__grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.fk-drawer__name {
+  padding: 3px 10px;
+  font-size: 13px;
+  border-radius: 3px;
+  border: 1px solid var(--fk-line);
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.fk-drawer__general {
+  appearance: none;
+  border: 1px solid var(--fk-line);
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 4px;
+  padding: 0;
+  width: 86px;
+  cursor: pointer;
+  color: var(--fk-ink);
+  overflow: hidden;
+}
+
+.fk-drawer__general img,
+.fk-drawer__noart {
+  display: block;
+  width: 100%;
+  height: 108px;
+  object-fit: cover;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.fk-drawer__cap {
+  display: block;
+  padding: 2px 0 3px;
+  font-size: 12px;
+  text-align: center;
+}
+
+/* ------------------------------------------------------- target tips
+ *
+ * `Photo.qml:399-450`: a centred row across the portrait while a skill is
+ * choosing targets. Two kinds, both the engine's: `normal` in glowing
+ * `#FEFE84`, `warning` in snow outlined red. Never a click target — the seat
+ * under it is. */
+
+.fk-photo__targets {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+  pointer-events: none;
+  z-index: 6;
+}
+
+.fk-target-tip {
+  font-size: calc(var(--fk-photo-w) * 0.17);
+  font-weight: 700;
+  line-height: 1;
+  color: #fefe84;
+  text-shadow:
+    0 0 4px rgba(0, 0, 0, 0.95),
+    1px 1px 0 #000, -1px 1px 0 #000, 1px -1px 0 #000, -1px -1px 0 #000;
+}
+
+.fk-target-tip--warn {
+  font-size: calc(var(--fk-photo-w) * 0.12);
+  color: snow;
+  opacity: 0.9;
+  text-shadow:
+    1px 1px 0 #c00, -1px 1px 0 #c00, 1px -1px 0 #c00, -1px -1px 0 #c00;
+}
+
+/* The 反选 button. Its own box rather than `.fk-buttons`, so the audit's
+   positional reading of OK / Cancel / End is untouched. */
+.fk-confirm__aux {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }

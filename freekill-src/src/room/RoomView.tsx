@@ -19,16 +19,20 @@ import { Boundary } from './components/Boundary';
 import { ConfirmBar } from './components/ConfirmBar';
 import { Dashboard } from './components/Dashboard';
 import { GeneralDetail } from './dialogs/GeneralDetail';
+import { MarkViewer } from './dialogs/MarkViewer';
+import { inspectMark, type Inspect } from './components/marks';
 import { Indicators, type SeatRefs } from './components/Indicators';
 import { Photo } from './components/Photo';
 import { Presents } from './components/Presents';
 import { seatStyle, tableInset, tableTop } from './components/SeatRing';
 import { useRingMetrics } from './components/useRingMetrics';
 import { SidePanel } from './components/SidePanel';
+import { Toasts } from './components/Toasts';
 import { TableStage } from './table/TableStage';
 import { DialogHost } from './dialogs/DialogHost';
 import { makeReply } from './dialogs/reply';
 import { LtkLua } from './ltk/LtkLua';
+import type { TargetTip } from './ltk/types';
 import { makeNaming, RoomProvider, useRoom, useRoomState, useScene, type RoomServices } from './RoomContext';
 import { SkinPicker } from './skins';
 import { RoomStore } from './state/store';
@@ -139,6 +143,8 @@ function RoomBody(
   const seatsRef = useRef<HTMLDivElement>(null);
   const refs = useRef<SeatRefs>(new Map());
   const [detail, setDetail] = useState<string | null>(null);
+  /** The pile a player tapped open. Read-only; see `dialogs/MarkViewer.tsx`. */
+  const [inspect, setInspect] = useState<Inspect | null>(null);
   const [container, setContainer] = useState<HTMLElement | null>(null);
   // The photo size is chosen against the number of seats actually at the table:
   // eight seats need a smaller photo than three before they stop touching.
@@ -149,8 +155,44 @@ function RoomBody(
   const interactive = mode === 'play';
   const photoItems = scene.items.Photo ?? {};
 
+  /**
+   * The per-seat targeting hints, re-asked exactly when `Room.qml:745-753`
+   * re-asks them: once per scene change, for every seat.
+   *
+   * `store.scene` is replaced wholesale by `applySceneChange`, so its identity
+   * is the "the request moved" signal and this memo does not run on the 5 Hz
+   * status poll. `GetTargetTip` itself returns immediately unless an active
+   * skill is mid-selection (`client_util.lua:971`), so the eight calls a real
+   * scene change costs are eight early returns for all but the handful of
+   * skills that publish a tip.
+   */
+  const targetTips = useMemo(() => {
+    const out = new Map<number, readonly TargetTip[]>();
+    if (!interactive || !scene.active) return out;
+    for (const id of Object.keys(scene.items.Photo ?? {})) {
+      const pid = Number(id);
+      if (!Number.isFinite(pid)) continue;
+      let tips: readonly TargetTip[] = [];
+      try { tips = lua.getTargetTip(pid); } catch { /* engine gone */ }
+      if (tips.length) out.set(pid, tips);
+    }
+    return out;
+  }, [scene, lua, interactive]);
+
   const clickPhoto = useCallback((pid: number, selected: boolean) => {
     lua.interact('Photo', pid, 'click', { selected, autoTarget: false });
+  }, [lua]);
+
+  /**
+   * Tapping a mark or a pile counter on a seat — `MarkArea.qml`'s `TapHandler`.
+   *
+   * The branch that decides WHAT a mark holds is `inspectMark`, and every
+   * question it asks (which cards are in the pile, which of them this viewer may
+   * see) goes to the client VM. A chip whose branch resolves to nothing opens
+   * nothing, which is upstream's behaviour for another seat's private pile.
+   */
+  const onInspect = useCallback((pid: number, key: string, value: unknown) => {
+    setInspect(inspectMark(lua, key, value, pid));
   }, [lua]);
 
   /** Answer a dialog-shaped request. See `dialogs/reply.ts`. */
@@ -204,18 +246,26 @@ function RoomBody(
                   player={p}
                   equips={state.equips[pid]}
                   judge={state.judge[pid]}
+                  piles={state.piles[pid]}
                   item={interactive ? photoItems[String(pid)] : undefined}
                   isCurrent={state.currentId === pid}
                   handCount={(state.hands[pid] ?? []).length}
                   focus={state.focus}
                   bubble={bubbles.get(pid)}
+                  targetTips={targetTips.get(pid)}
                   onClick={clickPhoto}
+                  onInspect={onInspect}
                 />
               </div>
             );
           })}
 
           <TableStage />
+          {/* `ShowToast` — the engine announcing something it also logged.
+              Inside the ring and over everything in it, including a request
+              dialog: the commonest toasts are the four `#*Draw` lines that say
+              why the game just ended. See `components/Toasts.tsx`. */}
+          <Toasts />
           <Indicators seatRefs={refs.current} container={container} />
           <Presents chat={chat} onChat={onChat} seatRefs={refs.current} container={container} seats={order} ring={metrics} />
           {playback ? <PlaybackBar playback={playback} /> : null}
@@ -239,6 +289,15 @@ function RoomBody(
       <Boundary label={requestLabel(state.request)}>
         <DialogHost onReply={reply} interactive={interactive} />
       </Boundary>
+      {/* A tapped pile or general list. Floats over the table without taking
+          it away, so a request stays answerable while it is open. */}
+      {inspect ? (
+        <MarkViewer
+          spec={inspect}
+          onClose={() => setInspect(null)}
+          onGeneral={(name) => setDetail(name)}
+        />
+      ) : null}
       {detail ? <GeneralDetail name={detail} onClose={() => setDetail(null)} /> : null}
     </div>
   );

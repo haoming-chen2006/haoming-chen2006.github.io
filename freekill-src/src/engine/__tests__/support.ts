@@ -36,6 +36,31 @@ export const MOBILE_PACKS = [
 ] as const;
 
 /**
+ * The six mirrored rosters' sub-packages, by the same `disabled_packs` name.
+ *
+ * Thirty-two of them behind six directories: the repository name is not the
+ * package name, so this cannot be derived from `VENDORED_PACKAGES` — `shzl`
+ * registers `wind`/`fire`/`forest`/`mountain`/`shadow`/`thunder`/`shzl_god`,
+ * and `yj` registers one package per year.
+ */
+export const VENDORED_PACKS = [
+  'standard_ex',
+  // A card pack, and it has to be here for the same reason `mobile_derived` is:
+  // `Engine:getAllCardIds` filters by `disabled_packs` too
+  // (lua/lunarltk/core/engine.lua:545,563), so leaving it out puts 木牛流马 in
+  // the draw pile of every game that meant to play the plain standard deck.
+  // One extra card changes every draw after it, which is how a roster addition
+  // turns into two unrelated-looking failures in liveTable.test.ts.
+  'standard_ex_cards',
+  'wind', 'fire', 'forest', 'mountain', 'shadow', 'thunder', 'shzl_god',
+  'yj2011', 'yj2012', 'yj2013', 'yj2014', 'yj2015', 'yj2016', 'yj2017',
+  'yjtw2013', 'yjtw2017',
+  'sp', 'sp_star', 'sp_jsp', 'sp_re',
+  'mou_zhi', 'mou_shi', 'mou_tong', 'mou_yu', 'mou_neng',
+  'beginning', 'continue', 'transition', 'conclusion', 'decline', 'rise',
+] as const;
+
+/**
  * Settings that hold a test to the 25-general standard roster.
  *
  * Several suites assert things that are true of the standard pack and are not
@@ -43,8 +68,18 @@ export const MOBILE_PACKS = [
  * English, say. Those were written when 25 generals was the whole game. Rather
  * than weaken the assertion, the game is pinned to the roster it was written
  * about, and the mobile roster gets its own measurement.
+ *
+ * Every non-standard general pack has to be listed or the pin leaks, and it
+ * leaks silently: the suites that use this do not count generals, they assert
+ * things like "every battle-log line renders in English", so a wider pool shows
+ * up as an unrelated-looking failure somewhere downstream. That is exactly what
+ * happened when the six rosters arrived — five suites went red at once, none of
+ * them about content. `roster.test.ts` now asserts this list is complete
+ * against the booted engine, so the next pack fails there, by name, instead.
  */
-export const STANDARD_ROSTER_ONLY = { disabledPack: [...MOBILE_PACKS] } as const;
+export const STANDARD_ROSTER_ONLY = {
+  disabledPack: [...MOBILE_PACKS, ...VENDORED_PACKS],
+} as const;
 
 export function roomSpec(overrides: Partial<RoomSpec> = {}): RoomSpec {
   return {

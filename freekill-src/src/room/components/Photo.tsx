@@ -10,18 +10,20 @@
  * `onSelectedChanged` handler makes.
  */
 import { memo, useEffect } from 'react';
+import type { ReactNode } from 'react';
 import type { ItemData } from '../../contract/scene';
 import { ChatText, useEmoji } from '../chat';
-import { useRoom } from '../RoomContext';
+import { useRoom, usePrompt } from '../RoomContext';
 import type { LtkLua } from '../ltk/LtkLua';
 import { seatChar } from '../ltk/prompt';
-import { CARD_TYPE, PHASE } from '../ltk/types';
+import { CARD_TYPE, PHASE, type TargetTip } from '../ltk/types';
 import { SkinLayer, useSkinChoices, useSkinMode } from '../skins';
 import type { FocusState, PlayerState } from '../state/types';
 import { seatStage } from './anim/bus';
 import { DAOXIN_MARK, DAOXIN_MAX, DAOXIN_STEPS } from './anim/spectacle/cutscene';
 import { EffectStage, useAnimBus } from './anim/Stage';
 import { cls } from './CardItem';
+import { pileCounts } from './marks';
 import { HpReadout } from '../seat/HpReadout';
 
 /**
@@ -36,16 +38,36 @@ export interface PhotoProps {
   readonly player: PlayerState;
   readonly equips?: readonly number[];
   readonly judge?: readonly number[];
+  /**
+   * This seat's private piles, pile name -> cards. `Photo.qml:174-208` keeps a
+   * counter for each in the mark row; see `marks.ts`'s `pileCounts`.
+   *
+   * A reference the store keeps stable between commits, like `equips` — it is
+   * rebuilt only by a `MoveCards` that touched this seat's `PlayerSpecial`, so
+   * `memo` below still bails out on the 5 Hz status poll.
+   */
+  readonly piles?: Readonly<Record<string, readonly number[]>>;
   readonly item?: ItemData;
   readonly isCurrent: boolean;
   readonly handCount: number;
   readonly focus: FocusState | null;
   readonly bubble?: string;
+  /**
+   * What the engine wants said about targeting THIS seat with what is currently
+   * selected — `Ltk.getTargetTip(pid)`, refreshed on every scene change the way
+   * `Room.qml:751` refreshes it.
+   */
+  readonly targetTips?: readonly TargetTip[];
   readonly onClick?: (pid: number, selected: boolean) => void;
+  /** Tapping a mark or a pile counter. See `MarkArea.qml`'s `TapHandler`. */
+  readonly onInspect?: (playerId: number, key: string, value: unknown) => void;
 }
 
 export const Photo = memo(function Photo(props: PhotoProps) {
-  const { player, equips, judge, item, isCurrent, handCount, focus, bubble, onClick } = props;
+  const {
+    player, equips, judge, piles, item, isCurrent, handCount, focus, bubble,
+    targetTips, onClick, onInspect,
+  } = props;
   const { lua, assets } = useRoom();
   const emoji = useEmoji();
   const [skinMode] = useSkinMode();
@@ -162,6 +184,8 @@ export const Photo = memo(function Photo(props: PhotoProps) {
 
         {thinking ? <span className="fk-photo__tip">{lua.tr(thinking.command)}</span> : null}
 
+        <TargetTips tips={targetTips} />
+
         {/* The engine's own effect art, played straight off the notify stream.
             Last child so it draws over the portrait and its overlays, and
             unclipped so a 杀 can spill past the frame the way it does in the
@@ -171,10 +195,46 @@ export const Photo = memo(function Photo(props: PhotoProps) {
 
       <EquipRow ids={equips} />
       <JudgeRow ids={judge} />
-      <MarkRow player={player} />
+      <MarkRow player={player} piles={piles} onInspect={onInspect} />
     </div>
   );
 });
+
+/**
+ * The engine's word on what targeting this seat will do.
+ *
+ * `Room.qml:751` re-asks `Ltk.getTargetTip` for every seat on every scene
+ * change and `Photo.qml:399-450` draws the answers across the middle of the
+ * portrait: `normal` tips in glowing `#FEFE84`, `warning` tips in snow with a
+ * red outline.
+ *
+ * THIS IS NOT DECORATION. 离间 is the whole reason it exists in the shipped
+ * roster: 貂蝉 picks two men and the skill's own `target_tip`
+ * (`packages/standard/pkg/skills/lijian.lua:36-43`) writes 先出杀 over the one
+ * who will Slash first and 后出杀 over the one who answers — which is the only
+ * thing that distinguishes the two clicks, and which the port drew nowhere.
+ * The same channel carries every `TargetModSkill`'s tip and whatever a card's
+ * own `skill:targetTip` says.
+ *
+ * `processPrompt` because the content is an i18n key with `%arg` slots, exactly
+ * as `Util.processPrompt(modelData.content)` upstream.
+ */
+function TargetTips({ tips }: { tips?: readonly TargetTip[] }) {
+  const prompt = usePrompt();
+  if (!tips?.length) return null;
+  return (
+    <div className="fk-photo__targets">
+      {tips.map((t, i) => (
+        <span
+          key={`${t.content}-${i}`}
+          className={cls('fk-target-tip', t.type === 'warning' && 'fk-target-tip--warn')}
+        >
+          {prompt(t.content)}
+        </span>
+      ))}
+    </div>
+  );
+}
 
 function generalPack(lua: { getGeneralData: (n: string) => { extension?: string } }, name: string): string | undefined {
   try { return lua.getGeneralData(name)?.extension; } catch { return undefined; }
@@ -315,27 +375,61 @@ function Daoxin({ value }: { value: unknown }) {
   );
 }
 
-function MarkRow({ player }: { player: PlayerState }) {
+/**
+ * The mark row, which upstream also uses as the seat's pile row.
+ *
+ * `Photo.qml:186-193` puts each private pile into the SAME list as the marks —
+ * `markArea.setMark(areaName, count)` — so 锦帆 4 and 屯田 3 read exactly like
+ * 〖忍戒〗2 does, and one tap handler covers both. That is why the piles are
+ * merged in here rather than given a row of their own, and why a pile whose
+ * name collides with a mark wins: upstream writes into the same slot.
+ *
+ * Every chip is a button, as every row upstream is a tap target. A chip whose
+ * branch resolves to nothing simply does not open anything (`MarkArea.qml:107`
+ * returns on an empty pile) — a `$`-prefixed private pile on somebody else's
+ * seat is the ordinary case, and the engine's answer there is "no".
+ *
+ * ONE DELIBERATE DIFFERENCE. Upstream disables the tap while the seat is a live
+ * target (`MarkArea.qml:67`), because there the mark area is a CHILD of the
+ * photo and would otherwise swallow the click that picks the target. Here the
+ * row is a sibling of `.fk-photo`, so there is no click to swallow — and being
+ * able to look inside somebody's pile while deciding whether to target them is
+ * exactly when you want to.
+ */
+function MarkRow(
+  { player, piles, onInspect }:
+  {
+    player: PlayerState;
+    piles?: Readonly<Record<string, readonly number[]>>;
+    onInspect?: (playerId: number, key: string, value: unknown) => void;
+  },
+) {
   const { lua } = useRoom();
-  const entries = Object.entries(player.marks);
-  if (!entries.length) return null;
+  const marks = Object.entries(player.marks);
+  const pileRows = pileCounts(piles);
+  if (!marks.length && !pileRows.length) return null;
+
+  const shownPiles = new Set(pileRows.map(([name]) => name));
+  const chip = (key: string, label: string, value: unknown, extra?: ReactNode) => (
+    <button
+      type="button"
+      className={cls('fk-mark', extra ? 'fk-mark--gauge' : undefined)}
+      key={key}
+      onClick={onInspect ? () => onInspect(player.id, key, value) : undefined}
+    >
+      {label}{extra}
+    </button>
+  );
+
   return (
     <div className="fk-marks">
-      {entries.map(([k, v]) => {
-        if (k === DAOXIN_MARK) {
-          return (
-            <span className="fk-mark fk-mark--gauge" key={k}>
-              {lua.tr(k)}<Daoxin value={v} />
-            </span>
-          );
-        }
+      {marks.map(([k, v]) => {
+        if (shownPiles.has(k)) return null;
+        if (k === DAOXIN_MARK) return chip(k, lua.tr(k), v, <Daoxin value={v} />);
         const shown = markValue(lua, k, v, player.id);
-        return (
-          <span className="fk-mark" key={k}>
-            {lua.tr(k)}{shown ? ` ${shown}` : ''}
-          </span>
-        );
+        return chip(k, `${lua.tr(k)}${shown ? ` ${shown}` : ''}`, v);
       })}
+      {pileRows.map(([name, count]) => chip(name, `${lua.tr(name)} ${count}`, null))}
     </div>
   );
 }

@@ -89,6 +89,14 @@ export const OBSERVED_WIRE_COMMANDS = [
   // an observer or a reconnecting player is handed
   // (`lua/server/roombase.lua:385`).
   'ShuffleDrawPile', 'Observe',
+  // Added when the six mirrored rosters arrived. `Room:setCardMark` broadcasts
+  // it (`lua/lunarltk/server/room.lua:346`) and `ClientBase` has always had the
+  // callback for it (`lua/lunarltk/client/client.lua:42`) — the 274-general
+  // roster simply contained no skill that ever marked a card, so a whole engine
+  // command went unobserved. Nothing in `src/room` reads it directly: card marks
+  // reach the table through `getCardData`, which the store already pulls per
+  // render.
+  'SetCardMark',
 ] as const;
 
 export type WireCommand = (typeof OBSERVED_WIRE_COMMANDS)[number] | UiCommand;

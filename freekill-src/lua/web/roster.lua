@@ -1,14 +1,22 @@
 -- roster.lua -- 开局武将池的完整性检查。必须在 lua/freekill.lua 之后跑（那时包才加载完）。
 --
--- WHY THIS EXISTS. 手杀包有 294 名武将，其中 45 名在这份代码里打不完整。三种缺法：
+-- WHY THIS EXISTS. 引擎里装着 706 名武将，其中 27 名在这份代码里打不完整。三种缺法：
 --
---   缺技能（40 名）「界限突破」「界一将成名」两个子包直接引用别的拓展包
---                （nos / ol / mou / os / *_ex）里的技能名，而那些包不在本仓库的
---                packages/ 下。General:addSkill 收到的是字符串不是 Skill 对象，
---                所以引擎连个警告都不给 —— 名字记进 other_skills，取的时候查不到，
---                静默跳过。
+--   缺技能（20 名）手杀包直接引用别的拓展包（ol / os / ty / *_ex）里的技能名，
+--                而那些包不在本仓库的 packages/ 下；另有 7 名栽在技能文件本身
+--                load 失败上（addAuxActiveSkill / Fk.OptionBox 这版核心还没有），
+--                技能没建起来，效果和缺包一样。General:addSkill 收到的是字符串
+--                不是 Skill 对象，所以引擎连个警告都不给 —— 名字记进 other_skills，
+--                取的时候查不到，静默跳过。
 --   缺牌（3 名）  技能硬依赖一张本仓库没有的牌，每次触发都在 cloneCard 上抛异常。
---   缺方法（2 名）技能调用的 Room 方法这版引擎还没有，见 lua/web/roomcompat.lua。
+--                三张牌都由 qsgs-fans/gamemode 的 derived_cards 提供，而那个包
+--                的 2v2.lua 在这版核心上过不了 fk.CreateGameMode 的断言，整包
+--                带不进来。
+--   缺方法（4 名）技能调用的 Room 方法这版引擎还没有，见 lua/web/roomcompat.lua。
+--
+-- 数字会随镜像进来的包变，别照着改代码 —— 下面两张表和 missingSkills 都是运行时
+-- 查的，包补齐了武将自己就回来。src/engine/__tests__/roster.test.ts 盯的是不变量
+-- 而不是数字：池子里不能有任何一名武将，其技能调用了引擎没有的 Room 方法。
 --
 -- 三种缺法的后果是同一个，而且是最难被发现的那一种：玩家选到「界蔡文姬」，武将牌上
 -- 印着〖悲歌〗〖断肠〗，实际只有〖悲歌〗生效。这是规则错，不是显示错 —— 本项目的
@@ -56,12 +64,38 @@ end
 ---
 --- 键写的是牌名而不是武将名，所以这不是一张写死的黑名单：哪天把那两个包补进
 --- packages/，下面的 all_card_types 查得到，武将自己就回到池子里了。
+---
+--- 后六条来自六个镜像包进来之后的一次全量扫描：把 packages/ 下每一处
+--- prepareDeriveCards / cloneCard / useVirtualCard 里写死的牌名抓出来，逐个问
+--- 引擎 Fk.all_card_types 有没有。这六个技能引用的三张牌都由
+--- qsgs-fans/gamemode 的 derived_cards 提供，而那个包在这版核心上整包加载失败
+--- （2v2.lua 过不了 fk.CreateGameMode 的断言），所以一张也拿不到。
+---
+--- 其中〖授书〗是把一整局拖死的那个，代价比"少一个技能"大得多：它挂在
+--- fk.RoundStart 上（shoushu.lua:13），每一轮开始都要
+--- prepareDeriveCards{"js__peace_spell"}，而且在 can_trigger 里就调
+--- （shoushu.lua:18）。取不到牌就在那句抛出去，引擎把技能里的错误吃掉，于是
+--- 这一轮的回合流程根本没跑起来 —— 轮数自己往前涨，没人摸牌、没人出牌、没人
+--- 死，一局跑到 999 轮还不结束。审计里就是这么撞上的：seed 321925，999 轮，
+--- 全场只有 16 次 MoveCards。
+---
+--- 复现：把武将池钉成「南华老仙 + 7 名标准将」，8 个 AI 打一局，得到 7 个
+--- decision；同样的钉法换成任何一名别的武将都是 278-596 个。
 local REQUIRED_CARDS = {
   mobile__tianshu = { "js__peace_spell" },
   tianzuo = { "raid_and_frontal_attack" },
   lingce = { "raid_and_frontal_attack" },
   dinghan = { "raid_and_frontal_attack" },
   miaolue = { "underhanding" },
+
+  shoushu = { "js__peace_spell" },        -- 授书，js__nanhualaoxian 南华老仙
+  mou__huangtian = { "js__peace_spell" }, -- 谋黄天，mou__zhangjiao 谋张角
+  danxinl = { "sincere_treat" },          -- 丹心，js__liuyong 刘永
+  re__danxinl = { "sincere_treat" },      -- 界丹心，js_re__liuyong 界刘永
+  xuanfengj = { "stab__slash" },          -- 旋风，js__jiangwei 姜维
+  qingxix = { "stab__slash" },            -- 倾席，js__xuyou 许攸
+  dingce = { "foresight" },               -- 定策，js__guojia 郭嘉（先见之明）
+  ninghan = { "ice__slash" },             -- 凝寒，js__zhangchunhua 张春华（冰杀）
 }
 
 --- 技能 -> 它需要、但这版引擎还没有的 Room 方法。
@@ -74,9 +108,26 @@ local REQUIRED_CARDS = {
 --- 但这个没补，是刻意的：它决定的是合法性，而不是随机数或者缓存。要是我们印的
 --- 那套牌名和上游差一张，这两名武将就在按一套错的规则打牌 —— 而这种错，玩家
 --- 是看不出来的。宁可先不上，也不上一个「看着能用、其实规则不对」的武将。
+---
+--- 后两条来自 standard_ex / sp 这六个镜像包进来时的普查：把这六个包里所有
+--- `room:<方法>(` 的调用点抓出来，逐个问引擎「这个方法在不在 room_klass 上」。
+--- 114 个方法里有两个不在，而且都在技能的主路径上、不是什么冷门分支：
+---
+---   ex__rende  界仁德 —— 一个出牌阶段内给出第二张牌之后，room:getUniversalCards("b")
+---              取「能宣称的基本牌名」再让你视为使用（rende.lua:37）。取不到就
+---              在这句抛出去，引擎把技能里的错误吃掉，于是界刘备的仁德从第二张
+---              牌起悄悄不再给那次使用 —— 牌面上还印着，实际没有。
+---   fenxin     焚心 —— room:changeRole 交换两人身份，那就是这个技能的全部
+---              （fenxin.lua:32-33）。方法不存在，灵雎发动了等于什么都没做。
+---
+--- 装载期是抓不到这两个的：Lua 的方法查找发生在调用那一刻，技能文件本身
+--- load 得好好的。所以它们不会像 addAuxActiveSkill 那样在启动日志里报错，
+--- 只会在某一局里悄悄少算一次 —— 正是这张表存在的理由。
 local REQUIRED_ROOM_METHODS = {
   zhiyi = { "getUniversalCards" },
   mobile__zengou = { "getUniversalCards" },
+  ex__rende = { "getUniversalCards" },
+  fenxin = { "changeRole" },
 }
 
 --- 这版引擎的 Room 类上有没有这个方法。

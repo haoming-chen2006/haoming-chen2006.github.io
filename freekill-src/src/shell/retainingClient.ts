@@ -78,6 +78,9 @@ export function retainNotifications(inner: LuaClient): RetainingClient {
     deliver: (message) => inner.deliver(message),
     deliverEnvelope: (envelope) => inner.deliverEnvelope(envelope),
     interact: (i) => inner.interact(i),
+    // Forwarded so a pressed `RevertSelection` repaints now rather than on the
+    // player's next click. A no-op for an inner client with no buffer.
+    flushUi: () => inner.flushUi?.(),
     replyToServer: (command, reply) => inner.replyToServer(command, reply),
     onReply: (handler) => inner.onReply(handler),
     call: <T = unknown>(fn: string, ...args: unknown[]): T => inner.call<T>(fn, ...args),

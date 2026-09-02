@@ -7,7 +7,7 @@
  * the speaker's seat (see `Photo`'s `bubble` prop).
  */
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
-import type { ReactElement } from 'react';
+import type { ReactElement, UIEvent } from 'react';
 import type { ChatLine } from '../../contract/views';
 import { useLanguage } from '../../i18n';
 import type { Language } from '../../i18n';
@@ -79,6 +79,21 @@ function useLogLines(log: RoomState['log'], lang: Language): readonly ReactEleme
   return foldLog(cache.current, log, lang);
 }
 
+/**
+ * Is this scroller parked at its newest line?
+ *
+ * The slack matters. A scroller is routinely a fraction of a pixel off its own
+ * bottom after a wheel gesture or a zoomed rendering, and an exact comparison
+ * reads that as "the reader has scrolled up" and stops following the game. Two
+ * lines of slack is the smallest amount that never does.
+ */
+export function atBottom(el: { scrollHeight: number; scrollTop: number; clientHeight: number }): boolean {
+  return el.scrollHeight - el.scrollTop - el.clientHeight <= STICK_SLACK_PX;
+}
+
+/** Two lines of a 12 px log. */
+export const STICK_SLACK_PX = 28;
+
 export const SidePanel = memo(function SidePanel(
   { chat, onChat }: { chat: readonly ChatLine[]; onChat: (t: string) => void },
 ) {
@@ -93,9 +108,37 @@ export const SidePanel = memo(function SidePanel(
   // re-render does not retranslate 23 lines or re-enter the Lua VM.
   const quick = useQuickLines();
 
+  /**
+   * Follow the newest line ONLY while the reader is already at the newest line.
+   *
+   * `LogEdit.qml:60-66` sets `autoScroll = currentIndex === count - 1` before it
+   * appends, so a player who has scrolled up to re-read a resolution stays where
+   * they put themselves. This used to be an unconditional
+   * `scrollTop = scrollHeight` on every appended line, which means scrolling back
+   * during a busy turn was impossible: the next `GameLog` — and a cascading
+   * trigger sends dozens a second — yanked the panel to the bottom again.
+   *
+   * The decision has to be made BEFORE the new line changes `scrollHeight`, so
+   * it is recorded on scroll rather than computed in the effect. Starts true, so
+   * a panel that has never been scrolled follows the game.
+   */
+  const stick = useRef(true);
+  const shownTab = useRef(tab);
+  const onScroll = useCallback((e: UIEvent<HTMLDivElement>) => {
+    stick.current = atBottom(e.currentTarget);
+  }, []);
+
   useEffect(() => {
     const el = tab === 'log' ? logRef.current : chatRef.current;
-    if (el) el.scrollTop = el.scrollHeight;
+    // Switching tabs is a deliberate move to a panel, and upstream's per-view
+    // `currentIndex` starts at the end — so a tab change always lands at the
+    // bottom, whatever the other tab was left at.
+    const switched = shownTab.current !== tab;
+    shownTab.current = tab;
+    if (el && (stick.current || switched)) {
+      el.scrollTop = el.scrollHeight;
+      stick.current = true;
+    }
   }, [state.log.length, chat.length, tab]);
 
   // The message box must not re-render with the panel — see `ChatComposer`.
@@ -119,12 +162,12 @@ export const SidePanel = memo(function SidePanel(
       </div>
 
       {tab === 'log' ? (
-        <div className="fk-log" ref={logRef}>
+        <div className="fk-log" ref={logRef} onScroll={onScroll}>
           {lines}
         </div>
       ) : (
         <div className="fk-log fk-chat">
-          <div className="fk-chat__lines" ref={chatRef}>
+          <div className="fk-chat__lines" ref={chatRef} onScroll={onScroll}>
             {chat.map((c) => (
               <div className="fk-chat__line" key={c.id}>
                 <span className="fk-chat__who">{c.displayName}</span>

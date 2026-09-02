@@ -170,6 +170,16 @@ export class MainThreadLuaClient implements LuaClient {
     this.pumpReplies();
   }
 
+  /**
+   * `LuaClient.flushUi` — see the contract. Drains the VM's UI buffer on
+   * demand, for the handful of `call`s a player presses rather than the room
+   * polls.
+   */
+  flushUi(): void {
+    this.pumpUi();
+    this.pumpReplies();
+  }
+
   private pumpUi(): void {
     if (this.uiHandlers.size === 0) {
       this.vm.lua.doStringSync(`FKClient.dropUI()`);

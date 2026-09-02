@@ -19,6 +19,7 @@ import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
 import { execFile } from 'node:child_process';
 import { cpus } from 'node:os';
+import { VENDORED_PACKAGES } from './build-lua-bundle.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const WEB_ROOT = join(here, '..');
@@ -39,6 +40,27 @@ const WANT_AUDIO = argv.has('--audio');
  * `--audio` with everyone else's.
  */
 const PACKS = ['standard', 'standard_cards', 'maneuvering', 'mobile'];
+
+/**
+ * The six mirrored rosters, read from `<site>/packages/` instead of the upstream
+ * checkout. 414 portraits, 8.0 MB of JPEG. See `packages/provenance.json`.
+ *
+ * Their `audio/` was never fetched, so there is nothing here for `--audio` to
+ * find and nothing to exclude — adding it later is a sparse-checkout change in
+ * that file, not a change here.
+ */
+const VENDORED_PACKS = VENDORED_PACKAGES;
+
+/**
+ * Which disk an asset is read from. The manifest key stays the engine-relative
+ * path either way — `packages/<pack>/image/generals/<name>.jpg` is what a
+ * runtime `LogEvent` payload names, and it does not know or care which root the
+ * build happened to read the bytes from.
+ */
+export function rootFor(rel) {
+  const m = /^packages\/([^/]+)\//.exec(rel);
+  return m && VENDORED_PACKS.includes(m[1]) ? WEB_ROOT : ENGINE_ROOT;
+}
 
 /** Quality per class, from the measured re-encode table in assets-findings.md. */
 function qualityFor(rel) {
@@ -93,6 +115,11 @@ export function collect() {
       if (r.includes('/image/') || (WANT_AUDIO && r.includes('/audio/'))) rels.push(r);
     }
   }
+  for (const pkg of VENDORED_PACKS) {
+    for (const r of walk(join(WEB_ROOT, 'packages', pkg), `packages/${pkg}`, [])) {
+      if (r.includes('/image/') || (WANT_AUDIO && r.includes('/audio/'))) rels.push(r);
+    }
+  }
   if (WANT_AUDIO) for (const r of walk(join(ENGINE_ROOT, 'audio'), 'audio', [])) rels.push(r);
 
   return rels.filter((r) => !excluded(r)).filter((r) => isRaster(r) || (WANT_AUDIO && r.endsWith('.mp3')));
@@ -119,7 +146,7 @@ async function pool(items, width, fn) {
 }
 
 async function encodeOne(rel, tmpDir) {
-  const src = join(ENGINE_ROOT, rel);
+  const src = join(rootFor(rel), rel);
   if (!isRaster(rel)) {
     // Audio ships as-is; mp3 is already compressed and cwebp has nothing to say.
     const bytes = readFileSync(src);

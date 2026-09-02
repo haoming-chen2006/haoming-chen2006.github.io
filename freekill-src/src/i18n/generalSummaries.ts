@@ -146,7 +146,6 @@ export const GENERAL_SUMMARIES: Readonly<Record<string, GeneralSummary>> = {
   guansuo: {
     zh_CN: '成长型。每当有角色死亡就能摸三张牌并学会一个新技能，锁定技让你离女性角色更近。',
     en_US: 'Late-game. Draws three and learns a new skill every time someone dies, and a locked skill shortens his distance for each female player.',
-    missing: ['dangxian', 'zhiman'],
   },
   guanyu: {
     zh_CN: '进攻型。所有红色牌都能当【杀】使用或打出，几乎不会缺【杀】。',
@@ -259,7 +258,6 @@ export const GENERAL_SUMMARIES: Readonly<Record<string, GeneralSummary>> = {
   m_ex__jiangwei: {
     zh_CN: '控场型。出牌阶段可以逼一名角色对你使用【杀】，否则弃其一张牌；觉醒后回血并学会【观星】。',
     en_US: 'Control. Forces an opponent to Slash him or lose a card, and once awakened he heals and gains the deck-stacking skill.',
-    missing: ['ex__guanxing'],
   },
   m_ex__jianyong: {
     zh_CN: '辅助型。拼点赢了本阶段的下一张基本牌或普通锦囊可以多指定或少指定一个目标，每次拼点后还能挑一张牌拿走。',
@@ -388,7 +386,6 @@ export const GENERAL_SUMMARIES: Readonly<Record<string, GeneralSummary>> = {
   m_liuyi__zhouyu: {
     zh_CN: '辅助型。可以送人一个技能或帮人复原武将牌，还能把自己翻面来多执行一个阶段。',
     en_US: 'Support. Hands out a skill or unturns a character card, and can flip himself face down to run an extra phase.',
-    missing: ['qinyin'],
   },
   m_shi__caozhen: {
     zh_CN: '控场型。回合结束时把三张牌扣在其他角色的武将牌上，之后按颜色是否相符逼其弃牌或吃1点伤害。',
@@ -457,7 +454,6 @@ export const GENERAL_SUMMARIES: Readonly<Record<string, GeneralSummary>> = {
   m_shi__weiyan: {
     zh_CN: '爆发型。用弃牌和体力换本阶段的不可响应和额外出牌次数，锁定技在体力或手牌不占优时给【杀】加伤。',
     en_US: 'Aggressive. Spends cards and HP to make his attacks unblockable and unlimited, and a locked skill adds damage when he is the worse off of the two.',
-    missing: ['kunfen'],
   },
   m_shi__xiahoushang: {
     zh_CN: '进攻型。准备阶段可以弃别人两张牌或造成1点火焰伤害，代价是跳过自己的摸牌阶段或出牌阶段。',
@@ -615,7 +611,6 @@ export const GENERAL_SUMMARIES: Readonly<Record<string, GeneralSummary>> = {
   mobile__caoying: {
     zh_CN: '进攻型。用伤害牌指定目标后猜其手牌构成，猜中越多就加伤、摸牌，甚至临时获得两个新技能。',
     en_US: 'Aggressive. Guesses what card types a target is holding when she attacks, gaining damage, draws and even borrowed skills for a correct read.',
-    missing: ['xingshang'],
   },
   mobile__cheliji: {
     zh_CN: '进攻型。锁定技让【杀】无距离限制但只能打上下家，命中后弃对方的牌，对方没手牌还会多吃1点伤害。',
@@ -676,7 +671,6 @@ export const GENERAL_SUMMARIES: Readonly<Record<string, GeneralSummary>> = {
   mobile__godsimayi: {
     zh_CN: '成长型。锁定技在你不响应别人的牌时积攒“忍”标记，觉醒后获得一整套强力技能，杀死角色还能多一个回合。',
     en_US: 'Late-game. Banks patience tokens for every card he declines to answer, awakens into a whole skill package, and takes extra turns for kills.',
-    missing: ['fangzhu', 'wansha'],
   },
   mobile__guanyinping: {
     zh_CN: '进攻型。受伤越多，能展示成不限次数【杀】的手牌就越多，还能直接对体力不低于你的角色打火焰伤害。',
@@ -693,7 +687,6 @@ export const GENERAL_SUMMARIES: Readonly<Record<string, GeneralSummary>> = {
   mobile__heqi: {
     zh_CN: '综合型。锁定技按装备区里的花色数依次解锁三个额外技能，装备越杂能用的技能越多。',
     en_US: 'Utility. A locked skill grants extra skills based on how many suits he is wearing, so a varied kit means more skills.',
-    missing: ['xuanfeng'],
   },
   mobile__huaman: {
     zh_CN: '防守型。锁定技让你和攻击范围内的角色互相不能用伤害牌指定对方，回合结束还能把手牌补到存活人数。',
@@ -822,7 +815,6 @@ export const GENERAL_SUMMARIES: Readonly<Record<string, GeneralSummary>> = {
   mobile__wangyuanji: {
     zh_CN: '防守型。锁定技按装备区的颜色获得额外的防御技能，另一个锁定技在你失去的牌不多时把牌补回来。',
     en_US: 'Defensive. A locked skill grants extra defensive skills based on the colour of her equipment, and another refunds the cards she spends.',
-    missing: ['weimu', 'mingzhe'],
   },
   mobile__wangyun: {
     zh_CN: '干扰型。让两名角色互相攻击并累积“连计”标记，攒够就觉醒加体力上限并换成新技能。',

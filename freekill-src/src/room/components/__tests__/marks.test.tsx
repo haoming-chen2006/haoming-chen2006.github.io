@@ -59,9 +59,14 @@ function draw(marks: Record<string, unknown>, lua = stub()): string {
   );
 }
 
-/** The text of the one mark chip on the photo. */
+/** The text of the one mark chip on the photo.
+ *
+ *  A `<button>` since the mark row became a tap target — `MarkArea.qml:66`
+ *  hangs a `TapHandler` off every row, and `components/marks.ts` is what a tap
+ *  resolves to. What a chip SAYS is unchanged, which is what this file is
+ *  about; only the element it says it in moved. */
 function chip(html: string): string {
-  const m = html.match(/class="fk-mark"[^>]*>(.*?)<\/span>/);
+  const m = html.match(/class="fk-mark"[^>]*>(.*?)<\/button>/);
   return m
     ? m[1].replace(/<!--[^>]*-->/g, '')
       .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')

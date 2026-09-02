@@ -1,0 +1,138 @@
+{
+  "$comment": [
+    "Where the mirrored rosters under this directory came from, and what this repository can and cannot say about the right to redistribute them.",
+    "Read before adding another pack. The rule this encodes is the one src/room/audio/provenance.json already established: nothing ships whose licence this repository can point at, and where the licence is weaker than it looks, the weakness is written down rather than rounded off.",
+    "Every pack below is pinned to the commit that was actually fetched, not to a branch. `git clone <repo> && git checkout <commit>` reproduces the bytes in this directory exactly, minus audio (see `audioNotFetched`)."
+  ],
+  "checked": "2026-09-02",
+  "verdict": "Lua ships with a clear GPL-3.0 grant. Portraits ship on the same footing as the packages/mobile portraits this site already served, which is weaker than the Lua and is described under `portraits` below. No audio was fetched.",
+  "origin": {
+    "host": "https://gitee.com/qsgs-fans",
+    "what": "The extension-pack ecosystem around FreeKill (https://github.com/Notify-ctrl/FreeKill). Each repository is a self-contained `packages/<name>/` tree — `init.lua` plus `pkg/<sub>/init.lua` — which `ModManager:loadPackages` mounts by walking the virtual filesystem. Nothing about them is web-specific and no file in them was modified.",
+    "why": "The site shipped 274 generals. 45 more were defined but withheld by lua/web/roster.lua because they name skills, cards or Room methods that no package on disk defines. Every one of those names resolves to a repository below."
+  },
+  "licence": {
+    "grant": "GPL-3.0. All six carry the unmodified GPL-3.0 text as `LICENSE` at the repository root, byte-identical (md5 d32239bcb673463ab874e80d47fae504) to the LICENSE in FreeKill itself and in packages/mobile — except standard_ex, which is the same text with CRLF line endings.",
+    "spdxHeaders": "Sparse, and no sparser than what already ships: 0-1 of each pack's Lua files carry an `SPDX-License-Identifier` header, against 2 of 633 in packages/mobile. The grant these packs rest on is the repository-level LICENSE file, not per-file headers.",
+    "ourUse": "This site is GPL-3.0-or-later itself, so redistributing GPL-3.0 Lua as part of it raises no compatibility question."
+  },
+  "portraits": {
+    "shipped": 414,
+    "bytes": 8000000,
+    "note": "These are recorded here rather than folded into the licence line above, because the honest position is weaker than 'GPL-3.0' on its own suggests, and it is the same position the site has already been in since it began serving the 317 packages/mobile portraits.",
+    "evidence": [
+      "A repository-level GPL grant is only effective from a licensor who holds the copyright. A contributor cannot license artwork they do not own by committing it — the same reasoning src/room/audio/provenance.json applied to the recordings, which is why no audio ships.",
+      "src/room/audio/provenance.json already records, for packages/mobile, that 'its git history includes commits describing copying official 原画配音' — 原画 is the original ART, not only the voice acting. That finding was made about the pack whose portraits this site already serves.",
+      "These six packs carry no per-image attribution and no separate art licence. Some generals carry an `illustrator:` translation key naming a studio (君桓文化, 凡果, 铁杵文化 and others); that is a credit, not a grant.",
+      "No claim is made here that the portraits are cleanly licensed. What is claimed is that shipping them is the same act, on the same evidence, as shipping the mobile portraits that are already live — and that if that act is ever reconsidered, it should be reconsidered for all of them together."
+    ],
+    "ifReconsidered": "Dropping portraits is one line: remove the pack from VENDORED_PACKS in scripts/build-assets.mjs. The roster keeps working — src/room draws its 3/4 placeholder tile for any general with no manifest entry, which is what the 6 generals listed in scripts/build.test.ts already get."
+  },
+  "audioNotFetched": {
+    "why": "Not a size decision. src/room/audio/provenance.json records this project's standing verdict that no audio file from the FreeKill ecosystem is shippable — 887 of packages/mobile's 1773 clips carry `album=绯雨音乐`, a commercial studio's copyright line, and every sound the site makes is synthesised at runtime instead.",
+    "howItWasExcluded": "The sparse-checkout that fetched these packs asked for '/**/*.lua', '/*.lua', '/image/**' and '/LICENSE*'. No audio/ tree was ever downloaded, so there is nothing under packages/*/audio to exclude and `build-assets.mjs --audio` finds nothing here.",
+    "sizeIfEverWanted": 79100000,
+    "perPack": { "shzl": 14600000, "yj": 20800000, "standard_ex": 7600000, "sp": 8800000, "mougong": 18000000, "jsrg": 9300000 }
+  },
+  "packs": [
+    {
+      "name": "standard_ex",
+      "title": "标准·界限突破",
+      "repo": "https://gitee.com/qsgs-fans/standard_ex",
+      "commit": "5dc39d993a128e78d36ac6617d7351ec7c54ced5",
+      "committed": "2026-08-02T16:40:21+08:00",
+      "subject": "fix(界鬼才)",
+      "licence": "GPL-3.0 (LICENSE at root, CRLF)",
+      "generalsShipped": 31,
+      "enginePackages": 1,
+      "luaFiles": 53,
+      "portraits": 35,
+      "supplies": ["ex__ganglie (界夏侯惇)", "qiaomeng (界公孙瓒)"]
+    },
+    {
+      "name": "shzl",
+      "title": "神话再临",
+      "repo": "https://gitee.com/qsgs-fans/shzl",
+      "commit": "52503ed963621818601938dbb011656b900ddb0e",
+      "committed": "2026-08-10T16:55:28+08:00",
+      "subject": "fix: AI参数",
+      "licence": "GPL-3.0 (LICENSE at root)",
+      "generalsShipped": 63,
+      "enginePackages": 7,
+      "luaFiles": 148,
+      "portraits": 74,
+      "supplies": ["duanchang", "songwei", "zaoxian", "xiangle", "ruoyu", "jiang", "zhiba", "yinghun", "bazhen", "quhu", "xueyi", "guidao", "huangtian", "guzheng"]
+    },
+    {
+      "name": "yj",
+      "title": "一将成名",
+      "repo": "https://gitee.com/qsgs-fans/yj",
+      "commit": "5338126394e45903eb2eb40339288f74a9e45bf9",
+      "committed": "2026-08-30T09:43:25+08:00",
+      "subject": "fix(忠勇)",
+      "licence": "GPL-3.0 (LICENSE at root)",
+      "generalsShipped": 93,
+      "enginePackages": 9,
+      "luaFiles": 183,
+      "portraits": 95,
+      "supplies": ["zhuiyi", "xianzhou", "luoying", "chunlao", "nos__faen", "jiefan", "shibei", "fencheng", "yuce", "zhaofu", "buyi", "zhiyan", "shizhi", "fenli"]
+    },
+    {
+      "name": "sp",
+      "title": "SP",
+      "repo": "https://gitee.com/qsgs-fans/sp",
+      "commit": "04711e0b99f367064a13c9eb33ae06865953e8bb",
+      "committed": "2026-08-19T01:19:27+08:00",
+      "subject": "refactor(默识): 微调转化UI效果",
+      "licence": "GPL-3.0 (LICENSE at root)",
+      "generalsShipped": 53,
+      "enginePackages": 4,
+      "luaFiles": 114,
+      "portraits": 67,
+      "supplies": ["re__zishou (界刘表)", "kunfen (少年张辽)"]
+    },
+    {
+      "name": "mougong",
+      "title": "谋攻篇",
+      "repo": "https://gitee.com/qsgs-fans/mougong",
+      "commit": "2ce058ec5aaceda4ebe3517278612a3d41e26045",
+      "committed": "2026-08-29T12:03:17+08:00",
+      "subject": "fix(谋缓释)",
+      "licence": "GPL-3.0 (LICENSE at root)",
+      "generalsShipped": 49,
+      "enginePackages": 5,
+      "luaFiles": 122,
+      "portraits": 54,
+      "supplies": ["mou__hongyan (界小乔)", "mou__tuxi (少年张辽)"]
+    },
+    {
+      "name": "jsrg",
+      "title": "江山如故",
+      "repo": "https://gitee.com/qsgs-fans/jsrg",
+      "commit": "9918d497ea7442a228d886d2238337798df8a474",
+      "committed": "2026-08-27T21:04:13+08:00",
+      "subject": "fix: 修复其他角色能触发负山的bug",
+      "licence": "GPL-3.0 (LICENSE at root)",
+      "generalsShipped": 86,
+      "enginePackages": 6,
+      "luaFiles": 204,
+      "portraits": 89,
+      "supplies": ["zhenqiao (起刘备)", "pingtao (起孙坚)"],
+      "note": "This is the 江山如故 the roster was missing. packages/mobile has a `mobile_jsrg` sub-package, but it holds three generals both here and upstream — the pack proper is this separate repository."
+    }
+  ],
+  "notFetched": [
+    {
+      "repo": "https://gitee.com/qsgs-fans/gamemode",
+      "why": "Its pkg/derived_cards defines the three cards 神荀彧 / 势董昭 / 南华老仙 need (raid_and_frontal_attack, underhanding, js__peace_spell) and is self-contained, but gamemode/init.lua requires its game modes first and pkg/gamemodes/2v2.lua:213 fails fk.CreateGameMode's assert on this engine version, which takes the whole package down. Verified by mounting it: nothing loaded and those three stayed hidden."
+    },
+    {
+      "repo": "https://gitee.com/qsgs-fans/ol, /overseas, /tenyear",
+      "why": "Measured and proven to boot and play (1,415 shipped generals, three full games), but 9.65 MB of Lua against a 4.7 MB bundle and 99 skill files needing core APIs this engine lacks. A separate decision."
+    },
+    {
+      "repo": "https://gitee.com/notify-ctrl/freekill-core",
+      "why": "The only source of Room:getUniversalCards and Room:changeRole, which four otherwise-complete generals need. An engine upgrade, not a content decision."
+    }
+  ]
+}

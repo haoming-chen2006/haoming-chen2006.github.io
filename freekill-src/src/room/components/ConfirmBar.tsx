@@ -25,13 +25,32 @@
  * So: one horizontal band, centred, on the seam, in the reading path between
  * the table you are looking at and the hand you are about to play from.
  */
-import { memo } from 'react';
+import { memo, useMemo, useState } from 'react';
 import type { ItemData } from '../../contract/scene';
 import { describe, fillArgs } from '../ltk/prompt';
 import { useRoom, useRoomState, useScene, usePrompt } from '../RoomContext';
 import { cls } from './CardItem';
 import { Detail } from './Detail';
 import { InteractionWidget } from './Interaction';
+
+/** Which special use a player has pressed, and for which offer. */
+export type SpecialPick = { readonly key: string; readonly skill: string } | null;
+
+/**
+ * The lit chip: the player's own pick while it still belongs to this offer,
+ * and otherwise the first entry — which is `_normal_use` whenever the card can
+ * also be used normally (`play_card.lua:192`).
+ *
+ * Keyed by the offered list rather than by a counter, because that is what
+ * makes a fresh offer re-default: the engine replaces `skills` wholesale on
+ * every card selection (`play_card.lua:198`) and clears it on deselection, and
+ * a QML Repeater rebuilds its RadioButtons with `checked: index === 0` each
+ * time. A stale pick from the previous card must not survive into the next.
+ */
+export function specialUseOn(skills: readonly string[], pick: SpecialPick): string | undefined {
+  if (pick && pick.key === skills.join('|') && skills.includes(pick.skill)) return pick.skill;
+  return skills[0];
+}
 
 export const ConfirmBar = memo(function ConfirmBar() {
   const state = useRoomState();
@@ -78,6 +97,45 @@ export const ConfirmBar = memo(function ConfirmBar() {
 
   const asking = interactive && (promptText !== '' || buttons.OK?.enabled === true);
 
+  /**
+   * WHICH SPECIAL USE IS CHOSEN — a state the engine does not echo back.
+   *
+   * `SpecialSkills:toData` sends `skills` and nothing else
+   * (`lua/ui_emu/specialskills.lua:16`); upstream renders the list as a
+   * `RadioButton` group whose `checked: index === 0` is a *default*, and the
+   * group moves the check when a player presses one (`Room.qml:453-466`).
+   *
+   * This was `i === 0`, which is the default without the group: a player who
+   * pressed 重铸 saw 正常使用 still lit while the engine had in fact switched
+   * (`ReqPlayCard:update` -> `selectSpecialUse`, `play_card.lua:220`). The UI
+   * contradicting the engine is worse than no UI, so the pick is remembered
+   * here — keyed by the offered list, so a new selection re-defaults to index 0
+   * exactly as a rebuilt Repeater does.
+   */
+  const skills = specialSkills?.skills ?? [];
+  const skillKey = skills.join('|');
+  const [pick, setPick] = useState<SpecialPick>(null);
+  const activeSpecial = specialUseOn(skills, pick);
+
+  /**
+   * 反选 — `Room.qml:244-249`.
+   *
+   * Enabled exactly while a view-as or active skill is mid-selection, which is
+   * what `GetPendingSkill` answers (`client_util.lua:1116`: the request's skill
+   * name while no card has been settled on). Pressing it runs
+   * `RevertSelection` in the client VM, which unselects every pending card and
+   * selects every other card the scene will take — the inversion is the
+   * engine's, card by card, and there is no version of it on this side.
+   *
+   * Asked once per scene change, like everything else the scene drives: the
+   * store replaces `scene` wholesale on `UpdateRequestUI`, so this memo does
+   * not run on the 5 Hz status poll.
+   */
+  const pendingSkill = useMemo(() => {
+    if (!interactive || !scene.active) return '';
+    try { return lua.getPendingSkill(); } catch { return ''; }
+  }, [scene, lua, interactive]);
+
   return (
     /*
      * `fk-controls` is not decoration and must not be dropped.
@@ -106,20 +164,38 @@ export const ConfirmBar = memo(function ConfirmBar() {
       {skillDetail ? <Detail text={skillDetail} /> : null}
 
       <div className="fk-confirm__row">
-        {specialSkills?.skills?.length ? (
+        {skills.length ? (
           <div className="fk-interaction">
-            {specialSkills.skills.map((s, i) => (
+            {skills.map((s) => (
               <button
                 type="button"
                 key={s}
-                className={cls('fk-chip', i === 0 && 'fk-chip--on')}
-                onClick={() => lua.interact('SpecialSkills', '1', 'click', s)}
+                className={cls('fk-chip', s === activeSpecial && 'fk-chip--on')}
+                onClick={() => {
+                  setPick({ key: skillKey, skill: s });
+                  lua.interact('SpecialSkills', '1', 'click', s);
+                }}
               >{lua.tr(s)}</button>
             ))}
           </div>
         ) : null}
 
         {interaction ? <InteractionWidget item={interaction} /> : null}
+
+        {/* Its own wrapper, deliberately outside `.fk-buttons`: the audit probe
+            identifies OK / Cancel / End inside that box by position when the VM
+            is too busy to translate their labels (`scripts/audit/probe.mjs:807`),
+            and a fourth button in the row would shift that reading. */}
+        {pendingSkill ? (
+          <div className="fk-confirm__aux">
+            <button
+              type="button"
+              className="fk-btn"
+              title={lua.tr(pendingSkill)}
+              onClick={() => lua.revertSelection()}
+            >{lua.tr('Revert Selection')}</button>
+          </div>
+        ) : null}
 
         {/* `Room.qml:487-519`: OK and Cancel stand there for as long as the
             request does, lit or not, so the player can see that a confirmation

@@ -159,7 +159,13 @@ describe('a real game that exhausts the draw pile', () => {
       // actually reshuffled for the rest of the assertions to mean anything.
       expect(syncs, 'the VM forwarded the reshuffle to the room').toBeGreaterThan(0);
       expect(checks).toBeGreaterThan(1000);
-      expect(deck).toBe(160);
+      // 161, not the 160 this was written against: `roomSpec()` enables every
+      // pack, and mirroring 标准·界限突破 in put its 木牛流马
+      // (`role__wooden_ox`, one copy, `standard_ex_cards`) into the deck. It is
+      // the only non-derived card any of the six rosters adds. Asserted as a
+      // constant rather than read from the room because the point of the number
+      // here is to notice a card appearing or vanishing.
+      expect(deck).toBe(161);
       expect(wrong.slice(0, 5)).toEqual([]);
       expect(client.errors()).toEqual([]);
     } finally {

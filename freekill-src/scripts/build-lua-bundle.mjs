@@ -40,8 +40,33 @@ export const PACKAGES = ['standard', 'standard_cards', 'maneuvering', 'test', 'u
  */
 export const SITE_PACKAGES = ['webmodes'];
 
+/**
+ * Third-party rosters mirrored into `<site>/packages/`, pinned by commit in
+ * `packages/provenance.json`. Six packs, 407 more playable generals.
+ *
+ * They live in this repo rather than in the upstream mirror for three reasons.
+ * The mirror is read-only and shared with another lane, so writing six package
+ * directories into it perturbs work in flight. A tracked copy is reproducible
+ * from the commit alone, which an untracked directory beside `mobile` is not —
+ * and provenance we cannot reproduce is provenance we cannot defend. And
+ * `glyphset.mjs` already harvests every `.lua` under `<site>/packages/`, so the
+ * font subset picks up their Han without a second list to keep in step.
+ *
+ * Mechanically they are `SITE_PACKAGES` — same root, same mount prefix — but
+ * they are kept apart from it because the licence question is different:
+ * `webmodes` is ours, these are somebody else's, and `packages/provenance.json`
+ * has to be able to say which is which.
+ *
+ * Each is `Package:new` per sub-pack, so the count of packages the engine
+ * reports is much larger than six.
+ */
+export const VENDORED_PACKAGES = ['standard_ex', 'shzl', 'yj', 'sp', 'mougong', 'jsrg'];
+
+/** Everything read out of `<site>/packages/`, in the order the walker takes them. */
+export const WEB_PACKAGES = [...VENDORED_PACKAGES, ...SITE_PACKAGES];
+
 /** Everything the manifest reports, in load order. */
-export const ALL_PACKAGES = [...PACKAGES, ...SITE_PACKAGES];
+export const ALL_PACKAGES = [...PACKAGES, ...WEB_PACKAGES];
 
 /** The web overlay, mounted at `lua/web/`. Owned by the engine lane. */
 const OVERLAY = join(WEB_ROOT, 'lua', 'web');
@@ -75,13 +100,19 @@ async function engineBuilder() {
 
 export async function buildBundle() {
   const fromEngine = await engineBuilder();
-  if (fromEngine) return fromEngine({ engineRoot: ENGINE_ROOT, packages: PACKAGES });
+  // `sitePackages` is passed explicitly: the engine builder defaults it to its
+  // own `SITE_PACKAGES` (`webmodes` alone), which was right when this repo owned
+  // every package under `<site>/packages/` and is not right now that it mirrors
+  // six more. What ships is decided here, not there.
+  if (fromEngine) {
+    return fromEngine({ engineRoot: ENGINE_ROOT, packages: PACKAGES, sitePackages: WEB_PACKAGES });
+  }
 
   const files = new Map();
   const isLua = (p) => p.endsWith('.lua');
   for (const root of LUA_ROOTS) walk(join(ENGINE_ROOT, root), root, files, isLua);
   for (const pkg of PACKAGES) walk(join(ENGINE_ROOT, 'packages', pkg), `packages/${pkg}`, files, isLua);
-  for (const pkg of SITE_PACKAGES) walk(join(WEB_ROOT, 'packages', pkg), `packages/${pkg}`, files, isLua);
+  for (const pkg of WEB_PACKAGES) walk(join(WEB_ROOT, 'packages', pkg), `packages/${pkg}`, files, isLua);
   if (existsSync(OVERLAY)) walk(OVERLAY, 'lua/web', files, isLua);
 
   const obj = {};

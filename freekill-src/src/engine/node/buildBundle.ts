@@ -42,6 +42,21 @@ export const MOBILE_PACKAGES = ['utility', 'mobile'] as const;
  */
 export const SITE_PACKAGES = ['webmodes'] as const;
 
+/**
+ * Third-party rosters mirrored into `<site>/packages/` and pinned by commit in
+ * `packages/provenance.json`. Same root and mount prefix as `SITE_PACKAGES`;
+ * listed apart because those are this repo's own and these are not.
+ *
+ * They belong in the default because this suite's job is to test what ships.
+ * They were left out of it for one run and the roster invariant in
+ * `__tests__/roster.test.ts` passed against a bundle 407 generals smaller than
+ * the deployed one — a green suite proving nothing about the real thing.
+ */
+export const VENDORED_PACKAGES = ['standard_ex', 'shzl', 'yj', 'sp', 'mougong', 'jsrg'] as const;
+
+/** Everything read out of `<site>/packages/`. */
+export const WEB_PACKAGES = [...VENDORED_PACKAGES, ...SITE_PACKAGES] as const;
+
 /** What the shipped build contains. Kept in step with `scripts/build-lua-bundle.mjs`. */
 export const SHIPPED_PACKAGES = [...STANDARD_PACKAGES, 'test', ...MOBILE_PACKAGES] as const;
 
@@ -76,7 +91,7 @@ export function buildBundle(opts: BuildBundleOptions = {}): LuaBundle {
 
   walk(join(engineRoot, 'lua'), 'lua', files);
   for (const pkg of packages) walk(join(engineRoot, 'packages', pkg), `packages/${pkg}`, files);
-  for (const pkg of opts.sitePackages ?? SITE_PACKAGES) {
+  for (const pkg of opts.sitePackages ?? WEB_PACKAGES) {
     walk(join(WEB_ROOT, 'packages', pkg), `packages/${pkg}`, files);
   }
   if (opts.includeTests) walk(join(engineRoot, 'test', 'lua'), 'test/lua', files);

@@ -834,7 +834,16 @@ describe('a seat that loses a broadcast race', () => {
       hostSeat: 1,
       // 30 seconds is the losing seat's own budget. A seat released by the race
       // is released in milliseconds; a seat released by the clock cannot be.
-      settings: { gameMode: 'aaa_role_mode', generalNum: 3, generalTimeout: 30 },
+      //
+      // Pinned to the standard roster like the rest of this file, and for the
+      // reason spelled out on the cancel test above: whether two seats are ever
+      // asked 选将 at the same moment is a fact about the roster, not about
+      // request handling. This was the one suite here left unpinned, and the six
+      // mirrored rosters were enough to stop the overlap happening.
+      settings: {
+        gameMode: 'aaa_role_mode', generalNum: 3, generalTimeout: 30,
+        ...STANDARD_ROSTER_ONLY,
+      },
       timeout: 30,
       transport,
       createHost: async () => host,

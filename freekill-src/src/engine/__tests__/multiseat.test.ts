@@ -4,7 +4,7 @@ import { MainThreadLuaClient } from '../luaClient.ts';
 import { InProcessLuaHost, allBotSeats } from '../luaHost.ts';
 import { RoomSession } from '../roomSession.ts';
 import { PlayerState } from '../types.ts';
-import { bundle } from './support.ts';
+import { bundle, STANDARD_ROSTER_ONLY } from './support.ts';
 
 const LONG = 300_000;
 
@@ -61,6 +61,17 @@ interface Played {
  * four generals in the whole roster can produce actually fires. With
  * `generalNum: 1` and as many generals as seats, every seat is seated with one
  * of them.
+ *
+ * When no `generals` are named, the pool is pinned to the standard roster
+ * instead of left wide open. The driver below is deliberately crude — click the
+ * first enabled Photo, then OK / End / Cancel — because what this file checks is
+ * envelope ORDER across four independent client VMs, not content. A 679-general
+ * pool reaches request types that loop cannot answer (`AskForPoxi`,
+ * `AskForArrangeCards`, `CustomDialog`; see the audit's coverage report), and it
+ * parks on the first one, which reads as "no seat could answer" rather than as
+ * what it is. The wide roster is covered where a real UI answers those
+ * questions: `scripts/audit/run.mjs` in a browser, and `game.test.ts`'s all-bot
+ * game.
  */
 async function playEveryoneHuman(opts: {
   generals?: readonly string[];
@@ -181,7 +192,10 @@ async function playEveryoneHuman(opts: {
     const online = allBotSeats(seatCount).map((s) => ({ ...s, state: PlayerState.Online as 1 }));
     const session = await RoomSession.start(host, {
       roomId: 'multiseat', seed: opts.seed ?? 1, seats: online, ownerId: 1, timeout: 15,
-      settings: { gameMode: 'aaa_role_mode', generalNum: 1, disabledGenerals },
+      settings: {
+        gameMode: 'aaa_role_mode', generalNum: 1, disabledGenerals,
+        ...(opts.generals ? {} : STANDARD_ROSTER_ONLY),
+      },
     }, {
       // Straight off the wire, in arrival order. No sorting, no buffering: this
       // is what a client that trusts the envelope stream actually sees.

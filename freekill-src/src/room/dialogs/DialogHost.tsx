@@ -20,6 +20,7 @@ import { componentName, readCustomDialog } from './custom';
 import { CustomDialogBox, customPanelFor } from './CustomDialogs';
 import { FreeAssign, freeAssignEnabled } from './FreeAssign';
 import { GeneralDetail } from './GeneralDetail';
+import { conversionsFor, SameConvert } from './SameConvert';
 import { Btn, Dialog, GeneralCard, OptionBtn, Panel, useAskingSkill } from './parts';
 
 export interface DialogHostProps {
@@ -142,7 +143,8 @@ function ChooseGeneralBox(
 ) {
   const { lua } = useRoom();
   const state = useRoomState();
-  const [generals, n, , heg, rule, extra] = data as [string[], number?, boolean?, boolean?, string?, unknown?];
+  const [generals, n, noConvert, heg, rule, extra] =
+    data as [string[], number?, boolean?, boolean?, string?, unknown?];
   const count = n ?? 1;
   const ruleName = rule ?? (heg ? 'heg_general_choose' : 'askForGeneralsChosen');
   const extraData = extra ?? { n: count };
@@ -170,6 +172,21 @@ function ChooseGeneralBox(
   /** Which slot the free-assign box is open for; -1 for closed. */
   const [assigning, setAssigning] = useState(-1);
   const freeAssign = freeAssignEnabled(state.settings);
+
+  /**
+   * 替换武将 — the other printings of the men on offer.
+   *
+   * `no_convert` is `data[2]`, and it was being destructured past and dropped.
+   * It defaults to false server-side (`room.lua:1192`), so this is offered on
+   * an ordinary deal and not only in 国战; see `SameConvert.tsx`. The button is
+   * shown only when something on offer actually has an alternative, which is
+   * what `ChooseGeneralBox.qml:292-299` computes to enable it.
+   */
+  const [converting, setConverting] = useState(false);
+  const conversions = useMemo(
+    () => (noConvert ? [] : conversionsFor(lua, offer)),
+    [lua, offer, noConvert],
+  );
 
   const prompt = lua.chooseGeneralPrompt(ruleName, offer, extraData) || '#AskForGeneral';
   const feasible = lua.chooseGeneralFeasible(ruleName, picked, offer, extraData);
@@ -225,6 +242,12 @@ function ChooseGeneralBox(
               }}
             >{lua.tr('Enable free assign')}</Btn>
           ) : null}
+          {/* `ChooseGeneralBox.qml:119` puts it in this row too, beside
+              `Show General Detail`, and hides rather than disables it when
+              nothing on offer has another printing. */}
+          {conversions.length > 0 && interactive ? (
+            <Btn onClick={() => setConverting(true)}>{lua.tr('Same General Convert')}</Btn>
+          ) : null}
           {/* `ChooseGeneralBox.qml:123` — enabled once something is selected,
               and deliberately NOT primary: the audit driver and every player
               read the primary button in a request dialog as "answer it". */}
@@ -255,6 +278,19 @@ function ChooseGeneralBox(
           ))}
         </div>
       </Dialog>
+      {converting ? (
+        <SameConvert
+          offer={offer}
+          // Straight into the same substitution free assign uses: one slot, one
+          // name, and the selection carried across if that slot was picked.
+          onPick={(from, to) => {
+            const at = offer.indexOf(from);
+            if (at >= 0) assign(at, to);
+            setConverting(false);
+          }}
+          onClose={() => setConverting(false)}
+        />
+      ) : null}
       {assigning >= 0 && offer[assigning] !== undefined ? (
         <FreeAssign
           current={offer[assigning]}

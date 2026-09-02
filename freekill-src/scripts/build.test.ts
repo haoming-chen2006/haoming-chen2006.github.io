@@ -13,7 +13,8 @@ import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { AssetManifestSchema, LuaManifestSchema } from '../src/contract/manifest';
 import { EN_US } from '../src/i18n/engine';
-import { buildBundle, ENGINE_ROOT, PACKAGES, SITE_PACKAGES } from './build-lua-bundle.mjs';
+import { buildBundle, ENGINE_ROOT, PACKAGES, WEB_PACKAGES } from './build-lua-bundle.mjs';
+import { rootFor } from './build-assets.mjs';
 import { glyphSet } from './glyphset.mjs';
 import { DIST } from './verify-dist.mjs';
 
@@ -45,9 +46,10 @@ describe('lua bundle (4.7)', () => {
         expected.set(rel, readFileSync(join(ENGINE_ROOT, rel), 'utf8'));
       }
     }
-    // Site-owned packages mount at the same `packages/<name>` prefix from a
-    // different root, which is exactly the thing a walker can get wrong.
-    for (const pkg of SITE_PACKAGES) {
+    // Site-rooted packages — this repo's own `webmodes` and the six mirrored
+    // rosters — mount at the same `packages/<name>` prefix from a different
+    // root, which is exactly the thing a walker can get wrong.
+    for (const pkg of WEB_PACKAGES) {
       for (const rel of walk(join(WEB_ROOT, 'packages', pkg), `packages/${pkg}`)) {
         expected.set(rel, readFileSync(join(WEB_ROOT, rel), 'utf8'));
       }
@@ -98,9 +100,17 @@ describe('asset manifest (4.5)', () => {
     }
   });
 
+  /**
+   * The key is the engine-relative path a runtime `LogEvent` payload names, and
+   * it stays that shape whichever disk the build read the bytes from: the six
+   * mirrored rosters live under `<site>/packages/`, everything else under the
+   * upstream checkout. `rootFor` is the build's own answer to that question, so
+   * asking it here checks the mapping the build actually used rather than a
+   * second copy of it that could drift.
+   */
   it('keys assets by their engine path, so a LogEvent payload can look them up', () => {
     for (const e of manifest.entries) {
-      expect(existsSync(join(ENGINE_ROOT, e.key)), e.key).toBe(true);
+      expect(existsSync(join(rootFor(e.key), e.key)), e.key).toBe(true);
     }
   });
 
@@ -176,11 +186,14 @@ describe('fonts (4.6)', () => {
   });
 
   it('is a rounding error next to the 25.84 MB it replaces', () => {
-    // 653 KB, up from 338 KB. The mobile pack nearly doubled the Han the build
-    // can render (1,458 -> 2,800) and the subset has to cover all of it or the
-    // roster shows tofu. Harvesting only the translation tables instead of the
-    // whole Lua tree would save 122 Han - not worth the risk of missing one.
-    expect(fonts.bytes).toBeLessThan(700 * 1024);
+    // 743 KB, up from 653 KB, up from 338 KB. Each step is a roster growing:
+    // the mobile pack took the Han the build can render from 1,458 to 2,800,
+    // and the six mirrored rosters took it to 3,178. The subset has to cover
+    // all of it or the general list shows tofu, and 90 KB of woff2 is a far
+    // better trade than a name nobody can read. Harvesting only the translation
+    // tables instead of the whole Lua tree would save 122 Han - not worth the
+    // risk of missing one.
+    expect(fonts.bytes).toBeLessThan(800 * 1024);
   });
 });
 
@@ -203,19 +216,47 @@ describe('overview data (4.8)', () => {
   });
 
   it('ships the mobile roster, minus the generals whose skills are not here', () => {
-    // 294 visible in the engine; 45 hidden by `lua/web/roster.lua` because they
-    // cannot be played correctly here - 40 reference a skill that lives in an
-    // extension pack this checkout does not have (`nos__`, `ol__`, `mou__`,
-    // `os__`, `*_ex`), 3 need a card it does not define, 2 need a Room method
-    // this engine version does not have. Seating a general whose skill silently
-    // does nothing is a rules divergence, which is worse than a shorter roster.
-    expect(byExtension('mobile')).toHaveLength(249);
+    // 294 visible in the engine; 15 still hidden by `lua/web/roster.lua` because
+    // they cannot be played correctly here. That was 45 before the six mirrored
+    // rosters arrived: 30 of them named a skill that lives in an extension pack
+    // this checkout did not have, and `roster.lua` put them back by itself when
+    // the skill appeared - the tables it consults are keyed by the missing
+    // thing, not by general name, and are read at boot.
+    //
+    // Seating a general whose skill silently does nothing is a rules
+    // divergence, which is worse than a shorter roster; that is why the rest
+    // stay out. `m_ex__caiwenji` is the canonical example of one that came back
+    // (〖断肠〗 now exists, from `shzl`), and `m_ex__weiyan` of one that has not
+    // (〖狂骨〗 is in `ol`, which is not mirrored).
+    expect(byExtension('mobile')).toHaveLength(279);
     expect(data.generals.map((g) => g.name)).toContain('sunru');
     // Ten sub-packages share one extension directory, which is why the payload
     // carries `extension` separately from `pack`.
     expect(new Set(byExtension('mobile').map((g) => g.pack)).size).toBeGreaterThanOrEqual(9);
-    // Every hidden general is gone for a reason the payload can still explain.
-    expect(data.generals.map((g) => g.name)).not.toContain('m_ex__caiwenji');
+    expect(data.generals.map((g) => g.name)).toContain('m_ex__caiwenji');
+    expect(data.generals.map((g) => g.name)).not.toContain('m_ex__weiyan');
+  });
+
+  /**
+   * The six rosters mirrored under `<site>/packages/`, pinned in
+   * `packages/provenance.json`. Counted per extension because that is the
+   * directory portraits resolve against, and asserted rather than summed so a
+   * pack that silently stops loading - one bad `require` takes a whole package
+   * down, as `gamemode` does - fails here instead of quietly shrinking the pool.
+   */
+  it('ships the six mirrored rosters', () => {
+    expect(byExtension('standard_ex')).toHaveLength(31);
+    expect(byExtension('shzl')).toHaveLength(63);
+    expect(byExtension('yj')).toHaveLength(93);
+    expect(byExtension('sp')).toHaveLength(53);
+    expect(byExtension('mougong')).toHaveLength(48);
+    expect(byExtension('jsrg')).toHaveLength(79);
+    expect(data.generals).toHaveLength(671);
+    // 界刘备 and 灵雎 load fine and are deliberately withheld: 〖仁德〗 and
+    // 〖焚心〗 call Room methods this engine lacks, which throws inside the
+    // skill where the engine swallows it. See roster.test.ts.
+    expect(data.generals.map((g) => g.name)).not.toContain('ex__liubei');
+    expect(data.generals.map((g) => g.name)).not.toContain('lingju');
   });
 
   it('resolves a portrait for every general but the four upstream never drew', () => {
@@ -229,9 +270,10 @@ describe('overview data (4.8)', () => {
     const blank = data.generals.filter(
       (g) => !keys.has(`packages/${g.extension}/image/generals/${g.name}.jpg`),
     );
-    // These four ship no portrait in packages/mobile/image/generals at all.
-    // The grid draws its 3/4 placeholder for them, which is the honest answer.
+    // These six ship no portrait in their pack's image/generals at all. The
+    // grid draws its 3/4 placeholder for them, which is the honest answer.
     expect(blank.map((g) => g.name).sort()).toEqual([
+      'js_re__qiaoxuan', 'js_re__sunjian',
       'm_shi__chenjiao', 'm_shi__wangchang', 'm_sp__yujin', 'mobile__yangqiu',
     ]);
   });

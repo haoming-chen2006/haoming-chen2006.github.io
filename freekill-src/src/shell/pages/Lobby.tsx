@@ -28,14 +28,22 @@ export const DEFAULT_SETTINGS = {
    * (`lua/lunarltk/server/events/gameflow.lua:122`). A whole implemented
    * feature, unreachable from this build.
    *
-   * Five is what a table actually wants — a bad opening hand is the commonest
-   * reason a game stops being fun in the first round — and it is a redraw, not
-   * an advantage: everyone gets the same offer at the same moment, and the
-   * count is on screen. The host can take it back down to 0 in the waiting
-   * room, which is upstream's whole range (0-8) and is where a player looks
-   * for it.
+   * IT SHIPPED AT 5 AND CAME STRAIGHT BACK TO 0. A player reported that with
+   * redraws on, the table came up saying every card had been drawn. The engine
+   * itself is not at fault — `discardInit` returns the old hand to the draw
+   * pile (`gameflow.lua:39-48`, `toArea = Card.DrawPile`), so the deck cannot
+   * actually drain — which means the fault is on this side, in how the redraw's
+   * `MoveCards` are read or counted. Until that is understood, nobody gets it
+   * by accident.
+   *
+   * Zero is also upstream's own default for a public server: `DrawInitial`
+   * shuffles and moves straight on when `luckTime <= 0`
+   * (`gameflow.lua:122`), so this is the engine's quiet path, not a special
+   * case of ours. The waiting-room control still offers 0-8 for a host who
+   * wants to opt in, and the panel, the prompt and the cancel path all stay —
+   * what changed is only that it is no longer the default.
    */
-  luckTime: 5,
+  luckTime: 0,
   enableDeputy: false,
   enableFreeAssign: false,
   enableObserverViewCard: false,

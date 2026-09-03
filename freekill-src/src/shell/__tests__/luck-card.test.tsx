@@ -250,12 +250,21 @@ describe('手气卡 — the opening hand you can throw back', () => {
   }, LONG);
 
   /**
-   * The gap that made all of the above unreachable. A room created from the
-   * lobby has to ask for the feature, or the engine never raises it.
+   * OFF by default, and that is a retreat rather than a design.
+   *
+   * It shipped on at 5 and a player reported the table coming up saying every
+   * card had been drawn — unplayable. The engine is not the problem:
+   * `discardInit` puts the old hand back in the draw pile
+   * (`gameflow.lua:39-48`), so the deck cannot drain. Something on this side
+   * reads or counts the redraw's `MoveCards` wrongly, and until that is found
+   * nobody should meet it by accident.
+   *
+   * The range assertion stays, because the host control is still there and
+   * upstream's ceiling is still 8 (`lua/lunarltk/init.lua:22`). What is pinned
+   * now is only that a lobby-created room does not turn it on for you.
    */
-  it('is on by default in a room the lobby creates', () => {
-    expect(DEFAULT_SETTINGS.luckTime).toBeGreaterThan(0);
-    // Upstream's own ceiling — `lua/lunarltk/init.lua:22`, `SpinRow to = 8`.
+  it('is off by default until the draw-count bug is understood', () => {
+    expect(DEFAULT_SETTINGS.luckTime).toBe(0);
     expect(DEFAULT_SETTINGS.luckTime).toBeLessThanOrEqual(8);
   });
 });

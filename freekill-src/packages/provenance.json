@@ -9,30 +9,33 @@
   "origin": {
     "host": "https://gitee.com/qsgs-fans",
     "what": "The extension-pack ecosystem around FreeKill (https://github.com/Notify-ctrl/FreeKill). Each repository is a self-contained `packages/<name>/` tree — `init.lua` plus `pkg/<sub>/init.lua` — which `ModManager:loadPackages` mounts by walking the virtual filesystem. Nothing about them is web-specific and no file in them was modified.",
-    "why": "The site shipped 274 generals. 45 more were defined but withheld by lua/web/roster.lua because they name skills, cards or Room methods that no package on disk defines. Every one of those names resolves to a repository below."
+    "why": "The site shipped 274 generals. 45 more were defined but withheld by lua/web/roster.lua because they name skills, cards or Room methods that no package on disk defines. Every one of those names resolves to one of the first six repositories below.",
+    "sinceThen": "sxrm 蚀心入魔 was not on that list and closes no gap in it. It was asked for by name, and it is here on the same terms as the rest: pinned to the commit fetched, licence verified rather than assumed, one general withheld by the same runtime check that withholds the others."
   },
   "licence": {
-    "grant": "GPL-3.0. All six carry the unmodified GPL-3.0 text as `LICENSE` at the repository root, byte-identical (md5 d32239bcb673463ab874e80d47fae504) to the LICENSE in FreeKill itself and in packages/mobile — except standard_ex, which is the same text with CRLF line endings.",
-    "spdxHeaders": "Sparse, and no sparser than what already ships: 0-1 of each pack's Lua files carry an `SPDX-License-Identifier` header, against 2 of 633 in packages/mobile. The grant these packs rest on is the repository-level LICENSE file, not per-file headers.",
+    "grant": "GPL-3.0. All seven carry the unmodified GPL-3.0 text as `LICENSE` at the repository root, byte-identical (md5 d32239bcb673463ab874e80d47fae504) to the LICENSE in FreeKill itself and in packages/mobile — except standard_ex, which is the same text with CRLF line endings.",
+    "spdxHeaders": "Sparse, and no sparser than what already ships: 0-1 of each pack's Lua files carry an `SPDX-License-Identifier` header, against 2 of 633 in packages/mobile. The grant these packs rest on is the repository-level LICENSE file, not per-file headers. sxrm is the exception and the strongest of the seven: all four of its `init.lua` files — the pack entry point and one per sub-package — carry `SPDX-License-Identifier: GPL-3.0-or-later`, 4 of 61.",
+    "verifiedHow": "sxrm's LICENSE was fetched deliberately rather than assumed. The first checkout of that repository used a sparse pattern of `/**/*.lua` alone, so no LICENSE came down and the file's absence said nothing about the repository. `git ls-tree HEAD` on the partial clone showed `LICENSE` and `README.md` at the root; the checkout was then re-run with the same four-pattern sparse set the other six used, and the resulting file's md5 compared against FreeKill's own. An absent licence would have been recorded as absent here, not rounded off — that is what this field exists to promise.",
     "ourUse": "This site is GPL-3.0-or-later itself, so redistributing GPL-3.0 Lua as part of it raises no compatibility question."
   },
   "portraits": {
-    "shipped": 414,
-    "bytes": 8000000,
+    "shipped": 446,
+    "bytes": 8910543,
     "note": "These are recorded here rather than folded into the licence line above, because the honest position is weaker than 'GPL-3.0' on its own suggests, and it is the same position the site has already been in since it began serving the 317 packages/mobile portraits.",
+    "countIsRasters": "446 is every raster under `packages/*/image/`, which is what the build walks. 440 are portraits (general art plus the `avatar/` and `dual/` variants some packs draw). The other 6 are not: standard_ex's two 木牛流马 rasters and sp's 宴逍 delayed-trick face are card art the game does draw, and sxrm's three `image/kingdom/evil*.png` are seat chrome for the 魔 kingdom it registers, which nothing currently asks for — src/room/assets resolves a seat frame as `image/photo/back/<kingdom>.png` out of the engine root, so a 魔 general gets the `unknown.png` fallback and these three ride along unused.",
     "evidence": [
       "A repository-level GPL grant is only effective from a licensor who holds the copyright. A contributor cannot license artwork they do not own by committing it — the same reasoning src/room/audio/provenance.json applied to the recordings, which is why no audio ships.",
       "src/room/audio/provenance.json already records, for packages/mobile, that 'its git history includes commits describing copying official 原画配音' — 原画 is the original ART, not only the voice acting. That finding was made about the pack whose portraits this site already serves.",
-      "These six packs carry no per-image attribution and no separate art licence. Some generals carry an `illustrator:` translation key naming a studio (君桓文化, 凡果, 铁杵文化 and others); that is a credit, not a grant.",
+      "These seven packs carry no per-image attribution and no separate art licence. Some generals carry an `illustrator:` translation key naming a studio (君桓文化, 凡果, 铁杵文化, 鬼画府 and others); that is a credit, not a grant. sxrm is blunter about it than most: several of its credits read 小罗没想好 — 'Xiao Luo hasn't decided yet' — which is not the name of a rights holder.",
       "No claim is made here that the portraits are cleanly licensed. What is claimed is that shipping them is the same act, on the same evidence, as shipping the mobile portraits that are already live — and that if that act is ever reconsidered, it should be reconsidered for all of them together."
     ],
     "ifReconsidered": "Dropping portraits is one line: remove the pack from VENDORED_PACKS in scripts/build-assets.mjs. The roster keeps working — src/room draws its 3/4 placeholder tile for any general with no manifest entry, which is what the 6 generals listed in scripts/build.test.ts already get."
   },
   "audioNotFetched": {
     "why": "Not a size decision. src/room/audio/provenance.json records this project's standing verdict that no audio file from the FreeKill ecosystem is shippable — 887 of packages/mobile's 1773 clips carry `album=绯雨音乐`, a commercial studio's copyright line, and every sound the site makes is synthesised at runtime instead.",
-    "howItWasExcluded": "The sparse-checkout that fetched these packs asked for '/**/*.lua', '/*.lua', '/image/**' and '/LICENSE*'. No audio/ tree was ever downloaded, so there is nothing under packages/*/audio to exclude and `build-assets.mjs --audio` finds nothing here.",
+    "howItWasExcluded": "The sparse-checkout that fetched these packs asked for '/**/*.lua', '/*.lua', '/image/**' and '/LICENSE*'. No audio/ tree was ever downloaded, so there is nothing under packages/*/audio to exclude and `build-assets.mjs --audio` finds nothing here. sxrm is the one case where that was not a decision at all: `git ls-tree -r HEAD` on it lists no audio path, so the pack has none upstream to fetch.",
     "sizeIfEverWanted": 79100000,
-    "perPack": { "shzl": 14600000, "yj": 20800000, "standard_ex": 7600000, "sp": 8800000, "mougong": 18000000, "jsrg": 9300000 }
+    "perPack": { "shzl": 14600000, "yj": 20800000, "standard_ex": 7600000, "sp": 8800000, "mougong": 18000000, "jsrg": 9300000, "sxrm": 0 }
   },
   "packs": [
     {
@@ -119,6 +122,22 @@
       "portraits": 89,
       "supplies": ["zhenqiao (起刘备)", "pingtao (起孙坚)"],
       "note": "This is the 江山如故 the roster was missing. packages/mobile has a `mobile_jsrg` sub-package, but it holds three generals both here and upstream — the pack proper is this separate repository."
+    },
+    {
+      "name": "sxrm",
+      "title": "蚀心入魔",
+      "repo": "https://gitee.com/qsgs-fans/sxrm",
+      "commit": "76d262aacb21bcac7341f3a003f6baac77d907e0",
+      "committed": "2026-09-01T00:31:31+08:00",
+      "subject": "fix: 从风按照国际服结算",
+      "licence": "GPL-3.0 (LICENSE at root, LF, md5-identical to FreeKill's). Also the only pack of the seven with SPDX headers on every init.lua.",
+      "generalsShipped": 26,
+      "enginePackages": 3,
+      "luaFiles": 61,
+      "portraits": 29,
+      "supplies": [],
+      "withheld": ["sx__huatuo (miehai / 灭害 clones stab__slash 刺【杀】)"],
+      "note": "The smallest of the seven and the only one that registers a KINGDOM: `Fk:appendKingdomMap(\"evil\", …)` in pkg/suspicion/init.lua, translated 魔, worn by 3 of its 27. The engine already had `appendKingdomMap`, so nothing needed patching; only `src/shell/pages/Overview.tsx`'s badge map and `kingdom.evil` in src/i18n/ui.ts had to learn the name, the same edit `god` needed when the mobile roster arrived. Its three sub-packages are named for the vices — pride 慢, rage 怒, suspicion 疑 — not for the pack, which is why src/engine/__tests__/support.ts cannot derive them from this file."
     }
   ],
   "notFetched": [

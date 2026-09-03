@@ -42,7 +42,7 @@ export const SITE_PACKAGES = ['webmodes'];
 
 /**
  * Third-party rosters mirrored into `<site>/packages/`, pinned by commit in
- * `packages/provenance.json`. Six packs, 407 more playable generals.
+ * `packages/provenance.json`. Seven packs, 433 more playable generals.
  *
  * They live in this repo rather than in the upstream mirror for three reasons.
  * The mirror is read-only and shared with another lane, so writing six package
@@ -60,7 +60,9 @@ export const SITE_PACKAGES = ['webmodes'];
  * Each is `Package:new` per sub-pack, so the count of packages the engine
  * reports is much larger than six.
  */
-export const VENDORED_PACKAGES = ['standard_ex', 'shzl', 'yj', 'sp', 'mougong', 'jsrg'];
+export const VENDORED_PACKAGES = [
+  'standard_ex', 'shzl', 'yj', 'sp', 'mougong', 'jsrg', 'sxrm',
+];
 
 /** Everything read out of `<site>/packages/`, in the order the walker takes them. */
 export const WEB_PACKAGES = [...VENDORED_PACKAGES, ...SITE_PACKAGES];

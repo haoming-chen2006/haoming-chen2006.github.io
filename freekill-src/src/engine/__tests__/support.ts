@@ -36,12 +36,13 @@ export const MOBILE_PACKS = [
 ] as const;
 
 /**
- * The six mirrored rosters' sub-packages, by the same `disabled_packs` name.
+ * The seven mirrored rosters' sub-packages, by the same `disabled_packs` name.
  *
- * Thirty-two of them behind six directories: the repository name is not the
+ * Thirty-five of them behind seven directories: the repository name is not the
  * package name, so this cannot be derived from `VENDORED_PACKAGES` — `shzl`
  * registers `wind`/`fire`/`forest`/`mountain`/`shadow`/`thunder`/`shzl_god`,
- * and `yj` registers one package per year.
+ * `yj` registers one package per year, and `sxrm` names its three after the
+ * vices rather than after itself.
  */
 export const VENDORED_PACKS = [
   'standard_ex',
@@ -58,6 +59,7 @@ export const VENDORED_PACKS = [
   'sp', 'sp_star', 'sp_jsp', 'sp_re',
   'mou_zhi', 'mou_shi', 'mou_tong', 'mou_yu', 'mou_neng',
   'beginning', 'continue', 'transition', 'conclusion', 'decline', 'rise',
+  'pride', 'rage', 'suspicion',
 ] as const;
 
 /**

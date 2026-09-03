@@ -91,16 +91,20 @@ describe('the general summaries', () => {
 
   it('records exactly how much prose the roster still owes', () => {
     const owed = overview.generals.filter((g) => !generalSummary(g.name)).map((g) => g.name);
-    // 367 from the six mirrored rosters, plus 30 mobile generals that were
+    // 367 from the first six mirrored rosters, plus 30 mobile generals that were
     // hidden when the summaries were written and are offered now that their
     // skills exist — `m_ex__bulianshi` and the rest of the 界 series. The other
     // 30 mirrored generals already had one, because the summaries were written
     // against names, and a few names appear in more than one pack.
     //
+    // sxrm 蚀心入魔 then added 26 more, and every one of them is new debt: it
+    // prefixes its reprints `sx__`, so not one of its names collides with a
+    // summary already written.
+    //
     // Asserted as an exact number, not an upper bound, so that both directions
     // are news: writing a summary is visible progress, and a general appearing
     // without one cannot pass as debt already counted.
-    expect(owed).toHaveLength(397);
+    expect(owed).toHaveLength(423);
     expect(owed).toContain('m_ex__bulianshi');
   });
 

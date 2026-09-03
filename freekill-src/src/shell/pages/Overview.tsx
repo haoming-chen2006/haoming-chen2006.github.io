@@ -24,8 +24,12 @@ type Tab = 'generals' | 'cards' | 'modes' | 'skills';
 const KINGDOMS: Record<string, UiKey> = {
   wei: 'kingdom.wei', shu: 'kingdom.shu', wu: 'kingdom.wu', qun: 'kingdom.qun', jin: 'kingdom.jin',
   // The mobile roster brings nine 神 generals; without this they render a bare
-  // `god` badge and the kingdom filter cannot reach them.
+  // `god` badge and the kingdom filter cannot reach them. `evil` is the same
+  // story for 蚀心入魔's three 魔 generals — the pack registers the kingdom
+  // itself via `Fk:appendKingdomMap`, so the engine knows it and only this map
+  // did not.
   god: 'kingdom.god',
+  evil: 'kingdom.evil',
 };
 const CARD_TYPE: Record<number, UiKey> = {
   1: 'cardType.basic', 2: 'cardType.trick', 3: 'cardType.equip',

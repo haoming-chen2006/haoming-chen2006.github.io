@@ -382,6 +382,10 @@ export const UI = {
   'kingdom.qun': { zh_CN: '群', en_US: 'Neutral' },
   'kingdom.jin': { zh_CN: '晋', en_US: 'Jin' },
   'kingdom.god': { zh_CN: '神', en_US: 'God' },
+  // 蚀心入魔 brings a kingdom of its own, and three generals wear it. The zh is
+  // the pack's own word (`["evil"] = "魔"`, suspicion/init.lua:11); the English
+  // is ours, chosen to sit beside God rather than to gloss `evil` literally.
+  'kingdom.evil': { zh_CN: '魔', en_US: 'Demon' },
   'kingdom.unknown': { zh_CN: '未知', en_US: 'Unknown' },
 
   /* Card type filter. Matches upstream's own wording in the `:card` blurbs. */

@@ -49,10 +49,14 @@ export const SITE_PACKAGES = ['webmodes'] as const;
  *
  * They belong in the default because this suite's job is to test what ships.
  * They were left out of it for one run and the roster invariant in
- * `__tests__/roster.test.ts` passed against a bundle 407 generals smaller than
- * the deployed one — a green suite proving nothing about the real thing.
+ * `__tests__/roster.test.ts` passed against a bundle 433 generals smaller than
+ * the deployed one — a green suite proving nothing about the real thing. Adding
+ * a pack here is therefore not optional bookkeeping: it is what makes the
+ * invariant true of the thing players get.
  */
-export const VENDORED_PACKAGES = ['standard_ex', 'shzl', 'yj', 'sp', 'mougong', 'jsrg'] as const;
+export const VENDORED_PACKAGES = [
+  'standard_ex', 'shzl', 'yj', 'sp', 'mougong', 'jsrg', 'sxrm',
+] as const;
 
 /** Everything read out of `<site>/packages/`. */
 export const WEB_PACKAGES = [...VENDORED_PACKAGES, ...SITE_PACKAGES] as const;

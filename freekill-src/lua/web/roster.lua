@@ -1,6 +1,6 @@
 -- roster.lua -- 开局武将池的完整性检查。必须在 lua/freekill.lua 之后跑（那时包才加载完）。
 --
--- WHY THIS EXISTS. 引擎里装着 706 名武将，其中 27 名在这份代码里打不完整。三种缺法：
+-- WHY THIS EXISTS. 引擎里装着 733 名武将，其中 36 名在这份代码里打不完整。三种缺法：
 --
 --   缺技能（20 名）手杀包直接引用别的拓展包（ol / os / ty / *_ex）里的技能名，
 --                而那些包不在本仓库的 packages/ 下；另有 7 名栽在技能文件本身
@@ -8,10 +8,10 @@
 --                技能没建起来，效果和缺包一样。General:addSkill 收到的是字符串
 --                不是 Skill 对象，所以引擎连个警告都不给 —— 名字记进 other_skills，
 --                取的时候查不到，静默跳过。
---   缺牌（3 名）  技能硬依赖一张本仓库没有的牌，每次触发都在 cloneCard 上抛异常。
---                三张牌都由 qsgs-fans/gamemode 的 derived_cards 提供，而那个包
---                的 2v2.lua 在这版核心上过不了 fk.CreateGameMode 的断言，整包
---                带不进来。
+--   缺牌（12 名）技能硬依赖一张本仓库没有的牌，每次触发都在 cloneCard 上抛异常。
+--                一共缺 7 张，其中 3 张由 qsgs-fans/gamemode 的 derived_cards
+--                提供，而那个包的 2v2.lua 在这版核心上过不了 fk.CreateGameMode
+--                的断言，整包带不进来。
 --   缺方法（4 名）技能调用的 Room 方法这版引擎还没有，见 lua/web/roomcompat.lua。
 --
 -- 数字会随镜像进来的包变，别照着改代码 —— 下面两张表和 missingSkills 都是运行时
@@ -81,6 +81,12 @@ end
 ---
 --- 复现：把武将池钉成「南华老仙 + 7 名标准将」，8 个 AI 打一局，得到 7 个
 --- decision；同样的钉法换成任何一名别的武将都是 278-596 个。
+---
+--- 最后一条〖灭害〗是第七个镜像包 sxrm 蚀心入魔进来时，roster.test.ts 自己抓到
+--- 的 —— 不是人扫出来的，这正是把不变量写成测试而不是写成名单的用处。它要的
+--- 刺【杀】和〖旋风〗〖倾席〗要的是同一张，所以键写在牌上，那张牌哪天进来，三名
+--- 武将一起回池子。它挂在 viewas 上而不是回合事件上，坏起来只是「技能点不动」，
+--- 不像〖授书〗能把整局拖死；但规则错就是规则错，一样下架。
 local REQUIRED_CARDS = {
   mobile__tianshu = { "js__peace_spell" },
   tianzuo = { "raid_and_frontal_attack" },
@@ -94,6 +100,7 @@ local REQUIRED_CARDS = {
   re__danxinl = { "sincere_treat" },      -- 界丹心，js_re__liuyong 界刘永
   xuanfengj = { "stab__slash" },          -- 旋风，js__jiangwei 姜维
   qingxix = { "stab__slash" },            -- 倾席，js__xuyou 许攸
+  miehai = { "stab__slash" },             -- 灭害，sx__huatuo 华佗（蚀心入魔）
   dingce = { "foresight" },               -- 定策，js__guojia 郭嘉（先见之明）
   ninghan = { "ice__slash" },             -- 凝寒，js__zhangchunhua 张春华（冰杀）
 }

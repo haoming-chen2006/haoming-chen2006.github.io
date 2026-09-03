@@ -42,12 +42,19 @@ const WANT_AUDIO = argv.has('--audio');
 const PACKS = ['standard', 'standard_cards', 'maneuvering', 'mobile'];
 
 /**
- * The six mirrored rosters, read from `<site>/packages/` instead of the upstream
- * checkout. 414 portraits, 8.0 MB of JPEG. See `packages/provenance.json`.
+ * The seven mirrored rosters, read from `<site>/packages/` instead of the
+ * upstream checkout. 446 rasters, 8.9 MB. See `packages/provenance.json`.
  *
- * Their `audio/` was never fetched, so there is nothing here for `--audio` to
+ * Six of them had their `audio/` deliberately left out of the sparse checkout,
+ * and `sxrm` has none upstream at all, so there is nothing here for `--audio` to
  * find and nothing to exclude — adding it later is a sparse-checkout change in
  * that file, not a change here.
+ *
+ * `sxrm` is also the first to bring chrome of its own: three `image/kingdom/`
+ * rasters for the 魔 kingdom it registers. They ride along because the walker
+ * takes everything under `image/`, and nothing asks for them — the seat frame
+ * resolves `image/photo/back/<kingdom>.png` out of the engine root and falls
+ * back to `unknown.png`, which is what a 魔 general gets.
  */
 const VENDORED_PACKS = VENDORED_PACKAGES;
 

@@ -13,6 +13,7 @@ import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { AssetManifestSchema, LuaManifestSchema } from '../src/contract/manifest';
 import { EN_US } from '../src/i18n/engine';
+import { UI } from '../src/i18n/ui';
 import { buildBundle, ENGINE_ROOT, PACKAGES, WEB_PACKAGES } from './build-lua-bundle.mjs';
 import { rootFor } from './build-assets.mjs';
 import { glyphSet } from './glyphset.mjs';
@@ -46,7 +47,7 @@ describe('lua bundle (4.7)', () => {
         expected.set(rel, readFileSync(join(ENGINE_ROOT, rel), 'utf8'));
       }
     }
-    // Site-rooted packages — this repo's own `webmodes` and the six mirrored
+    // Site-rooted packages — this repo's own `webmodes` and the seven mirrored
     // rosters — mount at the same `packages/<name>` prefix from a different
     // root, which is exactly the thing a walker can get wrong.
     for (const pkg of WEB_PACKAGES) {
@@ -102,7 +103,7 @@ describe('asset manifest (4.5)', () => {
 
   /**
    * The key is the engine-relative path a runtime `LogEvent` payload names, and
-   * it stays that shape whichever disk the build read the bytes from: the six
+   * it stays that shape whichever disk the build read the bytes from: the seven
    * mirrored rosters live under `<site>/packages/`, everything else under the
    * upstream checkout. `rootFor` is the build's own answer to that question, so
    * asking it here checks the mapping the build actually used rather than a
@@ -186,13 +187,13 @@ describe('fonts (4.6)', () => {
   });
 
   it('is a rounding error next to the 25.84 MB it replaces', () => {
-    // 743 KB, up from 653 KB, up from 338 KB. Each step is a roster growing:
-    // the mobile pack took the Han the build can render from 1,458 to 2,800,
-    // and the six mirrored rosters took it to 3,178. The subset has to cover
-    // all of it or the general list shows tofu, and 90 KB of woff2 is a far
-    // better trade than a name nobody can read. Harvesting only the translation
-    // tables instead of the whole Lua tree would save 122 Han - not worth the
-    // risk of missing one.
+    // 746 KB, up from 743 KB, up from 653 KB, up from 338 KB. Each step is a
+    // roster growing: the mobile pack took the Han the build can render from
+    // 1,458 to 2,800, the six mirrored rosters took it to 3,178, and sxrm's 27
+    // added 16 more for 3,194. The subset has to cover all of it or the general
+    // list shows tofu, and 90 KB of woff2 is a far better trade than a name
+    // nobody can read. Harvesting only the translation tables instead of the
+    // whole Lua tree would save 122 Han - not worth the risk of missing one.
     expect(fonts.bytes).toBeLessThan(800 * 1024);
   });
 });
@@ -238,25 +239,43 @@ describe('overview data (4.8)', () => {
   });
 
   /**
-   * The six rosters mirrored under `<site>/packages/`, pinned in
+   * The seven rosters mirrored under `<site>/packages/`, pinned in
    * `packages/provenance.json`. Counted per extension because that is the
    * directory portraits resolve against, and asserted rather than summed so a
    * pack that silently stops loading - one bad `require` takes a whole package
    * down, as `gamemode` does - fails here instead of quietly shrinking the pool.
    */
-  it('ships the six mirrored rosters', () => {
+  it('ships the seven mirrored rosters', () => {
     expect(byExtension('standard_ex')).toHaveLength(31);
     expect(byExtension('shzl')).toHaveLength(63);
     expect(byExtension('yj')).toHaveLength(93);
     expect(byExtension('sp')).toHaveLength(53);
     expect(byExtension('mougong')).toHaveLength(48);
     expect(byExtension('jsrg')).toHaveLength(79);
-    expect(data.generals).toHaveLength(671);
+    expect(byExtension('sxrm')).toHaveLength(26);
+    expect(data.generals).toHaveLength(697);
     // 界刘备 and 灵雎 load fine and are deliberately withheld: 〖仁德〗 and
     // 〖焚心〗 call Room methods this engine lacks, which throws inside the
-    // skill where the engine swallows it. See roster.test.ts.
+    // skill where the engine swallows it. 神华佗 is the same shape one layer
+    // over - 〖灭害〗 clones 刺【杀】, which this build has no card for - and it
+    // is the one `roster.test.ts` caught by itself when sxrm arrived. See
+    // roster.test.ts.
     expect(data.generals.map((g) => g.name)).not.toContain('ex__liubei');
     expect(data.generals.map((g) => g.name)).not.toContain('lingju');
+    expect(data.generals.map((g) => g.name)).not.toContain('sx__huatuo');
+  });
+
+  /**
+   * 蚀心入魔 registers a kingdom of its own (`Fk:appendKingdomMap("evil", …)`),
+   * which no pack before it did. Three of its generals wear it, and a kingdom
+   * the badge map has never heard of renders as the bare engine key next to
+   * every properly-labelled one - so this pins the fact rather than the count.
+   */
+  it('carries the 魔 kingdom sxrm introduces', () => {
+    const evil = data.generals.filter((g) => g.kingdom === 'evil');
+    expect(evil).toHaveLength(3);
+    expect(evil.every((g) => g.extension === 'sxrm')).toBe(true);
+    expect(UI['kingdom.evil'].zh_CN).toBe('魔');
   });
 
   it('resolves a portrait for every general but the four upstream never drew', () => {

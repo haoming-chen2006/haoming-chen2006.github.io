@@ -40,8 +40,7 @@ const netModules = import.meta.glob<Record<string, unknown>>('../../net/index.ts
  *
  * The local API has no seed table, so the seed is derived from the room id:
  * the same room deals the same game, which is the only property a seed has to
- * have when there is exactly one machine in the room. `hostRunner` mixes the
- * round in on top, so a rematch in the same room does not deal it twice.
+ * have when there is exactly one machine in the room.
  */
 export function loopbackTransport(roomId: string): GameTransport {
   const envelopeHandlers = new Set<{ playerId: number | null; fn: (e: Envelope) => void }>();
@@ -81,20 +80,13 @@ export function loopbackTransport(roomId: string): GameTransport {
   };
 }
 
-/**
- * `epoch` is the room's round — 0 for its first game. It reaches the real
- * transport as the suffix on the realtime topics, so two games of one room
- * never share a channel; see `createRoomTransport`. The loopback needs no such
- * separation, because every call already builds its own handler set.
- */
-export async function getGameTransport(roomId: string, epoch = 0): Promise<GameTransport> {
+export async function getGameTransport(roomId: string): Promise<GameTransport> {
   const entry = Object.values(netModules)[0];
   if (entry) {
     try {
       const mod = await entry();
-      const make = mod.createRoomTransport as
-        ((id: string, sb?: unknown, epoch?: number) => GameTransport) | undefined;
-      if (typeof make === 'function') return make(roomId, undefined, epoch);
+      const make = mod.createRoomTransport as ((id: string) => GameTransport) | undefined;
+      if (typeof make === 'function') return make(roomId);
       console.warn('[table] src/net exports no createRoomTransport; playing on the loopback');
     } catch (e) {
       console.warn('[table] src/net failed to load; playing on the loopback', e);

@@ -128,10 +128,7 @@ ClientMT.__index = {
     -- 浏览器里没有那层 QML，所以在这儿把环闭上 —— 否则点了确定也发不出回复，
     -- 而且这件事不该泄漏成每个 UI 实现都要记得做的一步。
     if command == "ReplyToServer" then
-      -- canon.encodeReply 而不是 cbor.encode：场景式询问的「取消」就是一个顶层
-      -- 字符串 "__cancel"，而手气卡是引擎里唯一在解码前按原始字节比对回复的地
-      -- 方。见 lua/web/canon.lua 的 encodeReply。
-      self:replyToServer("", canon.encodeReply(data))
+      self:replyToServer("", cbor.encode(data))
     end
   end,
 }
@@ -385,15 +382,15 @@ end
 --- 这些询问不走 ui_emu 的场景模型：它们各有各的命令和负载，
 --- QML 客户端也是直接调 ClientInstance:replyToServer 回的
 --- （Fk/Pages/LunarLTK/RoomLogic.js:141）。
---- 回复由这个 VM 自己编码。字符串走 canon.encodeReply（CBOR 文本串），
---- 其余走 cbor.encode —— 两条加起来才和 QML/C++ 客户端发的字节一致。
+--- 回复由这个 VM 自己的 cbor 编码，所以到达权威房间的字节
+--- 和 QML 客户端发的完全一致。
 ---@param command string
 ---@param valueJson string canon JSON
 function FKClient.replyToServer(command, valueJson)
   local v = canon.revive(json.decode(valueJson))
   -- QML 走的是 ClientInstance.replyToServer("", data)，也就是 C++ Client 那一层，
   -- command 一律空串（RoomLogic.js:142），数据从 0.5.12 起直接给值不再 json.encode。
-  FKClient.cClient:replyToServer(command or "", canon.encodeReply(v))
+  FKClient.cClient:replyToServer(command or "", cbor.encode(v))
   return true
 end
 

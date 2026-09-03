@@ -63,38 +63,14 @@ export const ConfirmBar = memo(function ConfirmBar() {
   const specialSkills = scene.items.SpecialSkills?.['1'] as (ItemData & { skills?: string[] }) | undefined;
   const interactive = mode === 'play' && scene.active;
 
-  /**
-   * The question, in the order `RoomLogic.js:828-831` asks it.
-   *
-   * The scene's own prompt first; then the prompt the *caller* wrote, which is
-   * `data[1]` and which this port used to drop; then the `#<command>` template
-   * with `data[0]` in `%1`, which is all there is for a bare "do you want to
-   * use 〖洛神〗?".
-   *
-   * The middle rung is not a nicety. 163 of the vendored roster's skills pass a
-   * real prompt — `#zhiman-invoke::<target>` names who the skill is about — and
-   * every one of them was being answered with the target-less template. 手气卡
-   * is the case where losing it costs a *number*: how many redraws are left
-   * exists only in this string.
-   *
-   * `%arg` then `%1`, because the two languages disagree about which the count
-   * is. `processPrompt` fills the `:`-delimited fields the engine appends
-   * (`#AskForLuckCard:::5`), which is what zh_CN's "还可以使用 %arg 次" wants;
-   * upstream's en_US writes `%1` for the same slot and `processPrompt` leaves
-   * it alone, so `fillArgs` finishes the job rather than putting a raw `%1` in
-   * front of an English-speaking player. Both are no-ops on a prompt that has
-   * neither.
-   */
+  // `#AskForSkillInvoke` / `#AskForUseCard` / `#AskForResponseCard` when the
+  // scene sent no prompt of its own — see `PendingRequest.promptArg`.
   const req = state.request;
   const promptText = scene.prompt
     ? prompt(scene.prompt)
-    : req.kind !== 'scene'
-      ? ''
-      : req.promptKey
-        ? fillArgs(prompt(req.promptKey), ...req.promptKey.split(':').slice(3))
-        : req.promptArg
-          ? fillArgs(lua.tr(`#${req.command}`), lua.tr(req.promptArg))
-          : '';
+    : req.kind === 'scene' && req.promptArg
+      ? fillArgs(lua.tr(`#${req.command}`), lua.tr(req.promptArg))
+      : '';
 
   /**
    * WHAT THE SKILL ACTUALLY DOES, on the panel that asks you to fire it.

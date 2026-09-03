@@ -209,9 +209,7 @@ end
 ---@param valueJson string canon JSON
 function FKHost.pushReplyValue(connId, valueJson)
   local v = canon.revive(json.decode(valueJson))
-  -- canon.encodeReply，不是 cbor.encode：顶层字符串要编成 CBOR 文本串，因为
-  -- request.lua:162 的手气卡取消判断是按原始字节比的。见那个函数上的说明。
-  return FKHost.pushReplyRaw(connId, b64.encode(canon.encodeReply(v)))
+  return FKHost.pushReplyRaw(connId, b64.encode(cbor.encode(v)))
 end
 
 --- 唤醒房间。advanceUs 在唤醒前推进虚拟时钟。

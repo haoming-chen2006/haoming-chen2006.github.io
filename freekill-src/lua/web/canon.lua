@@ -258,39 +258,6 @@ function M.revive(v)
   return out
 end
 
---- 把一条「回复」编成权威房间期待的 CBOR 字节。
----
---- 为什么不是直接 cbor.encode：本项目内嵌的 lua/server/rpc/cbor.lua 有一行
---- `encoder.string = encoder.bytestring`，于是 Lua 字符串被编成**字节串**
---- （major type 2，"__cancel" -> \x48__cancel）。Qt 客户端那边是 C++ 编的，
---- 编出来的是**文本串**（major type 3，\x68__cancel）。两者解出来一模一样，
---- 所以整条链路上没有任何地方在意这个差别 —— 除了一处。
----
---- lua/server/request.lua:162 是引擎里唯一在 cbor.decode 之前按**原始字节**比
---- 回复的地方，它认的正是那两个默认值：
----
----   if reply ~= "__cancel" and reply ~= "\x68__cancel" then ... 再发一手 ...
----
---- 也就是手气卡。字节串编码的取消两个都对不上，于是「取消」被读成「是的，
---- 再换一手」：玩家点了取消也退不出来，只能把次数全部用完。这不是规则问题，
---- 是编码保真度问题，所以修在编码这一侧。
----
---- 只对顶层字符串生效。表和数组里的字符串照旧 —— 引擎从来不按字节比较它们，
---- 而改动那些会让每条回复的字节都和历史录像对不上。
----@param v any
----@return string 原始 CBOR 字节
-function M.encodeReply(v)
-  if type(v) == "string" then
-    local utf8string = type(cbor) == "table" and type(cbor.type_encoders) == "table"
-      and cbor.type_encoders.utf8string
-    if type(utf8string) == "function" then
-      local ok, bytes = pcall(utf8string, v)
-      if ok and type(bytes) == "string" then return bytes end
-    end
-  end
-  return cbor.encode(v)
-end
-
 -- FNV-1a 64
 local FNV_OFFSET <const> = 0xcbf29ce484222325
 local FNV_PRIME <const> = 0x100000001b3

@@ -22,16 +22,6 @@ import { generalAvatar } from '../boot';
 import { modeOfRoom } from '../../contract/modes';
 import { RoleStrip, SeatRing, modeNameKey } from '../ModePicker';
 
-/** `lua/lunarltk/init.lua:22` — `SpinRow { from = 0, to = 8 }`. Not our range. */
-export const LUCK_TIME_CHOICES = [0, 1, 2, 3, 4, 5, 6, 7, 8] as const;
-
-/** What the room's settings say, clamped to what the engine will accept. */
-export function luckTimeOf(settings: Readonly<Record<string, unknown>>): number {
-  const raw = Number(settings.luckTime);
-  if (!Number.isFinite(raw)) return 0;
-  return Math.min(8, Math.max(0, Math.round(raw)));
-}
-
 export function WaitingRoomView(props: WaitingRoomViewProps) {
   const {
     joinCode, joinUrl, seats, capacity, settings, meId, isHost,
@@ -48,7 +38,6 @@ export function WaitingRoomView(props: WaitingRoomViewProps) {
     : engineTr(String(settings.gameMode ?? ''), lang, (k) => loaded.overview.translations[k] ?? k);
   const [copied, setCopied] = useState<'code' | 'link' | null>(null);
   const [draft, setDraft] = useState('');
-  const luckTime = luckTimeOf(settings);
 
   const bySeat = new Map(seats.map((s) => [s.seat, s]));
   const humans = seats.filter((s) => !s.isBot);
@@ -114,43 +103,6 @@ export function WaitingRoomView(props: WaitingRoomViewProps) {
         ) : (
           <span style={{ fontSize: 13, color: 'var(--paper-faint)' }}>
             {settings.enableFreeAssign === true ? t('waiting.freeAssign.yes') : t('waiting.freeAssign.no')}
-          </span>
-        )}
-      </div>
-
-      {/*
-        手气卡, in the room, for exactly the reason free assign is.
-
-        `luckTime` is an upstream room setting (`lua/lunarltk/init.lua:22`, a
-        0-8 spin row) that this build shipped pinned to 0, so the engine never
-        offered the redraw and no player could reach it. It is a per-room
-        decision — some tables want it, some think it is cheating — so it
-        belongs where the host is looking at the table, not behind the lobby's
-        "more options", which the quick-create buttons skip entirely.
-
-        The ceiling is the engine's own: `lua/lunarltk/init.lua` declares
-        `from = 0, to = 8`, and the panel offers exactly that range rather than
-        a number we picked.
-      */}
-      <div className="waiting-composition" style={{ gap: 10 }}>
-        <span className="waiting-composition__label">{t('waiting.luckTime')}</span>
-        {onChangeSettings ? (
-          <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <select
-              value={luckTime}
-              onChange={(e) => onChangeSettings({ luckTime: Number(e.target.value) })}
-            >
-              {LUCK_TIME_CHOICES.map((n) => (
-                <option key={n} value={n}>
-                  {n === 0 ? t('waiting.luckTime.off') : t('waiting.luckTime.times', { n })}
-                </option>
-              ))}
-            </select>
-            <span style={{ fontSize: 13 }}>{t('waiting.luckTime.help')}</span>
-          </label>
-        ) : (
-          <span style={{ fontSize: 13, color: 'var(--paper-faint)' }}>
-            {luckTime > 0 ? t('waiting.luckTime.value', { n: luckTime }) : t('waiting.luckTime.none')}
           </span>
         )}
       </div>

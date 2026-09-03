@@ -15,34 +15,9 @@ import type { RoomSummary } from '../api';
 import { DEFAULT_MODE_ID, GAME_MODES, modeById, modeOfRoom, type ModeId } from '../../contract/modes';
 import { ModePicker, modeNameKey } from '../ModePicker';
 
-/** Exported so a test can assert on what a new room actually asks the engine for. */
-export const DEFAULT_SETTINGS = {
+const DEFAULT_SETTINGS = {
   generalNum: 3,
   generalTimeout: 30,
-  /**
-   * 手气卡 — how many times a seat may throw its opening hand back and redraw.
-   *
-   * This was 0, which is upstream's default for a public server and which meant
-   * the engine never raised `AskForLuckCard` at all: `DrawInitial` shuffles the
-   * pile and moves straight on when `luckTime <= 0`
-   * (`lua/lunarltk/server/events/gameflow.lua:122`). A whole implemented
-   * feature, unreachable from this build.
-   *
-   * IT SHIPPED AT 5 AND CAME STRAIGHT BACK TO 0. A player reported that with
-   * redraws on, the table came up saying every card had been drawn. The engine
-   * itself is not at fault — `discardInit` returns the old hand to the draw
-   * pile (`gameflow.lua:39-48`, `toArea = Card.DrawPile`), so the deck cannot
-   * actually drain — which means the fault is on this side, in how the redraw's
-   * `MoveCards` are read or counted. Until that is understood, nobody gets it
-   * by accident.
-   *
-   * Zero is also upstream's own default for a public server: `DrawInitial`
-   * shuffles and moves straight on when `luckTime <= 0`
-   * (`gameflow.lua:122`), so this is the engine's quiet path, not a special
-   * case of ours. The waiting-room control still offers 0-8 for a host who
-   * wants to opt in, and the panel, the prompt and the cancel path all stay —
-   * what changed is only that it is no longer the default.
-   */
   luckTime: 0,
   enableDeputy: false,
   enableFreeAssign: false,

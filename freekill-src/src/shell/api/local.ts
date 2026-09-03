@@ -11,10 +11,8 @@
  * It is not a fallback anyone should ship against: `kind` is 'local' and the UI
  * says so out loud.
  */
-import {
-  ROUND_KEY, roundOf,
-  type CreateRoomInput, type Identity, type LobbyApi, type RoomDetail,
-  type RoomMember, type RoomSummary,
+import type {
+  CreateRoomInput, Identity, LobbyApi, RoomDetail, RoomMember, RoomSummary,
 } from './types';
 import type { ChatLine } from '../../contract/views';
 import { getLanguage, t } from '../../i18n';
@@ -239,17 +237,6 @@ export function createLocalApi(): LobbyApi {
 
     async startGame(roomId) {
       mutate(roomId, (r) => { r.status = 'playing'; });
-    },
-
-    async playAgain(roomId) {
-      mutate(roomId, (r) => {
-        r.settings = { ...r.settings, [ROUND_KEY]: roundOf(r.settings) + 1 };
-        r.status = 'playing';
-        // Nobody has to press ready again for a game that is already starting,
-        // but the badge should not still be claiming they did it for the last
-        // one.
-        for (const m of r.members) if (!m.isBot) m.ready = false;
-      });
     },
 
     async leaveRoom(roomId) {

@@ -69,34 +69,9 @@ export interface RoomTransport {
   close(): Promise<void>;
 }
 
-/**
- * One room can play more than one game, so the topic a game rides on is the
- * room *and the round* — `room:<id>` for the first, `room:<id>#1` for the
- * rematch after it.
- *
- * Two things this buys, both of which bit when the rematch was on one topic.
- * Tearing a table down does not await `removeChannel`, so the outgoing game's
- * channel and the incoming game's channel are briefly both alive; on one topic
- * that is two subscriptions to the same name racing each other, and supabase-js
- * does not promise which one the server keeps. And an envelope still in flight
- * from the game that just ended carries the same `roomId` as the game that just
- * started, so nothing downstream could tell it apart — it would be applied to a
- * table it does not describe.
- *
- * Round 0 is the bare room id, byte for byte what this published before, so the
- * first game of every room is on exactly the wire it always was.
- */
-const topicId = (roomId: string, epoch: number): string =>
-  (epoch > 0 ? `${roomId}#${epoch}` : roomId);
-
-export function createRoomTransport(
-  roomId: string, sb: SupabaseClient = fkClient(), epoch = 0,
-): RoomTransport {
+export function createRoomTransport(roomId: string, sb: SupabaseClient = fkClient()): RoomTransport {
   const open = new Map<string, RealtimeChannel>();
   const joined = new Map<string, Promise<void>>();
-  // The DB keys stay the room's uuid — `fk_commands`, `fk_room_secrets` and RLS
-  // all hang off the room, not off the game. Only the topics carry the round.
-  const topic = topicId(roomId, epoch);
 
   const channel = (name: string): RealtimeChannel => {
     let ch = open.get(name);
@@ -133,38 +108,38 @@ export function createRoomTransport(
 
   return {
     async publish(env) {
-      const name = env.to === null ? channels.public(topic) : channels.player(topic, env.to);
+      const name = env.to === null ? channels.public(roomId) : channels.player(roomId, env.to);
       const ch = await joinedChannel(name);
       await ch.send({ type: 'broadcast', event: 'envelope', payload: env });
     },
 
     onEnvelope(playerId, fn) {
       const names = playerId === null
-        ? [channels.public(topic)]
-        : [channels.public(topic), channels.player(topic, playerId)];
+        ? [channels.public(roomId)]
+        : [channels.public(roomId), channels.player(roomId, playerId)];
       const subs = names.map((n) =>
         channel(n).on('broadcast', { event: 'envelope' }, (m) => fn(m.payload as Envelope)));
       return () => { for (const s of subs) void s.unsubscribe(); };
     },
 
     async sendReply(reply) {
-      const ch = await joinedChannel(channels.public(topic));
+      const ch = await joinedChannel(channels.public(roomId));
       await ch.send({ type: 'broadcast', event: 'reply', payload: reply });
     },
 
     onReply(fn) {
-      const s = channel(channels.public(topic))
+      const s = channel(channels.public(roomId))
         .on('broadcast', { event: 'reply' }, (m) => fn(m.payload as ClientReply));
       return () => { void s.unsubscribe(); };
     },
 
     async requestResync(playerId) {
-      const ch = await joinedChannel(channels.public(topic));
+      const ch = await joinedChannel(channels.public(roomId));
       await ch.send({ type: 'broadcast', event: 'resync', payload: { roomId, playerId } });
     },
 
     onResyncRequest(fn) {
-      const s = channel(channels.public(topic))
+      const s = channel(channels.public(roomId))
         .on('broadcast', { event: 'resync' }, (m) => {
           const pid = (m.payload as { playerId?: unknown })?.playerId;
           if (typeof pid === 'number') fn(pid);
@@ -209,8 +184,8 @@ export function createRoomTransport(
     },
 
     async ready(playerIds = []) {
-      channel(channels.public(topic));
-      for (const id of playerIds) channel(channels.player(topic, id));
+      channel(channels.public(roomId));
+      for (const id of playerIds) channel(channels.player(roomId, id));
       await Promise.all([...joined.values()]);
     },
 

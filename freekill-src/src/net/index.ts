@@ -14,10 +14,8 @@
  * it through `createRoomTransport().readSeed()`.
  */
 import type { RealtimeChannel, SupabaseClient } from '@supabase/supabase-js';
-import {
-  ROUND_KEY, roundOf,
-  type CreateRoomInput, type Identity, type LobbyApi, type RoomDetail,
-  type RoomMember, type RoomSummary,
+import type {
+  CreateRoomInput, Identity, LobbyApi, RoomDetail, RoomMember, RoomSummary,
 } from '../shell/api/types';
 import type { ChatLine } from '../contract/views';
 import type { ConnectionState, RoomStatus } from '../contract/db';
@@ -273,49 +271,6 @@ export function createLobbyApi(opts: LobbyApiOptions = {}): LobbyApi {
     async startGame(roomId) {
       const { error } = await sb.from('fk_rooms').update({ status: 'playing' }).eq('id', roomId);
       if (error) throw new Error(error.message);
-    },
-
-    /**
-     * The rematch, with no migration behind it.
-     *
-     * Three writes, all of which the shipped schema already permits the host to
-     * make, which is the whole reason it is shaped this way — a rematch that
-     * needed `002_*.sql` applied to the live database would be a feature that
-     * works in the test suite and nowhere else.
-     *
-     *  * `fk_update_settings` bumps the round. Host-only in SQL, so a guest
-     *    calling this gets 42501 rather than a game nobody asked for.
-     *  * The status update is a no-op in the common case (the room is still
-     *    `playing` — nothing marks a finished game finished) and is here for
-     *    the case where it is not.
-     *  * The seed is NOT rerolled here. `hostRunner` mixes the round into it,
-     *    so the deal is fresh without a second privileged write and without the
-     *    seed ever leaving `fk_room_secrets`. See `gameSeed`.
-     *
-     * `fk_commands` is untouched: it is append-only by trigger, even for the
-     * table owner, so the second game's decisions land after the first's. See
-     * the note on `appendCommands` in `hostRunner`.
-     */
-    async playAgain(roomId) {
-      const { data: room, error: readErr } = await sb.from('fk_rooms')
-        .select('settings').eq('id', roomId).maybeSingle();
-      if (readErr) throw new Error(readErr.message);
-      if (!room) throw new Error(tr('api.error.roomNotFound', { code: roomId }));
-      const next = roundOf((room as { settings?: Record<string, unknown> }).settings) + 1;
-
-      const { error } = await sb.rpc('fk_update_settings', {
-        p_room: roomId, p_patch: { [ROUND_KEY]: next },
-      });
-      if (error) throw new Error(error.message);
-
-      const { error: statusErr } = await sb.from('fk_rooms')
-        .update({ status: 'playing' }).eq('id', roomId);
-      if (statusErr) throw new Error(statusErr.message);
-
-      // Same reason as the local API: the badge should not still be reporting
-      // that everyone readied up for the game that just ended.
-      await sb.from('fk_room_players')
-        .update({ ready: false }).eq('room_id', roomId).eq('is_bot', false);
     },
 
     async leaveRoom(roomId) {

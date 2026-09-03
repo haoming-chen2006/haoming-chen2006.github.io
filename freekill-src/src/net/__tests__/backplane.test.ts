@@ -11,7 +11,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createLobbyApi, createRoomTransport, promoteHost, heartbeat } from '../index';
 import { createFkClient } from '../client';
-import { roundOf, type LobbyApi, type RoomDetail } from '../../shell/api/types';
+import type { LobbyApi, RoomDetail } from '../../shell/api/types';
 import type { Envelope } from '../../contract/protocol';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
@@ -105,49 +105,6 @@ describe('supabase backplane', () => {
     off();
     expect(seen!.members.map((m) => m.seat)).toEqual([1, 2, 3]);
     expect(seen!.members[2].isBot).toBe(true);
-  }, TIMEOUT);
-
-  /**
-   * 再来一局 — and the half of it that only two clients can prove.
-   *
-   * A rematch keeps the room and changes which *game* of it everybody is
-   * playing. The host bumps the round; every other tab has to learn about it
-   * the same way it learns about anything else, because if it does not, the
-   * guest is sitting in a room whose host has moved on — a dead table with a
-   * results box on it and no way back. That is the failure mode a
-   * one-human test cannot see, so it is checked here, on the guest's own
-   * subscription, over Realtime, against the real database.
-   *
-   * Nothing about the membership may move: the whole point is that nobody
-   * rejoins and nobody re-adds a bot.
-   */
-  it('a rematch bumps the round for the guest too, and keeps every seat', async () => {
-    let latest: RoomDetail | null = null;
-    const off = guest.api.watchRoom(room.summary.id, (d) => { latest = d; });
-    await until(() => latest, (v) => v !== null);
-    const before = latest! as RoomDetail;
-    expect(roundOf(before.summary.settings)).toBe(0);
-
-    await host.api.playAgain(room.summary.id);
-
-    const seen = await until(() => latest, (v) => roundOf(v?.summary.settings) === 1);
-    off();
-
-    // The guest learned about it without asking, which is the whole test.
-    expect(roundOf(seen!.summary.settings)).toBe(1);
-    expect(seen!.summary.status).toBe('playing');
-    // Same table: the host, the guest and the bot the host added above.
-    expect(seen!.members.map((m) => m.seat)).toEqual([1, 2, 3]);
-    expect(seen!.members.map((m) => m.isBot)).toEqual([false, false, true]);
-    // A patch, not a rewrite — the mode and the rest of the settings survive.
-    expect(seen!.summary.settings.gameMode).toBe(before.summary.settings.gameMode);
-    expect(seen!.summary.capacity).toBe(before.summary.capacity);
-
-    // Host-only in SQL, not merely hidden in the UI: a guest who calls it
-    // directly starts nobody's game.
-    await expect(guest.api.playAgain(room.summary.id)).rejects.toThrow();
-    const after = await host.api.getRoom(room.summary.id);
-    expect(roundOf(after!.summary.settings)).toBe(1);
   }, TIMEOUT);
 
   it('streams a batched Envelope from host to guest over Realtime', async () => {

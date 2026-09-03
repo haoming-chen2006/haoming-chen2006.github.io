@@ -12,6 +12,7 @@
     "build:assets": "node scripts/build-assets.mjs",
     "build:fonts": "node scripts/build-fonts.mjs",
     "build:overview": "node scripts/build-overview.mjs",
+    "build:catalogue": "node scripts/build-skill-catalogue.mjs",
     "spike:node": "node spike/node-run.mjs",
     "spike:all": "node spike/run-all.mjs && node spike/make-fixtures.mjs",
     "test": "vitest run",

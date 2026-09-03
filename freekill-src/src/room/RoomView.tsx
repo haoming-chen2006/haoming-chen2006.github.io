@@ -39,7 +39,10 @@ import { RoomStore } from './state/store';
 import './room.css';
 
 export function RoomView(props: RoomViewProps) {
-  const { client, assets: manifest, meId, mode, chat, onChat, playback, statusSlot } = props;
+  const {
+    client, assets: manifest, meId, mode, chat, onChat, playback, statusSlot,
+    onPlayAgain, onLeave,
+  } = props;
 
   const store = useMemo(() => new RoomStore(meId), [client]);
   const services = useMemo<RoomServices>(() => ({
@@ -127,15 +130,22 @@ export function RoomView(props: RoomViewProps) {
   return (
     <RoomProvider value={services}>
       <AnimProvider value={anim}>
-        <RoomBody chat={chat} onChat={onChat} playback={playback} statusSlot={statusSlot} />
+        <RoomBody
+          chat={chat}
+          onChat={onChat}
+          playback={playback}
+          statusSlot={statusSlot}
+          onPlayAgain={onPlayAgain}
+          onLeave={onLeave}
+        />
       </AnimProvider>
     </RoomProvider>
   );
 }
 
 function RoomBody(
-  { chat, onChat, playback, statusSlot }:
-  Pick<RoomViewProps, 'chat' | 'onChat' | 'playback' | 'statusSlot'>,
+  { chat, onChat, playback, statusSlot, onPlayAgain, onLeave }:
+  Pick<RoomViewProps, 'chat' | 'onChat' | 'playback' | 'statusSlot' | 'onPlayAgain' | 'onLeave'>,
 ) {
   const { lua, mode, store } = useRoom();
   const state = useRoomState();
@@ -287,7 +297,12 @@ function RoomBody(
       <Dashboard />
 
       <Boundary label={requestLabel(state.request)}>
-        <DialogHost onReply={reply} interactive={interactive} />
+        <DialogHost
+          onReply={reply}
+          interactive={interactive}
+          onPlayAgain={onPlayAgain}
+          onLeave={onLeave}
+        />
       </Boundary>
       {/* A tapped pile or general list. Floats over the table without taking
           it away, so a request stays answerable while it is open. */}

@@ -141,6 +141,16 @@ export interface HostRunnerSpec {
   /** The host's own seat. Its envelopes are delivered in-process. */
   readonly hostSeat: number;
   readonly settings: Readonly<Record<string, unknown>>;
+  /**
+   * Which game of this room this is. 0 — the default — is its first.
+   *
+   * The room's stored seed does not change between games, so a rematch dealt
+   * from it would deal the identical hands, in the identical order, to the
+   * identical seats: the second game would be a replay of the first with the
+   * cards already known. `gameSeed` mixes the round in, which is the whole
+   * reason this number is here.
+   */
+  readonly round?: number;
   readonly transport: GameTransport;
   /** Seconds a seat gets to answer one request before the engine moves on. */
   readonly timeout?: number;
@@ -204,8 +214,38 @@ export function errorText(e: unknown): string {
   return e instanceof Error ? e.message : String(e);
 }
 
+/**
+ * The seed this particular game of this room is dealt from.
+ *
+ * A room has one seed and can now play more than one game, so the seed alone
+ * stopped being enough to say which deal is meant. FNV-1a over the round,
+ * folded into the stored seed: cheap, and — the property that counts — round 0
+ * is the stored seed unchanged, so every game this build has ever dealt still
+ * deals exactly the same way.
+ *
+ * Deterministic on purpose rather than random. `(room, round)` is a name for a
+ * deal, which is what makes a game reproducible from its command log; a random
+ * reroll would make the second game of a room unreplayable from anything but a
+ * seed nobody wrote down. It also keeps the seed where it belongs: the round is
+ * public, the stored seed is host-only by RLS, and mixing a public number into
+ * a secret leaves it secret.
+ *
+ * Clamped to 31 bits because that is what `math.randomseed` is handed
+ * (`lua/web/host.lua`), and the stored seeds are already in that range.
+ */
+export function gameSeed(baseSeed: number, round: number): number {
+  if (!Number.isFinite(round) || round <= 0) return baseSeed;
+  let h = 2166136261 ^ (baseSeed >>> 0);
+  for (let r = Math.floor(round); r > 0; r = Math.floor(r / 251)) {
+    h = Math.imul(h ^ (r % 251), 16777619);
+  }
+  return (h >>> 1) % 2147483647;
+}
+
 export async function startHostRunner(spec: HostRunnerSpec): Promise<HostRunner> {
-  const seed = await spec.transport.readSeed();
+  const round = Math.max(0, Math.floor(spec.round ?? 0));
+  const stored = await spec.transport.readSeed();
+  const seed = stored === null ? null : gameSeed(stored, round);
   if (seed === null) {
     // RLS hands a non-host zero rows rather than an error, so this is the one
     // place where "no rows" has to be read as "you are not the host".
@@ -325,7 +365,25 @@ export async function startHostRunner(spec: HostRunnerSpec): Promise<HostRunner>
   };
   const offDecision = host.onDecision((d) => {
     rows.push({
-      seq: d.seq, playerId: d.playerId, command: d.command, reply: d.reply, digest: d.digest,
+      // THE ENGINE'S SEQ IS NOT THE LOG'S SEQ ONCE A ROOM PLAYS TWICE.
+      //
+      // `fk_commands` is dense from 1 per *room* and append-only by trigger —
+      // deletes are refused even to the table owner — so a rematch cannot start
+      // its own numbering, and sending the engine's (which restarts at 1) would
+      // be rejected as out of order on the very first decision of the second
+      // game. The trigger assigns the next seq itself when the column is
+      // absent, which is the documented way to append in order without knowing
+      // where the log has got to.
+      //
+      // Round 0 keeps stating its own seq, so the first game of every room logs
+      // exactly what it always did. What a rematch gives up is that the log
+      // stops being replayable across the round boundary in one pass: a future
+      // host migration must resume from the current round's first seq, not from
+      // 1. Nothing reads the log yet (`promoteHost` and `readLog` are wired in
+      // `src/net` and called from nowhere), and the failure if it ever does is
+      // loud — `replay diverged` — not silent.
+      seq: round > 0 ? undefined : d.seq,
+      playerId: d.playerId, command: d.command, reply: d.reply, digest: d.digest,
     });
     logTimer ??= setTimeout(flushLog, 500);
   });

@@ -78,6 +78,15 @@ export interface RoomViewProps {
   readonly chat: readonly ChatLine[];
   readonly onChat: (text: string) => void;
   readonly onSurrender?: () => void;
+  /**
+   * Deal this table another game — same seats, same bots, same settings.
+   *
+   * Host-only, so it is undefined for everybody else and the results box says
+   * whose button it is instead of showing a dead one. The room does not know
+   * what "again" costs: it calls this, and lane 4 rebuilds the engine room, the
+   * client VM and the table around it. See `LobbyApi.playAgain`.
+   */
+  readonly onPlayAgain?: () => void;
   readonly onLeave: () => void;
 
   /** Rendered into the room's corner — lane 4's connection/host-migration UI. */

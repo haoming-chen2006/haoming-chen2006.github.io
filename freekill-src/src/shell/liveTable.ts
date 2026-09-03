@@ -119,6 +119,17 @@ export function resolvePaceMs(): number {
 
 /** The order the host published in: flush index, then the engine's own counter. */
 const firstSeq = (e: Envelope): number => e.messages[0]?.seq ?? 0;
+
+/**
+ * What identifies one envelope, for the purpose of never applying it twice.
+ *
+ * Exported because the property it has to hold is checkable and was not being
+ * checked: feeding a real game's routed output through this key must lose
+ * nothing. See the long note at its use site in `apply` for what it used to be
+ * and what that cost.
+ */
+export const envelopeKey = (e: Envelope): string =>
+  `${e.batch}:${e.to ?? 'all'}:${firstSeq(e)}`;
 const byWireOrder = (a: Envelope, b: Envelope): number =>
   a.batch - b.batch || firstSeq(a) - firstSeq(b);
 
@@ -205,6 +216,16 @@ export interface LiveTableSpec {
   readonly isHost: boolean;
   readonly seats: readonly HostSeat[];
   readonly settings: Readonly<Record<string, unknown>>;
+  /**
+   * Which game of this room this table is. 0 — the default — is its first.
+   *
+   * One number, three jobs, and they have to agree or a rematch is a corrupted
+   * table rather than a new one: it suffixes the realtime topics so the ending
+   * game's envelopes cannot land in the starting one, it is mixed into the seed
+   * so the deal is fresh, and it is what `RoomPage` re-keys the client VM on so
+   * the second game is dealt into an empty room instead of on top of the first.
+   */
+  readonly round?: number;
   onStatus(status: TableStatus): void;
 }
 
@@ -233,7 +254,8 @@ export async function startLiveTable(spec: LiveTableSpec): Promise<LiveTable> {
   };
   report();
 
-  const transport: GameTransport = await getGameTransport(roomId);
+  const round = Math.max(0, Math.floor(spec.round ?? 0));
+  const transport: GameTransport = await getGameTransport(roomId, round);
   if (stopped) { void transport.close(); return { stop() {} }; }
 
   /**
@@ -300,7 +322,43 @@ export async function startLiveTable(spec: LiveTableSpec): Promise<LiveTable> {
     // contains can still turn up after it. Applying it again would move the
     // same cards twice.
     if (env.batch >= 0 && env.batch <= syncedThrough) return;
-    const key = `${env.batch}:${env.to ?? 'all'}`;
+    /**
+     * ONE BATCH IS NOT ONE ENVELOPE PER RECIPIENT, and keying on that dropped
+     * real messages.
+     *
+     * This key was `batch:to`, which reads as "a flush has one envelope for
+     * each seat" — and `routeFlush` has not worked that way since `ecdc247`
+     * started splitting at public/private transitions. It emits a *run* of
+     * public messages as one envelope and the private run after it as another,
+     * in the engine's order, precisely so a seat cannot be told `ArrangeSeats`
+     * before it has been told who is sitting where (`engine/routing.ts`). A
+     * batch that alternates public/private/public therefore produces two
+     * `to: null` envelopes with the same batch — and the second was silently
+     * discarded as a duplicate of the first.
+     *
+     * The routing comment says runs "alternate rarely", and that was true of
+     * every game this build had ever played, which is why nothing caught it:
+     * measured over a full 8-seat game, all bots, 1,185 envelopes, zero
+     * collisions; two humans and no luck cards, 330 envelopes, zero.
+     *
+     * 手气卡 is what made it common. The redraw loop runs inside one resume and
+     * alternates per seat — a private hand emptied, a public `UpdateDrawPile`,
+     * a private hand refilled, another public sync — over and over, so runs
+     * alternate many times inside a single batch. Same seed, same seats, luck
+     * cards on: three envelopes dropped, every one of them a `CancelRequest`,
+     * which is the message that tells a seat its question is over. A seat that
+     * never hears it keeps a dead request open and a stale scene, and its
+     * client VM keeps the answered handler as `current_request_handler`. Lose a
+     * `PropertyUpdate` the same way and that seat's hp never moves again.
+     *
+     * The fix is to key on what actually identifies an envelope. Within a batch
+     * the runs are contiguous and disjoint, so every envelope starts at a
+     * different `seq` — the same value `byWireOrder` already sorts on. A
+     * genuine redelivery (the held buffer and the live stream carrying the same
+     * envelope) still collides on all three fields and is still dropped, which
+     * is the property this set exists for.
+     */
+    const key = envelopeKey(env);
     if (applied.has(key)) return;
     applied.add(key);
     try {
@@ -442,6 +500,7 @@ export async function startLiveTable(spec: LiveTableSpec): Promise<LiveTable> {
         seats: spec.seats,
         hostSeat: mySeat,
         settings: spec.settings,
+        round,
         transport,
         // Only the host paces, because only the host decides when the engine
         // takes its next step. Every other seat is watching the same beats

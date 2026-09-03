@@ -60,6 +60,33 @@ describe('free pick, from inside the room', () => {
     expect(html).not.toContain('type="checkbox"');
   });
 
+  /**
+   * 手气卡 is in the room for the same reason free pick is, and the reason is
+   * the lobby: the quick-create buttons open a room without ever showing the
+   * create dialog, so a setting that lives only there is a setting nobody has.
+   * It is also the kind of thing a table argues about between games, which is
+   * to say in the waiting room.
+   */
+  it('lets the host set how many redraws the table gets, over the engine range', () => {
+    const html = draw(props({ onChangeSettings: () => {}, settings: { luckTime: 5 } }));
+    expect(html).toContain('手气卡');
+    expect(html).toContain('<select');
+    // `lua/lunarltk/init.lua:22` — `SpinRow { from = 0, to = 8 }`. Not ours.
+    for (const n of [0, 1, 2, 3, 4, 5, 6, 7, 8]) {
+      expect(html, `choice ${n}`).toContain(`value="${n}"`);
+    }
+    expect(html).not.toContain('value="9"');
+    // What the room is actually set to is what the control shows.
+    expect(/<option[^>]*value="5"[^>]*selected/.test(html)).toBe(true);
+  });
+
+  it('tells a guest the number without letting them change it', () => {
+    const html = draw(props({ isHost: false, onChangeSettings: undefined, settings: { luckTime: 2 } }));
+    expect(html).toContain('手气卡');
+    expect(html).not.toContain('<select');
+    expect(html).toContain('2');
+  });
+
   it('patches only the one setting when the host flips it', () => {
     // The room's settings row carries the mode and the pack list too; a patch
     // that rewrote those from this view would silently change the game.

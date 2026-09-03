@@ -189,6 +189,15 @@ export const UI = {
   },
   'waiting.freeAssign.yes': { zh_CN: '房主已开启，选将时可搜索任意武将', en_US: 'On — you can pick any general' },
   'waiting.freeAssign.no': { zh_CN: '房主未开启', en_US: 'Off — the host has not enabled it' },
+  'waiting.luckTime': { zh_CN: '手气卡', en_US: 'Luck cards' },
+  'waiting.luckTime.help': {
+    zh_CN: '开局摸完手牌后，每人最多可以换几次起手牌',
+    en_US: 'How many times each player may redraw their opening hand',
+  },
+  'waiting.luckTime.times': { zh_CN: '{n} 次', en_US: '{n}×' },
+  'waiting.luckTime.off': { zh_CN: '不用', en_US: 'Off' },
+  'waiting.luckTime.value': { zh_CN: '房主设为 {n} 次', en_US: 'The host set {n}' },
+  'waiting.luckTime.none': { zh_CN: '房主未开启', en_US: 'Off — the host has not enabled it' },
   'waiting.youAreHost': { zh_CN: ' · 你是房主', en_US: ' · you are the host' },
   'waiting.code': { zh_CN: '房号', en_US: 'Room code' },
   'waiting.copyCode': { zh_CN: '复制房号', en_US: 'Copy code' },
@@ -231,6 +240,7 @@ export const UI = {
   'room.action.addBot': { zh_CN: '加机器人', en_US: 'Add a bot' },
   'room.action.removeSeat': { zh_CN: '移除座位', en_US: 'Remove a seat' },
   'room.action.changeSettings': { zh_CN: '修改设置', en_US: 'Change settings' },
+  'room.action.playAgain': { zh_CN: '再来一局', en_US: 'Play again' },
   'room.action.sendChat': { zh_CN: '发送消息', en_US: 'Send a message' },
   'room.fault.action': { zh_CN: '{what}失败：{error}', en_US: '{what} failed: {error}' },
   'room.fault.engine': {

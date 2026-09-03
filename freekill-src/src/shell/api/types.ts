@@ -14,6 +14,29 @@
 import type { ConnectionState, RoomStatus } from '../../contract/db';
 import type { ChatLine } from '../../contract/views';
 
+/**
+ * Which game of this room is being played — 0 for the first, 1 for the rematch
+ * after it, and so on.
+ *
+ * It lives in `settings` rather than in a column because that is the one piece
+ * of room state both backplanes can already write (`fk_update_settings` is
+ * host-only and shipped; a new column is a migration nobody can apply to the
+ * live database from here) and because it has to be public: every seat needs to
+ * see the bump, not just the host. `fkMode` is already such a key, and the
+ * engine ignores settings it was not asked about.
+ *
+ * Everything a rematch has to keep separate hangs off this number. The engine
+ * room is rebuilt, the client VM is rebuilt, the realtime topics carry it so a
+ * dying game's envelopes cannot land in a fresh one, and the seed is mixed with
+ * it so the same table does not deal the same cards twice.
+ */
+export const ROUND_KEY = 'fkRound';
+
+export function roundOf(settings: Readonly<Record<string, unknown>> | undefined): number {
+  const raw = Number(settings?.[ROUND_KEY]);
+  return Number.isFinite(raw) && raw > 0 ? Math.floor(raw) : 0;
+}
+
 export interface Identity {
   readonly userId: string;
   readonly displayName: string;
@@ -81,6 +104,16 @@ export interface LobbyApi {
   removeSeat(roomId: string, seat: number): Promise<void>;
   updateSettings(roomId: string, patch: Record<string, unknown>): Promise<void>;
   startGame(roomId: string): Promise<void>;
+  /**
+   * Deal the same table another game — same seats, same bots, same settings.
+   *
+   * Host-only, and the whole of "second round": it bumps `ROUND_KEY` and leaves
+   * the room `playing`. Nobody rejoins and nobody re-adds a bot, because
+   * nothing about the room's membership is touched; what changes is which game
+   * of it every tab is watching, which is a value every seat is already
+   * subscribed to.
+   */
+  playAgain(roomId: string): Promise<void>;
   leaveRoom(roomId: string): Promise<void>;
   /**
    * `playerId` is the sender's seat, which is also its in-game player id. It

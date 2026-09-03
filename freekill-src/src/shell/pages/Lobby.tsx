@@ -15,10 +15,27 @@ import type { RoomSummary } from '../api';
 import { DEFAULT_MODE_ID, GAME_MODES, modeById, modeOfRoom, type ModeId } from '../../contract/modes';
 import { ModePicker, modeNameKey } from '../ModePicker';
 
-const DEFAULT_SETTINGS = {
+/** Exported so a test can assert on what a new room actually asks the engine for. */
+export const DEFAULT_SETTINGS = {
   generalNum: 3,
   generalTimeout: 30,
-  luckTime: 0,
+  /**
+   * 手气卡 — how many times a seat may throw its opening hand back and redraw.
+   *
+   * This was 0, which is upstream's default for a public server and which meant
+   * the engine never raised `AskForLuckCard` at all: `DrawInitial` shuffles the
+   * pile and moves straight on when `luckTime <= 0`
+   * (`lua/lunarltk/server/events/gameflow.lua:122`). A whole implemented
+   * feature, unreachable from this build.
+   *
+   * Five is what a table actually wants — a bad opening hand is the commonest
+   * reason a game stops being fun in the first round — and it is a redraw, not
+   * an advantage: everyone gets the same offer at the same moment, and the
+   * count is on screen. The host can take it back down to 0 in the waiting
+   * room, which is upstream's whole range (0-8) and is where a player looks
+   * for it.
+   */
+  luckTime: 5,
   enableDeputy: false,
   enableFreeAssign: false,
   enableObserverViewCard: false,

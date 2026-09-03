@@ -819,7 +819,12 @@ export class RoomStore {
       default: {
         if (NO_UI_COMMANDS.has(command)) return;
         if (SCENE_COMMANDS.has(command)) {
-          s.request = { kind: 'scene', command, promptArg: promptArgOf(command, data) };
+          s.request = {
+            kind: 'scene',
+            command,
+            promptArg: promptArgOf(command, data),
+            promptKey: promptKeyOf(command, data),
+          };
           this.scene = { ...this.scene, active: true };
           return;
         }
@@ -852,6 +857,29 @@ function promptArgOf(command: string, data: unknown): string | undefined {
     && command !== 'AskForResponseCard') return undefined;
   const first = Array.isArray(data) ? data[0] : undefined;
   return typeof first === 'string' && first !== '' ? first : undefined;
+}
+
+/**
+ * The prompt the caller wrote, in `data[1]` — which upstream prefers over the
+ * `#<command>` template and this port used to drop on the floor.
+ *
+ * `RoomLogic.js:829` is `prompt ? processPrompt(prompt) : tr("#AskForSkillInvoke")
+ * .arg(tr(skill))`, in that order — the caller's words first, the template only
+ * when there are none. Reading only `data[0]` was harmless for the standard
+ * pack, which never passes a prompt, and stopped being harmless the moment the
+ * vendored rosters arrived: 163 of their skills write one, and
+ * `#zhiman-invoke::<target>` naming who the skill is about was being rendered
+ * as a target-less "do you want to use 〖制衡〗?".
+ *
+ * 手气卡 is the case where dropping it costs a number rather than a name. The
+ * count of redraws left lives in this field and nowhere else —
+ * `#AskForLuckCard:::5`, built in `gameflow.lua:139` and decremented in
+ * `request.lua:168` — and the template cannot say it at all.
+ */
+function promptKeyOf(command: string, data: unknown): string | undefined {
+  if (command !== 'AskForSkillInvoke') return undefined;
+  const second = Array.isArray(data) ? data[1] : undefined;
+  return typeof second === 'string' && second !== '' ? second : undefined;
 }
 
 /**

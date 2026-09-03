@@ -149,6 +149,20 @@ export type PendingRequest =
        * `#<command>` — `RoomLogic.js:825`, `:1233`, `:1266`.
        */
       readonly promptArg?: string;
+      /**
+       * The prompt the *caller* wrote, from `data[1]`, when it wrote one.
+       *
+       * `RoomLogic.js:829` prefers it over the `#<command>` template and only
+       * falls back to `promptArg` when it is empty — so a request that says
+       * what it wants says it in its own words. Nearly every `AskForSkillInvoke`
+       * leaves it blank, which is why the fallback exists at all; 手气卡 does
+       * not, and it is the one place the difference is load-bearing, because
+       * the count of redraws you have left lives in this string and nowhere
+       * else (`gameflow.lua:139`, `request.lua:168`).
+       *
+       * A `processPrompt` key, not a sentence: `#AskForLuckCard:::5`.
+       */
+      readonly promptKey?: string;
     }
   | { readonly kind: 'dialog'; readonly command: string; readonly data: unknown };
 

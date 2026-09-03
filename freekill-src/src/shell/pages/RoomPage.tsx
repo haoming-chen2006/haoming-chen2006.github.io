@@ -17,7 +17,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ComponentType } from 'react';
 import type { RoomViewProps, SeatView } from '../../contract/views';
 import type { LuaClient } from '../../contract/engine';
-import type { RoomDetail } from '../api';
+import { roundOf, type RoomDetail } from '../api';
 import { useSession } from '../session';
 import { shareUrl } from '../router';
 import { WaitingRoomView } from './WaitingRoom';
@@ -92,6 +92,18 @@ export function RoomPage({ roomId, onLeave }: { roomId: string; onLeave: () => v
   const me = room?.members.find((m) => m.userId === identity?.userId);
   const isHost = !!room && room.hostId === identity?.userId;
   const playing = room?.summary.status === 'playing';
+  /**
+   * WHICH GAME OF THIS ROOM WE ARE IN — a scalar, and that is the point.
+   *
+   * `summary.settings` is a fresh object on every refetch, so it can never be an
+   * effect dependency (the note below `latestRoom` is about exactly that
+   * hazard). A number can. Everything a rematch has to rebuild hangs off this
+   * one dependency: the client VM below, and the table below that. When the
+   * host bumps the round every seat's `watchRoom` reports the new settings, this
+   * changes, and both effects tear down and start again — which is how a guest
+   * follows into the second game without anyone re-inviting them.
+   */
+  const round = roundOf(room?.summary.settings);
 
   /**
    * Every host action is a promise nobody was awaiting. `void api.startGame()`
@@ -123,7 +135,24 @@ export function RoomPage({ roomId, onLeave }: { roomId: string; onLeave: () => v
   // carries the entire opening, and whether the table has mounted by then is up
   // to React. Retaining the stream turns "the table subscribed late" from a lost
   // game into a replay. See `retainingClient.ts`.
-  const [client, setClient] = useState<LuaClient | null>(null);
+  /**
+   * The VM, and the game it was booted for.
+   *
+   * The round travels WITH the client rather than beside it, and that pairing is
+   * the whole correctness argument for the rematch. Both effects below depend on
+   * `round`, and React re-runs them in order with the old `client` still in
+   * state — so a table started on `round` while `client` was still the previous
+   * game's VM would deal game two into a VM that has already played game one.
+   * The engine's client Lua does not survive that: `Observe` reloads a room that
+   * still holds the finished one's players. Carrying the round in the same state
+   * makes "is this VM for this game" a comparison rather than a race.
+   *
+   * A fresh VM per game is also what empties the room. `RoomView` memoizes its
+   * `RoomStore` on client identity, so the log, the discard pile, the seats'
+   * marks and the game-over box all go with the old client — none of the
+   * previous game bleeds into the new table.
+   */
+  const [client, setClient] = useState<{ vm: LuaClient; round: number } | null>(null);
   const [fixtureOnly, setFixtureOnly] = useState(false);
   /** Set when the engine is supposed to be here and could not start. */
   const [engineDown, setEngineDown] = useState<string | null>(null);
@@ -140,7 +169,7 @@ export function RoomPage({ roomId, onLeave }: { roomId: string; onLeave: () => v
       if (!live) return;
       made = retainNotifications(createFixtureClient({ overview: loaded.overview }));
       setFixtureOnly(true);
-      setClient(made);
+      setClient({ vm: made, round });
     };
     void prefetchLuaBundle()
       .then((bundle) => createEngineClient({
@@ -159,19 +188,19 @@ export function RoomPage({ roomId, onLeave }: { roomId: string; onLeave: () => v
         made = retainNotifications(real);
         setFixtureOnly(false);
         setEngineDown(null);
-        setClient(made);
+        setClient({ vm: made, round });
       })
       .catch((e) => {
         console.error('[room] the rules engine could not start', e);
         if (live) setEngineDown(errorText(e));
       });
     return () => { live = false; made?.dispose(); };
-  }, [known, loaded, seat, identity, t]);
+  }, [known, loaded, seat, identity, round, t]);
 
   // A getter, deliberately, not a `Language`: `RoomView` memoizes its RoomStore
   // on client identity, so a wrapper whose identity changed on a language
   // toggle would wipe the table mid-game.
-  const wrapped = useMemo(() => client && withLanguage(client, getLanguage), [client]);
+  const wrapped = useMemo(() => client && withLanguage(client.vm, getLanguage), [client]);
 
   /**
    * The missing half: once the room says `playing`, somebody has to actually
@@ -193,13 +222,21 @@ export function RoomPage({ roomId, onLeave }: { roomId: string; onLeave: () => v
     // is, and it holds for every ordering. This just avoids replaying an
     // opening into the stub and then again into the real table.
     if (!playing || !client || fixtureOnly || !viewReady) return;
+    // The VM has to be the one booted for THIS game. Both effects re-run on a
+    // round bump, this one with the previous game's client still in state for a
+    // render; starting a table on it would feed game two into a VM that already
+    // holds game one. See the note on the `client` state.
+    if (client.round !== round) return;
     const snapshot = latestRoom.current;
     if (!snapshot) return;
     let live = true;
     let handle: { stop(): void } | null = null;
+    // Fresh for every game: the status a finished table left behind must not
+    // be what the curtain reads while the next one is dealing.
+    setTable(null);
     void startLiveTable({
       roomId,
-      client,
+      client: client.vm,
       mySeat: seat ?? null,
       isHost,
       seats: snapshot.members.map((m) => ({
@@ -210,6 +247,7 @@ export function RoomPage({ roomId, onLeave }: { roomId: string; onLeave: () => v
         connection: m.connection,
       })),
       settings: snapshot.summary.settings,
+      round,
       onStatus: (s) => { if (live) setTable(s); },
     }).then((t) => {
       handle = t;
@@ -219,7 +257,7 @@ export function RoomPage({ roomId, onLeave }: { roomId: string; onLeave: () => v
       if (live) setTable({ phase: 'failed', note: t('room.fault.table', { error: errorText(e) }), warnings: [] });
     });
     return () => { live = false; handle?.stop(); };
-  }, [playing, client, fixtureOnly, viewReady, roomId, seat, isHost, t]);
+  }, [playing, client, fixtureOnly, viewReady, roomId, seat, isHost, round, t]);
 
   const banner = fault ? <Banner text={fault} onDismiss={() => setFault(null)} /> : null;
 
@@ -304,6 +342,13 @@ export function RoomPage({ roomId, onLeave }: { roomId: string; onLeave: () => v
       chat={room.chat}
       onChat={(text) => run(t('room.action.sendChat'), api.sendChat(roomId, text, me?.seat ?? null))}
       onLeave={leave}
+      /* 再来一局. Offered on the results box, because that is where everyone is
+         looking when a game ends, and only to the host, because pressing it
+         starts a game for everybody else at the table. Hidden rather than
+         disabled for everybody else, as every other host control on this page
+         is — and a guest needs no button anyway: the round bump reaches their
+         tab through the room row and their table is rebuilt under them. */
+      onPlayAgain={isHost ? () => run(t('room.action.playAgain'), api.playAgain(roomId)) : undefined}
       statusSlot={<span style={{ fontSize: 12, color: 'var(--paper-faint)' }}>
         {table?.warnings.length
           ? <span style={{ color: 'var(--gold)' }}>{table.warnings[0]}</span>

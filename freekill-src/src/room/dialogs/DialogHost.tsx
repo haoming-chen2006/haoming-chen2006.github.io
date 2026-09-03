@@ -26,6 +26,10 @@ import { Btn, Dialog, GeneralCard, OptionBtn, Panel, useAskingSkill } from './pa
 export interface DialogHostProps {
   readonly onReply: (value: unknown) => void;
   readonly interactive: boolean;
+  /** Host-only, and only meaningful once the game is over. See `GameOverBox`. */
+  readonly onPlayAgain?: () => void;
+  /** The way out of a finished game. See `GameOverBox`. */
+  readonly onLeave?: () => void;
 }
 
 /**
@@ -48,9 +52,11 @@ export interface DialogHostProps {
  * `GraphicsBox` (`RoomLogic.js:1453`), and the request dialogs are `popupBox`.
  * Both are on screen at once when both apply.
  */
-export function DialogHost({ onReply, interactive }: DialogHostProps) {
+export function DialogHost({ onReply, interactive, onPlayAgain, onLeave }: DialogHostProps) {
   const state = useRoomState();
-  if (state.gameOver) return <GameOverBox winner={state.gameOver} />;
+  if (state.gameOver) {
+    return <GameOverBox winner={state.gameOver} onPlayAgain={onPlayAgain} onLeave={onLeave} />;
+  }
   // The request first, so the modal is the first `.fk-dialog` in the document
   // for anything reading "what is this seat being asked" out of the DOM. Which
   // of the two is on top is settled by `z-index` (40 over 30), not by order.
@@ -1014,12 +1020,48 @@ function AgBox({ onReply, interactive }: { onReply: (v: unknown) => void; intera
 
 /* -------------------------------------------------------------- results */
 
-function GameOverBox({ winner }: { winner: string }) {
+/**
+ * The results, and the two things there are to do about them.
+ *
+ * It used to be results and nothing else, which made it a dead end: `onLeave`
+ * was threaded all the way into `RoomView` and rendered by nobody, so a player
+ * whose game had just finished was looking at a full-screen modal with no
+ * control on it at all. The only way out of a finished game was the browser's
+ * back button.
+ *
+ * Upstream's own box (`GameOverBox.qml:95-125`) is the shape this follows:
+ * `Continue Game`, `Back To Room`, `Back To Lobby`, and the replay buttons for
+ * an observer. Two of those have an analogue here. `Continue Game` is the
+ * rematch — upstream shows it only for a one-seat practice room, because a
+ * public server's rooms go back to a lobby; this build's rooms ARE the table,
+ * so it is the thing a table of friends wants most and it is offered to every
+ * room. `Back To Lobby` is the exit that was missing.
+ *
+ * Host-only for the rematch, hidden rather than disabled, which is this app's
+ * rule for every host control: pressing it starts a game for everybody else at
+ * the table. A guest does not need a button, because a guest does not need to do
+ * anything — the round bump reaches their tab through the room row and their
+ * table is rebuilt under them.
+ */
+function GameOverBox(
+  { winner, onPlayAgain, onLeave }:
+  { winner: string; onPlayAgain?: () => void; onLeave?: () => void },
+) {
   const { lua } = useRoom();
   const state = useRoomState();
   const winners = winner.split('+');
   return (
-    <Dialog title={lua.tr('$GameOver')}>
+    <Dialog
+      title={lua.tr('$GameOver')}
+      actions={onPlayAgain || onLeave ? (
+        <>
+          {onPlayAgain
+            ? <Btn primary onClick={onPlayAgain}>{lua.tr('Continue Game')}</Btn>
+            : null}
+          {onLeave ? <Btn onClick={onLeave}>{lua.tr('Back To Lobby')}</Btn> : null}
+        </>
+      ) : undefined}
+    >
       <div className="fk-gameover__winner">{winners.map((w) => lua.tr(w)).join(' / ')}</div>
       <div className="fk-gameover__list">
         {state.circle.map((pid) => {

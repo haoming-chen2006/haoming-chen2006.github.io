@@ -88,6 +88,26 @@ const WIND_CODE = /* glsl */ `
   transformed += objectNormal * sin(uTime * 5.5 + transformed.x * 2.7 + transformed.z * 2.1 + transformed.y * 1.3 + phase) * uFlutter * uModelHeight * (0.2 + 0.8 * hgt);
 }`;
 
+
+/** Procedural clump card: ~11 tapered blades fanning from the bottom centre, RGB = per-blade brightness, A = coverage. */
+function makeClumpTexture(size = 256): THREE.Texture {
+  const cv = document.createElement('canvas'); cv.width = size; cv.height = size;
+  const ctx = cv.getContext('2d')!; ctx.clearRect(0, 0, size, size);
+  let seed = 7; const rnd = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
+  for (let i = 0; i < 11; i++) {
+    const x0 = size * (0.5 + (rnd() - 0.5) * 0.4), h = size * (0.5 + rnd() * 0.5), lean = (rnd() - 0.5) * size * 0.6, w = size * (0.028 + rnd() * 0.022);
+    const shade = Math.round(140 + rnd() * 115); ctx.fillStyle = `rgb(${shade},${shade},${shade})`;
+    const edge = (t: number, sgn: number): [number, number] => [x0 + lean * t * t + sgn * w * (1 - t * t * 0.92) * 0.5, size - h * t];
+    ctx.beginPath();
+    for (let s = 0; s <= 10; s++) { const [x, y] = edge(s / 10, -1); if (s === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y); }
+    for (let s = 10; s >= 0; s--) { const [x, y] = edge(s / 10, 1); ctx.lineTo(x, y); }
+    ctx.closePath(); ctx.fill();
+  }
+  const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping;
+  t.minFilter = THREE.LinearMipmapLinearFilter; t.magFilter = THREE.LinearFilter; t.generateMipmaps = true; t.anisotropy = 4;
+  return t;
+}
+
 export class Vegetation {
   group = new THREE.Group();
   kinds = new Map<ScatterKind, KindRuntime>();
@@ -170,6 +190,7 @@ export class Vegetation {
       rt.lods.push({ prims: lodPrims[li], meshes });
     }
     if ((def.impostorDist ?? 0) > 0) {
+      await Promise.all(this.alphaLoads).catch(() => undefined);
       try { rt.impostor = this.buildImpostor(kind, def, lodPrims[0], materials, placements.length); this.group.add(rt.impostor); }
       catch (e) { console.warn('impostor bake failed', kind, e); }
     }
@@ -254,29 +275,53 @@ diffuseColor.rgb *= mix(vec3(0.42, 0.47, 0.6), vec3(1.0, 0.92, 0.8), vLit) * 0.9
     return im;
   }
 
+  /** Alpha maps still loading (the impostor bake must wait for them or it captures opaque black cards). */
+  private alphaLoads: Promise<void>[] = [];
+
   private prepareMaterial(src: THREE.MeshStandardMaterial, name: string, def: KindDef, windU: Record<string, THREE.IUniform>): THREE.MeshStandardMaterial {
     const mat = src.clone();
     // alpha-tested foliage only when we actually have an alpha map (or the source material is already cut-out);
     // '*_branches' meshes on the island trees / saplings are solid geometry and must stay opaque.
     const leaf = !!this.alphaManifest[name] || src.alphaTest > 0 || src.transparent || (/twig|leaves|leaf|needle|fern|grass|shrub|moss/i.test(name) && !/branches/i.test(name));
     const alphaFile = this.alphaManifest[name];
-    if (alphaFile) assets.texture(`models/nature/${alphaFile}`).then((t) => { t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping; mat.alphaMap = t; mat.needsUpdate = true; });
+    if (alphaFile) {
+      this.alphaLoads.push(assets.texture(`models/nature/${alphaFile}`).then((src) => {
+        // The alpha jpg is sampled with the glb's UVs: glTF textures are not flipped, and gltfpack's UV quantisation
+        // stores an offset/scale (KHR_texture_transform) on the base-colour map that the alpha map must share.
+        // Without both the mask never lines up with the leaves and every card renders as a black quad.
+        const t = src.clone(); t.flipY = false; t.colorSpace = THREE.NoColorSpace; t.anisotropy = 8;
+        const m = mat.map;
+        if (m) { t.wrapS = m.wrapS; t.wrapT = m.wrapT; t.offset.copy(m.offset); t.repeat.copy(m.repeat); t.rotation = m.rotation; t.center.copy(m.center); t.matrixAutoUpdate = m.matrixAutoUpdate; if (!m.matrixAutoUpdate) t.matrix.copy(m.matrix); }
+        t.needsUpdate = true; mat.alphaMap = t; mat.needsUpdate = true;
+      }));
+    }
     if (leaf) {
       mat.alphaTest = 0.42; mat.side = THREE.DoubleSide; mat.transparent = false; mat.depthWrite = true; mat.roughness = Math.max(mat.roughness, 0.7);
       // cheap translucency: back-lit leaves glow with their own texel colour instead of going black
       if (mat.map) { mat.emissiveMap = mat.map; mat.emissive = new THREE.Color(0.30, 0.30, 0.22); }
+      if (mat.normalMap) mat.normalScale.setScalar(0.5);
     }
     else { mat.side = THREE.FrontSide; }
     mat.metalness = 0; mat.envMapIntensity = leaf ? 0.35 : 0.6;
     if (mat.map) { mat.map.anisotropy = 8; mat.map.colorSpace = THREE.SRGBColorSpace; }
     (mat as any).ior = 1.45;
+    const crown = leaf && def.lods > 0 ? { y: def.height * 0.6, r: def.radius, blend: 0.6 } : null;
     applyHeightFog(mat, (shader) => {
       Object.assign(shader.uniforms, windU, { uSunColorV: { value: SUN_COLOR }, uTranslucency: { value: leaf ? 0.35 : 0 } });
       shader.vertexShader = shader.vertexShader
         .replace('#include <common>', '#include <common>\n' + WIND_VERT)
+        // leaf cards face every which way; blend their normal toward the crown's outward direction so the canopy
+        // shades like a soft volume (lit toward the sun, cool on the far side) instead of a salt-and-pepper mess
+        .replace('#include <beginnormal_vertex>', '#include <beginnormal_vertex>' + (crown ? `
+{
+  vec3 crownDir = position - vec3(0.0, uModelHeight * 0.6, 0.0); crownDir.y *= 0.55;
+  objectNormal = normalize(mix(objectNormal, normalize(crownDir + vec3(0.0, 0.25 * uModelRadius, 0.0)), ${crown.blend.toFixed(2)}));
+}` : ''))
         .replace('#include <begin_vertex>', '#include <begin_vertex>\n' + (def.wind > 0 ? WIND_CODE : ''));
       shader.fragmentShader = shader.fragmentShader
         .replace('#include <common>', '#include <common>\nuniform vec3 uSunColorV; uniform float uTranslucency;')
+        // keep the crown normal on back faces too (three flips normals for double-sided materials)
+        .replace('#include <normal_fragment_begin>', crown ? THREE.ShaderChunk.normal_fragment_begin.replace('normal *= faceDirection;', '') : '#include <normal_fragment_begin>')
         .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
 if (uTranslucency > 0.0) {
   vec3 sdV = normalize((viewMatrix * vec4(uSunDir, 0.0)).xyz);
@@ -284,7 +329,7 @@ if (uTranslucency > 0.0) {
   totalEmissiveRadiance += diffuseColor.rgb * uSunColorV * back * uTranslucency;
 }`);
     });
-    mat.customProgramCacheKey = () => `veg:${leaf ? 'leaf' : 'solid'}:${def.wind > 0 ? 'wind' : 'still'}`;
+    mat.customProgramCacheKey = () => `veg:${leaf ? 'leaf' : 'solid'}:${def.wind > 0 ? 'wind' : 'still'}:${crown ? 'crown' : 'flat'}`;
     return mat;
   }
 
@@ -339,34 +384,53 @@ if (uTranslucency > 0.0) {
   }
 
   // ------------------------------------------------------------------------------------------ grass
+  /**
+   * Two GPU-placed carpets that follow the player: geometry blades (3 per 0.16 m cell, 4 segments, curved, tapered)
+   * out to ~17 m, then cross-card clumps with a procedural alpha texture out to ~60 m. Both read density / height
+   * from the baked ground texture, so grass stops at the path, the sand and the water exactly where the splat does.
+   * Blade count scales with settings.grassDensity via instanceCount (≈125k blades + 30k cards at density 1).
+   */
   private buildGrass() {
     const dens = this.quality.grassDensity;
     if (dens <= 0) return;
-    const make = (gridN: number, cell: number, perCell: number, bladeScale: number, fade: [number, number], inner: number, hi: boolean) => {
-      // blade: 3 segments + tip, mirrored around x
-      const segs = hi ? 4 : 2; const pos: number[] = [], uvs: number[] = [], idx: number[] = [];
-      for (let s = 0; s <= segs; s++) { const t = s / segs; const w = (1 - t * t) * 0.5; if (s < segs) { pos.push(-w, t, 0, w, t, 0); uvs.push(0, t, 1, t); } else { pos.push(0, 1, 0); uvs.push(0.5, 1); } }
-      for (let s = 0; s < segs; s++) { const a = s * 2; if (s < segs - 1) idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); else idx.push(a, a + 1, a + 2); }
+    const hi = this.quality.tier === 'high' || this.quality.tier === 'ultra';
+    const clump = makeClumpTexture();
+    const make = (o: { gridN: number; cell: number; perCell: number; scale: number; fadeIn: [number, number]; fadeOut: [number, number]; card: boolean }) => {
+      const pos: number[] = [], uvs: number[] = [], idx: number[] = [];
+      if (o.card) {
+        // two crossed quads, x/z in [-0.5, 0.5], y in [0, 1]
+        for (const axis of [0, 1]) {
+          const b = pos.length / 3;
+          for (const [s, t] of [[-0.5, 0], [0.5, 0], [0.5, 1], [-0.5, 1]]) { pos.push(axis ? 0 : s, t, axis ? s : 0); uvs.push(s + 0.5, t); }
+          idx.push(b, b + 1, b + 2, b, b + 2, b + 3);
+        }
+      } else {
+        // blade: `segs` quads + tip, mirrored around x, width taper baked into position.x
+        const segs = hi ? 4 : 3;
+        for (let s = 0; s <= segs; s++) { const t = s / segs; const w = (1 - Math.pow(t, 1.4)) * 0.5; if (s < segs) { pos.push(-w, t, 0, w, t, 0); uvs.push(0, t, 1, t); } else { pos.push(0, 1, 0); uvs.push(0.5, 1); } }
+        for (let s = 0; s < segs; s++) { const a = s * 2; if (s < segs - 1) idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); else idx.push(a, a + 1, a + 2); }
+      }
       const geo = new THREE.InstancedBufferGeometry();
       geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
       geo.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
-      const nrm = new Float32Array(pos.length); for (let i = 0; i < pos.length / 3; i++) nrm[i * 3 + 2] = 1; geo.setAttribute('normal', new THREE.BufferAttribute(nrm, 3));
+      const nrm = new Float32Array(pos.length); for (let i = 0; i < pos.length / 3; i++) nrm[i * 3 + 1] = 1; geo.setAttribute('normal', new THREE.BufferAttribute(nrm, 3));
       geo.setIndex(idx);
-      const total = gridN * gridN * perCell; geo.instanceCount = Math.max(1, Math.floor(total * dens));
+      const total = o.gridN * o.gridN * o.perCell; geo.instanceCount = Math.max(1, Math.floor(total * dens));
       geo.boundingSphere = new THREE.Sphere(new THREE.Vector3(), 1e6);
-      const mat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.85, metalness: 0, side: THREE.DoubleSide });
+      const mat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.8, metalness: 0, side: THREE.DoubleSide, map: o.card ? clump : null, alphaTest: o.card ? 0.35 : 0 });
+      mat.envMapIntensity = 0.5;
       const u = {
-        uAnchor: { value: new THREE.Vector2() }, uCell: { value: cell }, uGridN: { value: gridN }, uPerCell: { value: perCell }, uTotal: { value: total },
-        uBladeScale: { value: bladeScale }, uFade: { value: new THREE.Vector2(fade[0], fade[1]) }, uInner: { value: inner },
+        uAnchor: { value: new THREE.Vector2() }, uCell: { value: o.cell }, uGridN: { value: o.gridN }, uPerCell: { value: o.perCell }, uTotal: { value: total },
+        uScale: { value: o.scale }, uFadeIn: { value: new THREE.Vector2(o.fadeIn[0], o.fadeIn[1]) }, uFadeOut: { value: new THREE.Vector2(o.fadeOut[0], o.fadeOut[1]) },
         uGround: { value: this.ground }, uNoise: { value: this.noise }, uTime: fogUniforms.uTime, uWindDir: { value: this.windDir }, uMapHalf: { value: MAP_HALF },
-        uSunColorV: { value: SUN_COLOR },
+        uSunColorV: { value: SUN_COLOR }, uCard: { value: o.card ? 1 : 0 },
       };
       applyHeightFog(mat, (shader) => {
         Object.assign(shader.uniforms, u);
         shader.vertexShader = shader.vertexShader
           .replace('#include <common>', `#include <common>
-uniform vec2 uAnchor; uniform float uCell; uniform float uGridN; uniform float uPerCell; uniform float uTotal; uniform float uBladeScale; uniform vec2 uFade; uniform float uInner;
-uniform sampler2D uGround; uniform sampler2D uNoise; uniform float uTime; uniform vec2 uWindDir; uniform float uMapHalf;
+uniform vec2 uAnchor; uniform float uCell; uniform float uGridN; uniform float uPerCell; uniform float uTotal; uniform float uScale; uniform vec2 uFadeIn; uniform vec2 uFadeOut;
+uniform sampler2D uGround; uniform sampler2D uNoise; uniform float uTime; uniform vec2 uWindDir; uniform float uMapHalf; uniform float uCard;
 varying vec3 vGrassCol; varying float vGrassAO;
 float gh(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }`)
           .replace('#include <beginnormal_vertex>', `
@@ -379,39 +443,47 @@ vec3 transformed; vec3 objectNormal;
   vec2 base = floor(uAnchor / uCell) - uGridN * 0.5;
   vec2 cellXZ = base + vec2(gx, gz);
   vec2 seed = cellXZ * 1.7 + sub * 13.1;
-  vec2 jitter = vec2(gh(seed), gh(seed + 7.3));
+  // blades of one cell cluster around a shared clump centre
+  vec2 clumpC = vec2(gh(cellXZ * 0.9 + 0.7), gh(cellXZ * 0.9 + 3.9));
+  vec2 jitter = mix(vec2(gh(seed), gh(seed + 7.3)), clumpC, uCard > 0.5 ? 0.0 : 0.55);
   vec2 wxz = (cellXZ + jitter) * uCell;
   // ground data: R height, G grass weight, B forest weight, A blocked (path/sand/rock/cobble/water)
   vec2 guv = (wxz / uMapHalf) * 0.5 + 0.5;
   vec4 g = texture2D(uGround, guv);
   float dist = length(wxz - uAnchor);
   float grassW = g.g + g.b * 0.85;
-  float ok = step(uInner, dist) * step(0.001, grassW) * step(0.5, 1.0 - g.a) * step(gh(seed + 3.3), grassW * 1.15);
-  float fade = 1.0 - smoothstep(uFade.x, uFade.y, dist);
-  float hv = 0.6 + 0.8 * gh(seed + 1.1);
+  float ok = step(0.001, grassW) * step(0.5, 1.0 - g.a) * step(gh(seed + 3.3), grassW * 1.2 - 0.05);
+  float fade = smoothstep(uFadeIn.x, uFadeIn.y, dist) * (1.0 - smoothstep(uFadeOut.x, uFadeOut.y, dist));
+  float hv = 0.55 + 0.9 * gh(seed + 1.1) * gh(seed + 9.1);
   float macro = texture2D(uNoise, wxz * 0.02).r;
-  float height = uBladeScale * hv * (0.75 + 0.5 * macro) * (0.85 + 0.3 * g.b) * fade * ok;
-  float width = uBladeScale * 0.16 * (0.7 + 0.6 * gh(seed + 2.2)) * (1.0 + dist * 0.03);
+  float patch = texture2D(uNoise, wxz * 0.055 + 0.37).b;
+  float height = uScale * (0.7 + 0.6 * hv) * (0.7 + 0.6 * macro) * (0.8 + 0.4 * patch) * (0.85 + 0.3 * g.b) * fade * ok;
+  float width = uScale * (uCard > 0.5 ? 1.35 : 0.07 * (0.7 + 0.6 * gh(seed + 2.2))) * (1.0 + dist * 0.035);
   float yaw = gh(seed + 4.4) * 6.2832;
-  vec2 fwd = vec2(cos(yaw), sin(yaw));
+  vec2 fwd = vec2(cos(yaw), sin(yaw)); vec2 rgt = vec2(fwd.y, -fwd.x);
   float t = position.y;
   // wind: gusts scroll over the field, blades bend along the wind with a per-blade phase
-  float gust = texture2D(uNoise, wxz * 0.035 + uTime * 0.07 * uWindDir).g * 2.0 - 1.0;
-  float sway = sin(uTime * 2.3 + gh(seed + 5.5) * 6.28 + wxz.x * 0.3 + wxz.y * 0.2) * 0.35;
-  vec2 bend = uWindDir * (0.35 + 0.65 * gust) * 0.9 + fwd * (0.25 * (gh(seed + 6.6) - 0.5)) + uWindDir * sway * 0.5;
+  float gust = texture2D(uNoise, wxz * 0.03 + uTime * 0.06 * uWindDir).g * 2.0 - 1.0;
+  float sway = sin(uTime * 2.1 + gh(seed + 5.5) * 6.28 + wxz.x * 0.35 + wxz.y * 0.25) * 0.4;
+  vec2 bend = uWindDir * (0.4 + 0.6 * gust) * 0.85 + rgt * (0.5 * (gh(seed + 6.6) - 0.5)) + uWindDir * sway * 0.45;
   float bt = t * t;
-  vec3 p = vec3(wxz.x, g.r - 0.04, wxz.y);
-  p.x += fwd.y * position.x * width + bend.x * bt * height;
-  p.z += -fwd.x * position.x * width + bend.y * bt * height;
-  p.y += t * height * (1.0 - 0.35 * length(bend) * bt);
+  vec3 p = vec3(wxz.x, g.r - 0.05, wxz.y);
+  vec2 off = rgt * position.x * width + fwd * position.z * width;
+  p.xz += off + bend * bt * height;
+  p.y += t * height * (1.0 - 0.3 * length(bend) * bt);
   transformed = p;
-  objectNormal = normalize(vec3(fwd.x, 1.6, fwd.y));
+  // mostly-up normal (shades like the ground it grows on) with a slight per-blade tilt for rounding
+  vec2 tilt = uCard > 0.5 ? vec2(0.0) : rgt * (0.3 * sign(position.x + 1e-4));
+  objectNormal = normalize(vec3(tilt.x + bend.x * 0.25, 1.0, tilt.y + bend.y * 0.25));
   // colour: dark olive root → warm yellow-green tip, forest floor makes it mossier, macro noise dries patches
-  vec3 root = vec3(0.09, 0.13, 0.05); vec3 tip = mix(vec3(0.34, 0.44, 0.15), vec3(0.50, 0.46, 0.20), macro);
-  vec3 col = mix(root, tip, pow(t, 0.9) * 0.85 + 0.15);
-  col = mix(col, col * vec3(0.72, 0.85, 0.66), g.b * 0.6);
-  col *= 0.8 + 0.4 * gh(seed + 8.8);
-  vGrassCol = col; vGrassAO = 0.55 + 0.45 * t;
+  vec3 root = vec3(0.045, 0.075, 0.02);
+  vec3 tipGreen = vec3(0.26, 0.40, 0.11), tipDry = vec3(0.55, 0.47, 0.19);
+  vec3 tip = mix(tipGreen, tipDry, smoothstep(0.35, 0.8, macro * 0.7 + patch * 0.3));
+  vec3 col = mix(root, tip, pow(t, 0.8) * 0.85 + 0.15);
+  col = mix(col, col * vec3(0.7, 0.85, 0.7), g.b * 0.6);
+  col *= 0.8 + 0.45 * gh(seed + 8.8);
+  col.g *= 0.92 + 0.16 * gh(seed + 12.3);
+  vGrassCol = col; vGrassAO = 0.45 + 0.55 * t;
 }`)
           .replace('#include <begin_vertex>', '')
           .replace('#include <project_vertex>', 'vec4 mvPosition = viewMatrix * vec4(transformed, 1.0); gl_Position = projectionMatrix * mvPosition;')
@@ -419,24 +491,23 @@ vec3 transformed; vec3 objectNormal;
           .replace('vHFWorldPos = (modelMatrix * vec4(transformed, 1.0)).xyz;', 'vHFWorldPos = transformed;');
         shader.fragmentShader = shader.fragmentShader
           .replace('#include <common>', '#include <common>\nvarying vec3 vGrassCol; varying float vGrassAO; uniform vec3 uSunColorV;')
-          .replace('#include <color_fragment>', 'diffuseColor.rgb *= vGrassCol;')
-          .replace('#include <aomap_fragment>', 'reflectedLight.indirectDiffuse *= vGrassAO;')
+          .replace('#include <color_fragment>', 'diffuseColor.rgb *= vGrassCol * vGrassAO;')
           .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
 {
   vec3 sdV = normalize((viewMatrix * vec4(uSunDir, 0.0)).xyz);
   float back = pow(max(dot(normalize(-vViewPosition), sdV), 0.0), 3.0);
-  totalEmissiveRadiance += diffuseColor.rgb * uSunColorV * back * 0.3 * vGrassAO;
+  totalEmissiveRadiance += diffuseColor.rgb * uSunColorV * back * 0.35 * vGrassAO;
 }`);
       });
-      mat.customProgramCacheKey = () => 'grass:' + (hi ? 'hi' : 'lo');
-      const mesh = new THREE.Mesh(geo, mat); mesh.frustumCulled = false; mesh.receiveShadow = true; mesh.castShadow = false; mesh.layers.enable(DETAIL_LAYER); mesh.name = 'grass';
+      mat.customProgramCacheKey = () => 'grass:' + (o.card ? 'card' : hi ? 'hi' : 'lo');
+      const mesh = new THREE.Mesh(geo, mat); mesh.frustumCulled = false; mesh.receiveShadow = true; mesh.castShadow = false; mesh.layers.enable(DETAIL_LAYER); mesh.name = o.card ? 'grass-cards' : 'grass';
       (mesh as any).grassUniforms = u;
       this.group.add(mesh); this.grass.push(mesh);
     };
-    // near carpet: 0.2 m cells, 2 blades/cell over a 32 m square (~51k blades at density 1)
-    make(160, 0.2, 2, 0.38, [12, 17], 0, true);
-    // far ring: 0.55 m cells, wider blades over a 88 m square, starts where the near carpet fades
-    make(160, 0.55, 1, 0.5, [40, 52], 11, false);
+    // near carpet: 0.16 m cells, 3 blades/cell over a 29 m square (~98k blades at density 1)
+    make({ gridN: 180, cell: 0.16, perCell: 3, scale: 0.42, fadeIn: [-1, 0], fadeOut: [12, 17], card: false });
+    // mid ring: 0.62 m cells, crossed clump cards over a 78 m square, from where the blades fade out (~32k cards)
+    make({ gridN: 126, cell: 0.62, perCell: 2, scale: 0.4, fadeIn: [10, 15], fadeOut: [48, 60], card: true });
   }
 
   update(dt: number, camPos: THREE.Vector3, focus: THREE.Vector3) {

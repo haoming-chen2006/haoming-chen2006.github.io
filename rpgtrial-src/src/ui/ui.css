@@ -21,6 +21,10 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #05070c; fon
 #ui > * { pointer-events: auto; }
 #ui > .screen, #ui > .tooltip, #ui > #hud, #ui > #dlg, #ui > #dice { pointer-events: none; }
 #ui > .screen.on, #ui > #dlg.on, #ui > #dice.on { pointer-events: auto; }
+/* death / ending live here, above the game's fade-to-black (z-index 90) */
+#ui-top { position: fixed; inset: 0; pointer-events: none; z-index: 95; }
+#ui-top > .screen { pointer-events: none; }
+#ui-top > .screen.on { pointer-events: auto; }
 * { box-sizing: border-box; }
 button { font: inherit; color: inherit; }
 ::selection { background: rgba(214,178,94,.35); }
@@ -336,6 +340,18 @@ input[type=range].slider::-webkit-slider-thumb { -webkit-appearance: none; width
 .rest-fade { position: absolute; inset: 0; background: #000; opacity: 0; pointer-events: none; transition: opacity .8s; display: grid; place-items: center; font-family: var(--title); letter-spacing: .3em; text-transform: uppercase; color: var(--gold); font-size: 18px; }
 .rest-fade.on { opacity: 1; }
 
+/* subtitles (companion barks): bottom-centre, above the hotbar; above the letterbox in cinematics; above the boss bar / dialogue panel */
+.subtitle { position: absolute; left: 50%; bottom: 150px; transform: translateX(-50%) translateY(6px); max-width: min(760px, 58vw); padding: 7px 20px; text-align: center; font-size: 21px; line-height: 1.35; color: var(--ink);
+  background: rgba(4,6,10,.5); border-radius: 2px; text-shadow: 0 1px 2px #000, 0 0 10px rgba(0,0,0,.9); opacity: 0; transition: opacity .25s, transform .25s var(--ease); pointer-events: none; z-index: 6; }
+.subtitle.on { opacity: 1; transform: translateX(-50%); }
+.subtitle .ss { font-family: var(--title); font-size: 15px; letter-spacing: .14em; text-transform: uppercase; color: var(--gold); margin-right: 12px; white-space: nowrap; }
+.subtitle .ss:not(:empty)::after { content: '—'; margin-left: 12px; color: var(--gold-dim); }
+.subtitle.narr { font-style: italic; color: var(--ink-dim); }
+.subtitle.narr .ss { display: none; }
+#hud.cine .subtitle { bottom: calc(11vh + 18px); }
+#hud.bossing .subtitle { bottom: 196px; }
+#hud.dialogue .subtitle { bottom: 250px; }
+
 /* ---------- tutorial cards ---------- */
 .tut-stack { position: absolute; right: 22px; top: 18px; display: flex; flex-direction: column; gap: 10px; width: 330px; align-items: flex-end; }
 .tut { width: 100%; padding: 12px 16px 12px 16px; background: linear-gradient(180deg, rgba(15,18,27,.92), rgba(8,10,16,.92)); border: 1px solid var(--gold-dim); border-left: 3px solid var(--gold); animation: tutIn .4s var(--ease); position: relative; box-shadow: 0 10px 30px rgba(0,0,0,.5); pointer-events: auto; }
@@ -379,7 +395,7 @@ input[type=range].slider::-webkit-slider-thumb { -webkit-appearance: none; width
 .choice .dc { margin-left: auto; font-family: var(--title); font-size: 11px; letter-spacing: .16em; color: var(--ink-faint); opacity: 0; transition: opacity .15s; white-space: nowrap; padding-left: 12px; flex: none; align-self: center; }
 .choice:hover, .choice.sel { color: var(--ink); background: linear-gradient(90deg, rgba(214,178,94,.12), transparent 70%); border-color: rgba(214,178,94,.25); }
 .choice:hover .n, .choice.sel .n { color: #1c1609; background: var(--gold); border-color: var(--gold-hi); }
-.choice:hover .dc { opacity: 1; }
+.choice:hover .dc, .choice.sel .dc { opacity: 1; }
 .choice .ti { color: var(--ink-faint); font-size: 15px; align-self: center; }
 .choice.attack .tag { color: #ff8c86; } .choice.leave .tag { color: var(--ink-faint); } .choice.gold .tag { color: var(--gold-hi); }
 .dlg-continue { align-self: flex-end; margin-top: 8px; display: flex; align-items: center; gap: 8px; color: var(--ink-faint); font-family: var(--title); font-size: 11px; letter-spacing: .24em; text-transform: uppercase; cursor: pointer; opacity: 0; transition: opacity .25s; }

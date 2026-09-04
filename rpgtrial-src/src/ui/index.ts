@@ -39,10 +39,14 @@ const NO_PAUSE: ScreenName[] = ['menu', 'classSelect', 'death', 'ending', 'credi
 
 export function createUI(ctx: UIContext, opts: UIOptions = {}): UI {
   const root = opts.root ?? (document.getElementById('ui') as HTMLElement | null) ?? (() => { const r = h('div#ui'); document.body.appendChild(r); return r; })();
+  // Death and ending sit above the game's fade-to-black element (game.ts, z-index 90): the prologue fades out
+  // right after `death` and before `prologueComplete`, so inside #ui (z-index 10) those screens would be invisible.
+  const topRoot = (document.getElementById('ui-top') as HTMLElement | null) ?? (() => { const r = h('div#ui-top'); (root.parentElement ?? document.body).appendChild(r); return r; })();
+  const ABOVE_FADE: ScreenName[] = ['death', 'ending'];
   const hotkeys = opts.hotkeys !== false;
   const cam = () => ctx.game.cam.camera;
   // backdrop blur is a full-frame readback: only on the higher tiers
-  const q = ctx.game.quality; root.classList.toggle('noblur', q === 'low' || q === 'medium');
+  const q = ctx.game.quality; root.classList.toggle('noblur', q === 'low' || q === 'medium'); topRoot.classList.toggle('noblur', q === 'low' || q === 'medium');
 
   // ---- world → screen projection (no three.js import needed: read the camera matrices directly) ----
   function worldToScreen(pos: Vec3) {
@@ -57,12 +61,12 @@ export function createUI(ctx: UIContext, opts: UIOptions = {}): UI {
     return { x, y, visible: nx > -1.2 && nx < 1.2 && ny > -1.2 && ny < 1.2 };
   }
 
-  const hud = createHUD(ctx, worldToScreen);
+  const hud = createHUD(ctx, worldToScreen, { hold: () => dice.isOpen() });
   const tutorial = createTutorial(hud.tutorialStack, (s) => questText(ctx.world, s));
   const dialogue = createDialogue(ctx, (open) => { hud.el.classList.toggle('dialogue', open); syncCapture(); if (open) { try { ctx.game.input.releaseLock(); } catch {} } else maybeRelock(); }, { instant: !!opts.instantText });
   const dice = createDice({ env: !(q === 'low' || q === 'medium') });
   root.append(hud.el, dialogue.el, dice.el);
-  tooltip(root); hoverSounds(root);
+  tooltip(root); hoverSounds(root); hoverSounds(topRoot);
   // HUD scale: 1× at 720p–900p, up to 1.35× on tall displays (floating text compensates)
   function applyZoom() { const z = Math.min(1.35, Math.max(1, innerHeight / 900)); root.style.setProperty('--hud-zoom', z.toFixed(3)); hud.setZoom(z); }
   applyZoom(); addEventListener('resize', applyZoom);
@@ -83,7 +87,7 @@ export function createUI(ctx: UIContext, opts: UIOptions = {}): UI {
     levelUp: createLevelUp, settings: createSettings, ending: createEnding, death: createDeath, credits: createCredits,
   };
   function screen(name: Exclude<ScreenName, null>): Screen {
-    let s = screens[name]; if (!s) { s = factories[name](ctx, nav); screens[name] = s; root.appendChild(s.el); }
+    let s = screens[name]; if (!s) { s = factories[name](ctx, nav); screens[name] = s; (ABOVE_FADE.includes(name) ? topRoot : root).appendChild(s.el); }
     return s;
   }
   const gameStarted = () => { const st = (ctx.game as any).state; return st === undefined ? true : st === 'playing'; };
@@ -136,6 +140,13 @@ export function createUI(ctx: UIContext, opts: UIOptions = {}): UI {
   bus.on('prologueComplete', () => setTimeout(() => showScreen('ending'), 1800));
   bus.on('ui', (e) => { const n = (e.screen ?? null) as ScreenName; if (n !== current && (n === null || n in factories)) showScreen(n); });
   bus.on('dialogueEnd', () => { dialogue.hide(); });
+  // World checks (the cache's Perception, the boulder's Athletics, the altar, the gate) only emit `check`; dialogue rolls
+  // call showRoll themselves, synchronously after the event, so judge one tick later. Saves / attacks stay as floaters.
+  bus.on('check', (e) => {
+    if (!isPlayer(e.actorId) || e.roll.kind !== 'check') return;
+    const roll = e.roll;
+    setTimeout(() => { if (!gameStarted() || dice.isOpen() || dialogue.isOpen() || current) return; ui.dialogue.showRoll(roll, () => {}); }, 0);
+  });
 
   // ---- content + settings ----
   loadContent().then(() => hud.refreshHotbar());
@@ -148,7 +159,7 @@ export function createUI(ctx: UIContext, opts: UIOptions = {}): UI {
     },
     showScreen,
     dialogue: {
-      present: (node: DialogueNode, choices: DialogueChoice[], onPick: (i: number) => void, onContinue: () => void) => dialogue.present(node, choices, onPick, onContinue),
+      present: (node: DialogueNode, choices: DialogueChoice[], onPick: (i: number) => void, onContinue: () => void) => { hud.notePresented(node.text); dialogue.present(node, choices, onPick, onContinue); },
       hide: () => dialogue.hide(),
       showRoll: (roll: RollResult, onDone: () => void) => { syncCaptureSoon(); dice.showRoll(roll, () => { syncCapture(); maybeRelock(); onDone(); }); },
     },
@@ -157,6 +168,7 @@ export function createUI(ctx: UIContext, opts: UIOptions = {}): UI {
     isBlocking,
     get screen() { return current; },
     toast: (text, kind) => hud.toast(text, kind),
+    subtitle: (speakerId, text) => hud.subtitle(speakerId, text),
     root,
     warm,
   };

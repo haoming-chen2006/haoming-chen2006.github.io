@@ -131,7 +131,7 @@ const ALIAS: Record<string, string> = {
   heart: 'heal', hp: 'heal', dodge: 'boot', gold: 'coin', coins: 'coin', attack: 'sword', spell: 'sparkle', buff: 'halo', utility: 'compass', levelup: 'star', xpOrb: 'xp',
   mouseLeft: 'mouseL', mouseRight: 'mouseR', mouseMiddle: 'mouseM', lmb: 'mouseL', rmb: 'mouseR', mmb: 'mouseM', wheel: 'scrollWheel', player: 'person', boss: 'crown',
   // names used by content/spells.ts + content/items.ts
-  ward: 'shieldSpell', reckless: 'fist', dash: 'boot', bolt: 'fire', vial: 'potion', camp: 'campfire', rations: 'food', chainShirt: 'armor', potionHealing: 'potion',
+  ward: 'shieldSpell', reckless: 'fist', dash: 'boot', bolt: 'surge', vial: 'potion', camp: 'campfire', rations: 'food', chainShirt: 'armor', potionHealing: 'potion',
 };
 
 export function iconPath(name: string): string { return P[name] ?? P[ALIAS[name]] ?? P.sparkle; }

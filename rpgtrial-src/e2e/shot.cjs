@@ -5,7 +5,7 @@ const path = require('path'); const fs = require('fs');
 const OUT = path.join(__dirname, 'shots'); fs.mkdirSync(OUT, { recursive: true });
 (async () => {
   const args = process.argv.slice(2);
-  const url = 'http://127.0.0.1:5180/rpgtrial/' + (args[0] && !args[0].includes(':') ? args.shift() : '');
+  const url = (process.env.HM_URL || 'http://127.0.0.1:5180/rpgtrial/') + (args[0] && !args[0].includes(':') ? args.shift() : '');
   const browser = await chromium.launch({ args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--enable-webgl', '--use-gl=angle'] });
   const page = await browser.newPage({ viewport: { width: 1280, height: 720 } }); page.setDefaultTimeout(120000);
   const errors = [];

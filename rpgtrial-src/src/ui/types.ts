@@ -35,6 +35,8 @@ export interface UI {
   screen: ScreenName;
   /** Fire a toast from anywhere. */
   toast(text: string, kind?: 'info' | 'warn' | 'gold' | 'xp'): void;
+  /** Bottom-centre subtitle ("Ilyra — …"). `dialogueLine` events outside a dialogue panel already route here. */
+  subtitle(speakerId: string, text: string): void;
   root: HTMLElement;
   /** Pre-compile the dice renderer (called automatically on idle; call earlier from the loading screen if you like). */
   warm(): void;

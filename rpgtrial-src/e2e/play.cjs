@@ -7,7 +7,7 @@ const cls = process.argv[2] || 'fighter'; const until = process.argv[3] || 'chap
   const browser = await chromium.launch({ args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--enable-webgl', '--use-gl=angle'] });
   const page = await browser.newPage({ viewport: { width: 1280, height: 720 } }); page.setDefaultTimeout(180000);
   const errors = []; page.on('pageerror', (e) => errors.push('pageerror: ' + e.message)); page.on('console', (m) => { if (m.type() === 'error') errors.push('error: ' + m.text().slice(0, 300)); });
-  await page.goto('http://127.0.0.1:5180/rpgtrial/?quality=low');
+  await page.goto('http://127.0.0.1:5180/rpgtrial/?quality=test');
   await page.waitForFunction(() => document.getElementById('loading')?.classList.contains('hide'), null, { timeout: 200000 });
   const step = () => page.evaluate(() => window.__hm.prologue?.currentStep?.id ?? null);
   const state = () => page.evaluate(() => { const p = window.__hm.world.player; return { step: window.__hm.prologue?.currentStep?.id, pos: [p.pos.x.toFixed(1), p.pos.z.toFixed(1)], hp: p.hp, anim: p.anim.name, st: p.state, blocking: window.__hm.ui.isBlocking(), screen: window.__hm.ui.screen, dlg: !!document.querySelector('.dialogue.open, #dialogue.open, .dlg-open') }; });

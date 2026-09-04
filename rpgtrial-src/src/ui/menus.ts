@@ -117,6 +117,23 @@ export function createPause(ctx: UIContext, nav: Nav): Screen {
 
 // ---------------------------------------------------------------- death
 export function createDeath(ctx: UIContext, nav: Nav): Screen {
+  let rising = false; let riseTimer = 0;
+  const rise = h('button.menu-item', { type: 'button', onclick: () => {
+    if (rising) return; sfx('click');
+    const pr = (ctx.game as any).prologue; const w = ctx.world as any;
+    if (!pr || typeof pr.respawn !== 'function') { ctx.game.restart(); return; }
+    // The prologue respawns at the last checkpoint and emits `respawn`, which closes this screen. It only reads the
+    // request after its own fade-out (and re-arms it then), so keep asking; if nothing answers — a death outside a
+    // scripted encounter — revive through the world directly, and close regardless after 6 s.
+    rising = true; rise.textContent = 'Rising…'; (rise as HTMLButtonElement).disabled = true;
+    const t0 = Date.now(); pr.respawn();
+    riseTimer = window.setInterval(() => {
+      if (!el.classList.contains('on')) { clearInterval(riseTimer); return; }
+      const dt = Date.now() - t0;
+      if (dt > 6000) { clearInterval(riseTimer); nav.close(); return; }
+      if (dt > 1800 && w.player?.dead && typeof w.respawn === 'function') w.respawn(); else pr.respawn();
+    }, 400);
+  } }, 'Rise again');
   const el = h('div.screen#death', h('div.veil'), h('div.content',
     h('div.death-block',
       h('div.over', 'Death saving throw failed'),
@@ -125,9 +142,14 @@ export function createDeath(ctx: UIContext, nav: Nav): Screen {
       h('div.sub', 'The Hollowmere keeps what it takes.'),
       divider(),
       h('div.menu-list',
-        h('button.menu-item', { type: 'button', onclick: () => { sfx('click'); ctx.game.restart(); } }, 'Rise again'),
+        rise,
         h('button.menu-item', { type: 'button', onclick: () => { sfx('click'); try { localStorage.removeItem(SAVE_KEY); } catch {} ctx.game.restart(); } }, 'Main menu')))));
-  return { el, open() { el.classList.add('on'); sfx('fail'); }, close() { el.classList.remove('on'); }, key() { return true; } };
+  return {
+    el,
+    open() { rising = false; rise.textContent = 'Rise again'; (rise as HTMLButtonElement).disabled = false; el.classList.add('on'); sfx('fail'); },
+    close() { el.classList.remove('on'); clearInterval(riseTimer); },
+    key() { return true; },
+  };
 }
 
 // ---------------------------------------------------------------- credits

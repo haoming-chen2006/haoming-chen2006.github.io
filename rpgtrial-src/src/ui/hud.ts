@@ -25,9 +25,13 @@ export interface HUD {
   refreshHotbar(): void;
   /** CSS zoom applied to #hud (floating text divides screen px by it). */
   setZoom(z: number): void;
+  /** The dialogue panel is about to show this line — a matching `dialogueLine` is not a bark. */
+  notePresented(text: string): void;
+  /** Bottom-centre subtitle ("Ilyra — …"); used for companion barks, callable directly. */
+  subtitle(speakerId: string, text: string): void;
 }
 
-export function createHUD(ctx: UIContext, w2s: W2S): HUD {
+export function createHUD(ctx: UIContext, w2s: W2S, opts: { /** freeze the subtitle clock (dice overlay open) */ hold?: () => boolean } = {}): HUD {
   const el = h('div#hud');
   // ---- top-left: portrait + bars ----
   const portrait = h('div.portrait', h('span.pic', { html: icon('swords') }), h('span.lvl', 'LVL 1'));
@@ -76,7 +80,9 @@ export function createHUD(ctx: UIContext, w2s: W2S): HUD {
   const crosshair = h('div.crosshair');
   const restFade = h('div.rest-fade');
   const tutorialStack = h('div.tut-stack');
-  el.append(quest, prompt, boss, area, toasts, pickups, fctLayer, lowhp, hitflash, lbTop, lbBot, crosshair, restFade, tutorialStack);
+  const subName = h('span.ss'), subText = h('span.st');
+  const subtitleEl = h('div.subtitle', subName, subText);
+  el.append(quest, prompt, boss, area, toasts, pickups, fctLayer, lowhp, hitflash, lbTop, lbBot, crosshair, restFade, tutorialStack, subtitleEl);
 
   // ---- state ----
   const floaters: Floater[] = [];
@@ -109,6 +115,34 @@ export function createHUD(ctx: UIContext, w2s: W2S): HUD {
     const p = h('div.pickup', h('div.pi', { html: icon(iconName) }), h('div', h('div.pn', name), h('div.pk', kind)), qty > 1 ? h('div.pq', '×' + qty) : null);
     pickups.appendChild(p); setTimeout(() => p.remove(), 4700);
     while (pickups.children.length > 5) pickups.firstChild?.remove();
+  }
+
+  // ---- subtitles: `dialogueLine` events that the dialogue panel does not present (companion barks) ----
+  // The runtime emits `dialogueLine` and then calls `ui.dialogue.present` synchronously with the same text, so a line is
+  // judged one tick later: if the panel presented it, it is not a bark. Lines queue; a new one shortens the current.
+  const subQueue: { name: string; text: string; narr: boolean }[] = [];
+  let subLeft = 0, subGap = 0, lastPresented = '';
+  function notePresented(text: string) { lastPresented = text; }
+  function speakerName(id: string): string {
+    if (id === 'narrator') return '';
+    if (id === 'player' || isPlayer(id)) return player()?.name ?? 'You';
+    const a = ctx.world.actors.get(id);
+    // first name only ("Ilyra — …"); bosses and the like keep their title
+    return a ? (a.kind === 'companion' ? a.name.split(' ')[0] : a.name) : prettify(id);
+  }
+  function subtitle(speakerId: string, text: string) {
+    const t = String(text ?? '').trim(); if (!t) return;
+    subQueue.push({ name: speakerName(speakerId), text: t, narr: speakerId === 'narrator' });
+    while (subQueue.length > 3) subQueue.shift();
+    if (subLeft > 0) subLeft = Math.min(subLeft, 1.2);
+  }
+  function subTick(dt: number) {
+    if (subLeft > 0) { subLeft -= dt; if (subLeft <= 0) { subtitleEl.classList.remove('on'); subGap = 0.3; } return; }
+    if (subGap > 0) { subGap -= dt; return; }
+    const s = subQueue.shift(); if (!s) return;
+    subName.textContent = s.name; subText.textContent = s.text;
+    subtitleEl.classList.toggle('narr', s.narr); subtitleEl.classList.add('on');
+    subLeft = Math.max(3, 0.06 * s.text.length);
   }
 
   // ---- quest ----
@@ -258,7 +292,8 @@ export function createHUD(ctx: UIContext, w2s: W2S): HUD {
       const c = ctx.world.actors.get('ilyra') ?? [...ctx.world.actors.values()].find((a) => a.kind === 'companion');
       if (c && !c.hidden) {
         companion.classList.remove('hidden');
-        if (c.hp !== lastCompanionHp) { const r = Math.max(0, Math.min(1, c.hp / Math.max(1, c.maxHp))); cFill.style.transform = `scaleX(${r})`; cGhost.style.transform = `scaleX(${r})`; lastCompanionHp = c.hp; cName.textContent = c.name; }
+        if (c.hp !== lastCompanionHp) { const r = Math.max(0, Math.min(1, c.hp / Math.max(1, c.maxHp))); cFill.style.transform = `scaleX(${r})`; cGhost.style.transform = `scaleX(${r})`; lastCompanionHp = c.hp; }
+        if (cName.textContent !== c.name) cName.textContent = c.name;
       } else companion.classList.add('hidden');
       // crosshair: aiming a ranged/spell class without lock-on
       const ranged = p.weapon === 'staff' || p.weapon === 'wand' || p.weapon === 'crossbow_1handed' || p.weapon === 'crossbow_2handed';
@@ -270,7 +305,7 @@ export function createHUD(ctx: UIContext, w2s: W2S): HUD {
     // boss
     if (bossId) {
       const b = ctx.world.actors.get(bossId);
-      if (b) { if (b.hp !== bossLastHp) { const r = Math.max(0, b.hp / Math.max(1, b.maxHp)); bossFill.style.transform = `scaleX(${r})`; bossGhost.style.transform = `scaleX(${r})`; bossTxt.textContent = `${Math.max(0, Math.ceil(b.hp))} / ${b.maxHp}`; bossLastHp = b.hp; } if (b.dead) { bossId = null; setTimeout(() => boss.classList.remove('on'), 1200); } }
+      if (b) { if (b.hp !== bossLastHp) { const r = Math.max(0, b.hp / Math.max(1, b.maxHp)); bossFill.style.transform = `scaleX(${r})`; bossGhost.style.transform = `scaleX(${r})`; bossTxt.textContent = `${Math.max(0, Math.ceil(b.hp))} / ${b.maxHp}`; bossLastHp = b.hp; } if (b.dead) { bossId = null; setTimeout(() => { boss.classList.remove('on'); el.classList.remove('bossing'); }, 1200); } }
     }
     // floaters
     for (let i = floaters.length - 1; i >= 0; i--) {
@@ -285,6 +320,7 @@ export function createHUD(ctx: UIContext, w2s: W2S): HUD {
       f.el.style.opacity = k > 0.65 ? String(1 - (k - 0.65) / 0.35) : '1';
     }
     if (restTimer > 0) { restTimer -= dt; if (restTimer <= 0) restFade.classList.remove('on'); }
+    if (!(ctx.game as any).paused && !opts.hold?.()) subTick(dt);
   }
 
   // ---- events ----
@@ -331,8 +367,9 @@ export function createHUD(ctx: UIContext, w2s: W2S): HUD {
     if (!e.label) { prompt.classList.remove('on'); return; }
     promptTxt.textContent = e.label; prompt.classList.add('on');
   });
-  bus.on('bossStart', (e) => { bossId = e.actorId; bossLastHp = -1; bossName.textContent = e.name; bossSub.textContent = e.subtitle; boss.classList.add('on'); });
-  bus.on('bossEnd', () => { bossId = null; boss.classList.remove('on'); });
+  bus.on('bossStart', (e) => { bossId = e.actorId; bossLastHp = -1; bossName.textContent = e.name; bossSub.textContent = e.subtitle; boss.classList.add('on'); el.classList.add('bossing'); });
+  bus.on('bossEnd', () => { bossId = null; boss.classList.remove('on'); el.classList.remove('bossing'); });
+  bus.on('dialogueLine', (e) => { const text = e.text; setTimeout(() => { if (text !== lastPresented) subtitle(e.speakerId, text); }, 0); });
   bus.on('areaEnter', (e) => { areaName.textContent = e.name; areaSub.textContent = e.id === 'crypt' ? 'Beneath the hill' : 'The Hollowmere'; retrigger(area, 'on'); });
   bus.on('cinematic', (e) => { cinematic = e.on; lbTop.classList.toggle('on', e.on); lbBot.classList.toggle('on', e.on); el.classList.toggle('cine', e.on); });
   bus.on('rest', (e) => { restFade.textContent = e.kind === 'long' ? 'Long rest' : 'Short rest'; restFade.classList.add('on'); restTimer = 2.2; });
@@ -340,12 +377,12 @@ export function createHUD(ctx: UIContext, w2s: W2S): HUD {
     if (e.state === 'complete') { qTitle.classList.add('done'); setTimeout(() => { const cur = currentQuestStep(); if (cur && cur.id !== e.id) setQuest(cur); else if (!cur) setQuest(null); }, 900); }
     else setQuest({ id: e.id, title: e.title, hint: e.hint, keys: (currentQuestStep()?.id === e.id ? currentQuestStep()?.keys : undefined) });
   });
-  bus.on('death', (e) => { if (bossId === e.actorId) { bossId = null; setTimeout(() => boss.classList.remove('on'), 1500); } });
+  bus.on('death', (e) => { if (bossId === e.actorId) { bossId = null; setTimeout(() => { boss.classList.remove('on'); el.classList.remove('bossing'); }, 1500); } });
 
   function setVisible(on: boolean) { visible = on; el.classList.toggle('hidden', !on); }
   function setDimmed(on: boolean) { el.classList.toggle('dimmed', on); }
 
-  return { el, update, setVisible, setDimmed, toast, float, setQuest, tutorialStack, refreshHotbar, setZoom };
+  return { el, update, setVisible, setDimmed, toast, float, setQuest, tutorialStack, refreshHotbar, setZoom, notePresented, subtitle };
 }
 
 export type { RollResult };

@@ -62,6 +62,7 @@ export class Game {
     this.particles = new Particles(this.scene, QUALITY[this.quality]);
     this.vfx = new VFX(this.scene, (id) => this.views.get(id) ?? undefined, this.cam.camera, this.renderer);
     this.loop = new GameLoop((dt) => this.step(dt), (dt) => this.render(dt));
+    if (this.quality === 'test') this.loop.maxSteps = 600;
     this.fadeEl = document.createElement('div');
     Object.assign(this.fadeEl.style, { position: 'fixed', inset: '0', background: '#000', opacity: '1', pointerEvents: 'none', transition: 'opacity 1s ease', zIndex: '90' } as CSSStyleDeclaration);
     document.body.appendChild(this.fadeEl);
@@ -139,7 +140,12 @@ export class Game {
   setTimeScale(s: number) { this.loop.timeScale = s; }
   pause(on: boolean) { this.paused = on; this.world.paused = on; if (on) this.input.releaseLock(); }
   setQuality(t: QualityTier) {
-    if (t === this.quality) return; this.quality = t; try { localStorage.setItem('hm.quality', t); } catch {}
+    if (t === this.quality) return;
+    try { localStorage.setItem('hm.quality', t); } catch {}
+    // A URL-pinned tier (?quality= / ?test=1) is for verification runs: never reload under it.
+    const params = new URLSearchParams(location.search);
+    if (params.get('quality') || params.get('test') === '1' || this.quality === 'test') { this.quality = t; return; }
+    this.quality = t;
     location.reload();
   }
   startGame(classId: ClassId, name: string) {

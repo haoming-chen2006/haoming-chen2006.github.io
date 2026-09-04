@@ -122,6 +122,39 @@ const firstSeq = (e: Envelope): number => e.messages[0]?.seq ?? 0;
 const byWireOrder = (a: Envelope, b: Envelope): number =>
   a.batch - b.batch || firstSeq(a) - firstSeq(b);
 
+/**
+ * Does this message mean there is a table worth showing? Exported so the gate
+ * can be tested without booting a VM — see `engine/__tests__/curtain.test.ts`
+ * for why the list must include a *dealing* message and not only the seating.
+ */
+export const curtainLifts = (m: { command: string }): boolean =>
+  m.command === 'ArrangeSeats' || m.command === 'Observe'
+  || m.command === 'StartGame' || m.command === 'MoveCards';
+
+/** Once envelopes are flowing, the curtain never outlives this. */
+export const CURTAIN_GRACE_MS = 6_000;
+
+/**
+ * One envelope, one key — and the key has to name the envelope, not the flush.
+ *
+ * `${batch}:${to}` assumed one envelope per flush per recipient. That stopped
+ * being true when `routeFlush` began splitting at public/private transitions
+ * (`ecdc247`): a batch that alternates emits two envelopes to the same seat,
+ * and under the old key the second was thrown away as a duplicate. In a
+ * three-human 斗地主 the opening does exactly that, and the seat that lost its
+ * second private run never received its hand — it sat at 0 cards with no
+ * request while the engine waited on it and the other two watched a frozen
+ * log. "We can't play a card, we have to refresh" — the refresh works because a
+ * resync re-delivers the whole table.
+ *
+ * Within a batch the runs are contiguous and disjoint, so every envelope starts
+ * at a different seq — the same value `byWireOrder` sorts on — while a genuine
+ * redelivery still collides on all three fields and is still dropped, which is
+ * the property this set exists for.
+ */
+export const envelopeKey = (e: Envelope): string =>
+  `${e.batch}:${e.to ?? 'all'}:${e.messages[0]?.seq ?? 0}`;
+
 export interface Reassembly {
   /** Take one envelope off the wire. */
   receive(env: Envelope): void;
@@ -280,13 +313,29 @@ export async function startLiveTable(spec: LiveTableSpec): Promise<LiveTable> {
    * first of those can be a lone `EnterRoom`. Curtain up, nothing behind it:
    * a bare table with one half-built photo on it and no way to interact.
    *
-   * So the test is what the seat can see. `ArrangeSeats` is the message that
-   * establishes the circle every photo is positioned from — it is emitted
-   * after the last `AddPlayer` precisely so the seating exists first — and
-   * `Observe` is a whole room in one message. Either means there is a table.
+   * IT TRAPPED THE HOST IN 斗地主. The first version of this gate lifted on
+   * exactly two names, `ArrangeSeats` and `Observe`, and that held for the
+   * eight-seat role game every audit plays. Three-player 斗地主 composes its
+   * opening differently — `webmodes` overrides `assignRoles` and
+   * `chooseGenerals` wholesale — and the host, which has no resync and so never
+   * sees `Observe`, sat under the curtain for the entire game with zero live
+   * controls while the two guests played. Reproduced with three real browsers
+   * on production: 150 seconds, cards dealt, log advancing, host frozen.
+   *
+   * The lesson is that the gate must not be a list of message names, because
+   * every mode is free to compose its opening its own way. What every mode has
+   * in common is that it DEALS: a `MoveCards` means there is a hand on a table,
+   * and `StartGame` means the engine considers the game begun. Those two are
+   * added alongside the original pair, which are kept because they arrive
+   * earlier in the modes that send them.
+   *
+   * And a backstop, because a gate that can be wrong is a gate that can trap
+   * someone: once envelopes are flowing, the curtain does not outlive
+   * `CURTAIN_GRACE_MS` whatever they contain. A seat looking at a slightly
+   * under-built table can still play; a seat looking at a curtain cannot.
    */
-  const rendersATable = (m: { command: string }): boolean =>
-    m.command === 'ArrangeSeats' || m.command === 'Observe';
+  const rendersATable = curtainLifts;
+  let firstEnvelopeAt: number | null = null;
 
   const readVmErrors = (): readonly string[] => {
     const read = (client as Partial<RetainingClient>).vmErrors;
@@ -300,7 +349,7 @@ export async function startLiveTable(spec: LiveTableSpec): Promise<LiveTable> {
     // contains can still turn up after it. Applying it again would move the
     // same cards twice.
     if (env.batch >= 0 && env.batch <= syncedThrough) return;
-    const key = `${env.batch}:${env.to ?? 'all'}`;
+    const key = envelopeKey(env);
     if (applied.has(key)) return;
     applied.add(key);
     try {
@@ -320,9 +369,17 @@ export async function startLiveTable(spec: LiveTableSpec): Promise<LiveTable> {
       console.error(`[table] the client VM rejected game data: ${latest}`);
       warn(tr('table.warn.batch', { error: latest }));
     }
-    if (!dealt && env.messages.some(rendersATable)) {
-      dealt = true;
-      setPhase('live', '');
+    if (!dealt && env.messages.length > 0) {
+      firstEnvelopeAt ??= Date.now();
+      const overdue = Date.now() - firstEnvelopeAt > CURTAIN_GRACE_MS;
+      if (env.messages.some(rendersATable) || overdue) {
+        if (overdue && !env.messages.some(rendersATable)) {
+          console.warn('[table] lifting the curtain on the grace timer: no dealing message seen in',
+            CURTAIN_GRACE_MS, 'ms of envelopes');
+        }
+        dealt = true;
+        setPhase('live', '');
+      }
     }
   };
 

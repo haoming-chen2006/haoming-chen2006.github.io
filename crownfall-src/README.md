@@ -33,6 +33,25 @@ node scripts/stress.ts 24   # many seeds x difficulties, crash + outcome stats
   in sight. Buildings-only troops (Colossus, Boar Rider) ignore enemy troops. Spells hit an area
   after a short delay and do 40% damage to towers.
 
+## What's in the box (competition build)
+
+* **Enemy champions.** On Normal and Hard the bot possesses its own tanks, win conditions and
+  assassins, drives them across the river, aims abilities, dashes and retreats. They wear a crimson
+  aura; yours is gold.
+* **Match flow.** Loading splash, a camera flyover with a 3-2-1 countdown, a first-match tutorial
+  that spotlights each step (deploy, possess, fight, ability, summon, return), kill streaks, a kill
+  feed, Soul Harvest chips, and a results screen with awards (Champion, Warlord, Executioner…) and
+  a slow orbit around the fallen throne.
+* **First person for real.** Hands and weapons per class (bow draw, rifle recoil, staff orb, drake
+  jaw, imp claws, boar reins), muzzle flashes, hit markers, a crosshair that reddens over enemies,
+  a damage vignette and low-health pulse, mouse sensitivity / invert / FOV settings.
+* **Sound.** Two composed synthesized pieces (menu and a layered battle theme with fills and bar-
+  aligned intensity changes), 118 sounds including a call per card and a sound per ability,
+  spatial panning while possessed, ambience beds, and stingers for crowns, possession and the end.
+* **Art.** Cel-shaded characters with class kits, capes, helmets and faces; towers with archer
+  posts and a throne dome; cobbled lanes, flowers, banners, lanterns, forests, mountains, clouds;
+  trails, decals, debris physics, status props and body-type death animations.
+
 ## Possession
 
 * Hover a troop and press **F** (or click it). The camera zooms in and follows.
@@ -47,6 +66,12 @@ node scripts/stress.ts 24   # many seeds x difficulties, crash + outcome stats
 * **Soul Harvest**: every troop your champion kills grants 0.3 elixir.
 * When the champion dies you return to the Commander view; possess again after 4 s (6 s if you
   left voluntarily).
+
+## Deploying
+
+`scripts/deploy.sh` type-checks, builds with base `/crownfall/`, and copies the build to
+`~/haoming-chen2006.github.io/crownfall` (plus a source snapshot in `crownfall-src`). Add `--push`
+to commit and push the site. Live: https://haoming-chen2006.github.io/crownfall/
 
 ## Cards (26)
 

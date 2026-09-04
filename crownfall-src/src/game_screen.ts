@@ -329,6 +329,7 @@ export class GameScreen {
         case 'botRelease': this.hud.feed(`${w.players[1].name}'s champion returned to its throne`, '#ff9f9f'); break;
         case 'end': {
           const winner = ev.team === undefined ? -1 : ev.team;
+          this.tutorial?.dismiss();
           music.stinger(winner === 0 ? 'victory' : winner === 1 ? 'defeat' : 'crown');
           sfx.play(winner === 0 ? 'victory' : winner === 1 ? 'defeat' : 'fanfare');
           this.hud.banner(winner === 0 ? 'VICTORY' : winner === 1 ? 'DEFEAT' : 'DRAW', ev.text ?? '', winner === 1 ? '#ff6b6b' : '');

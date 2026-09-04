@@ -17,7 +17,8 @@ const BUILDINGS = new Set(['Cannon', 'Arc Tower', 'Barracks']);
   page.on('console', (m) => { if (m.type() === 'error' || m.type() === 'warning') errors.push(m.type() + ': ' + m.text().slice(0, 300)); });
   const t0 = Date.now();
   await page.goto('http://localhost:5173/');
-  await page.waitForTimeout(2500);
+  await page.waitForFunction(() => { const l = document.getElementById('loading'); return !l || l.classList.contains('hidden') || getComputedStyle(l).display === 'none' || getComputedStyle(l).opacity === '0'; }, null, { timeout: 120000 });
+  await page.waitForTimeout(1500);
   console.log('loaded in', Date.now() - t0, 'ms');
   const shot = async (n) => { await page.screenshot({ path: out(n) }); console.log('shot', n); };
   await shot('01-menu.png');
@@ -29,12 +30,14 @@ const BUILDINGS = new Set(['Cannon', 'Arc Tower', 'Barracks']);
   await page.click(`.presets button:has-text("${PRESET}")`);
   await page.click('#btnDeckBack');
   await page.click('#btnPlay');
-  await page.waitForTimeout(1500);
+  await page.waitForTimeout(1200);
+  await shot('04-intro.png');
+  await page.waitForTimeout(3500);
   await shot('04-commander.png');
 
   const toScreen = (x, z, y = 0.05) => page.evaluate(([x, z, y]) => window.__cf.toScreen(x, z, y), [x, z, y]);
   const readHand = () => page.evaluate(() => Array.from(document.querySelectorAll('#hand .card')).map((c) => ({ name: c.querySelector('.name').textContent, cost: Number(c.querySelector('.cost').textContent) })));
-  const readElixir = () => page.evaluate(() => Number(document.getElementById('elixirText').textContent));
+  const readElixir = () => page.evaluate(() => parseFloat((document.getElementById('elixirText').textContent || '0').replace(/[^0-9.]/g, '')) || 0);
   const heroPanel = () => page.evaluate(() => document.getElementById('heroPanel').innerText);
 
   async function deployTroop(x, z) {

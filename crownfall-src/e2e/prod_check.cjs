@@ -1,0 +1,22 @@
+const { chromium } = require('playwright');
+(async () => {
+  const browser = await chromium.launch({ args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
+  const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+  const errors = [];
+  page.on('pageerror', (e) => errors.push('pageerror: ' + e.message));
+  page.on('console', (m) => { if (m.type() === 'error') errors.push('console: ' + m.text().slice(0, 200)); });
+  page.on('requestfailed', (r) => errors.push('requestfailed: ' + r.url()));
+  const t0 = Date.now();
+  const resp = await page.goto('http://localhost:8090/crownfall/');
+  console.log('status', resp.status());
+  await page.waitForFunction(() => { const l = document.getElementById('loading'); return !l || l.classList.contains('hidden') || getComputedStyle(l).display === 'none' || getComputedStyle(l).opacity === '0'; }, null, { timeout: 120000 });
+  console.log('loaded in', Date.now() - t0, 'ms');
+  await page.screenshot({ path: 'prod-menu.png' });
+  await page.click('#btnPlay');
+  await page.waitForTimeout(6000);
+  await page.screenshot({ path: 'prod-battle.png' });
+  const hud = await page.evaluate(() => ({ timer: document.getElementById('timer').textContent, elixir: document.getElementById('elixirText').textContent }));
+  console.log('HUD', hud);
+  console.log('ERRORS', errors.length ? errors.join('\n') : 'none');
+  await browser.close();
+})().catch((e) => { console.error('FAILED', e); process.exit(1); });

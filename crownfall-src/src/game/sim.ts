@@ -6,7 +6,7 @@ import { updateHero, type HeroCommand } from './hero.ts';
 import { updateBuildings, updateTowers } from './structures.ts';
 import { updateProjectiles } from './combat.ts';
 import { updateUnits } from './unit_ai.ts';
-import type { Award, CardDef, Stats, Team } from './types.ts';
+import type { Award, CardDef, PlayerState, Stats, Team } from './types.ts';
 import { World } from './world.ts';
 
 export interface SimConfig {
@@ -48,6 +48,14 @@ export class Simulation {
     this.countdownStep = 0;
   }
 
+  /** Easy/Normal bots start on reduced income so a new player has time to learn the controls. */
+  private openingGrace(p: PlayerState): number {
+    if (!p.isBot || this.difficulty === 'hard' || this.w.players[0].isBot) return 1;
+    const t = this.w.time;
+    const floor = this.difficulty === 'easy' ? 0.5 : 0.65;
+    return t >= 45 ? 1 : floor + (1 - floor) * (t / 45);
+  }
+
   /** Advance the simulation by wall-clock `elapsed` seconds using fixed ticks. */
   advance(elapsed: number, cmd: HeroCommand): void {
     this.acc += Math.min(elapsed, 0.25);
@@ -76,7 +84,7 @@ export class Simulation {
     if (w.result) return;
     for (const p of w.players) {
       const behind = p.crowns < w.players[p.team === 0 ? 1 : 0].crowns ? COMEBACK_ELIXIR_MULT : 1;
-      p.elixir = Math.min(MAX_ELIXIR, p.elixir + ELIXIR_PER_SEC * w.elixirRate * p.elixirMult * behind * dt);
+      p.elixir = Math.min(MAX_ELIXIR, p.elixir + ELIXIR_PER_SEC * w.elixirRate * p.elixirMult * this.openingGrace(p) * behind * dt);
       if (p.possessCd > 0) p.possessCd -= dt;
       if (p.heroId >= 0 && !p.isBot) p.stats.heroTime += dt;
     }

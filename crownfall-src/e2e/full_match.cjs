@@ -6,13 +6,14 @@ require('fs').mkdirSync(OUT, { recursive: true });
 const out = (n) => path.join(OUT, n);
 
 (async () => {
-  const browser = await chromium.launch();
+  const browser = await chromium.launch({ args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
   const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
   const errors = [];
   page.on('pageerror', (e) => errors.push('pageerror: ' + e.message));
   page.on('console', (m) => { if (m.type() === 'error') errors.push('console: ' + m.text()); });
   await page.goto('http://localhost:5173/');
-  await page.waitForTimeout(300);
+  await page.waitForFunction(() => { const l = document.getElementById('loading'); return !l || l.classList.contains('hidden') || getComputedStyle(l).display === 'none' || getComputedStyle(l).opacity === '0'; }, null, { timeout: 120000 });
+  await page.waitForTimeout(800);
   await page.click('#difficultySeg button[data-d="hard"]');
   await page.click('#btnPlay');
   const t0 = Date.now();

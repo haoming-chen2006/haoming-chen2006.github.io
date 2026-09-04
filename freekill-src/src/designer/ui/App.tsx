@@ -49,10 +49,13 @@ export function App() {
 
   const problems = useMemo(() => problemsOf(state.spec), [state.spec]);
 
+  // Keyed on what is actually persisted, not on `state`. Selecting a different
+  // stack changes `state` and nothing that gets saved, and a draft carrying a
+  // megabyte of base64 portrait would be re-stringified on every click.
   useEffect(() => {
     window.__designerSpec = state.spec;
     saveDraft(state);
-  }, [state]);
+  }, [state.spec, state.image]);
 
   // Anything that changes the blocks invalidates a validation of the old ones.
   // Leaving a stale 「校验通过」 on screen beside an edited stack is a lie the

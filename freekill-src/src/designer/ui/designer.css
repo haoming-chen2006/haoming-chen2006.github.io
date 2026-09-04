@@ -403,10 +403,22 @@ textarea.fk-hd-bad {
   line-height: 1.2;
 }
 
+/* `--wide` is 100% and would squeeze 「移除」 down to one character per line.
+   The picker takes the room that is left instead. */
 .fk-hd-portrait__acts {
   display: flex;
   gap: 8px;
   align-items: center;
+}
+
+.fk-hd-portrait__acts .fk-hd-btn--wide {
+  flex: 1 1 auto;
+  width: auto;
+}
+
+.fk-hd-portrait__acts .fk-hd-x {
+  flex: none;
+  white-space: nowrap;
 }
 
 .fk-hd-kingdoms {

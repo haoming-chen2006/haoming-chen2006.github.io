@@ -100,8 +100,17 @@ export type Action =
 const replaceAt = <T,>(list: T[], index: number, value: T): T[] =>
   list.map((item, i) => (i === index ? value : item));
 
-/** Every effect keeps its optional lanes as real arrays while it is being edited. */
-const filled = (effect: EffectSpec): Required<Pick<EffectSpec, 'conditions' | 'cost'>> & EffectSpec => ({
+/**
+ * Every effect keeps its optional lanes as real arrays while it is being edited.
+ *
+ * `conditions` and `cost` are optional in the spec and `normalizeSpec` drops
+ * them when empty, which is right on the wire and wrong in a reducer — every
+ * `add-block` would otherwise have to decide whether it is creating the lane or
+ * appending to it. They are filled on the way in and the wire form takes care
+ * of itself, because an empty array serialises to an empty array and
+ * `validateSpec` reads both the same way.
+ */
+const filled = (effect: EffectSpec): EffectSpec => ({
   ...effect,
   conditions: effect.conditions ?? [],
   cost: effect.cost ?? [],

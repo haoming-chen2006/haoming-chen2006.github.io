@@ -47,7 +47,7 @@ export function MyHeroes({ onOpen, refreshKey }: MyHeroesProps) {
       </div>
       {error ? <p className="fk-hd-err">{error}</p> : null}
       {rows === null ? <p className="fk-hd-note">正在读取……</p> : null}
-      {rows?.length === 0 && !error ? <p className="fk-hd-note">还没有武将。左边捏一个吧。</p> : null}
+      {rows?.length === 0 && !error ? <p className="fk-hd-note">还没有武将。去左边做一个吧。</p> : null}
       {rows?.map((row, i) => {
         const ok = row.test?.ok;
         return (

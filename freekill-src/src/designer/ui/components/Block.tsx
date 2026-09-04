@@ -14,7 +14,7 @@
 import type { ChangeEvent } from 'react';
 import type { BlockRef, ParamValue } from '../../spec';
 import { paramsOf } from '../../spec';
-import { paramSpec, type ParamSpec } from '../labels';
+import { isOptional, paramSpec, type ParamSpec } from '../labels';
 import { LANE_KIND, LANE_PREFIX, paletteBlock, type Lane } from '../palette';
 
 interface ParamFieldProps {
@@ -22,10 +22,12 @@ interface ParamFieldProps {
   name: string;
   value: ParamValue | undefined;
   invalid: boolean;
+  /** The engine defaults this one; empty means "let it", not "unfinished". */
+  optional: boolean;
   onChange: (value: ParamValue) => void;
 }
 
-function ParamField({ block, name, value, invalid, onChange }: ParamFieldProps) {
+function ParamField({ block, name, value, invalid, optional, onChange }: ParamFieldProps) {
   const spec: ParamSpec = paramSpec(block, name);
   const className = `fk-hd-param${invalid ? ' fk-hd-param--bad' : ''}`;
   const label = spec.label ? <span className="fk-hd-param__label">{spec.label}</span> : null;
@@ -57,7 +59,9 @@ function ParamField({ block, name, value, invalid, onChange }: ParamFieldProps) 
           value={value === undefined ? '' : String(value)}
           onChange={(e) => onChange(e.target.value)}
         >
-          {value === undefined || value === '' ? <option value="">请选择…</option> : null}
+          {value === undefined || value === '' ? (
+            <option value="">{optional ? '默认' : '请选择…'}</option>
+          ) : null}
           {spec.options?.map((o) => (
             <option key={o.value} value={o.value}>
               {o.label}
@@ -97,7 +101,7 @@ function ParamField({ block, name, value, invalid, onChange }: ParamFieldProps) 
         className="fk-hd-param__input"
         type="text"
         aria-label={spec.label || name}
-        placeholder={spec.placeholder}
+        placeholder={spec.placeholder ?? (optional ? '默认' : undefined)}
         value={value === undefined ? '' : String(value)}
         onChange={(e) => onChange(e.target.value)}
       />
@@ -165,6 +169,7 @@ export function Block({
             name={name}
             value={block.params[name]}
             invalid={badParams.has(name)}
+            optional={isOptional(LANE_KIND[lane], block.block, name)}
             onChange={(value) => onParam(name, value)}
           />
         ))}

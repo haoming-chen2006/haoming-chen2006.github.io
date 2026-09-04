@@ -23,7 +23,7 @@ import type { HeroSpec } from '../../spec';
 import { chat, type ChatAttempt, type ChatMessage, type ChatResponse } from '../api';
 
 const STATUS_LABEL: Record<ChatResponse['status'], string> = {
-  draft: '草稿已生成',
+  draft: '已生成，尚未创建',
   created: '已创建并通过测试',
   failed: '没能做出可用的武将',
 };

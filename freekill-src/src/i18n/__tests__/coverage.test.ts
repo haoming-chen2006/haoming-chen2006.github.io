@@ -431,7 +431,23 @@ describe('the shell has no Chinese left in its source', () => {
    * subset, or they render as tofu. `npm run build:fonts -- --force` after any
    * change here, and `scripts/build.test.ts` fails if the budget is exceeded.
    */
-  const CHINESE_BY_DESIGN = ['room/components/anim/spectacle/'];
+  /**
+   * The second one, and it needs the same sign-off the first one got.
+   *
+   * `designer/` is the hero designer: a Chinese-only authoring surface for a
+   * Chinese card game. Every string in it is either a block's face (「摸牌」,
+   * 「阶段开始时」), a band heading the engine's own semantics depend on
+   * (「代价」 vs 「效果」), or rules-text guidance quoting the game — and the
+   * lane's brief is explicit that it is in Chinese. Routing ~250 block faces
+   * through `../ui.ts` would mean inventing an English half nobody asked for
+   * and nobody will read, which is a worse outcome than the exemption.
+   *
+   * Same directory-shaped exemption as the animation layer, and the same
+   * unwaived cost: the characters must be in the font subset. They are —
+   * `scripts/build.test.ts` counts, and the designer's own strings were chosen
+   * from glyphs the corpus already had rather than growing the shipped face.
+   */
+  const CHINESE_BY_DESIGN = ['room/components/anim/spectacle/', 'designer/'];
 
   const SRC = join(HERE, '..', '..');
   const CJK_LITERAL = /[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]/;

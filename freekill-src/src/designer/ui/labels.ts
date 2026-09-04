@@ -29,7 +29,7 @@
  * any of them in `BLOCK_PARAM_OVERRIDES`.
  */
 import type { BlockKind, ParamValue } from '../spec';
-import { paramsOf } from '../spec';
+import { requiredParamsOf } from '../spec';
 
 /* -------------------------------------------------------------------------- */
 /* Blocks                                                                      */
@@ -587,12 +587,28 @@ export const paramText = (blockId: string, name: string, value: ParamValue | und
  * The parameters with no sensible guess — a mark's name, a list of choices —
  * are left empty on purpose, and those are exactly the ones `validateSpec`
  * asks for.
+ *
+ * What is deliberately NOT filled is anything in `DEFAULTED_PARAMS`, even
+ * where this file has an obvious-looking value for it. Those are the
+ * parameters the ENGINE defaults, and its default is not always the one a
+ * dropdown would pick: `DamageDataSpec.from` is optional and absent means the
+ * damage has no source, so pre-filling 「由 你」 would quietly make the hero
+ * the origin of every damage the block deals — and 反馈, 死谏 and everything
+ * else that reads `damage.from` would start firing. Same story for
+ * `ask-discard`'s `skip`, where the engine's `false` is what makes a cost
+ * actually discard. Leaving them out emits nil and gets the engine's answer.
  */
 export const defaultParams = (kind: BlockKind, id: string): Record<string, ParamValue> => {
   const out: Record<string, ParamValue> = {};
-  for (const name of paramsOf(kind, id) ?? []) {
+  for (const name of requiredParamsOf(kind, id) ?? []) {
     const fallback = paramSpec(id, name).fallback;
     if (fallback !== undefined && fallback !== '') out[name] = fallback;
   }
   return out;
+};
+
+/** Whether a parameter may be left out — the block face says 「默认」 for these. */
+export const isOptional = (kind: BlockKind, id: string, name: string): boolean => {
+  const required = requiredParamsOf(kind, id);
+  return required !== null && !required.includes(name);
 };

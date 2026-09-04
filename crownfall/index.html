@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Crownfall</title>
+  <meta name="description" content="Crownfall: a 3D arena battler where you command the army, then possess a troop and fight in first person." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800;900&family=Nunito:wght@500;700;800;900&display=swap" rel="stylesheet" />
+  <script type="module" crossorigin src="/crownfall/assets/index-DgzogSYa.js"></script>
+  <link rel="stylesheet" crossorigin href="/crownfall/assets/index-DGGViZaI.css">
+</head>
+<body>
+  <div id="app">
+    <div id="viewport"><canvas id="canvas"></canvas><canvas id="overlay"></canvas><div id="vignette"></div><div id="damageFlash"></div></div>
+
+    <!-- Loading splash -->
+    <div id="loading" class="splash">
+      <div class="splash-inner">
+        <div class="crest"><span class="crest-crown">♛</span></div>
+        <h1 class="title small">CROWNFALL</h1>
+        <div class="spinner"></div>
+        <p class="muted" id="loadingText">Forging the arena…</p>
+      </div>
+    </div>
+
+    <!-- Main menu -->
+    <section id="menu" class="screen">
+      <div class="menu-card">
+        <div class="title-wrap">
+          <div class="title-particles" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+          <h1 class="title">CROWNFALL</h1>
+          <div class="title-rule"><span></span><b>♛</b><span></span></div>
+          <p class="tagline">Command the army. Then become its champion.</p>
+        </div>
+        <div class="menu-buttons">
+          <button id="btnPlay" class="btn primary big"><span class="btn-icon">⚔</span>Battle</button>
+          <div class="menu-row">
+            <button id="btnDeck" class="btn"><span class="btn-icon">▤</span>Deck Builder</button>
+            <button id="btnHelp" class="btn"><span class="btn-icon">?</span>How to Play</button>
+            <button id="btnSettings" class="btn"><span class="btn-icon">⚙</span>Settings</button>
+          </div>
+        </div>
+        <div class="difficulty">
+          <div class="difficulty-head"><span class="label">Opponent</span><span id="difficultyDesc" class="muted"></span></div>
+          <div class="seg" id="difficultySeg">
+            <button data-d="easy">Squire</button>
+            <button data-d="normal" class="active">Captain</button>
+            <button data-d="hard">Warlord</button>
+          </div>
+        </div>
+        <div class="menu-footer">
+          <span id="record" class="record"></span>
+          <div class="footer-btns">
+            <button id="btnSound" class="btn small icon" title="Toggle sound (M)">Sound: On</button>
+            <button id="btnMusic" class="btn small icon" title="Toggle music">Music: On</button>
+            <button id="btnQuality" class="btn small icon" title="Graphics quality">Graphics: High</button>
+            <button id="btnFullscreen" class="btn small icon" title="Fullscreen">⛶</button>
+          </div>
+        </div>
+        <div class="menu-controls">
+          <span><kbd>1</kbd>–<kbd>4</kbd> cards</span><span><kbd>F</kbd> possess</span><span><kbd>WASD</kbd> move</span><span><kbd>Space</kbd> ability</span><span><kbd>Shift</kbd> dash</span><span><kbd>E</kbd> return</span><span><kbd>V</kbd> camera</span>
+        </div>
+      </div>
+      <div class="credits">A 3D possession arena battler · everything generated in code</div>
+    </section>
+
+    <!-- Deck builder -->
+    <section id="deck" class="screen hidden">
+      <div class="deck-layout">
+        <header class="deck-header">
+          <h2 class="heading">Deck Builder</h2>
+          <div class="presets" id="presets"></div>
+          <div class="deck-actions">
+            <span id="deckInfo" class="deck-info"></span>
+            <button id="btnDeckBack" class="btn primary">Done</button>
+          </div>
+        </header>
+        <div class="deck-top">
+          <div class="deck-slots" id="deckSlots"></div>
+          <div class="deck-summary" id="deckSummary"></div>
+        </div>
+        <div class="deck-toolbar">
+          <div class="seg small" id="deckFilter">
+            <button data-f="all" class="active">All</button>
+            <button data-f="troop">Troops</button>
+            <button data-f="building">Buildings</button>
+            <button data-f="spell">Spells</button>
+          </div>
+          <div class="seg small" id="deckSort">
+            <button data-s="cost" class="active">By cost</button>
+            <button data-s="name">By name</button>
+            <button data-s="rarity">By rarity</button>
+          </div>
+          <span class="muted deck-tip">Click a card to add or remove it · hover for details</span>
+        </div>
+        <div class="deck-body">
+          <div class="collection" id="collection"></div>
+          <aside class="card-detail" id="cardDetail"><p class="muted">Hover a card to see its stats and hero ability.</p></aside>
+        </div>
+      </div>
+    </section>
+
+    <!-- Help -->
+    <section id="help" class="screen hidden">
+      <div class="help-card">
+        <h2 class="heading">How to Play</h2>
+        <p class="lede">Crownfall is a tower-defense duel with a twist: you can leave the throne, possess any troop you deploy, and fight in first person.</p>
+        <div class="help-steps">
+          <article class="help-step">
+            <div class="step-num">1</div>
+            <svg viewBox="0 0 160 110" class="help-svg" aria-hidden="true">
+              <rect x="20" y="10" width="120" height="90" rx="8" fill="#2f7a3a" stroke="#1d3d24" stroke-width="3"/>
+              <rect x="20" y="52" width="120" height="8" fill="#3f7fbf"/>
+              <rect x="44" y="48" width="14" height="16" fill="#b08a52"/><rect x="102" y="48" width="14" height="16" fill="#b08a52"/>
+              <circle cx="80" cy="24" r="8" fill="#ff5a5a"/><circle cx="50" cy="32" r="6" fill="#ff5a5a"/><circle cx="110" cy="32" r="6" fill="#ff5a5a"/>
+              <circle cx="80" cy="88" r="8" fill="#4da3ff"/><circle cx="50" cy="78" r="6" fill="#4da3ff"/><circle cx="110" cy="78" r="6" fill="#4da3ff"/>
+              <rect x="64" y="66" width="10" height="12" rx="2" fill="#ffd166" stroke="#7a4a00"/><path d="M69 62 l0 -10" stroke="#ffd166" stroke-width="2"/>
+              <path d="M69 52 l-4 6 l8 0 z" fill="#ffd166"/>
+            </svg>
+            <h3>Command</h3>
+            <p>Elixir refills over time. Press <kbd>1</kbd>–<kbd>4</kbd> or click a card, then click your half of the arena to deploy it. Troops march down their lane and attack what they meet.</p>
+          </article>
+          <article class="help-step">
+            <div class="step-num">2</div>
+            <svg viewBox="0 0 160 110" class="help-svg" aria-hidden="true">
+              <rect x="20" y="10" width="120" height="90" rx="8" fill="#2f7a3a" stroke="#1d3d24" stroke-width="3"/>
+              <circle cx="80" cy="70" r="12" fill="#4da3ff" stroke="#ffe27a" stroke-width="3" stroke-dasharray="4 3"/>
+              <path d="M80 40 C 80 30, 96 30, 96 40" stroke="#ffe27a" stroke-width="3" fill="none"/>
+              <circle cx="98" cy="40" r="4" fill="#ffe27a"/>
+              <text x="80" y="30" text-anchor="middle" font-size="12" font-weight="800" fill="#fff">F</text>
+              <path d="M60 22 l40 0" stroke="#ffe27a" stroke-width="2" opacity="0.6"/>
+            </svg>
+            <h3>Possess</h3>
+            <p>Hover a troop and press <kbd>F</kbd> (or click it). Your soul flies into it and the camera drops into first person. Possessed troops are <b>Soulbound</b>: +25% health.</p>
+          </article>
+          <article class="help-step">
+            <div class="step-num">3</div>
+            <svg viewBox="0 0 160 110" class="help-svg" aria-hidden="true">
+              <rect x="10" y="10" width="140" height="90" rx="8" fill="#0f1a26" stroke="#2c3d50" stroke-width="3"/>
+              <path d="M10 70 L150 70 L150 100 L10 100 Z" fill="#2f7a3a"/>
+              <rect x="60" y="34" width="26" height="40" rx="3" fill="#6b6f76"/><rect x="60" y="30" width="26" height="6" fill="#4a4f56"/>
+              <path d="M80 55 l-6 0 M86 55 l6 0 M83 49 l0 -6 M83 61 l0 6" stroke="#fff" stroke-width="2"/>
+              <circle cx="83" cy="55" r="1.5" fill="#fff"/>
+              <path d="M110 100 L150 70 L150 100 Z" fill="#8a5a9e"/>
+              <text x="80" y="24" text-anchor="middle" font-size="9" fill="#93a2b4">WASD · click · Space · Shift</text>
+            </svg>
+            <h3>Fight</h3>
+            <p>Click once to capture the mouse, then look around. <kbd>WASD</kbd> moves, <b>hold click</b> attacks at the crosshair, <kbd>Space</kbd> fires your signature ability, <kbd>Shift</kbd> dashes, <kbd>V</kbd> swaps to over-the-shoulder.</p>
+          </article>
+          <article class="help-step">
+            <div class="step-num">4</div>
+            <svg viewBox="0 0 160 110" class="help-svg" aria-hidden="true">
+              <rect x="20" y="10" width="120" height="90" rx="8" fill="#2f7a3a" stroke="#1d3d24" stroke-width="3"/>
+              <circle cx="80" cy="40" r="26" fill="#ffe27a" opacity="0.2" stroke="#ffe27a" stroke-dasharray="4 3"/>
+              <circle cx="80" cy="40" r="7" fill="#4da3ff" stroke="#ffe27a" stroke-width="2"/>
+              <circle cx="62" cy="52" r="5" fill="#4da3ff"/><circle cx="96" cy="50" r="5" fill="#4da3ff"/>
+              <path d="M80 92 C 80 70, 70 70, 70 60" stroke="#bfe6ff" stroke-width="3" fill="none" stroke-dasharray="3 3"/>
+              <text x="80" y="98" text-anchor="middle" font-size="11" font-weight="800" fill="#fff">E</text>
+            </svg>
+            <h3>Summon &amp; return</h3>
+            <p>While possessed, cards deploy anywhere within 4 tiles of your champion, even deep in enemy territory. Every kill harvests elixir. Press <kbd>E</kbd> to return to the throne, or fight until you fall and return automatically.</p>
+          </article>
+        </div>
+        <div class="help-rules">
+          <div><b>Win</b> — take more crowns in 3 minutes. Each Princess Tower is a crown; the King Tower wins outright.</div>
+          <div><b>Tempo</b> — the last minute is double elixir. A tie goes to overtime: next tower wins.</div>
+          <div><b>Keys</b> — <kbd>P</kbd> pause · <kbd>M</kbd> mute · <kbd>Esc</kbd> release the mouse · wheel zooms the commander view.</div>
+        </div>
+        <button id="btnHelpBack" class="btn primary">Back</button>
+      </div>
+    </section>
+
+    <!-- Game -->
+    <section id="game" class="screen hidden">
+      <div id="stage">
+        <div id="topbar">
+          <div class="tb-side">
+            <span class="tb-badge you">YOU</span>
+            <span class="tb-name you" id="p0name">You</span>
+            <span class="tb-crowns" id="p0crowns"></span>
+          </div>
+          <div class="tb-center">
+            <div id="timer">3:00</div>
+            <div id="phase"></div>
+          </div>
+          <div class="tb-side right">
+            <span class="tb-crowns" id="p1crowns"></span>
+            <span class="tb-name enemy" id="p1name">Bot</span>
+            <span class="tb-badge enemy">FOE</span>
+          </div>
+        </div>
+        <div id="countdown" class="hidden"></div>
+        <div id="banner" class="hidden"><div id="bannerText"></div><div id="bannerSub"></div></div>
+        <div id="streak" class="hidden"></div>
+        <div id="feed"></div>
+        <div id="hint"></div>
+        <div id="toast" class="toast-stack"></div>
+        <div id="tutorial" class="hidden"></div>
+      </div>
+      <aside id="panel">
+        <div id="heroPanel"></div>
+        <div id="elixirWrap">
+          <div id="elixir"><div id="elixirFill"></div><div id="elixirShine"></div><div id="elixirTicks"></div><span id="elixirText">5</span></div>
+          <div id="chips"></div>
+        </div>
+        <div id="hand"></div>
+        <div id="nextWrap"><span class="label">Next</span><div id="nextCard"></div><div class="next-hint"><kbd>1</kbd>–<kbd>4</kbd> select · click arena to deploy</div></div>
+      </aside>
+      <div id="pauseOverlay" class="overlay hidden">
+        <div class="dialog">
+          <h2 class="heading">Paused</h2>
+          <p class="muted">The battle waits for no one… except you.</p>
+          <button id="btnResume" class="btn primary">Resume</button>
+          <button id="btnPauseSettings" class="btn">Settings</button>
+          <button id="btnQuit" class="btn ghost">Quit to Menu</button>
+        </div>
+      </div>
+      <div id="results" class="overlay hidden results-overlay">
+        <div class="results-layout">
+          <div class="results-hero" aria-hidden="true"></div>
+          <div class="dialog results">
+            <div class="result-crest"><span>♛</span></div>
+            <h2 id="resultTitle">Victory</h2>
+            <div id="resultCrowns"></div>
+            <p id="resultReason" class="muted"></p>
+            <div id="resultAwards" class="awards"></div>
+            <table id="resultStats"></table>
+            <div class="row">
+              <button id="btnAgain" class="btn primary">Play Again</button>
+              <button id="btnMenu" class="btn">Main Menu</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Settings (shared by menu and pause) -->
+    <div id="settingsModal" class="overlay hidden">
+      <div class="dialog settings">
+        <h2 class="heading">Settings</h2>
+        <div class="settings-grid">
+          <label><span>Sound volume</span><input type="range" id="setSfx" min="0" max="100" step="5" /><output id="setSfxOut">55%</output></label>
+          <label><span>Music volume</span><input type="range" id="setMusic" min="0" max="100" step="5" /><output id="setMusicOut">55%</output></label>
+          <label><span>Mouse sensitivity</span><input type="range" id="setSens" min="0.3" max="2.5" step="0.1" /><output id="setSensOut">1.0×</output></label>
+          <label><span>Field of view</span><input type="range" id="setFov" min="60" max="100" step="1" /><output id="setFovOut">78°</output></label>
+          <label class="toggle"><span>Invert mouse Y</span><input type="checkbox" id="setInvert" /><i></i></label>
+          <label class="toggle"><span>Start possession in first person</span><input type="checkbox" id="setFirst" /><i></i></label>
+          <label class="toggle"><span>Show tutorial on next battle</span><input type="checkbox" id="setTutorial" /><i></i></label>
+          <label class="toggle"><span>High graphics (shadows, bloom)</span><input type="checkbox" id="setQuality" /><i></i></label>
+        </div>
+        <div class="row">
+          <button id="btnResetProgress" class="btn ghost small">Reset record</button>
+          <button id="btnSettingsClose" class="btn primary">Done</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

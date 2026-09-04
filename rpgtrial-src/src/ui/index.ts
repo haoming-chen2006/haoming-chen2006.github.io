@@ -133,7 +133,14 @@ export function createUI(ctx: UIContext, opts: UIOptions = {}): UI {
   // ---- events that open screens ----
   const isPlayer = (id: string) => id === ctx.world.playerId;
   bus.on('levelUp', (e) => { if (!isPlayer(e.actorId)) return; setAnnouncedLevel(e.level); pendingLevelUp = true; setTimeout(tryLevelUp, 1400); });
-  function tryLevelUp() { if (!pendingLevelUp) return; if (dialogue.isOpen() || dice.isOpen() || current) { setTimeout(tryLevelUp, 800); return; } pendingLevelUp = false; showScreen('levelUp'); }
+  function tryLevelUp() {
+    if (!pendingLevelUp) return;
+    if (dialogue.isOpen() || dice.isOpen() || current) { setTimeout(tryLevelUp, 800); return; }
+    pendingLevelUp = false;
+    // nothing to choose (a dev skip fast-forwarded the choice): no phantom screen
+    if ((ctx.world.player?.pendingLevelUps ?? 1) === 0) return;
+    showScreen('levelUp');
+  }
   bus.on('death', (e) => { if (isPlayer(e.actorId)) setTimeout(() => { const p = ctx.world.player; if (p?.dead) showScreen('death'); }, 2600); });
   bus.on('gameOver', (e) => { if (!e.victory) setTimeout(() => showScreen('death'), 1200); });
   bus.on('respawn', () => { if (current === 'death') showScreen(null); });

@@ -21,7 +21,8 @@ export function createLevelUp(ctx: UIContext, nav: Nav): Screen {
 
   function render() {
     const p = ctx.world.player; const cls = getClass(p?.classId);
-    const lvl = Math.max(announcedLevel, p ? (p.pendingLevelUps ? p.level + 1 : p.level) : 2, 2);
+    // rules.ts bumps `level` before it emits `levelUp` (pendingLevelUps counts the unmade choice), so never add one
+    const lvl = Math.max(announcedLevel || (p?.level ?? 2), 2);
     sub.textContent = `${p?.name ?? 'Tav'} reaches level ${lvl} as a ${cls.name}.`;
     const conMod = p ? abilityMod(p.abilities.con) : 2; const hpGain = Math.floor(cls.hitDie / 2) + 1 + conMod;
     clear(gains);

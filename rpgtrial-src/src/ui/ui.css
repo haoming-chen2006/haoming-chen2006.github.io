@@ -285,7 +285,7 @@ input[type=range].slider::-webkit-slider-thumb { -webkit-appearance: none; width
 .quest-panel.flash .qt { animation: goldFlash 1.2s; }
 .quest-panel .qt.done { text-decoration: line-through; color: var(--ink-faint); }
 
-.prompt { position: absolute; left: 50%; bottom: 33%; transform: translateX(-50%) translateY(6px); padding: 8px 18px 8px 10px; background: rgba(6,8,12,.82); border: 1px solid var(--gold-line); font-size: 17px; display: flex; align-items: center; gap: 10px; opacity: 0; transition: opacity .18s, transform .18s var(--ease); white-space: nowrap; box-shadow: 0 8px 24px rgba(0,0,0,.5); }
+.prompt { position: absolute; left: 50%; bottom: 36%; transform: translateX(-50%) translateY(6px); padding: 8px 18px 8px 10px; background: rgba(6,8,12,.82); border: 1px solid var(--gold-line); font-size: 17px; display: flex; align-items: center; gap: 10px; opacity: 0; transition: opacity .18s, transform .18s var(--ease); white-space: nowrap; box-shadow: 0 8px 24px rgba(0,0,0,.5); }
 .prompt.on { opacity: 1; transform: translateX(-50%); }
 .prompt .kbd { margin: 0; }
 
@@ -309,7 +309,7 @@ input[type=range].slider::-webkit-slider-thumb { -webkit-appearance: none; width
 .toasts { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 6px; }
 .toast { padding: 6px 18px; background: rgba(6,8,12,.8); border: 1px solid var(--gold-dim); font-size: 15px; letter-spacing: .04em; animation: toastIn .3s var(--ease), toastOut .5s 3.2s forwards; display: flex; gap: 8px; align-items: center; }
 .toast.gold { color: var(--gold-hi); } .toast.xp { color: var(--gold); font-family: var(--title); font-size: 13px; letter-spacing: .12em; } .toast.warn { color: #ffb3ae; border-color: #7a2a26; }
-.pickups { position: absolute; right: 22px; bottom: 150px; display: flex; flex-direction: column-reverse; align-items: flex-end; gap: 6px; }
+.pickups { position: absolute; right: 22px; bottom: 190px; display: flex; flex-direction: column-reverse; align-items: flex-end; gap: 6px; }
 .pickup { display: flex; align-items: center; gap: 12px; padding: 8px 14px 8px 8px; min-width: 240px; background: linear-gradient(90deg, rgba(8,10,16,.9), rgba(8,10,16,.75)); border: 1px solid var(--gold-dim); border-left: 3px solid var(--gold); animation: pickIn .35s var(--ease), pickOut .6s 4s forwards; }
 .pickup .pi { width: 40px; height: 40px; border: 1px solid var(--gold-dim); display: grid; place-items: center; color: var(--gold-hi); background: rgba(0,0,0,.5); }
 .pickup .pi .ic { width: 26px; height: 26px; }
@@ -350,7 +350,8 @@ input[type=range].slider::-webkit-slider-thumb { -webkit-appearance: none; width
 .subtitle.narr .ss { display: none; }
 #hud.cine .subtitle { bottom: calc(11vh + 18px); }
 #hud.bossing .subtitle { bottom: 196px; }
-#hud.dialogue .subtitle { bottom: 250px; }
+/* while a dialogue panel is open a reaction line goes under the top letterbox: the panel (with choices) can reach mid-screen */
+#hud.dialogue .subtitle { bottom: auto; top: calc(11vh + 14px); }
 
 /* ---------- tutorial cards ---------- */
 .tut-stack { position: absolute; right: 22px; top: 18px; display: flex; flex-direction: column; gap: 10px; width: 330px; align-items: flex-end; }
@@ -374,8 +375,12 @@ input[type=range].slider::-webkit-slider-thumb { -webkit-appearance: none; width
 .tut .body b { color: var(--gold); font-weight: 500; }
 
 /* ---------- dialogue ---------- */
-#dlg { position: fixed; left: 0; right: 0; bottom: 0; z-index: 25; display: flex; justify-content: center; padding: 0 0 32px; opacity: 0; transform: translateY(16px); transition: opacity .3s var(--ease), transform .3s var(--ease); pointer-events: none; }
-#dlg.on { opacity: 1; transform: none; pointer-events: auto; }
+/* covers the whole screen while open so a click anywhere (not only on the panel) completes / continues the line */
+#dlg { position: fixed; inset: 0; z-index: 25; display: flex; justify-content: center; align-items: flex-end; padding: 0 0 32px; opacity: 0; pointer-events: none; }
+#dlg .dlg-panel { transform: translateY(16px); transition: transform .3s var(--ease); }
+#dlg { transition: opacity .3s var(--ease); }
+#dlg.on { opacity: 1; pointer-events: auto; }
+#dlg.on .dlg-panel { transform: none; }
 .dlg-panel { width: min(960px, 84vw); padding: 18px 26px 16px 22px; display: grid; grid-template-columns: 96px 1fr; gap: 18px; min-height: 130px; }
 .dlg-portrait { width: 96px; height: 96px; border: 1px solid var(--gold-line); background: radial-gradient(circle at 50% 35%, #2a2f3d, #0b0d13 75%); display: grid; place-items: center; color: var(--gold-hi); box-shadow: 0 0 0 3px rgba(0,0,0,.6), 0 0 0 4px rgba(214,178,94,.25), inset 0 0 24px rgba(0,0,0,.7); position: relative; }
 .dlg-portrait .ic { width: 54px; height: 54px; filter: drop-shadow(0 2px 3px rgba(0,0,0,.8)); }
@@ -544,8 +549,10 @@ input[type=range].slider::-webkit-slider-thumb { -webkit-appearance: none; width
 .journal-log div { padding: 2px 0; }
 .journal-log div::before { content: '— '; color: var(--gold-dim); }
 
-.map-wrap { position: relative; flex: 1; min-height: 0; display: grid; place-items: center; }
-.map-wrap canvas { max-width: 100%; max-height: 100%; border: 1px solid var(--gold-dim); box-shadow: 0 0 0 4px rgba(0,0,0,.6), 0 0 0 5px rgba(214,178,94,.25), 0 20px 60px rgba(0,0,0,.6); image-rendering: auto; }
+.map-wrap { position: relative; flex: 1; min-height: 0; }
+/* absolutely positioned so max-width/height resolve against the laid-out box (a grid item's 100% did not); the
+   replaced-element constraint rules keep the square aspect, margin:auto centres it */
+.map-wrap canvas { position: absolute; inset: 0; margin: auto; width: auto; height: auto; max-width: 100%; max-height: 100%; border: 1px solid var(--gold-dim); box-shadow: 0 0 0 4px rgba(0,0,0,.6), 0 0 0 5px rgba(214,178,94,.25), 0 20px 60px rgba(0,0,0,.6); image-rendering: auto; }
 .map-legend { display: flex; gap: 22px; justify-content: center; margin-top: 10px; font-family: var(--title); font-size: 11px; letter-spacing: .16em; color: var(--ink-dim); text-transform: uppercase; }
 .map-legend span { display: flex; align-items: center; gap: 6px; }
 .map-legend i { width: 10px; height: 10px; display: inline-block; border: 1px solid rgba(0,0,0,.5); }

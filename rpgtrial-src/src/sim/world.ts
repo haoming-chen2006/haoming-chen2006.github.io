@@ -455,7 +455,7 @@ export class World {
   teleport(a: Actor, to: Vec3, yaw?: number) {
     a.pos.x = to.x; a.pos.z = to.z; a.pos.y = terrainHeight(to.x, to.z); a.vel = { x: 0, y: 0, z: 0 }; a.onGround = true; if (yaw !== undefined) a.yaw = yaw;
     a.knockback = null;
-    if (a.state === 'jump' || a.state === 'dodge') { this.setState(a, 'idle'); this.setAnim(a, 'Idle', true, 0.1); }
+    if (a.state === 'jump' || a.state === 'dodge' || a.state === 'interact') { a.animHold = 0; this.setState(a, 'idle'); this.setAnim(a, 'Idle', true, 0.1); }
     if (a.id === this.playerId) { this.area = Math.abs(to.z - CRYPT_ORIGIN.z) < 120 ? 'crypt' : 'shore'; bus.emit('teleport', { to: { ...to }, area: this.area }); }
   }
   actorsNear(pos: Vec3, r: number, filter?: (a: Actor) => boolean): Actor[] {

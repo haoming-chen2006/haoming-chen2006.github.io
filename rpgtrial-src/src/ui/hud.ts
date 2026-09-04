@@ -370,6 +370,9 @@ export function createHUD(ctx: UIContext, w2s: W2S, opts: { /** freeze the subti
   bus.on('bossStart', (e) => { bossId = e.actorId; bossLastHp = -1; bossName.textContent = e.name; bossSub.textContent = e.subtitle; boss.classList.add('on'); el.classList.add('bossing'); });
   bus.on('bossEnd', () => { bossId = null; boss.classList.remove('on'); el.classList.remove('bossing'); });
   bus.on('dialogueLine', (e) => { const text = e.text; setTimeout(() => { if (text !== lastPresented) subtitle(e.speakerId, text); }, 0); });
+  // a bark that was still up when a conversation starts is moot (the speaker is now on the panel); reactions during the
+  // dialogue still queue and show under the top letterbox (#hud.dialogue .subtitle)
+  bus.on('dialogueStart', () => { subQueue.length = 0; if (subLeft > 0) { subLeft = 0; subtitleEl.classList.remove('on'); subGap = 0.3; } });
   bus.on('areaEnter', (e) => { areaName.textContent = e.name; areaSub.textContent = e.id === 'crypt' ? 'Beneath the hill' : 'The Hollowmere'; retrigger(area, 'on'); });
   bus.on('cinematic', (e) => { cinematic = e.on; lbTop.classList.toggle('on', e.on); lbBot.classList.toggle('on', e.on); el.classList.toggle('cine', e.on); });
   bus.on('rest', (e) => { restFade.textContent = e.kind === 'long' ? 'Long rest' : 'Short rest'; restFade.classList.add('on'); restTimer = 2.2; });

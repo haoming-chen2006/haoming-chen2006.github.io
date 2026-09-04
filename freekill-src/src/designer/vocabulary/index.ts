@@ -128,7 +128,11 @@
  *     To discard somebody else's cards, `who` is the victim and `thrower` is
  *     the skill's owner — the other way round is a hard crash.
  */
-import vocabularyJson from './vocabulary.generated.json';
+// The import attribute is not decoration: without it `node` refuses the module
+// (ERR_IMPORT_ATTRIBUTE_MISSING), and `scripts/designer/server.mjs` imports
+// this file's dependents directly under plain node, the way the other build
+// scripts already import `src/engine/vm.ts`. Vite and tsc both strip it.
+import vocabularyJson from './vocabulary.generated.json' with { type: 'json' };
 
 /** How a block's usage frequency is banded. Blocks cover common; AI covers the tail. */
 export type Band = 'common' | 'occasional' | 'rare' | 'one-off';

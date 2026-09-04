@@ -1,3 +1,4 @@
+import { resolve } from 'node:path';
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
@@ -20,6 +21,16 @@ const publishable = (name: string) => name.replace(/^[_.]+/, '') || 'chunk';
 export default defineConfig({
   plugins: [react()],
   base: '/freekill/',
+  server: {
+    /**
+     * The hero designer's back end (`npm run designer`). It is a separate
+     * process rather than a vite plugin because what it does is boot the real
+     * Lua engine on a generated general and drive its trigger in a scripted
+     * room -- a second of CPU and 1852 files per check, which has no business
+     * inside the dev server that serves the game.
+     */
+    proxy: { '/api': { target: 'http://localhost:5175', changeOrigin: true } },
+  },
   build: {
     outDir: '../freekill',
     emptyOutDir: true,
@@ -27,6 +38,14 @@ export default defineConfig({
     // event until the game is over. Every browser this project targets has it.
     target: 'esnext',
     rollupOptions: {
+      // Two pages, one build. `designer.html` is the block panel and the agent
+      // chat; it talks to localhost:5175 and is therefore only useful in dev,
+      // but it ships because leaving it out of the build means it is never
+      // type-checked or bundled by the thing that actually publishes.
+      input: {
+        main: resolve(__dirname, 'index.html'),
+        designer: resolve(__dirname, 'designer.html'),
+      },
       output: {
         chunkFileNames: (chunk) => `assets/${publishable(chunk.name)}-[hash].js`,
       },

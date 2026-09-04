@@ -23,12 +23,25 @@ import {
   ID_PATTERN, KINGDOMS, PHASES, validateSpec,
   type EffectSpec, type HeroSpec, type SkillSpec,
 } from '../spec.ts';
-import { closeCost, emitAction, emitCondition } from './blocks.ts';
+import { ACTIONS, CONDITIONS, closeCost, emitAction, emitCondition } from './blocks.ts';
 import {
   CompileError, HELPERS, TRIGGERS, indent, oneOf, q, type Ctx,
 } from './emit.ts';
 
 export { CompileError } from './emit.ts';
+
+/**
+ * What this compiler can currently turn into Lua.
+ *
+ * Read off the emitter tables rather than written down beside them, so the
+ * agent's system prompt, the README and the panel cannot describe a subset the
+ * compiler does not have. Adding a block is one entry in one table.
+ */
+export const SUPPORTED = {
+  triggers: Object.keys(TRIGGERS),
+  conditions: Object.keys(CONDITIONS),
+  actions: Object.entries(ACTIONS).map(([id, a]) => ({ id, cost: a.cost === true, use: a.use === true })),
+};
 
 export interface CompileResult {
   lua: string;

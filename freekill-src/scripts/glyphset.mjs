@@ -5,7 +5,7 @@
 // shell writes Chinese labels the engine tree never contains.
 import { readdirSync, statSync, readFileSync } from 'node:fs';
 import { transformSync } from 'esbuild';
-import { join, dirname } from 'node:path';
+import { join, dirname, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -36,7 +36,18 @@ export function sourceFiles() {
   // Site-owned packages. They mount at the same `packages/` prefix as the
   // mirrored ones and their translation tables render in the UI exactly the
   // same way, so leaving them out ships tofu for whatever Han only they use.
-  files.push(...walk(join(WEB_ROOT, 'packages'), isLua));
+  //
+  // `packages/custom` is the exception, and it is not an oversight. It holds
+  // whatever the hero designer wrote, so its Han is unbounded — any of the
+  // twenty thousand could turn up in a name somebody typed this morning — and a
+  // subset that chased it would grow with every hero and go stale the moment
+  // one was made. It costs nothing to leave out: a browser falls back PER
+  // CHARACTER, so a name using Han this face does not carry renders in the next
+  // family in the stack ('PingFang SC', then system-ui) rather than as tofu.
+  // The subset is a claim about what the game ships, and a designed hero is not
+  // that until somebody commits it.
+  const isShippedLua = (p) => isLua(p) && !p.includes(`${sep}packages${sep}custom${sep}`);
+  files.push(...walk(join(WEB_ROOT, 'packages'), isShippedLua));
   files.push(join(ENGINE_ROOT, 'lang', 'zh_CN.ts'), join(ENGINE_ROOT, 'lang', 'en_US.ts'));
   files.push(...walk(join(ENGINE_ROOT, 'Fk'), (p) => /\.(qml|js|mjs)$/.test(p)));
   // `.json` is in the list because a lane put user-visible Chinese labels in a

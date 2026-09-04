@@ -7,6 +7,7 @@
     "dev": "node scripts/ensure-data.mjs && vite --host 0.0.0.0",
     "build": "npm run build:data && vite build",
     "preview": "vite preview --host 0.0.0.0",
+    "designer": "node scripts/designer/server.mjs",
     "build:data": "npm run build:lua && npm run build:assets && npm run build:fonts && npm run build:overview",
     "build:lua": "node scripts/build-lua-bundle.mjs",
     "build:assets": "node scripts/build-assets.mjs",

@@ -1,0 +1,11 @@
+# What the hero designer writes is somebody's work in progress, not content this
+# repository ships. It is deliberately untracked: `git merge` of a designer
+# branch must not add generals to a live game, and a portrait somebody uploaded
+# is not ours to commit. `init.lua` lists the directory at load
+# (`FileIO.ls`), so an empty or absent one is simply a package with no generals.
+#
+# To ship a designed hero for real, move its .lua into a tracked package and add
+# its art the way the mirrored rosters do.
+generals/
+specs/
+image/

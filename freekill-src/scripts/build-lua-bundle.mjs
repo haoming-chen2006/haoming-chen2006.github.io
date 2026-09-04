@@ -38,7 +38,29 @@ export const PACKAGES = ['standard', 'standard_cards', 'maneuvering', 'test', 'u
  * `ModManager:loadPackages` enumerates `packages/` off the virtual filesystem
  * and requires whatever has an `init.lua`.
  */
-export const SITE_PACKAGES = ['webmodes'];
+export const SITE_PACKAGES = ['webmodes', 'custom'];
+
+/**
+ * The packages the hero designer writes into, as opposed to the ones a person
+ * committed.
+ *
+ * They ship — a designed general has to be in the bundle the room boots or it
+ * cannot be played — but two build steps have to leave them out, and for
+ * different reasons.
+ *
+ * `build-skill-catalogue.mjs` measures the vocabulary the designer offers. Feed
+ * it the designer's own output and the vocabulary starts describing generals
+ * that were generated from it: a block's `count` would rise because somebody
+ * used the block, which makes the measurement about itself.
+ *
+ * `build-overview.mjs` builds the reference catalogue of what this deployment
+ * ships, and `scripts/build.test.ts` asserts its per-extension counts to catch
+ * a mirrored pack that silently stopped loading. Designed heroes are neither
+ * shipped content nor a pack that can stop loading, so counting them there
+ * turns "somebody made a hero" into a red test about the seven mirrored
+ * rosters. Both call `buildBundle({ designer: false })`.
+ */
+export const DESIGNER_PACKAGES = ['custom'];
 
 /**
  * Third-party rosters mirrored into `<site>/packages/`, pinned by commit in
@@ -100,21 +122,24 @@ async function engineBuilder() {
   }
 }
 
-export async function buildBundle() {
+export async function buildBundle({ designer = true } = {}) {
   const fromEngine = await engineBuilder();
+  const sitePackages = designer
+    ? WEB_PACKAGES
+    : WEB_PACKAGES.filter((p) => !DESIGNER_PACKAGES.includes(p));
   // `sitePackages` is passed explicitly: the engine builder defaults it to its
   // own `SITE_PACKAGES` (`webmodes` alone), which was right when this repo owned
   // every package under `<site>/packages/` and is not right now that it mirrors
   // six more. What ships is decided here, not there.
   if (fromEngine) {
-    return fromEngine({ engineRoot: ENGINE_ROOT, packages: PACKAGES, sitePackages: WEB_PACKAGES });
+    return fromEngine({ engineRoot: ENGINE_ROOT, packages: PACKAGES, sitePackages });
   }
 
   const files = new Map();
   const isLua = (p) => p.endsWith('.lua');
   for (const root of LUA_ROOTS) walk(join(ENGINE_ROOT, root), root, files, isLua);
   for (const pkg of PACKAGES) walk(join(ENGINE_ROOT, 'packages', pkg), `packages/${pkg}`, files, isLua);
-  for (const pkg of WEB_PACKAGES) walk(join(WEB_ROOT, 'packages', pkg), `packages/${pkg}`, files, isLua);
+  for (const pkg of sitePackages) walk(join(WEB_ROOT, 'packages', pkg), `packages/${pkg}`, files, isLua);
   if (existsSync(OVERLAY)) walk(OVERLAY, 'lua/web', files, isLua);
 
   const obj = {};

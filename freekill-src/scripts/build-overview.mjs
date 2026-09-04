@@ -214,7 +214,10 @@ return json.enc(out)
 `;
 
 export async function buildOverview({ quiet = false } = {}) {
-  const vm = await createLuaVm(await buildBundle(), { logLevels: new Set(['error']) });
+  // `designer: false`: this is the catalogue of what the deployment SHIPS, and
+  // scripts/build.test.ts asserts its per-extension counts to catch a mirrored
+  // pack that stopped loading. A hero somebody designed is neither.
+  const vm = await createLuaVm(await buildBundle({ designer: false }), { logLevels: new Set(['error']) });
   vm.lua.doStringSync(`dofile('lua/web/client.lua')`);
   if (vm.lua.doStringSync(`return FKClient.boot()`) !== true) throw new Error('FKClient.boot() failed');
   const data = JSON.parse(vm.lua.doStringSync(EXTRACT));

@@ -203,7 +203,10 @@ return enc(out)
 `;
 
 async function fromVm() {
-  const bundle = await buildBundle();
+  // `designer: false`: the catalogue measures the vocabulary this designer
+  // offers, so counting generals GENERATED from that vocabulary would make the
+  // measurement about itself. See DESIGNER_PACKAGES in build-lua-bundle.mjs.
+  const bundle = await buildBundle({ designer: false });
   const vm = await createLuaVm(bundle, { logLevels: new Set(['error']) });
   vm.lua.doStringSync(`dofile('lua/web/client.lua')`);
   if (vm.lua.doStringSync(`return FKClient.boot()`) !== true) throw new Error('FKClient.boot() failed');

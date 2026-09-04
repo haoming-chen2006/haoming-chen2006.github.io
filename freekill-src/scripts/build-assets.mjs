@@ -19,7 +19,7 @@ import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
 import { execFile } from 'node:child_process';
 import { cpus } from 'node:os';
-import { VENDORED_PACKAGES } from './build-lua-bundle.mjs';
+import { WEB_PACKAGES } from './build-lua-bundle.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const WEB_ROOT = join(here, '..');
@@ -56,7 +56,17 @@ const PACKS = ['standard', 'standard_cards', 'maneuvering', 'mobile'];
  * resolves `image/photo/back/<kingdom>.png` out of the engine root and falls
  * back to `unknown.png`, which is what a 魔 general gets.
  */
-const VENDORED_PACKS = VENDORED_PACKAGES;
+/**
+ * Every pack read from `<site>/packages/` rather than from the upstream mirror:
+ * the seven mirrored rosters, plus `webmodes` and `custom`.
+ *
+ * It was the seven alone until the hero designer arrived, and that was a latent
+ * bug rather than a decision — `rootFor` decides which DISK a key is read from,
+ * so a site-rooted pack missing from this list has its images looked for under
+ * the read-only mirror, where they are not. `webmodes` never noticed because it
+ * ships no art; `packages/custom/image/generals/` is the first that does.
+ */
+const SITE_ROOTED_PACKS = WEB_PACKAGES;
 
 /**
  * Which disk an asset is read from. The manifest key stays the engine-relative
@@ -66,7 +76,7 @@ const VENDORED_PACKS = VENDORED_PACKAGES;
  */
 export function rootFor(rel) {
   const m = /^packages\/([^/]+)\//.exec(rel);
-  return m && VENDORED_PACKS.includes(m[1]) ? WEB_ROOT : ENGINE_ROOT;
+  return m && SITE_ROOTED_PACKS.includes(m[1]) ? WEB_ROOT : ENGINE_ROOT;
 }
 
 /** Quality per class, from the measured re-encode table in assets-findings.md. */
@@ -122,7 +132,7 @@ export function collect() {
       if (r.includes('/image/') || (WANT_AUDIO && r.includes('/audio/'))) rels.push(r);
     }
   }
-  for (const pkg of VENDORED_PACKS) {
+  for (const pkg of SITE_ROOTED_PACKS) {
     for (const r of walk(join(WEB_ROOT, 'packages', pkg), `packages/${pkg}`, [])) {
       if (r.includes('/image/') || (WANT_AUDIO && r.includes('/audio/'))) rels.push(r);
     }

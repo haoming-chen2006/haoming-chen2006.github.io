@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Hollowmere — environment dev view</title>
+  <style>
+    html, body { margin: 0; height: 100%; background: #000; overflow: hidden; }
+    canvas { display: block; width: 100vw; height: 100vh; }
+    #loading { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; color: #ccb; font: 14px system-ui; background: #111; }
+    #loading.hide { display: none; }
+    #hud { position: fixed; left: 8px; top: 8px; color: #fff; font: 12px monospace; text-shadow: 0 0 3px #000; pointer-events: none; white-space: pre; }
+  </style>
+</head>
+<body>
+  <canvas id="gl"></canvas>
+  <div id="hud"></div>
+  <div id="loading">building the Hollowmere…</div>
+  <!--
+    Environment-only test page (no sim, no UI). URL params:
+      cam=x,y,z        camera position           look=x,y,z   look-at point
+      yaw=r&pitch=r    orbit around `look` at distance dist=   (alternative to cam)
+      quality=tier     (the e2e harness appends this)         nohud=1
+    Keys: WASD move, QE up/down, mouse drag to look, shift = fast.
+  -->
+  <script type="module">
+    import * as THREE from 'three';
+    import { Renderer } from '/src/render/renderer.ts';
+    import { WorldView } from '/src/render/world.ts';
+    import { detectQuality } from '/src/render/quality.ts';
+    import { terrainHeight } from '/src/sim/terrain.ts';
+    import { LANDMARKS } from '/src/content/level.ts';
+
+    // other agents' edits trigger Vite full reloads mid-screenshot; this page is throwaway, keep it up
+    if (import.meta.hot) { import.meta.hot.accept(); import.meta.hot.on('vite:beforeFullReload', () => { throw new Error('dev-env: full reload suppressed'); }); }
+    const q = new URLSearchParams(location.search);
+    const vec = (k, d) => { const v = q.get(k); if (!v) return d; const a = v.split(',').map(Number); return new THREE.Vector3(a[0], a[1], a[2]); };
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(55, innerWidth / innerHeight, 0.08, 1500);
+    const canvas = document.getElementById('gl');
+    const renderer = new Renderer(canvas, scene, camera, detectQuality());
+    const world = new WorldView(scene);
+    // scale reference: 1.8 m capsule where the player wakes up, and one at the camp
+    const capMat = new THREE.MeshStandardMaterial({ color: 0xb03030, roughness: 0.6 });
+    for (const p of [LANDMARKS.start, LANDMARKS.camp, LANDMARKS.chapel]) {
+      const m = new THREE.Mesh(new THREE.CapsuleGeometry(0.3, 1.2, 4, 8), capMat); m.castShadow = true; m.receiveShadow = true;
+      m.position.set(p.x, terrainHeight(p.x, p.z) + 0.9, p.z); scene.add(m);
+    }
+    const start = LANDMARKS.start;
+    let look = vec('look', new THREE.Vector3(start.x, terrainHeight(start.x, start.z) + 1.4, start.z - 4));
+    let pos;
+    if (q.get('yaw') || q.get('pitch') || q.get('dist')) {
+      const yaw = Number(q.get('yaw') ?? 0), pitch = Number(q.get('pitch') ?? 0.2), dist = Number(q.get('dist') ?? 5);
+      pos = new THREE.Vector3(look.x + Math.sin(yaw) * Math.cos(pitch) * dist, look.y + Math.sin(pitch) * dist, look.z + Math.cos(yaw) * Math.cos(pitch) * dist);
+    } else pos = vec('cam', new THREE.Vector3(start.x + 0.6, terrainHeight(start.x, start.z) + 2.4, start.z + 4.2));
+    camera.position.copy(pos); camera.lookAt(look);
+    // fly controls
+    const keys = new Set(); let yawA = Math.atan2(look.x - pos.x, look.z - pos.z), pitchA = Math.asin((look.y - pos.y) / pos.distanceTo(look));
+    addEventListener('keydown', (e) => keys.add(e.code)); addEventListener('keyup', (e) => keys.delete(e.code));
+    let drag = false; canvas.addEventListener('mousedown', () => (drag = true)); addEventListener('mouseup', () => (drag = false));
+    addEventListener('mousemove', (e) => { if (!drag) return; yawA -= e.movementX * 0.003; pitchA = Math.max(-1.5, Math.min(1.5, pitchA - e.movementY * 0.003)); });
+    const hud = document.getElementById('hud'); if (q.get('nohud')) hud.style.display = 'none';
+    const clock = new THREE.Clock(); let frames = 0, fpsT = 0, fps = 0;
+    const focus = new THREE.Vector3();
+    function frame() {
+      const dt = Math.min(clock.getDelta(), 0.1);
+      const fwd = new THREE.Vector3(Math.sin(yawA) * Math.cos(pitchA), Math.sin(pitchA), Math.cos(yawA) * Math.cos(pitchA));
+      const right = new THREE.Vector3(fwd.z, 0, -fwd.x).normalize();
+      const sp = (keys.has('ShiftLeft') ? 30 : 8) * dt;
+      if (keys.has('KeyW')) camera.position.addScaledVector(fwd, sp); if (keys.has('KeyS')) camera.position.addScaledVector(fwd, -sp);
+      if (keys.has('KeyD')) camera.position.addScaledVector(right, -sp); if (keys.has('KeyA')) camera.position.addScaledVector(right, sp);
+      if (keys.has('KeyE')) camera.position.y += sp; if (keys.has('KeyQ')) camera.position.y -= sp;
+      camera.lookAt(camera.position.clone().add(fwd));
+      focus.set(camera.position.x, terrainHeight(camera.position.x, camera.position.z), camera.position.z);
+      world.update(dt, camera.position, focus);
+      renderer.render(dt);
+      frames++; fpsT += dt; if (fpsT > 0.5) { fps = frames / fpsT; frames = 0; fpsT = 0; }
+      const info = renderer.renderer.info.render;
+      hud.textContent = `cam ${camera.position.x.toFixed(1)},${camera.position.y.toFixed(1)},${camera.position.z.toFixed(1)}  yaw ${yawA.toFixed(2)} pitch ${pitchA.toFixed(2)}\nfps ${fps.toFixed(0)}  tris ${info.triangles}  calls ${info.calls}  quality ${world.quality.tier}`;
+      window.__frameHook?.();
+      if (!stopLoop) requestAnimationFrame(frame);
+    }
+    let stopLoop = false;
+    // debug=flat: plain white material on terrain/mountains (isolates texture vs. geometry/lighting artifacts); debug=nofog
+    if (q.get('debug') === 'flat') world.terrainView.ready.then(() => { const m = new THREE.MeshStandardMaterial({ color: 0x9a9a8a, roughness: 1 }); world.terrainView.mesh.material = m; world.terrainView.far.material = m; world.terrainView.mountains.traverse((o) => { if (o.isMesh) o.material = m; }); });
+    if (q.get('debug') === 'nofog') { scene.fog = null; }
+    window.__env = { scene, camera, world, renderer };
+    // frames=N: after everything is loaded render N more frames, then stop the loop and hide #loading — headless
+    // SwiftShader takes seconds per frame, so screenshots must not wait on an in-flight frame
+    const shotFrames = Number(q.get('frames') ?? 0); let framesLeft = -1;
+    world.ready.then(() => { if (shotFrames > 0) framesLeft = shotFrames; else document.getElementById('loading').classList.add('hide'); });
+    const origFrame = frame; window.__frameHook = () => { if (framesLeft > 0 && --framesLeft === 0) { stopLoop = true; document.getElementById('loading').classList.add('hide'); } };
+    addEventListener('resize', () => { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); });
+    frame();
+  </script>
+</body>
+</html>

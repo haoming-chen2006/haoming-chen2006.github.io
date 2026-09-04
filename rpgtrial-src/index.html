@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Hollowmere — a D&D prologue</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='26'>⚔️</text></svg>" />
+  <link rel="stylesheet" href="/src/ui/ui.css" />
+</head>
+<body>
+  <canvas id="gl"></canvas>
+  <div id="ui"></div>
+  <div id="loading">
+    <div class="loading-inner">
+      <div class="over">A Dungeons &amp; Dragons prologue</div>
+      <h1>Hollowmere</h1>
+      <div class="sub">A Prologue</div>
+      <div class="divider"><svg viewBox="0 0 300 16" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" preserveAspectRatio="none"><path d="M0 8h120M180 8h120"/><path d="M120 8c8-6 16-6 24 0s16 6 24 0" opacity=".8"/><path d="M150 3l4 5-4 5-4-5z" fill="currentColor"/><circle cx="128" cy="8" r="1.5" fill="currentColor"/><circle cx="172" cy="8" r="1.5" fill="currentColor"/></svg></div>
+      <div class="bar"><div id="loadingBar"></div></div>
+      <div id="loadingText">Gathering the party…</div>
+      <div id="loadingTip"><b>Tip</b>Roll a d20, add your modifier, meet or beat the DC. A natural 20 always succeeds.</div>
+    </div>
+    <script>
+      (function () {
+        var tips = [
+          ['Ability checks', 'Roll a d20, add your modifier, meet or beat the DC. A natural 20 always succeeds.'],
+          ['Parry', 'Tap Q just as a blow lands. The first fifth of a second is a parry — the rest is merely a block.'],
+          ['Dodge', 'Space rolls you through an attack. You are untouchable for the first third of the roll.'],
+          ['Stamina', 'Sprinting and dodging spend stamina. An empty bar leaves you slow and exposed.'],
+          ['Spell slots', 'Cantrips are free. Levelled spells burn a blue diamond; rest at a campfire to restore them.'],
+          ['Ilyra', 'Your companion heals when she can. Keep her alive and she will keep you alive.'],
+          ['Undead', 'Skeletons resist piercing and are vulnerable to bludgeoning. Radiant damage frightens them.'],
+          ['Heavy attacks', 'Hold the right mouse button for a quarter second to charge a heavy blow. It breaks poise.'],
+          ['Lock-on', 'Tab or the middle mouse locks the camera to an enemy. Scroll to switch targets.'],
+          ['The Hollowmere', 'The lake takes what it is given and keeps what it takes. Do not swim.']
+        ];
+        var el = document.getElementById('loadingTip'), i = Math.floor(Math.random() * tips.length);
+        function show() { var t = tips[i++ % tips.length]; el.innerHTML = '<b>' + t[0] + '</b>' + t[1]; }
+        show();
+        var timer = setInterval(function () {
+          if (document.getElementById('loading').classList.contains('hide')) { clearInterval(timer); return; }
+          el.classList.add('fade'); setTimeout(function () { show(); el.classList.remove('fade'); }, 450);
+        }, 4500);
+      })();
+    </script>
+  </div>
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>

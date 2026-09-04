@@ -1,0 +1,301 @@
+Hollowmere — audio credits
+============================================================
+
+All audio in this folder is used under Creative Commons licenses. Files were trimmed, looped,
+filtered and re-encoded (MP3) by scripts/fetch-audio.mjs; edits are noted per file in that script.
+
+CC0 1.0:    https://creativecommons.org/publicdomain/zero/1.0/
+CC BY 4.0:  https://creativecommons.org/licenses/by/4.0/
+
+--- CC-BY 4.0 ---
+
+"Lost Frontier" by Kevin MacLeod (incompetech.com)
+  https://incompetech.com/music/royalty-free/index.html?isrc=USUAN1100227
+  license: CC-BY 4.0
+  used as: music/menu.mp3
+
+"Angevin" by Kevin MacLeod (incompetech.com)
+  https://incompetech.com/music/royalty-free/music.html
+  license: CC-BY 4.0
+  used as: music/explore.mp3
+
+"Midnight Tale" by Kevin MacLeod (incompetech.com)
+  https://incompetech.com/music/royalty-free/music.html
+  license: CC-BY 4.0
+  used as: music/camp.mp3
+
+"Long Note Three" by Kevin MacLeod (incompetech.com)
+  https://incompetech.com/music/royalty-free/music.html
+  license: CC-BY 4.0
+  used as: music/tension.mp3
+
+"Ossuary 1 - A Beginning" by Kevin MacLeod (incompetech.com)
+  https://incompetech.com/music/royalty-free/music.html
+  license: CC-BY 4.0
+  used as: music/crypt_explore.mp3
+
+"Ossuary 6 - Air" by Kevin MacLeod (incompetech.com)
+  https://incompetech.com/music/royalty-free/music.html
+  license: CC-BY 4.0
+  used as: music/crypt_tension.mp3
+
+"Volatile Reaction" by Kevin MacLeod (incompetech.com)
+  https://incompetech.com/music/royalty-free/music.html
+  license: CC-BY 4.0
+  used as: music/combat.mp3
+
+"Truth of the Legend" by Kevin MacLeod (incompetech.com)
+  https://incompetech.com/music/royalty-free/music.html
+  license: CC-BY 4.0
+  used as: music/boss.mp3
+
+"Long Road Ahead" by Kevin MacLeod (incompetech.com)
+  https://incompetech.com/music/royalty-free/music.html
+  license: CC-BY 4.0
+  used as: music/ending.mp3
+
+"Private Reflection" by Kevin MacLeod (incompetech.com)
+  https://incompetech.com/music/royalty-free/music.html
+  license: CC-BY 4.0
+  used as: music/death.mp3
+
+"Danse Macabre - Big Hit 1" by Kevin MacLeod (incompetech.com)
+  https://incompetech.com/music/royalty-free/music.html
+  license: CC-BY 4.0
+  used as: music/sting_bighit_1.mp3
+
+"Danse Macabre - Big Hit 2" by Kevin MacLeod (incompetech.com)
+  https://incompetech.com/music/royalty-free/music.html
+  license: CC-BY 4.0
+  used as: music/sting_bighit_2.mp3
+
+"Thunder / Lightning Ambience - Field Recording" by Gregor Quendel
+  https://opengameart.org/content/thunder-lightning-ambience-field-recording
+  license: CC-BY 4.0
+  used as: amb/thunder_far_1.mp3, amb/thunder_far_2.mp3, amb/thunder_far_3.mp3
+
+--- CC0 ---
+
+"Victory Fanfare Short" by cynicmusic (cynicmusic.com / pixelsphere.org)
+  https://opengameart.org/content/victory-fanfare-short
+  license: CC0
+  used as: music/sting_victory.mp3
+
+"Victory" by celestialghost8
+  https://opengameart.org/content/victory
+  license: CC0
+  used as: music/sting_victory_short.mp3
+
+"7 Assorted Sound Effects (Menu, Level Up)" by Joth
+  https://opengameart.org/content/7-assorted-sound-effects-menu-level-up
+  license: CC0
+  used as: music/sting_levelup.mp3, music/sting_learn.mp3
+
+"Sea and river wave sounds (Vistula, short)" by RandomMind
+  https://opengameart.org/content/sea-and-river-wave-sounds
+  license: CC0
+  used as: amb/lake_water.mp3
+
+"wind1 (wind3.wav)" by Luke.RUSTLTD
+  https://opengameart.org/content/wind1
+  license: CC0
+  used as: amb/wind_pines.mp3
+
+"Ambient Bird Sounds" by isaiah658
+  https://opengameart.org/content/ambient-bird-sounds
+  license: CC0
+  used as: amb/birds_day.mp3
+
+"Crickets Ambient Noise - loopable" by Wolfgang_
+  https://opengameart.org/content/crickets-ambient-noise-loopable
+  license: CC0
+  used as: amb/crickets.mp3
+
+"Fireplace Sound loop" by PagDev
+  https://opengameart.org/content/fireplace-sound-loop
+  license: CC0
+  used as: amb/campfire.mp3, amb/torch.mp3
+
+"Dark Cavern Ambient" by Paul Wortmann
+  https://opengameart.org/content/dark-cavern-ambient
+  license: CC0
+  used as: amb/crypt_drone.mp3
+
+"Loopable Dungeon Ambience" by JaggedStone
+  https://opengameart.org/content/loopable-dungeon-ambience
+  license: CC0
+  used as: amb/crypt_texture.mp3
+
+"Dripping water loop" by Independent.nu
+  https://opengameart.org/content/dripping-water-loop
+  license: CC0
+  used as: amb/crypt_drips.mp3
+
+"Heartbeat sounds" by bart
+  https://opengameart.org/content/heartbeat-sounds
+  license: CC0
+  used as: amb/heartbeat.mp3
+
+"100 CC0 SFX #2" by rubberduck
+  https://opengameart.org/content/100-cc0-sfx-2
+  license: CC0
+  used as: amb/thunder_near.mp3, sfx/step_water_1.mp3, sfx/step_water_2.mp3, sfx/step_water_3.mp3, sfx/hit_slash_4.mp3, sfx/hit_slash_5.mp3, sfx/lock_open.mp3, sfx/stone_heavy_1.mp3, sfx/stone_heavy_2.mp3, sfx/stone_heavy_3.mp3, sfx/air_whoosh.mp3, sfx/air_whoosh_short.mp3, sfx/wood_hit_1.mp3, sfx/wood_hit_2.mp3, sfx/metal_hit_1.mp3, sfx/metal_hit_2.mp3, sfx/hit_generic_1.mp3, sfx/hit_generic_2.mp3, sfx/hit_generic_3.mp3
+
+"Ghost Monster Voice Moaning & Growling" by qubodup
+  https://opengameart.org/content/ghost-monster-voice-moaning-growling
+  license: CC0
+  used as: amb/ghost_moan_1.mp3, amb/ghost_moan_2.mp3, amb/ghost_moan_3.mp3
+
+"Ghost breath" by qubodup
+  https://opengameart.org/content/ghost-breath
+  license: CC0
+  used as: amb/ghost_breath.mp3
+
+"Impact Sounds" by Kenney (kenney.nl)
+  https://kenney.nl/assets/impact-sounds
+  license: CC0
+  used as: sfx/step_grass_1.mp3, sfx/step_grass_2.mp3, sfx/step_grass_3.mp3, sfx/step_grass_4.mp3, sfx/step_grass_5.mp3, sfx/step_stone_1.mp3, sfx/step_stone_2.mp3, sfx/step_stone_3.mp3, sfx/step_stone_4.mp3, sfx/step_stone_5.mp3, sfx/step_wood_1.mp3, sfx/step_wood_2.mp3, sfx/step_wood_3.mp3, sfx/step_wood_4.mp3, sfx/step_wood_5.mp3, sfx/hit_flesh_1.mp3, sfx/hit_flesh_2.mp3, sfx/hit_flesh_3.mp3, sfx/hit_flesh_4.mp3, sfx/hit_flesh_light_1.mp3, sfx/hit_flesh_light_2.mp3, sfx/hit_flesh_light_3.mp3, sfx/hit_slash_1.mp3, sfx/hit_slash_2.mp3, sfx/hit_slash_3.mp3, sfx/hit_metal_1.mp3, sfx/hit_metal_2.mp3, sfx/hit_metal_3.mp3, sfx/hit_metal_4.mp3, sfx/hit_plate_1.mp3, sfx/hit_plate_2.mp3, sfx/hit_plate_3.mp3, sfx/shield_wood_1.mp3, sfx/shield_wood_2.mp3, sfx/shield_wood_3.mp3, sfx/body_fall_1.mp3, sfx/body_fall_2.mp3, sfx/body_fall_3.mp3
+
+"RPG Audio" by Kenney (kenney.nl)
+  https://kenney.nl/assets/rpg-audio
+  license: CC0
+  used as: sfx/step_dirt_1.mp3, sfx/step_dirt_2.mp3, sfx/step_dirt_3.mp3, sfx/step_dirt_4.mp3, sfx/step_dirt_5.mp3, sfx/step_dirt_6.mp3, sfx/cloth_1.mp3, sfx/cloth_2.mp3, sfx/cloth_3.mp3, sfx/cloth_4.mp3, sfx/coins_handle_1.mp3, sfx/coins_handle_2.mp3, sfx/leather_1.mp3, sfx/leather_2.mp3, sfx/leather_3.mp3, sfx/cloth_belt_1.mp3, sfx/cloth_belt_2.mp3, sfx/cloth_belt_3.mp3, sfx/metal_click_1.mp3, sfx/metal_click_2.mp3, sfx/book_flip_1.mp3, sfx/book_flip_2.mp3, sfx/book_flip_3.mp3, sfx/book_open.mp3, sfx/book_close.mp3, sfx/book_place_1.mp3, sfx/book_place_2.mp3, sfx/door_open_1.mp3, sfx/door_open_2.mp3, sfx/door_close_1.mp3, sfx/door_close_2.mp3, sfx/door_close_3.mp3, sfx/creak_1.mp3, sfx/creak_2.mp3, sfx/creak_3.mp3
+
+"Swishes Sound Pack" by artisticdude
+  https://opengameart.org/content/swishes-sound-pack
+  license: CC0
+  used as: sfx/whoosh_light_1.mp3, sfx/whoosh_light_2.mp3, sfx/whoosh_light_3.mp3, sfx/whoosh_light_4.mp3, sfx/whoosh_light_5.mp3, sfx/whoosh_light_6.mp3
+
+"80 CC0 RPG SFX" by rubberduck
+  https://opengameart.org/content/80-cc0-rpg-sfx
+  license: CC0
+  used as: sfx/blade_swish_1.mp3, sfx/blade_swish_2.mp3, sfx/blade_swish_3.mp3, sfx/roar_1.mp3, sfx/roar_2.mp3, sfx/roar_3.mp3, sfx/creature_hurt_1.mp3, sfx/creature_hurt_2.mp3, sfx/creature_die.mp3, sfx/spell_fire_1.mp3, sfx/spell_fire_2.mp3, sfx/spell_fire_3.mp3, sfx/spell_fire_4.mp3, sfx/spell_fire_big.mp3, sfx/spell_generic_1.mp3, sfx/spell_generic_2.mp3, sfx/coins_1.mp3, sfx/coins_2.mp3, sfx/coins_3.mp3, sfx/gem_1.mp3, sfx/gem_2.mp3, sfx/gem_3.mp3, sfx/item_misc_1.mp3, sfx/item_misc_2.mp3, sfx/item_misc_3.mp3, sfx/lock_1.mp3, sfx/lock_2.mp3, sfx/lock_3.mp3, sfx/stones_1.mp3, sfx/stones_2.mp3, sfx/stones_3.mp3, sfx/chain_1.mp3, sfx/chain_2.mp3, sfx/chain_3.mp3
+
+"20 Sword Sound Effects (Attacks and Clashes)" by StarNinjas
+  https://opengameart.org/content/20-sword-sound-effects-attacks-and-clashes
+  license: CC0
+  used as: sfx/sword_swing_1.mp3, sfx/sword_swing_2.mp3, sfx/sword_swing_3.mp3, sfx/sword_swing_4.mp3, sfx/sword_swing_5.mp3
+
+"20 Sword Sound Effects (Attacks and Clashes)" by StarNinjas
+  https://opengameart.org/content/20-sword-sound-effects-attacks-and-clashes
+  license: CC0
+  used as: sfx/parry_1.mp3, sfx/parry_2.mp3, sfx/parry_3.mp3, sfx/parry_4.mp3
+
+"RPG Sound Pack" by artisticdude
+  https://opengameart.org/content/rpg-sound-pack
+  license: CC0
+  used as: sfx/metal_ring.mp3, sfx/spell_cast.mp3, sfx/spell_long.mp3, sfx/chainmail_1.mp3, sfx/chainmail_2.mp3, sfx/armor_light.mp3, sfx/sword_draw_1.mp3, sfx/sword_draw_2.mp3, sfx/bottle.mp3, sfx/bubble_1.mp3, sfx/bubble_2.mp3, sfx/bubble_3.mp3
+
+"Bones rattle" by congusbongus
+  https://opengameart.org/content/bones-rattle
+  license: CC0
+  used as: sfx/bone_1.mp3, sfx/bone_2.mp3, sfx/bone_3.mp3, sfx/bone_4.mp3, sfx/bone_5.mp3, sfx/bone_6.mp3
+
+"Bones 2" by AntumDeluge
+  https://opengameart.org/content/bones-2
+  license: CC0
+  used as: sfx/bone_pile.mp3
+
+"SkeletonSFXShortPack" by Colodical
+  https://opengameart.org/content/skeletonsfxshortpack
+  license: CC0
+  used as: sfx/skeleton_rise.mp3
+
+"SkeletonSFXShortPack" by Colodical
+  https://opengameart.org/content/skeletonsfxshortpack
+  license: CC0
+  used as: sfx/skeleton_hit.mp3
+
+"Male Grunt/Yelling sounds" by HaelDB
+  https://opengameart.org/content/male-gruntyelling-sounds
+  license: CC0
+  used as: sfx/grunt_effort_1.mp3, sfx/grunt_effort_2.mp3, sfx/grunt_effort_3.mp3, sfx/breath_exhausted.mp3
+
+"grunts of male death and pain" by thebardofblasphemy
+  https://opengameart.org/content/grunts-male-death-and-pain
+  license: CC0
+  used as: sfx/grunt_hurt_1.mp3, sfx/grunt_hurt_2.mp3, sfx/grunt_hurt_3.mp3, sfx/grunt_hurt_4.mp3, sfx/grunt_death_1.mp3, sfx/grunt_death_2.mp3
+
+"16 Monster Growls" by StarNinjas
+  https://opengameart.org/content/16-monster-growls
+  license: CC0
+  used as: sfx/growl_1.mp3, sfx/growl_2.mp3, sfx/growl_3.mp3
+
+"Magic Spell SFX" by JaggedStone
+  https://opengameart.org/content/magic-spell-sfx
+  license: CC0
+  used as: sfx/magic_1.mp3
+
+"Magic Spell SFX" by JaggedStone
+  https://opengameart.org/content/magic-spell-sfx
+  license: CC0
+  used as: sfx/magic_2.mp3
+
+"Magic Spell SFX" by JaggedStone
+  https://opengameart.org/content/magic-spell-sfx
+  license: CC0
+  used as: sfx/magic_3.mp3
+
+"Magic Spell SFX" by JaggedStone
+  https://opengameart.org/content/magic-spell-sfx
+  license: CC0
+  used as: sfx/magic_4.mp3
+
+"Magic Spell SFX" by JaggedStone
+  https://opengameart.org/content/magic-spell-sfx
+  license: CC0
+  used as: sfx/magic_5.mp3
+
+"Magic Spell SFX" by JaggedStone
+  https://opengameart.org/content/magic-spell-sfx
+  license: CC0
+  used as: sfx/magic_6.mp3
+
+"Freeze Spell" by artisticdude
+  https://opengameart.org/content/freeze-spell-0
+  license: CC0
+  used as: sfx/spell_frost.mp3
+
+"Fire Crackling" by AntumDeluge
+  https://opengameart.org/content/fire-crackling
+  license: CC0
+  used as: sfx/fire_flare.mp3
+
+"Wooden dice on wooden table roll" by Wuzzy
+  https://opengameart.org/content/wooden-dice-on-wodden-table-roll
+  license: CC0
+  used as: sfx/dice_1.mp3
+
+"Wooden dice on wooden table roll" by Wuzzy
+  https://opengameart.org/content/wooden-dice-on-wodden-table-roll
+  license: CC0
+  used as: sfx/dice_2.mp3
+
+"Wooden dice on wooden table roll" by Wuzzy
+  https://opengameart.org/content/wooden-dice-on-wodden-table-roll
+  license: CC0
+  used as: sfx/dice_3.mp3
+
+"Wooden dice on wooden table roll" by Wuzzy
+  https://opengameart.org/content/wooden-dice-on-wodden-table-roll
+  license: CC0
+  used as: sfx/dice_4.mp3
+
+"Bird, cricket, frog and mosquito sounds" by Aj_
+  https://opengameart.org/content/birdcricketfrog-and-mosquito-sounds
+  license: CC0
+  used as: sfx/bird_1.mp3, sfx/bird_2.mp3, sfx/bird_night.mp3, sfx/frog.mp3
+
+"Interface Sounds" by Kenney (kenney.nl)
+  https://kenney.nl/assets/interface-sounds
+  license: CC0
+  used as: sfx/ui_click_1.mp3, sfx/ui_click_2.mp3, sfx/ui_click_3.mp3, sfx/ui_select_1.mp3, sfx/ui_select_2.mp3, sfx/ui_open.mp3, sfx/ui_close.mp3, sfx/ui_back.mp3, sfx/ui_confirm_1.mp3, sfx/ui_confirm_2.mp3, sfx/ui_error_1.mp3, sfx/ui_error_2.mp3, sfx/ui_glass_1.mp3, sfx/ui_glass_2.mp3, sfx/ui_glass_3.mp3, sfx/ui_bong.mp3, sfx/ui_tick_1.mp3, sfx/ui_tick_2.mp3, sfx/ui_toggle_1.mp3, sfx/ui_toggle_2.mp3, sfx/ui_pluck_1.mp3, sfx/ui_pluck_2.mp3, sfx/ui_drop_1.mp3, sfx/ui_drop_2.mp3, sfx/ui_question.mp3, sfx/ui_scroll.mp3
+
+"UI Audio" by Kenney (kenney.nl)
+  https://kenney.nl/assets/ui-audio
+  license: CC0
+  used as: sfx/ui_hover_1.mp3, sfx/ui_hover_2.mp3, sfx/ui_hover_3.mp3
+
+Attribution line for Kevin MacLeod tracks (required by CC BY 4.0):
+  Music by Kevin MacLeod (incompetech.com), Licensed under Creative Commons: By Attribution 4.0
+  https://creativecommons.org/licenses/by/4.0/

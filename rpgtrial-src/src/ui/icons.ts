@@ -1,0 +1,148 @@
+// Inline SVG icon library (24x24 grid, stroke-based with light fills). No runtime requests.
+// Usage: icon('sword') → svg markup string; icon('sword', 'ic-lg') adds a class.
+
+const P: Record<string, string> = {
+  // ---- dice / meta ----
+  d20: `<path d="M12 2.5 20.5 7v10L12 21.5 3.5 17V7z"/><path d="M12 7.5 17.5 15h-11z" fill="currentColor" fill-opacity=".18"/><path d="M12 2.5v5M20.5 7l-3 8M3.5 7l3 8M12 21.5 17.5 15M12 21.5 6.5 15M20.5 17 17.5 15M3.5 17l3-2"/>`,
+  star: `<path d="m12 2.8 2.6 6.1 6.6.5-5 4.3 1.5 6.5L12 16.7l-5.7 3.5 1.5-6.5-5-4.3 6.6-.5z" fill="currentColor" fill-opacity=".25"/>`,
+  check: `<path d="m5 12.5 4.5 4.5L19 7"/>`,
+  close: `<path d="M6 6l12 12M18 6 6 18"/>`,
+  chevronDown: `<path d="m6 9 6 6 6-6"/>`,
+  chevronRight: `<path d="m9 6 6 6-6 6"/>`,
+  arrowUp: `<path d="M12 20V5M5.5 11.5 12 5l6.5 6.5"/>`,
+  info: `<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/>`,
+  // ---- weapons ----
+  sword: `<path d="M20 4c-3 .2-5.5 1.2-7.4 3.1l-3.6 3.6 1.3 1.3 3.6-3.6C15.8 6.5 19.8 7 20 4z" fill="currentColor" fill-opacity=".22"/><path d="M20 4 10.5 13.5"/><path d="M8.2 12.2l3.6 3.6M10 14l-4.5 4.5"/><circle cx="4.6" cy="19.4" r="1.3" fill="currentColor" fill-opacity=".4"/>`,
+  swords: `<path d="M4 4l9 9M20 4l-9 9M4 4c0 3 .8 5.4 2.5 7.5M20 4c0 3-.8 5.4-2.5 7.5" /><path d="M9 15l-1 1M15 15l1 1M8 14l-4 4M16 14l4 4M4 18l2 2M20 18l-2 2"/>`,
+  greatsword: `<path d="M12 2.5 14 4.5v10l-2 2-2-2v-10z" fill="currentColor" fill-opacity=".22"/><path d="M12 2.5v14M7 16.5h10M12 16.5v3.5"/><circle cx="12" cy="21" r="1.2" fill="currentColor" fill-opacity=".4"/>`,
+  axe: `<path d="M9 5.5c3-1.5 6.5-1.5 9 0-1 3.2-1 6.2 0 9.5-2.5-1.5-6-1.5-9 0z" fill="currentColor" fill-opacity=".22"/><path d="M9 10.5 4.5 20.5M12.5 10.2 9 10.5"/>`,
+  dagger: `<path d="M12 2.5c1.6 2.5 2.2 5.5 1.5 10H10.5c-.7-4.5-.1-7.5 1.5-10z" fill="currentColor" fill-opacity=".22"/><path d="M8.5 12.5h7M12 12.5v6.5"/><path d="M10.5 21h3"/>`,
+  staff: `<path d="M9 3.5c2-1 5 0 5.5 2.5-.5 2-2.5 3-4.5 2.5C8 8 8 5 9 3.5z" fill="currentColor" fill-opacity=".22"/><path d="M11.5 8.5 7 21.5M12 6l2.5-2.5M11.5 3.5 10 2"/>`,
+  wand: `<path d="M17 4l3 3-11 11-3-3z" fill="currentColor" fill-opacity=".22"/><path d="M6 15 3.5 20.5 9 18M19 2l1 2M21 6l2-.5M15 2l.5 2"/>`,
+  bow: `<path d="M6 3c5 2.5 7.5 5.5 7.5 9S11 18.5 6 21"/><path d="M6 3 6 21M6 12h14M17 9l3 3-3 3"/>`,
+  crossbow: `<path d="M4 6c4-2.5 12-2.5 16 0"/><path d="M12 3.5v14M8 17.5h8M12 17.5v3M4 6l1 3M20 6l-1 3"/>`,
+  mace: `<path d="M12 3.2 16.3 5.5v4.6L12 12.4 7.7 10.1V5.5z" fill="currentColor" fill-opacity=".25"/><path d="M12 12.4v8.6M10 21h4"/>`,
+  // ---- armour / gear ----
+  shield: `<path d="M12 3 5 5.5v6c0 4.5 3 7.5 7 9.5 4-2 7-5 7-9.5v-6z" fill="currentColor" fill-opacity=".2"/><path d="M12 3v18M5.5 11h13"/>`,
+  armor: `<path d="M8 4 5 7v6l2 1v6h10v-6l2-1V7l-3-3-2 1.5h-4z" fill="currentColor" fill-opacity=".2"/><path d="M9 4c1 1.5 5 1.5 6 0M12 8v12"/>`,
+  helmet: `<path d="M5 13c0-4.5 3-8 7-8s7 3.5 7 8v3l-2 1H7l-2-1z" fill="currentColor" fill-opacity=".2"/><path d="M12 5v12M8 13h8M5 13h14"/>`,
+  ring: `<circle cx="12" cy="14" r="6"/><circle cx="12" cy="14" r="3.5"/><path d="m12 3-3 3.5h6z" fill="currentColor" fill-opacity=".4"/>`,
+  boot: `<path d="M8 3h5v8l6 3v3H8l-3-2V6z" fill="currentColor" fill-opacity=".2"/><path d="M8 11h5M5 15h14"/>`,
+  // ---- consumables / items ----
+  potion: `<path d="M10 3h4M11 3v4.5L6.5 14c-1.5 2.5.5 6 3.5 6h4c3 0 5-3.5 3.5-6L13 7.5V3"/><path d="M7.5 14.5c2.5-1.5 6.5-1.5 9 0L17.5 17c1 2-.5 3-2.5 3h-6c-2 0-3.5-1-2.5-3z" fill="currentColor" fill-opacity=".35"/>`,
+  scroll: `<path d="M6 4h11a2 2 0 0 1 2 2v1H8v10a2 2 0 0 1-4 0V6a2 2 0 0 1 2-2z" fill="currentColor" fill-opacity=".18"/><path d="M8 7v10a2 2 0 0 1-2 2h11a2 2 0 0 0 2-2V9M10 10h6M10 13h6"/>`,
+  book: `<path d="M4 4.5A1.5 1.5 0 0 1 5.5 3H11c.6 0 1 .4 1 1v15c0-.6-.4-1-1-1H5.5A1.5 1.5 0 0 1 4 16.5zM20 4.5A1.5 1.5 0 0 0 18.5 3H13c-.6 0-1 .4-1 1v15c0-.6.4-1 1-1h5.5a1.5 1.5 0 0 0 1.5-1.5z" fill="currentColor" fill-opacity=".18"/><path d="M12 4v15M6.5 7h3M14.5 7h3M6.5 10h3M14.5 10h3"/>`,
+  coin: `<circle cx="12" cy="12" r="8.5" fill="currentColor" fill-opacity=".2"/><circle cx="12" cy="12" r="5.5"/><path d="M12 9v6M10.5 10.5h2a1 1 0 0 1 0 2h-1a1 1 0 0 0 0 2h2"/>`,
+  gem: `<path d="M7 4h10l4 5-9 12L3 9z" fill="currentColor" fill-opacity=".22"/><path d="M3 9h18M7 4l5 17 5-17M9.5 9 12 4l2.5 5"/>`,
+  key: `<circle cx="8" cy="8" r="4.5" fill="currentColor" fill-opacity=".2"/><path d="M11.2 11.2 20 20M17 17l2-2M14.5 14.5l2-2"/>`,
+  chest: `<path d="M4 9a3 3 0 0 1 3-3h10a3 3 0 0 1 3 3v2H4z" fill="currentColor" fill-opacity=".3"/><path d="M4 11h16v7a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1zM10 11v3h4v-3M12 12.5v.5"/>`,
+  food: `<path d="M6 12a6 6 0 0 1 12 0v1H6z" fill="currentColor" fill-opacity=".22"/><path d="M4 13h16l-1.5 5h-13zM12 4.5v1.5M9 5.5l.5 1.3M15 5.5l-.5 1.3"/>`,
+  bag: `<path d="M6 8h12l1.5 12h-15z" fill="currentColor" fill-opacity=".2"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/>`,
+  torch: `<path d="M12 3c2 2.5 3 4 3 6a3 3 0 0 1-6 0c0-.7.2-1.3.5-2 .4 1 .9 1.5 1.5 1.5 0-2 .4-3.5 1-5.5z" fill="currentColor" fill-opacity=".3"/><path d="M10 12h4l-1 9h-2z"/>`,
+  campfire: `<path d="M12 3c2.5 3 4 5 4 7.5a4 4 0 0 1-8 0c0-1 .3-1.8.8-2.7.5 1.3 1.2 2 2 2.2-.2-2.5.3-4.5 1.2-7z" fill="currentColor" fill-opacity=".3"/><path d="M4 21l16-5M20 21 4 16"/>`,
+  door: `<path d="M6 21V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16" fill="currentColor" fill-opacity=".15"/><path d="M4 21h16M14 12v.5"/>`,
+  gate: `<path d="M4 21V9a8 8 0 0 1 16 0v12"/><path d="M8 21V8M12 21V6M16 21V8M4 13h16M4 17h16"/>`,
+  map: `<path d="m3 6 6-2 6 2 6-2v14l-6 2-6-2-6 2z" fill="currentColor" fill-opacity=".15"/><path d="M9 4v14M15 6v14"/>`,
+  compass: `<circle cx="12" cy="12" r="9"/><path d="m15.5 8.5-2 5-5 2 2-5z" fill="currentColor" fill-opacity=".4"/>`,
+  // ---- magic / damage types ----
+  fire: `<path d="M12 2.5c1 3 4.5 5 4.5 10a4.5 4.5 0 0 1-9 0c0-1.6.5-3 1.5-4 .2 1.8 1 3 2.3 3.3-.6-3 0-6.2.7-9.3z" fill="currentColor" fill-opacity=".3"/><path d="M12 21.5c-1.7 0-3-1.3-3-3 0-1.5 1.2-2.5 3-4.5 1.8 2 3 3 3 4.5 0 1.7-1.3 3-3 3z" fill="currentColor" fill-opacity=".5"/>`,
+  frost: `<path d="M12 2v20M3.3 7l17.4 10M3.3 17 20.7 7"/><path d="m9 4 3 2 3-2M9 20l3-2 3 2M4.5 10.5 7.5 12l-3 1.5M19.5 10.5 16.5 12l3 1.5M5.5 5.5 7 9M18.5 5.5 17 9M5.5 18.5 7 15M18.5 18.5 17 15"/>`,
+  radiant: `<circle cx="12" cy="12" r="4" fill="currentColor" fill-opacity=".35"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"/>`,
+  lightning: `<path d="M13.5 2.5 5 13.5h6l-1 8 9-11.5h-6z" fill="currentColor" fill-opacity=".3"/>`,
+  necrotic: `<path d="M12 3a7 7 0 0 0-7 7c0 2.5 1 4 2.5 5.2V19h9v-3.8C18 14 19 12.5 19 10a7 7 0 0 0-7-7z" fill="currentColor" fill-opacity=".22"/><circle cx="9.5" cy="10.5" r="1.4" fill="currentColor"/><circle cx="14.5" cy="10.5" r="1.4" fill="currentColor"/><path d="M12 13v2M10 19v2M14 19v2M11 15l1-1.5 1 1.5"/>`,
+  force: `<path d="M12 4 14 10l6-2-4 4 4 4-6-2-2 6-2-6-6 2 4-4-4-4 6 2z" fill="currentColor" fill-opacity=".3"/>`,
+  poison: `<path d="M12 3c3.5 4.5 5.5 7.5 5.5 11a5.5 5.5 0 0 1-11 0C6.5 10.5 8.5 7.5 12 3z" fill="currentColor" fill-opacity=".25"/><path d="M9.5 14.5c0 1.4.8 2.5 2.5 3"/>`,
+  slash: `<path d="M19 4 5 20M20 8 9 20M16 3 4 16"/>`,
+  pierce: `<path d="M4 20 18 6M18 6h-5M18 6v5M4 20l5-1M4 20l1-5"/>`,
+  bludgeon: `<path d="M13 3.2 17.3 5.5v4.6L13 12.4 8.7 10.1V5.5z" fill="currentColor" fill-opacity=".25"/><path d="M11 12.4 5 21M9.5 21H6"/>`,
+  sparkle: `<path d="M12 3c.5 4 2.5 6.5 7 8-4.5 1.5-6.5 4-7 8-.5-4-2.5-6.5-7-8 4.5-1.5 6.5-4 7-8z" fill="currentColor" fill-opacity=".35"/><path d="M19 3.5c.2 1.3.9 2.1 2.2 2.4-1.3.3-2 1.1-2.2 2.4-.2-1.3-.9-2.1-2.2-2.4 1.3-.3 2-1.1 2.2-2.4z" fill="currentColor"/>`,
+  missile: `<path d="M3 21 12 12M6 21l8-8M3 18l8-8"/><path d="M12 12 20 4M20 4h-5M20 4v5" /><circle cx="12" cy="12" r="1.5" fill="currentColor"/>`,
+  shieldSpell: `<path d="M12 3 5 5.5v6c0 4.5 3 7.5 7 9.5 4-2 7-5 7-9.5v-6z" fill="currentColor" fill-opacity=".15"/><path d="M12 8c.4 2.5 1.6 3.9 4 4.3-2.4.4-3.6 1.8-4 4.3-.4-2.5-1.6-3.9-4-4.3 2.4-.4 3.6-1.8 4-4.3z" fill="currentColor" fill-opacity=".5"/>`,
+  sleep: `<path d="M15.5 3.5A8.5 8.5 0 1 0 20.5 15a7 7 0 0 1-5-11.5z" fill="currentColor" fill-opacity=".2"/><path d="M15 6h4l-4 4h4"/>`,
+  guidance: `<ellipse cx="12" cy="6" rx="5" ry="1.8" fill="currentColor" fill-opacity=".3"/><circle cx="12" cy="11" r="2.5"/><path d="M7 21c0-3.5 2-5.5 5-5.5s5 2 5 5.5"/>`,
+  halo: `<ellipse cx="12" cy="7" rx="6" ry="2.2"/><path d="M12 9.5v3M8.5 21l3.5-8 3.5 8"/>`,
+  heal: `<path d="M12 21s-7.5-4.5-7.5-10A4 4 0 0 1 12 8.5 4 4 0 0 1 19.5 11c0 5.5-7.5 10-7.5 10z" fill="currentColor" fill-opacity=".25"/><path d="M12 11v5M9.5 13.5h5"/>`,
+  eye: `<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z" fill="currentColor" fill-opacity=".15"/><circle cx="12" cy="12" r="3" fill="currentColor" fill-opacity=".5"/>`,
+  eyeOff: `<path d="M2.5 12S6 5.5 12 5.5c1.5 0 2.8.4 4 1M21.5 12S18 18.5 12 18.5c-1.5 0-2.8-.4-4-1M4 20 20 4"/>`,
+  target: `<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3" fill="currentColor" fill-opacity=".5"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>`,
+  // ---- class / feature ----
+  rage: `<path d="M12 2.5c1 3 4.5 5 4.5 10a4.5 4.5 0 0 1-9 0c0-1.6.5-3 1.5-4 .2 1.8 1 3 2.3 3.3-.6-3 0-6.2.7-9.3z" fill="currentColor" fill-opacity=".3"/><path d="M5 20h14M7 20l-1-3M17 20l1-3"/>`,
+  fist: `<path d="M7 11V8a1.5 1.5 0 0 1 3 0v3M10 10V6.5a1.5 1.5 0 0 1 3 0V11M13 10V7a1.5 1.5 0 0 1 3 0v4M16 11.5a1.5 1.5 0 0 1 3 0V15a6 6 0 0 1-6 6h-2a6 6 0 0 1-6-6v-3a1.5 1.5 0 0 1 3 0" fill="currentColor" fill-opacity=".2"/>`,
+  wind: `<path d="M3 8h9a2.5 2.5 0 1 0-2.5-2.5M3 12h13a3 3 0 1 1-3 3M3 16h7a2 2 0 1 1-2 2"/>`,
+  surge: `<path d="M8 3 3 12h5l-2 9 8-11H9z" fill="currentColor" fill-opacity=".3"/><path d="M16 3l-3 6h4l-4 8"/>`,
+  hood: `<path d="M12 3C7 3 4.5 8 4.5 13v6h15v-6c0-5-2.5-10-7.5-10z" fill="currentColor" fill-opacity=".2"/><path d="M8 19c0-4 1.5-7.5 4-9 2.5 1.5 4 5 4 9M10 13l1 1.5M14 13l-1 1.5"/>`,
+  sneak: `<path d="M12 3C7 3 4.5 8 4.5 13v6h15v-6c0-5-2.5-10-7.5-10z" fill="currentColor" fill-opacity=".2"/><path d="M8 19c0-4 1.5-7.5 4-9 2.5 1.5 4 5 4 9"/><path d="M18 5l3-1-1 3M15 4l2-1"/>`,
+  mark: `<circle cx="12" cy="12" r="7"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/><path d="m9.5 9.5 5 5M14.5 9.5l-5 5"/>`,
+  leaf: `<path d="M20 4c-9 0-14 4-14 11 0 2 .5 3.5 1.5 5C10 13 14 9 20 4z" fill="currentColor" fill-opacity=".25"/><path d="M7.5 20C10 14.5 14 10 20 4M4 21l3.5-1"/>`,
+  moon: `<path d="M15.5 3.5A8.5 8.5 0 1 0 20.5 15a7 7 0 0 1-5-11.5z" fill="currentColor" fill-opacity=".25"/>`,
+  crest: `<path d="M12 2.5 14.6 8l6 .6-4.5 4 1.4 6-5.5-3.2L6.5 18.6l1.4-6-4.5-4 6-.6z" fill="currentColor" fill-opacity=".2"/><path d="M15 6.5a5 5 0 1 0 2.8 6.3 3.8 3.8 0 0 1-2.8-6.3z" fill="currentColor" fill-opacity=".45"/>`,
+  skull: `<path d="M12 3a7.5 7.5 0 0 0-7.5 7.5c0 2.8 1.3 4.6 3 5.8V20h9v-3.7c1.7-1.2 3-3 3-5.8A7.5 7.5 0 0 0 12 3z" fill="currentColor" fill-opacity=".2"/><circle cx="9.3" cy="11" r="1.6" fill="currentColor"/><circle cx="14.7" cy="11" r="1.6" fill="currentColor"/><path d="M11 15h2l-1-1.8zM10 20v-2M14 20v-2"/>`,
+  crown: `<path d="M4 8l4 4 4-7 4 7 4-4-1.5 11h-13z" fill="currentColor" fill-opacity=".25"/><path d="M5.5 19h13"/>`,
+  person: `<circle cx="12" cy="8" r="4" fill="currentColor" fill-opacity=".25"/><path d="M4.5 21c0-4.5 3.3-7.5 7.5-7.5s7.5 3 7.5 7.5"/>`,
+  rest: `<path d="M3 18h18M3 18v-5h18v5M5 13V8h6v5M14 9h4v4"/><path d="M14 5h3l-3 3h3"/>`,
+  quest: `<path d="M6 4h11a2 2 0 0 1 2 2v1H8v10a2 2 0 0 1-4 0V6a2 2 0 0 1 2-2z" fill="currentColor" fill-opacity=".18"/><path d="M8 7v10a2 2 0 0 1-2 2h11a2 2 0 0 0 2-2V9"/><path d="m10.5 12.5 1.8 1.8L16 10.5"/>`,
+  lock: `<rect x="5" y="10" width="14" height="10" rx="1.5" fill="currentColor" fill-opacity=".22"/><path d="M8 10V7a4 4 0 0 1 8 0v3M12 14v2.5"/>`,
+  lockOpen: `<rect x="5" y="10" width="14" height="10" rx="1.5" fill="currentColor" fill-opacity=".22"/><path d="M8 10V7a4 4 0 0 1 7.5-2M12 14v2.5"/>`,
+  boulder: `<path d="M5 15c-1.5-4 1-9 6-9.5 4-.3 8 2 8.5 6 .5 3-1 6.5-5 6.5H8c-1.5 0-2.5-1.5-3-3z" fill="currentColor" fill-opacity=".25"/><path d="M9 9.5c1-1.5 3-2 5-1"/>`,
+  stagger: `<path d="M12 3v4M6 5l3 3M18 5l-3 3M4 12h3M17 12h3M12 14a3 3 0 0 0-3 3v4h6v-4a3 3 0 0 0-3-3z" fill="currentColor" fill-opacity=".25"/>`,
+  prone: `<circle cx="5" cy="15" r="2.5" fill="currentColor" fill-opacity=".3"/><path d="M8 17h13l-2-4h-8l-3 4M13 13V9h4"/>`,
+  // ---- input glyphs ----
+  mouseL: `<rect x="6" y="2.5" width="12" height="19" rx="6" fill="currentColor" fill-opacity=".08"/><path d="M12 2.5v8M6 10.5h12"/><path d="M6.5 8.5a5.5 5.5 0 0 1 5.5-6v8H6z" fill="currentColor" fill-opacity=".6"/>`,
+  mouseR: `<rect x="6" y="2.5" width="12" height="19" rx="6" fill="currentColor" fill-opacity=".08"/><path d="M12 2.5v8M6 10.5h12"/><path d="M17.5 8.5a5.5 5.5 0 0 0-5.5-6v8h6z" fill="currentColor" fill-opacity=".6"/>`,
+  mouseM: `<rect x="6" y="2.5" width="12" height="19" rx="6" fill="currentColor" fill-opacity=".08"/><path d="M12 2.5v8M6 10.5h12"/><rect x="10.5" y="5" width="3" height="4.5" rx="1.5" fill="currentColor"/>`,
+  scrollWheel: `<rect x="6" y="2.5" width="12" height="19" rx="6" fill="currentColor" fill-opacity=".08"/><rect x="10.5" y="5" width="3" height="4.5" rx="1.5" fill="currentColor"/><path d="M12 12.5v3M10.5 14l1.5 1.5 1.5-1.5"/>`,
+  // ---- misc ----
+  hourglass: `<path d="M7 3h10M7 21h10M8 3c0 5 4 6 4 9s-4 4-4 9M16 3c0 5-4 6-4 9s4 4 4 9"/>`,
+  xp: `<path d="M12 3 4 8v8l8 5 8-5V8z"/><path d="M12 3v18M4 8l8 5 8-5"/>`,
+  gear: `<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-1.8-.3 1.6 1.6 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.6 1.6 0 0 0-1-1.5 1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0 .3-1.8 1.6 1.6 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.6 1.6 0 0 0 1.5-1 1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H9a1.6 1.6 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 1 1.5 1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V9a1.6 1.6 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1z"/>`,
+  weight: `<path d="M6 8h12l2 12H4z" fill="currentColor" fill-opacity=".2"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/>`,
+  ac: `<path d="M12 3 5 5.5v6c0 4.5 3 7.5 7 9.5 4-2 7-5 7-9.5v-6z" fill="currentColor" fill-opacity=".2"/><path d="m9 12 2 2 4-4"/>`,
+  dice: `<rect x="3" y="3" width="18" height="18" rx="3" fill="currentColor" fill-opacity=".15"/><circle cx="8" cy="8" r="1.4" fill="currentColor"/><circle cx="16" cy="8" r="1.4" fill="currentColor"/><circle cx="12" cy="12" r="1.4" fill="currentColor"/><circle cx="8" cy="16" r="1.4" fill="currentColor"/><circle cx="16" cy="16" r="1.4" fill="currentColor"/>`,
+  music: `<path d="M9 18V6l11-2v12"/><circle cx="6.5" cy="18" r="2.5" fill="currentColor" fill-opacity=".3"/><circle cx="17.5" cy="16" r="2.5" fill="currentColor" fill-opacity=".3"/>`,
+  speaker: `<path d="M4 9.5v5h3.5L12 18V6L7.5 9.5z" fill="currentColor" fill-opacity=".3"/><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/>`,
+  ilyra: `<path d="M15 4a6.5 6.5 0 1 0 4 11.5A5 5 0 0 1 15 4z" fill="currentColor" fill-opacity=".35"/><path d="M12 15c-1 2-1.5 4-1.5 6M8 12c-1.5.5-3 2-4 4"/><path d="M4 16c3 0 5-1.5 6-4-2.5 0-4.5 1.5-6 4z" fill="currentColor" fill-opacity=".4"/>`,
+  narrator: `<path d="M4 4.5A1.5 1.5 0 0 1 5.5 3H11c.6 0 1 .4 1 1v15c0-.6-.4-1-1-1H5.5A1.5 1.5 0 0 1 4 16.5zM20 4.5A1.5 1.5 0 0 0 18.5 3H13c-.6 0-1 .4-1 1v15c0-.6.4-1 1-1h5.5a1.5 1.5 0 0 0 1.5-1.5z" fill="currentColor" fill-opacity=".18"/><path d="M12 4v15"/>`,
+  whirl: `<path d="M12 12c0-3 2.5-5 5.5-4.5C20 8 21 10.5 20.5 13c-.5 3.5-4 5.5-7.5 5-4-.5-6.5-4-6-8C7.5 5.5 12 3 16.5 4"/><path d="M12 12c0 1.5-1 2.5-2.5 2.5S7 13.5 7 12"/><path d="M4 21l16-5M20 21 4 16" opacity=".6"/>`,
+  thunder: `<path d="M13.5 2.5 5 13.5h6l-1 8 9-11.5h-6z" fill="currentColor" fill-opacity=".3"/><path d="M3 8c1.5-1.5 3-1.5 4.5 0M16.5 8c1.5-1.5 3-1.5 4.5 0M2 12.5c1.5-1.5 3-1.5 4.5 0M17.5 12.5c1.5-1.5 3-1.5 4.5 0" opacity=".8"/>`,
+  smoke: `<path d="M7 18a4 4 0 0 1-.5-8 5.5 5.5 0 0 1 10.5-1.5A4 4 0 0 1 17 18z" fill="currentColor" fill-opacity=".25"/><path d="M9 21c1-1 2-1 3 0s2 1 3 0" opacity=".7"/>`,
+  summon: `<circle cx="12" cy="12" r="8.5"/><path d="M12 4.5 14.4 10l5.6.4-4.4 3.6 1.5 5.5L12 16.5 6.9 19.5l1.5-5.5L4 10.4 9.6 10z" fill="currentColor" fill-opacity=".3"/>`,
+};
+
+/** Class → icon name. */
+export const CLASS_ICON: Record<string, string> = { fighter: 'swords', wizard: 'staff', rogue: 'hood', barbarian: 'axe', ranger: 'bow' };
+/** Damage type → icon + colour. */
+export const DAMAGE_STYLE: Record<string, { icon: string; color: string }> = {
+  slashing: { icon: 'slash', color: '#f3ead6' }, piercing: { icon: 'pierce', color: '#f3ead6' }, bludgeoning: { icon: 'bludgeon', color: '#f3ead6' },
+  fire: { icon: 'fire', color: '#ff8b3d' }, cold: { icon: 'frost', color: '#8fd8ff' }, radiant: { icon: 'radiant', color: '#ffe48a' },
+  necrotic: { icon: 'necrotic', color: '#b48cf0' }, force: { icon: 'force', color: '#e2a4ff' }, lightning: { icon: 'lightning', color: '#a9dcff' },
+  poison: { icon: 'poison', color: '#9be06a' },
+};
+/** Condition → icon name (fallback: sparkle). */
+export const CONDITION_ICON: Record<string, string> = {
+  rage: 'rage', raging: 'rage', guidance: 'guidance', blessed: 'halo', bless: 'halo', poisoned: 'poison', frightened: 'skull', prone: 'prone', stunned: 'stagger',
+  hidden: 'eyeOff', invisible: 'eyeOff', marked: 'mark', hunterMark: 'mark', shield: 'shieldSpell', shielded: 'shieldSpell', concentration: 'eye', burning: 'fire',
+  chilled: 'frost', slowed: 'hourglass', sleeping: 'sleep', asleep: 'sleep', dodging: 'boot', secondWind: 'wind', actionSurge: 'surge', sneaking: 'sneak', staggered: 'stagger',
+};
+
+const ALIAS: Record<string, string> = {
+  longsword: 'sword', shortsword: 'sword', rapier: 'sword', sword_1handed: 'sword', sword_2handed: 'greatsword', greataxe: 'axe', handaxe: 'axe', axe_1handed: 'axe', axe_2handed: 'axe',
+  quarterstaff: 'staff', crossbow_1handed: 'crossbow', crossbow_2handed: 'crossbow', longbow: 'bow', shortbow: 'bow', spellbook: 'book', spellbook_open: 'book',
+  shield_round: 'shield', shield_square: 'shield', shield_badge: 'shield', shield_spikes: 'shield', cold: 'frost', ice: 'frost', sun: 'radiant', holy: 'radiant',
+  heart: 'heal', hp: 'heal', dodge: 'boot', gold: 'coin', coins: 'coin', attack: 'sword', spell: 'sparkle', buff: 'halo', utility: 'compass', levelup: 'star', xpOrb: 'xp',
+  mouseLeft: 'mouseL', mouseRight: 'mouseR', mouseMiddle: 'mouseM', lmb: 'mouseL', rmb: 'mouseR', mmb: 'mouseM', wheel: 'scrollWheel', player: 'person', boss: 'crown',
+  // names used by content/spells.ts + content/items.ts
+  ward: 'shieldSpell', reckless: 'fist', dash: 'boot', bolt: 'fire', vial: 'potion', camp: 'campfire', rations: 'food', chainShirt: 'armor', potionHealing: 'potion',
+};
+
+export function iconPath(name: string): string { return P[name] ?? P[ALIAS[name]] ?? P.sparkle; }
+export function hasIcon(name: string): boolean { return name in P || name in ALIAS; }
+
+/** Inline SVG markup for an icon. */
+export function icon(name: string, cls = ''): string {
+  return `<svg class="ic ${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${iconPath(name)}</svg>`;
+}
+export const ICON_NAMES = Object.keys(P);
+
+/** Ornamental corner flourish (used by frames) and a horizontal divider. */
+export const CORNER_SVG = `<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"><path d="M1 39V9c0-4.4 3.6-8 8-8h30"/><path d="M1 22c0-6 4-10 10-10h11" opacity=".6"/><path d="M6 6l4 4M6 6l-2 6M6 6l6-2" opacity=".9"/><circle cx="6" cy="6" r="1.6" fill="currentColor"/><path d="M14 1.5c2 1.5 2 4 0 5.5M1.5 14c1.5 2 4 2 5.5 0" opacity=".7"/></svg>`;
+export const DIVIDER_SVG = `<svg viewBox="0 0 300 16" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" preserveAspectRatio="none"><path d="M0 8h120M180 8h120"/><path d="M120 8c8-6 16-6 24 0s16 6 24 0" opacity=".8"/><path d="M150 3l4 5-4 5-4-5z" fill="currentColor"/><circle cx="128" cy="8" r="1.5" fill="currentColor"/><circle cx="172" cy="8" r="1.5" fill="currentColor"/></svg>`;

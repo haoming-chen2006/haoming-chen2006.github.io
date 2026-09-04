@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Hollowmere — UI dev page</title>
+  <link rel="stylesheet" href="/src/ui/ui.css" />
+  <style>
+    .devbar { position: fixed; left: 0; top: 50%; transform: translateY(-50%); z-index: 200; display: flex; flex-direction: column; gap: 2px; padding: 6px; background: rgba(0,0,0,.75); border: 1px solid #333; border-left: 0; max-height: 96vh; overflow: auto; font: 11px/1.2 ui-monospace, monospace; pointer-events: auto; }
+    .devbar.hidden { display: none; }
+    .devbar b { color: #9a8; margin-top: 6px; font-size: 10px; letter-spacing: .1em; text-transform: uppercase; }
+    .devbar button { font: inherit; color: #ddd; background: #1c1f2a; border: 1px solid #333; padding: 3px 6px; cursor: pointer; text-align: left; }
+    .devbar button:hover { background: #2c3040; color: #fff; }
+    .devbar .row { display: flex; gap: 2px; flex-wrap: wrap; }
+  </style>
+</head>
+<body>
+  <canvas id="gl"></canvas>
+  <div id="ui"></div>
+  <div id="loading">
+    <div class="loading-inner">
+      <div class="over">A Dungeons &amp; Dragons prologue</div>
+      <h1>Hollowmere</h1>
+      <div class="sub">A Prologue</div>
+      <div class="divider"><svg viewBox="0 0 300 16" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" preserveAspectRatio="none"><path d="M0 8h120M180 8h120"/><path d="M120 8c8-6 16-6 24 0s16 6 24 0" opacity=".8"/><path d="M150 3l4 5-4 5-4-5z" fill="currentColor"/><circle cx="128" cy="8" r="1.5" fill="currentColor"/><circle cx="172" cy="8" r="1.5" fill="currentColor"/></svg></div>
+      <div class="bar"><div id="loadingBar"></div></div>
+      <div id="loadingText">Gathering the party…</div>
+      <div id="loadingTip"><b>Tip</b>Roll a d20, add your modifier, meet or beat the DC. A natural 20 always succeeds.</div>
+    </div>
+  </div>
+  <script type="module" src="/src/ui/dev-ui.ts"></script>
+</body>
+</html>

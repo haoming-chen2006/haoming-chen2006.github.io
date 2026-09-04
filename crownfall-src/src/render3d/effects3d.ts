@@ -116,11 +116,17 @@ export class Effects3D {
 
   private color(hex: string): THREE.Color { return new THREE.Color(hex.length === 9 ? hex.slice(0, 7) : hex); }
 
+  /** Visuals created while the list is being swept are parked here and appended afterwards. */
+  private pendingVisuals: Visual[] = [];
+  private sweeping = false;
+
   private add(effect: Effect, obj: THREE.Object3D, extra: THREE.Object3D[] = [], own?: { dur: number }): Visual {
     if (obj.parent !== this.scene) this.scene.add(obj);
     for (const e of extra) if (e.parent !== this.scene) this.scene.add(e);
     const v: Visual = { obj, effect, extra, d: {}, own: own ? { t: 0, dur: own.dur } : undefined };
-    this.visuals.push(v);
+    // Adding during the sweep would push onto the array being replaced by filter(), losing the
+    // visual forever (it stayed in the scene as a permanent glow). Park it instead.
+    if (this.sweeping) this.pendingVisuals.push(v); else this.visuals.push(v);
     return v;
   }
 
@@ -538,6 +544,7 @@ export class Effects3D {
       if (e.type === 'cone') this.continuous(e);
     }
     const alive = new Set(w.effects);
+    this.sweeping = true;
     this.visuals = this.visuals.filter((v) => {
       const simAlive = alive.has(v.effect);
       if (v.own) {
@@ -563,6 +570,9 @@ export class Effects3D {
       this.updateVisual(v, dt, time);
       return true;
     });
+    this.sweeping = false;
+    if (this.pendingVisuals.length) { this.visuals.push(...this.pendingVisuals); this.pendingVisuals.length = 0; }
+
     // projectiles
     const live = new Set<number>();
     for (const p of w.projectiles) {

@@ -53,6 +53,7 @@ export class GameScreen {
   private frameAcc = 0;
   private frameN = 0;
   private slowStreak = 0;
+  private wallT = 0;
   onAutoQuality: (q: 'high' | 'low') => void = () => {};
   private vignette: HTMLElement;
   private damageFlash: HTMLElement;
@@ -89,6 +90,7 @@ export class GameScreen {
     this.lastElixirFull = false;
     this.lastHandKey = '';
     this.lastHeroKills = 0;
+    this.wallT = 0; this.frameAcc = 0; this.frameN = 0; this.slowStreak = 0;
     this.active = true;
     if (cfg.tutorial && this.tutorial) this.tutorial.start(); else this.tutorial?.dismiss();
   }
@@ -139,7 +141,8 @@ export class GameScreen {
 
   /** Adaptive quality: after the intro settles, drop to Low if frames stay slow for a while. */
   private watchPerformance(rawDt: number): void {
-    if (this.view.quality !== 'high' || this.time < 8) return;
+    this.wallT += rawDt;
+    if (this.view.quality !== 'high' || this.wallT < 6) return;
     this.frameAcc += rawDt; this.frameN++;
     if (this.frameAcc < 2) return;
     const avg = this.frameAcc / this.frameN;

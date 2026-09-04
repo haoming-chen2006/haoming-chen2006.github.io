@@ -126,7 +126,7 @@ showLoading(false);
 
 // Debug/test hook: lets scripted play-tests project world coordinates to the screen.
 (window as unknown as { __cf: unknown }).__cf = {
-  view, game, settings,
+  view, game, settings, sfx, music,
   toScreen(x: number, z: number, y = 0.05): { x: number; y: number } {
     const r = canvas.getBoundingClientRect();
     const p = view.rig.project(x, y, z, r.width, r.height);

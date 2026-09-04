@@ -64,7 +64,7 @@ export class GameView {
     this.sun.position.set(ARENA_W / 2 + 22, 42, ARENA_H / 2 + 14);
     this.sun.target.position.set(ARENA_W / 2, 0, ARENA_H / 2);
     this.sun.castShadow = true;
-    this.sun.shadow.mapSize.set(2048, 2048);
+    this.sun.shadow.mapSize.set(1536, 1536);
     const sc = this.sun.shadow.camera;
     sc.left = -26; sc.right = 26; sc.top = 30; sc.bottom = -30; sc.near = 5; sc.far = 120;
     this.sun.shadow.bias = -0.0004;
@@ -88,7 +88,7 @@ export class GameView {
 
   resize(w: number, h: number): void {
     this.width = Math.max(1, w); this.height = Math.max(1, h);
-    const dpr = Math.min(this.quality === 'high' ? 1.5 : 1, window.devicePixelRatio || 1);
+    const dpr = Math.min(this.quality === 'high' ? 1.25 : 1, window.devicePixelRatio || 1);
     this.renderer.setPixelRatio(dpr);
     this.renderer.setSize(this.width, this.height, false);
     this.composer.setPixelRatio(dpr);

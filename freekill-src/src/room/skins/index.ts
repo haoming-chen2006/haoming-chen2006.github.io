@@ -3,25 +3,32 @@
  *
  * ── WHAT THIS IS ──────────────────────────────────────────────────────────────
  *
- * `packages/lunarltk_skins` (gitee.com/qsgs-fans/lunarltk_skins, GPL-3.0) is a
+ * `pack/` is lunarltk_skins (gitee.com/qsgs-fans/lunarltk_skins, GPL-3.0), a
  * FreeKill package that maps general ids to alternate artwork. It carries no
- * artwork itself -- 160 KB of pure Lua -- and instead points at absolute URLs on
+ * artwork itself -- 320 KB of pure Lua -- and instead points at absolute URLs on
  * two third-party hosts. That is what makes it interesting: alternate portraits,
  * including animated ones, at literally zero bundle cost.
  *
  * The pack is a *build-time data source only*. `generate.mjs` boots the real
- * engine with it and freezes `Fk.skin_packages` into `catalog.generated.ts`; the
- * Lua never enters `public/lua-bundle.json`, so the bundle hash that decides
- * which clients may sit at the same table is untouched. See `generate.mjs`.
+ * engine on the shipped roster with it and freezes `Fk.skin_packages` into
+ * `catalog.generated.ts`; the Lua never enters `public/lua-bundle.json`, so the
+ * bundle hash that decides which clients may sit at the same table is
+ * untouched. See `generate.mjs`, and `pack/README.md` for the pinned commit.
  *
  * ── WHAT ACTUALLY LANDS ───────────────────────────────────────────────────────
  *
- * The pack targets 1178 general ids across every expansion its authors play
- * with. This build ships 341 generals (277 in the playable pool), so most of
- * that misses. What connects:
+ * The pack targets well over a thousand general ids across every expansion its
+ * authors play with, under every id upstream has ever used for them. Only ids
+ * this build defines survive, and the header of `catalog.generated.ts` carries
+ * the current count. At the time of writing, against a roster of 697:
  *
- *     110 generals get artwork      90 of them in the playable pool (32%)
- *     226 files                     88 still (.jpg), 138 animated (.mp4)
+ *     305 generals get artwork      280 of them in the playable pool
+ *     684 files                     284 still (.jpg), 400 animated (.mp4)
+ *
+ * That number moves with the roster, and `__tests__/catalog.test.ts` is what
+ * keeps the committed file honest about it: the first catalog was generated
+ * against 341 generals and never again, so when the roster nearly doubled the
+ * new generals silently got nothing.
  *
  * ── LICENSING: UNRESOLVED, AND THE REASON THIS IS OFF BY DEFAULT ──────────────
  *

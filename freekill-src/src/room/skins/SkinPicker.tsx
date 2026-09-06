@@ -14,8 +14,9 @@
  * page load, from `OFFERED` below -- a second game as the same general is not a
  * second offer, and a remount mid-game is not one either.
  *
- * The silence in the other direction is load-bearing. 110 of the 341 shipped
- * generals have any artwork at all; for the other 231 there is nothing to
+ * The silence in the other direction is load-bearing. Fewer than half of the
+ * shipped generals have any artwork at all (the header of
+ * `catalog.generated.ts` has the count); for the rest there is nothing to
  * choose, and an empty box popping up to say so is worse than the feature not
  * existing. `claimOffer` gates the auto-open on artwork that will actually
  * arrive, so those seats never see it.
@@ -112,11 +113,11 @@ export function resetSkinOffers(): void {
  * `generate.mjs` drops the pack's Chinese display names on purpose -- they would
  * add several hundred Han to a font subset that is checked against the sources
  * character by character, to caption artwork the player can simply look at. What
- * is left is the file name, and for 189 of the 226 files that is a readable
- * romanisation (`zhenji_luoshuishenyun` -> `luoshuishenyun`), which is enough to
- * tell seven videos of the same general apart in a list.
+ * is left is the file name, and for most files that is a readable romanisation
+ * (`zhenji_luoshuishenyun` -> `luoshuishenyun`), which is enough to tell seven
+ * videos of the same general apart in a list.
  *
- * The other 37 are named in Chinese, and those get nothing rather than tofu: the
+ * The rest are named in Chinese, and those get nothing rather than tofu: the
  * caller captions them by position instead. Decoding the Han here would put
  * glyphs on screen that the shipped face was never subset for.
  */

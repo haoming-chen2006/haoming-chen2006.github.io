@@ -65,6 +65,15 @@ export interface HeroRow {
 
 const BASE = '/api/designer';
 
+/**
+ * The one fact every failure to reach the server shares: the back end is a
+ * local process, not a service. `designer.html` ships with the site because
+ * that is what type-checks and bundles it, but on the published site there is
+ * nothing at `/api/designer` and there cannot be — it boots the Lua engine on
+ * the hero and writes into `packages/custom`, which is a checkout, not a CDN.
+ */
+const BACKEND_HINT = '设计器要在本机跑：在 freekill-src 里执行 npm run dev 和 npm run designer，再打开 localhost:5173/freekill/designer.html。';
+
 export class ApiError extends Error {
   constructor(message: string, readonly status: number) {
     super(message);
@@ -87,17 +96,22 @@ const request = async <T>(path: string, init?: RequestInit): Promise<T> => {
       headers: { 'content-type': 'application/json', ...(init?.headers ?? {}) },
     });
   } catch (cause) {
-    throw new ApiError(`连不上服务器：${cause instanceof Error ? cause.message : String(cause)}`, 0);
+    throw new ApiError(`连不上设计器后端：${cause instanceof Error ? cause.message : String(cause)}。${BACKEND_HINT}`, 0);
   }
   const text = await response.text();
   let body: unknown;
   try {
     body = text ? JSON.parse(text) : {};
   } catch {
+    // A 404 page is what the published site answers with: there is no back end
+    // behind GitHub Pages, and the player deserves to be told that rather than
+    // handed a status code.
     throw new ApiError(
       response.ok
         ? '服务器返回的不是 JSON'
-        : `服务器出错（HTTP ${response.status}）`,
+        : response.status === 404
+          ? `这里没有设计器后端（HTTP 404）。${BACKEND_HINT}`
+          : `服务器出错（HTTP ${response.status}）`,
       response.status,
     );
   }

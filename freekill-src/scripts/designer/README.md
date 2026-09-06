@@ -163,8 +163,17 @@ ones that will be missed first:
   built from `overview.json`, which designed heroes are deliberately absent
   from, so `custom` is always on and cannot be switched off from the lobby. It
   is on by default either way (`disabledPack` starts empty,
-  `src/shell/pages/Lobby.tsx:25`), and a deployed build has no designed heroes
-  in it at all, because `packages/custom/generals/` is untracked.
+  `src/shell/pages/Lobby.tsx:25`).
+- **A designed hero ships if it is on disk when you deploy.** The bundle walker
+  reads `packages/custom/generals/` off the machine that runs `npm run deploy`,
+  so whatever is there goes into `public/lua-bundle.json` and onto the live
+  table — untracked in git, but not absent from the build. That is the intended
+  way to put one in front of your friends: design it, `npm run deploy`, commit,
+  push. Delete the `.lua` (or move it aside) before deploying if it is not
+  ready. `git merge` of this branch alone adds nothing, because nothing under
+  `generals/` is tracked.
 - **`designer.html` ships in the build but only works in dev**, because its API
   is on localhost. It is in the build so that it is type-checked and bundled by
-  the thing that actually publishes.
+  the thing that actually publishes. On the published site every call answers
+  with GitHub Pages' 404 page, which `ui/api.ts` turns into the instruction to
+  run `npm run dev` and `npm run designer` locally.

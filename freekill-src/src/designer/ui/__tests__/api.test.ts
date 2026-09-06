@@ -70,7 +70,20 @@ describe('POST /api/designer/validate', () => {
 
   it('says the server is unreachable rather than leaking the fetch error', async () => {
     vi.stubGlobal('fetch', () => Promise.reject(new TypeError('Failed to fetch')));
-    await expect(validateHero(SPEC)).rejects.toThrow(/连不上服务器/);
+    await expect(validateHero(SPEC)).rejects.toThrow(/连不上设计器后端/);
+    // And says what to do about it: the back end is a local process.
+    await expect(validateHero(SPEC)).rejects.toThrow(/npm run designer/);
+  });
+
+  /**
+   * What the published site answers. There is no back end behind GitHub
+   * Pages, so `/api/designer/validate` is a 404 page — and the player should
+   * be told the page needs the local back end, not shown a status code.
+   */
+  it('turns the published site\'s 404 page into the instruction to run the back end locally', async () => {
+    server(404, '<!doctype html><html><body>Not Found</body></html>');
+    await expect(validateHero(SPEC)).rejects.toThrow(/npm run designer/);
+    await expect(validateHero(SPEC)).rejects.toThrow(/404/);
   });
 
   it('tolerates errors sent as plain strings', async () => {

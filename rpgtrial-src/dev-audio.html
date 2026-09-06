@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Hollowmere — audio test bench</title>
+  <style>
+    :root { color-scheme: dark; }
+    body { margin: 0; font: 13px/1.4 ui-monospace, Menlo, monospace; background: #101216; color: #d8d4c8; }
+    #loading { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: #101216; z-index: 9; }
+    #loading.hide { display: none; }
+    header { padding: 12px 16px; border-bottom: 1px solid #2a2e36; display: flex; gap: 18px; align-items: center; flex-wrap: wrap; }
+    header b { color: #e8c170; }
+    main { padding: 12px 16px; display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
+    section { border: 1px solid #2a2e36; border-radius: 6px; padding: 10px; background: #14171c; }
+    section h3 { margin: 0 0 8px; font-size: 12px; color: #8fb3c9; letter-spacing: .06em; text-transform: uppercase; }
+    button { background: #22272f; color: #e6e1d3; border: 1px solid #3a4150; border-radius: 4px; padding: 5px 8px; margin: 2px; cursor: pointer; font: inherit; font-size: 12px; }
+    button:hover { background: #2f3642; border-color: #6a7385; }
+    button.on { background: #3e4a2b; border-color: #7f9a4a; }
+    input[type=range] { width: 120px; vertical-align: middle; }
+    label { display: inline-block; margin: 2px 6px 2px 0; }
+    #log { max-height: 220px; overflow: auto; font-size: 11px; color: #9aa; white-space: pre-wrap; }
+    .stat { color: #e8c170; }
+  </style>
+</head>
+<body>
+  <div id="loading"><div>Decoding audio… <span id="loadingText"></span><div class="bar"><div id="loadingBar"></div></div></div></div>
+  <header>
+    <b>Hollowmere audio bench</b>
+    <span>ctx: <span class="stat" id="ctxState">-</span></span>
+    <span>voices: <span class="stat" id="voices">0</span></span>
+    <span>track: <span class="stat" id="track">-</span></span>
+    <span>mood: <span class="stat" id="mood">-</span></span>
+    <span>area: <span class="stat" id="area">-</span></span>
+    <span>decoded: <span class="stat" id="decoded">-</span></span>
+    <button id="resume">Resume / unlock</button>
+    <button id="runAll">Run full event sequence</button>
+    <button id="stress">Stress (120 random events)</button>
+  </header>
+  <main id="main"></main>
+  <section style="margin:0 16px 16px"><h3>log</h3><div id="log"></div></section>
+  <script type="module" src="/src/audio/dev-audio.ts"></script>
+</body>
+</html>

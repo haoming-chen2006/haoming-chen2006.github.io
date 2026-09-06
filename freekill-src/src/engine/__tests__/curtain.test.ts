@@ -29,6 +29,7 @@ import { describe, expect, it } from 'vitest';
 import { routeFlush } from '../routing.ts';
 import type { AddressedMessage } from '../types.ts';
 import type { WireCommand } from '../../contract/protocol.ts';
+import { curtainLifts, CURTAIN_GRACE_MS } from '../../shell/liveTable.ts';
 
 /** What `liveTable` now treats as "there is a table to look at". */
 const rendersATable = (c: string): boolean => c === 'ArrangeSeats' || c === 'Observe';
@@ -91,5 +92,39 @@ describe('the curtain over a table that is still being built', () => {
     const [flush] = routeFlush(preamble(members), members, 'room');
     expect(flush.envelopes).toHaveLength(1);
     expect(commandsOf(flush.envelopes[0]).some(rendersATable)).toBe(true);
+  });
+});
+
+/**
+ * THE 斗地主 TRAP. The first gate lifted on exactly two names, `ArrangeSeats`
+ * and `Observe`. Three-player 斗地主 (`packages/webmodes`) overrides
+ * `assignRoles` and `chooseGenerals`, so its opening is composed differently,
+ * and the host — which has no resync and so never sees `Observe` — sat under
+ * the curtain for an entire game with zero live controls while both guests
+ * played. Reproduced with three real browsers on production: 150 seconds,
+ * cards dealt, log advancing, host frozen.
+ *
+ * What every mode has in common is that it DEALS. So a dealing message must
+ * lift the curtain, and a seat must never be trapped indefinitely whatever the
+ * opening looks like.
+ */
+describe('what lifts the curtain', () => {
+  it('lifts on a dealt hand, not only on the seating message', () => {
+    expect(curtainLifts({ command: 'MoveCards' })).toBe(true);
+    expect(curtainLifts({ command: 'StartGame' })).toBe(true);
+  });
+  it('still lifts on the messages the role game sends first', () => {
+    expect(curtainLifts({ command: 'ArrangeSeats' })).toBe(true);
+    expect(curtainLifts({ command: 'Observe' })).toBe(true);
+  });
+  it('does not lift on a bare room-entry message', () => {
+    expect(curtainLifts({ command: 'EnterRoom' })).toBe(false);
+    expect(curtainLifts({ command: 'RoomOwner' })).toBe(false);
+  });
+  it('frees a seat within a bounded time even if no dealing message is ever seen', () => {
+    // A gate that can be wrong is a gate that can trap someone; the backstop
+    // has to be short enough that a player would not give up and refresh.
+    expect(CURTAIN_GRACE_MS).toBeGreaterThan(0);
+    expect(CURTAIN_GRACE_MS).toBeLessThanOrEqual(10_000);
   });
 });

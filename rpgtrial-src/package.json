@@ -1,0 +1,24 @@
+{
+  "name": "hollowmere",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1 --port 5180",
+    "build": "vite build",
+    "preview": "vite preview --port 5181",
+    "check": "tsc --noEmit",
+    "test": "node --experimental-strip-types scripts/test.ts"
+  },
+  "devDependencies": {
+    "@types/three": "^0.185.0",
+    "typescript": "^5.6.0",
+    "vite": "^6.0.0",
+    "gltfpack": "^0.24.0"
+  },
+  "dependencies": {
+    "three": "^0.185.1",
+    "postprocessing": "^6.39.4",
+    "n8ao": "^2.0.1"
+  }
+}

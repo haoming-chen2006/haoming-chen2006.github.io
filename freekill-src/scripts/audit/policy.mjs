@@ -162,8 +162,19 @@ export async function answerOnce(seat, ctx, a) {
 
   const choices = of(a, 'choice').filter(clickable);
   if (choices.length) {
-    await clickOne(pick(rng, choices), 'pick-choice');
-    const ok = of(await refresh(), 'dialogBtn').find((b) => b.primary && clickable(b));
+    // ONE CLICK IS NOT AN ANSWER here either. A single-pick box replies on the
+    // click and tears itself down; a multi-pick box (`AskForChoices`) toggles,
+    // and its OK only enables once `min_num` options are in — 禀法 asks for
+    // exactly two laws. Keep picking distinct options until the dialog's own
+    // OK says the selection is legal. Bounded by the options on offer.
+    let ok = null;
+    for (const choice of shuffled(rng, choices)) {
+      const live = of(await refresh(), 'choice').filter(clickable).find((c) => c.id === choice.id);
+      if (!live) break;
+      await clickOne(live, 'pick-choice');
+      ok = of(await refresh(), 'dialogBtn').find((b) => b.primary && clickable(b));
+      if (ok) break;
+    }
     if (ok) await clickOne(ok, 'confirm-choice');
     return { handled: asked ?? 'AskForChoice', steps };
   }

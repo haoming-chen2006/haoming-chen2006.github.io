@@ -1,0 +1,9 @@
+/* Base layout. Agent D owns everything under #ui (see src/ui/ui.css, imported from the UI module). */
+:root { --wood: #6b4a2b; --wood-dark: #3e2a17; --parchment: #f3e6c8; --ink: #2b2118; --gold: #e2b350; --green: #6fa85a; --red: #c95a45; --blue: #5b8fc9; --font: 'Nunito', 'Segoe UI', system-ui, sans-serif; }
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: #101614; color: var(--parchment); font-family: var(--font); overflow: hidden; }
+#app { position: relative; width: 100%; height: 100%; }
+#viewport { position: absolute; inset: 0; }
+#canvas { width: 100%; height: 100%; display: block; image-rendering: pixelated; image-rendering: crisp-edges; }
+#ui { position: absolute; inset: 0; pointer-events: none; }
+#ui > * { pointer-events: auto; }

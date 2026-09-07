@@ -35,7 +35,7 @@ const Navbar = ({ setPage }) => (
       <button className="link-styles" onClick={() => setPage('about')}>About</button>
       <button className="link-styles" onClick={() => setPage('research')}>Research</button>
       <button className="link-styles" onClick={() => setPage('experiences')}>Experiences</button>
-      <button className="link-styles-small" onClick={() => window.open('/haomingresume.pdf', '_blank')}>Resume</button>
+      <a className="link-styles-small" href="/games/">Games</a>
     </div>
   </nav>
 );
@@ -92,8 +92,9 @@ const Home = ({ setPage }) => {
             <p className='main-text'>
               Check out my{' '}
               <a href="#" onClick={(e) => { e.preventDefault(); setPage('research'); }}>research projects</a>,{' '}
-              <a href="#" onClick={(e) => { e.preventDefault(); setPage('experiences'); }}>experiences</a>{' and '}
-              <a href="/blog/">blog posts</a>!
+              <a href="#" onClick={(e) => { e.preventDefault(); setPage('experiences'); }}>experiences</a>,{' '}
+              <a href="/blog/">blog posts</a>{' and '}
+              <a href="/games/">games</a>!
             </p>
           </div>
         </div>

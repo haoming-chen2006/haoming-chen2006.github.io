@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Games — Haoming Chen</title>
+  <meta name="description" content="A series of games I vibe coded, enjoy! Crownfall, Hollowmere, Wiki Race, 狗卡杀, Draft and World Cup Guess, all playable in the browser.">
+  <link rel="icon" href="/favicon.ico">
+  <link rel="stylesheet" href="/style.css">
+  <link rel="stylesheet" href="/my-app/src/navbar.css">
+  <style>
+    .games-content {
+      max-width: 960px;
+      margin: 72px auto 0;
+      padding: 2rem 2rem 4rem;
+    }
+
+    .games-hero {
+      padding: 2rem 0 2.5rem;
+    }
+
+    .games-eyebrow {
+      margin: 0 0 0.75rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #6b7280;
+    }
+
+    .games-hero h1 {
+      margin: 0 0 0.75rem;
+      font-size: 2.5rem;
+      line-height: 1.2;
+      letter-spacing: -0.02em;
+      font-weight: 700;
+      color: #111827;
+    }
+
+    .games-hero p {
+      margin: 0;
+      font-family: 'Georgia', serif;
+      font-size: 1.15rem;
+      line-height: 1.6;
+      color: #374151;
+      max-width: 560px;
+    }
+
+    .games-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1.25rem;
+    }
+
+    .game-card {
+      display: flex;
+      flex-direction: column;
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 16px;
+      overflow: hidden;
+      color: inherit;
+      text-decoration: none;
+      transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+    }
+
+    .game-card:hover,
+    .game-card:focus-visible {
+      color: inherit;
+      border-color: #d1d5db;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.1);
+      transform: translateY(-4px);
+    }
+
+    .game-panel {
+      position: relative;
+      height: 176px;
+      display: grid;
+      place-items: center;
+      background: var(--panel);
+      overflow: hidden;
+    }
+
+    .game-panel::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 18% 22%, rgba(255, 255, 255, 0.18), transparent 42%),
+        radial-gradient(circle at 85% 90%, rgba(0, 0, 0, 0.25), transparent 50%);
+    }
+
+    .game-panel svg {
+      position: relative;
+      width: 92px;
+      height: 92px;
+      filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.35));
+      transition: transform 0.25s ease;
+    }
+
+    .game-card:hover .game-panel svg {
+      transform: scale(1.06);
+    }
+
+    .game-body {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      flex: 1;
+      padding: 1.25rem 1.5rem 1.5rem;
+    }
+
+    .game-title {
+      display: flex;
+      align-items: baseline;
+      gap: 0.6rem;
+      margin: 0;
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: #111827;
+    }
+
+    .game-kicker {
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: #9ca3af;
+    }
+
+    .game-desc {
+      margin: 0;
+      font-size: 0.93rem;
+      line-height: 1.6;
+      color: #4b5563;
+    }
+
+    .game-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      margin-top: auto;
+      padding-top: 0.5rem;
+    }
+
+    .game-tag {
+      font-size: 0.72rem;
+      font-weight: 500;
+      padding: 0.2rem 0.55rem;
+      border-radius: 4px;
+      background: #f3f4f6;
+      color: #4b5563;
+    }
+
+    .game-play {
+      margin-top: 0.5rem;
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: #3b82f6;
+    }
+
+    .game-play::after {
+      content: '→';
+      display: inline-block;
+      margin-left: 0.35em;
+      transition: transform 0.2s ease;
+    }
+
+    .game-card:hover .game-play::after {
+      transform: translateX(3px);
+    }
+
+    .games-footer {
+      margin-top: 3rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid #e5e7eb;
+      font-size: 0.9rem;
+      color: #6b7280;
+    }
+
+    .nav-current {
+      background-color: #f3f4f6;
+      border-color: #d1d5db;
+    }
+
+    @media (max-width: 768px) {
+      .games-content {
+        margin-top: 64px;
+        padding: 1.5rem;
+      }
+
+      .games-hero h1 {
+        font-size: 1.9rem;
+      }
+
+      .games-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .game-panel {
+        height: 150px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <nav class="navbar">
+    <div class="nav-section">
+      <a href="mailto:haoming_chen@berkeley.edu" class="link-styles icon-link">
+        <img src="/media/icons/email.jpeg" alt="Email" class="nav-icon">
+      </a>
+      <a href="https://github.com/haoming-chen2006" class="link-styles icon-link">
+        <img src="/media/icons/github.svg" alt="GitHub" class="nav-icon">
+      </a>
+      <a href="https://linkedin.com/in/haoming-chen-7421b230b" class="link-styles icon-link">
+        <img src="/media/icons/linkedin.png" alt="LinkedIn" class="nav-icon">
+      </a>
+    </div>
+    <div class="nav-section">
+      <a class="link-styles" href="/">Home</a>
+      <a class="link-styles" href="/blog/">Blog</a>
+      <a class="link-styles-small nav-current" href="/games/" aria-current="page">Games</a>
+    </div>
+  </nav>
+
+  <main class="games-content">
+    <header class="games-hero">
+      <p class="games-eyebrow">Games</p>
+      <h1>A series of games I vibe coded, enjoy!</h1>
+      <p>Everything here runs in the browser, no install needed. Pick a panel and play.</p>
+    </header>
+
+    <div class="games-grid">
+
+      <a class="game-card" href="/crownfall/" style="--panel: linear-gradient(135deg, #450a0a 0%, #7f1d1d 55%, #9a3412 100%);">
+        <div class="game-panel">
+          <svg viewBox="0 0 64 64" aria-hidden="true">
+            <g transform="rotate(-14 32 34)">
+              <path d="M11 45 L9 20 L22 32 L32 13 L42 32 L55 20 L53 45 Z" fill="#fbbf24" stroke="#78350f" stroke-width="2.5" stroke-linejoin="round"/>
+              <rect x="11" y="45" width="42" height="7" rx="2" fill="#f59e0b" stroke="#78350f" stroke-width="2.5"/>
+              <circle cx="32" cy="13" r="3.5" fill="#ef4444" stroke="#78350f" stroke-width="2"/>
+              <circle cx="9" cy="20" r="3" fill="#3b82f6" stroke="#78350f" stroke-width="2"/>
+              <circle cx="55" cy="20" r="3" fill="#3b82f6" stroke="#78350f" stroke-width="2"/>
+              <circle cx="32" cy="41" r="2.5" fill="#78350f"/>
+            </g>
+            <path d="M6 58 L14 55 M8 63 L18 60" stroke="#fde68a" stroke-width="2" stroke-linecap="round" opacity="0.8"/>
+          </svg>
+        </div>
+        <div class="game-body">
+          <h2 class="game-title">Crownfall <span class="game-kicker">3D arena battler</span></h2>
+          <p class="game-desc">Clash Royale with a twist: deploy a troop, then possess it and fight in first person. WASD to move, mouse to aim, Space for its signature ability. A bot opponent that possesses its own champions.</p>
+          <div class="game-tags">
+            <span class="game-tag">3D</span>
+            <span class="game-tag">Single-player</span>
+            <span class="game-tag">Keyboard + mouse</span>
+          </div>
+          <span class="game-play">Play Crownfall</span>
+        </div>
+      </a>
+
+      <a class="game-card" href="/rpgtrial/" style="--panel: linear-gradient(135deg, #0f172a 0%, #134e4a 60%, #166534 100%);">
+        <div class="game-panel">
+          <svg viewBox="0 0 64 64" aria-hidden="true">
+            <polygon points="32,5 55,18.5 55,45.5 32,59 9,45.5 9,18.5" fill="#a7f3d0" stroke="#022c22" stroke-width="2.5" stroke-linejoin="round"/>
+            <polygon points="32,17 50,43 14,43" fill="#6ee7b7" stroke="#022c22" stroke-width="2" stroke-linejoin="round"/>
+            <path d="M32 17 L32 5 M32 17 L9 18.5 M32 17 L55 18.5 M50 43 L55 45.5 M50 43 L32 59 M14 43 L9 45.5 M14 43 L32 59" stroke="#022c22" stroke-width="2" stroke-linecap="round"/>
+            <text x="32" y="39" text-anchor="middle" font-family="-apple-system, 'Segoe UI', Roboto, sans-serif" font-size="13" font-weight="700" fill="#022c22">20</text>
+          </svg>
+        </div>
+        <div class="game-body">
+          <h2 class="game-title">Hollowmere <span class="game-kicker">a D&amp;D prologue</span></h2>
+          <p class="game-desc">A tabletop RPG brought to the browser: D&amp;D 5e dice, classes, skill checks and dialogue rolls, with Souls-style third-person combat. Rest, level up, and survive the prologue.</p>
+          <div class="game-tags">
+            <span class="game-tag">3D</span>
+            <span class="game-tag">Action RPG</span>
+            <span class="game-tag">Single-player</span>
+          </div>
+          <span class="game-play">Play Hollowmere</span>
+        </div>
+      </a>
+
+      <a class="game-card" href="/wiki-guess/" style="--panel: linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 60%, #0891b2 100%);">
+        <div class="game-panel">
+          <svg viewBox="0 0 64 64" aria-hidden="true">
+            <path d="M15 44 L30 20 M34 20 L49 44" stroke="#bfdbfe" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="4 3.5"/>
+            <circle cx="13" cy="46" r="8" fill="#fff" stroke="#1e3a8a" stroke-width="2.5"/>
+            <text x="13" y="50" text-anchor="middle" font-family="Georgia, serif" font-size="11" font-weight="700" fill="#1e3a8a">W</text>
+            <circle cx="32" cy="17" r="6" fill="#fff" stroke="#1e3a8a" stroke-width="2.5"/>
+            <circle cx="51" cy="46" r="9" fill="#fff" stroke="#1e3a8a" stroke-width="2.5"/>
+            <circle cx="51" cy="46" r="4.5" fill="none" stroke="#ef4444" stroke-width="2.5"/>
+            <circle cx="51" cy="46" r="1.5" fill="#ef4444"/>
+          </svg>
+        </div>
+        <div class="game-body">
+          <h2 class="game-title">Wiki Race <span class="game-kicker">Wikipedia link race</span></h2>
+          <p class="game-desc">Race from one Wikipedia article to another clicking only in-article links, five rounds of five minutes. Play solo, or open a room and share the link to race friends peer-to-peer. English or 中文.</p>
+          <div class="game-tags">
+            <span class="game-tag">Multiplayer</span>
+            <span class="game-tag">Party</span>
+            <span class="game-tag">EN / 中文</span>
+          </div>
+          <span class="game-play">Play Wiki Race</span>
+        </div>
+      </a>
+
+      <a class="game-card" href="/freekill/" style="--panel: linear-gradient(135deg, #18181b 0%, #3f3f46 60%, #52525b 100%);">
+        <div class="game-panel">
+          <svg viewBox="0 0 64 64" aria-hidden="true">
+            <rect x="9" y="10" width="30" height="44" rx="4" fill="#fecaca" stroke="#7f1d1d" stroke-width="2.5" transform="rotate(-14 24 32)"/>
+            <rect x="21" y="8" width="30" height="46" rx="4" fill="#fef3c7" stroke="#7f1d1d" stroke-width="2.5"/>
+            <text x="36" y="40" text-anchor="middle" font-family="'PingFang SC', 'Hiragino Sans GB', 'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif" font-size="22" font-weight="700" fill="#b91c1c">杀</text>
+            <text x="26" y="18" text-anchor="middle" font-family="-apple-system, sans-serif" font-size="8" font-weight="700" fill="#b91c1c">♥</text>
+            <text x="46" y="51" text-anchor="middle" font-family="-apple-system, sans-serif" font-size="8" font-weight="700" fill="#b91c1c">♥</text>
+          </svg>
+        </div>
+        <div class="game-body">
+          <h2 class="game-title">狗卡杀 <span class="game-kicker">FreeKill on the web</span></h2>
+          <p class="game-desc">三国杀 in a browser tab: a web port of the open-source FreeKill (新月杀) client. Open the link, type a name, and play with friends. No install, no extension packages, no server address.</p>
+          <div class="game-tags">
+            <span class="game-tag">Multiplayer</span>
+            <span class="game-tag">Card game</span>
+            <span class="game-tag">中文</span>
+          </div>
+          <span class="game-play">Play 狗卡杀</span>
+        </div>
+      </a>
+
+      <a class="game-card" href="/draft/" style="--panel: linear-gradient(135deg, #312e81 0%, #5b21b6 60%, #7e22ce 100%);">
+        <div class="game-panel">
+          <svg viewBox="0 0 64 64" aria-hidden="true">
+            <g transform="rotate(-40 30 30)">
+              <rect x="18" y="12" width="26" height="13" rx="3" fill="#fde68a" stroke="#78350f" stroke-width="2.5"/>
+              <rect x="29" y="25" width="5" height="26" rx="2" fill="#fbbf24" stroke="#78350f" stroke-width="2.5"/>
+            </g>
+            <rect x="26" y="53" width="30" height="5" rx="2" fill="#fde68a" stroke="#78350f" stroke-width="2.5"/>
+            <circle cx="14" cy="50" r="6" fill="#fff" stroke="#78350f" stroke-width="2"/>
+            <text x="14" y="53.5" text-anchor="middle" font-family="-apple-system, sans-serif" font-size="9" font-weight="700" fill="#78350f">$</text>
+          </svg>
+        </div>
+        <div class="game-body">
+          <h2 class="game-title">Draft <span class="game-kicker">auction draft party game</span></h2>
+          <p class="game-desc">Bid from a fixed budget on NBA stars, footballers or Honor of Kings heroes, fill your roster, poach from rivals, then let an AI judge rule on whose lineup is best. Hot seat on one screen or online rooms.</p>
+          <div class="game-tags">
+            <span class="game-tag">Party</span>
+            <span class="game-tag">Multiplayer</span>
+            <span class="game-tag">AI judge</span>
+          </div>
+          <span class="game-play">Play Draft</span>
+        </div>
+      </a>
+
+      <a class="game-card" href="/worldcup-guess/" style="--panel: linear-gradient(135deg, #14532d 0%, #15803d 60%, #4d7c0f 100%);">
+        <div class="game-panel">
+          <svg viewBox="0 0 64 64" aria-hidden="true">
+            <circle cx="32" cy="32" r="25" fill="#fff" stroke="#14532d" stroke-width="2.5"/>
+            <polygon points="32,22 41.5,29 38,40 26,40 22.5,29" fill="#14532d"/>
+            <path d="M32 22 L32 8 M41.5 29 L54.5 24.5 M38 40 L46 52 M26 40 L18 52 M22.5 29 L9.5 24.5" stroke="#14532d" stroke-width="2.5" stroke-linecap="round"/>
+            <path d="M32 8 Q41 9 48 15 M54.5 24.5 Q56 33 53 42 M46 52 Q39 57 32 57 M18 52 Q11 46 9 37 M9.5 24.5 Q13 15 22 10" stroke="#14532d" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+          </svg>
+        </div>
+        <div class="game-body">
+          <h2 class="game-title">World Cup Guess <span class="game-kicker">prediction league</span></h2>
+          <p class="game-desc">A prediction game for the 2026 World Cup. Call every match score, the group tables and the bracket before kickoff, then climb the leaderboard with friends as the real results come in.</p>
+          <div class="game-tags">
+            <span class="game-tag">Prediction</span>
+            <span class="game-tag">Leaderboard</span>
+            <span class="game-tag">Friends</span>
+          </div>
+          <span class="game-play">Play World Cup Guess</span>
+        </div>
+      </a>
+
+    </div>
+
+    <p class="games-footer">
+      Each game's source lives next to it in the
+      <a href="https://github.com/haoming-chen2006/haoming-chen2006.github.io">site repo</a>.
+      Found a bug? Tell me and I'll vibe it away.
+    </p>
+  </main>
+</body>
+</html>

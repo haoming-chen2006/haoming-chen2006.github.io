@@ -161,6 +161,25 @@ export function manifestFor(bundle, json) {
   };
 }
 
+/**
+ * The scripted room the hero designer's probe needs, as its own file.
+ *
+ * `test/lua/**` is upstream's luaunit harness — `fake_backend.lua` and the
+ * rest — and it is not in the shipped bundle and must not be: the bundle's hash
+ * is the room's identity, and a test harness is not a rule of the game. The
+ * published designer page boots the real engine in the player's tab to say
+ * whether a hero works, so it fetches this beside `lua-bundle.json` and lays
+ * it over the top (`src/designer/browser/probe.ts`). ~170 KB, loaded only
+ * when somebody presses 创建武将.
+ */
+export function buildProbeBundle() {
+  const files = new Map();
+  walk(join(ENGINE_ROOT, 'test', 'lua'), 'test/lua', files, (p) => p.endsWith('.lua'));
+  const obj = {};
+  for (const [k, v] of [...files.entries()].sort(([a], [b]) => (a < b ? -1 : 1))) obj[k] = v;
+  return obj;
+}
+
 export async function buildLuaBundle({ quiet = false } = {}) {
   const bundle = await buildBundle();
   const json = JSON.stringify(bundle);
@@ -169,12 +188,14 @@ export async function buildLuaBundle({ quiet = false } = {}) {
   const out = join(WEB_ROOT, 'public', 'lua-bundle.json');
   writeFileSync(out, json);
   writeFileSync(join(WEB_ROOT, 'public', 'lua-manifest.json'), JSON.stringify(manifest));
+  const probe = buildProbeBundle();
+  writeFileSync(join(WEB_ROOT, 'public', 'lua-probe.json'), JSON.stringify(probe));
   if (!quiet) {
     console.log(`${manifest.files} lua files, ${(manifest.sourceBytes / 1048576).toFixed(2)} MB source, ` +
       `${(json.length / 1048576).toFixed(2)} MB bundle, sha=${manifest.bundleSha256_16}`);
-    console.log(`-> ${relative(process.cwd(), out)}`);
+    console.log(`-> ${relative(process.cwd(), out)} (+ lua-probe.json, ${Object.keys(probe).length} test files)`);
   }
-  return { bundle, json, manifest };
+  return { bundle, json, manifest, probe };
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {

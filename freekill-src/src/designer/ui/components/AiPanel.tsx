@@ -18,9 +18,10 @@
  * learns what the blocks mean; it is also the only way to tell a model that
  * gave up from one that is still working.
  */
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { HeroSpec } from '../../spec';
-import { chat, type ChatAttempt, type ChatMessage, type ChatResponse } from '../api';
+import { NeedKeyError, backendAvailable, chat, type ChatAttempt, type ChatMessage, type ChatResponse } from '../api';
+import { looksLikeKey, readBrowserKey, readBrowserModel, writeBrowserKey, writeBrowserModel } from '../../browser/keys';
 
 const STATUS_LABEL: Record<ChatResponse['status'], string> = {
   draft: '已生成，尚未创建',
@@ -74,13 +75,68 @@ export interface AiPanelProps {
   onSpec: (spec: HeroSpec) => void;
 }
 
+/**
+ * Where the key lives when there is no server: this browser, typed once.
+ *
+ * Shown only on a page with no back end, and only until a key is kept. The
+ * key goes to api.openai.com and nowhere else — the page has no server to
+ * send it to — and `looksLikeKey` is a shape check, not a promise: the API is
+ * the judge, and its answer shows up as the next error.
+ */
+function KeyForm({ onKept }: { onKept: () => void }) {
+  const [key, setKey] = useState('');
+  const [model, setModel] = useState(readBrowserModel());
+  const bad = key.trim() !== '' && !looksLikeKey(key);
+  return (
+    <div className="fk-hd-keyform">
+      <p className="fk-hd-note">
+        这一页没有后端，所以 AI 设计要用你自己的 OpenAI API Key。它只存在这台浏览器里，
+        只发给 api.openai.com；积木、校验和试跑都不需要它。
+      </p>
+      <input
+        type="password"
+        value={key}
+        placeholder="sk-…"
+        aria-label="OpenAI API Key"
+        autoComplete="off"
+        spellCheck={false}
+        onChange={(e) => setKey(e.target.value)}
+      />
+      <input
+        type="text"
+        value={model}
+        placeholder="模型（留空用 gpt-4.1-mini）"
+        aria-label="模型"
+        spellCheck={false}
+        onChange={(e) => setModel(e.target.value)}
+      />
+      {bad ? <p className="fk-hd-err">这不像一个 OpenAI 的 key（应该以 sk- 开头）。</p> : null}
+      <button
+        type="button"
+        className="fk-hd-btn fk-hd-btn--primary"
+        disabled={!looksLikeKey(key)}
+        onClick={() => { writeBrowserKey(key); writeBrowserModel(model); onKept(); }}
+      >
+        记住这个 Key
+      </button>
+    </div>
+  );
+}
+
 export function AiPanel({ spec, onSpec }: AiPanelProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [draft, setDraft] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [last, setLast] = useState<ChatResponse | null>(null);
+  /** Revisions as they land, before the loop has finished. */
+  const [live, setLive] = useState<ChatAttempt[]>([]);
+  const [backend, setBackend] = useState<boolean | null>(null);
+  const [hasKey, setHasKey] = useState(() => readBrowserKey() !== '');
   const log = useRef<HTMLDivElement>(null);
+
+  useEffect(() => { void backendAvailable().then(setBackend); }, []);
+  const needKey = backend === false && !hasKey;
 
   const send = async () => {
     const text = draft.trim();
@@ -90,17 +146,20 @@ export function AiPanel({ spec, onSpec }: AiPanelProps) {
     setDraft('');
     setBusy(true);
     setError(null);
+    setLive([]);
     try {
-      const reply = await chat(next, spec);
+      const reply = await chat(next, spec, { onAttempt: (a) => setLive((l) => [...l, a]) });
       setMessages([...next, { role: 'assistant', content: reply.reply }]);
       setLast(reply);
       // The canvas takes ownership the moment a spec exists — see the header.
       if (reply.spec) onSpec(reply.spec);
     } catch (cause) {
+      if (cause instanceof NeedKeyError) setHasKey(false);
       setError(cause instanceof Error ? cause.message : String(cause));
       setMessages(next);
     } finally {
       setBusy(false);
+      setLive([]);
       requestAnimationFrame(() => log.current?.scrollTo({ top: log.current.scrollHeight }));
     }
   };
@@ -110,7 +169,19 @@ export function AiPanel({ spec, onSpec }: AiPanelProps) {
       <p className="fk-hd-note">
         用一句话说你想要的武将，例如「一个吴势力女将，受到伤害后可以弃一张牌，然后摸两张」。
         AI 写好后会直接摆进中间的积木里，你还可以接着改。
+        {backend === true ? '（本机后端在跑，用的是它的 Key。）' : null}
       </p>
+
+      {needKey ? <KeyForm onKept={() => setHasKey(true)} /> : null}
+      {backend === false && hasKey ? (
+        <p className="fk-hd-note">
+          用的是存在这台浏览器里的 Key。
+          {' '}
+          <button type="button" className="fk-hd-link" onClick={() => { writeBrowserKey(''); setHasKey(false); }}>
+            换一个
+          </button>
+        </p>
+      ) : null}
 
       <div className="fk-hd-ai__log" ref={log}>
         {messages.length === 0 ? <p className="fk-hd-note">还没有对话。</p> : null}
@@ -122,7 +193,11 @@ export function AiPanel({ spec, onSpec }: AiPanelProps) {
         ))}
         {busy ? <div className="fk-hd-msg fk-hd-msg--assistant">
           <span className="fk-hd-msg__who">AI</span>
-          <div className="fk-hd-msg__body fk-hd-msg__body--busy">正在设计……</div>
+          <div className="fk-hd-msg__body fk-hd-msg__body--busy">
+            {live.length
+              ? `第 ${live.length} 版已交给引擎试跑${live[live.length - 1].errors?.length ? '，有地方不合法，正在改' : live[live.length - 1].testLog ? '，试跑没过，正在改' : ''}……`
+              : '正在设计……'}
+          </div>
         </div> : null}
       </div>
 
@@ -155,7 +230,7 @@ export function AiPanel({ spec, onSpec }: AiPanelProps) {
             if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) void send();
           }}
         />
-        <button type="button" className="fk-hd-btn fk-hd-btn--primary" disabled={busy || !draft.trim()} onClick={() => void send()}>
+        <button type="button" className="fk-hd-btn fk-hd-btn--primary" disabled={busy || !draft.trim() || needKey} onClick={() => void send()}>
           {busy ? '设计中…' : '发送'}
         </button>
       </div>

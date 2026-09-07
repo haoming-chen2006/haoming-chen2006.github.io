@@ -8,6 +8,7 @@
  * the background afterwards and is only awaited when a room actually starts.
  */
 import { getLanguage, t } from '../i18n';
+import { withHeroFiles } from './customHeroes';
 import { AssetManifestSchema, LuaManifestSchema, assetIndex } from '../contract/manifest';
 import type { AssetEntry, AssetManifest, LuaManifest } from '../contract/manifest';
 
@@ -181,4 +182,16 @@ let bundlePromise: Promise<Record<string, string>> | null = null;
 export function prefetchLuaBundle(): Promise<Record<string, string>> {
   bundlePromise ??= getJson('lua-bundle.json') as Promise<Record<string, string>>;
   return bundlePromise;
+}
+
+/**
+ * The bundle a particular room boots on: the shipped one, plus whatever
+ * designed heroes the host attached to the room's settings. The common case —
+ * no heroes — hands back the memoised object itself, untouched. See
+ * `customHeroes.ts` for why this is the whole mechanism.
+ */
+export function bundleForRoom(
+  settings: Readonly<Record<string, unknown>> | null | undefined,
+): Promise<Record<string, string>> {
+  return prefetchLuaBundle().then((bundle) => withHeroFiles(bundle, settings));
 }

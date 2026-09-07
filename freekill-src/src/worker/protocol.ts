@@ -61,6 +61,12 @@ export interface InitPayload {
   bundle?: LuaBundle;
   /** Or let the worker fetch it, which keeps 1.6 MB of Lua off the main thread. */
   bundleUrl?: string;
+  /**
+   * Entries laid over the bundle before the VM boots — the designed heroes a
+   * room carries (`shell/customHeroes.ts`). A few KB, so they ride along here
+   * while the 1.6 MB base is still fetched by the worker itself.
+   */
+  extraFiles?: Record<string, string>;
   /** Override where wasmoon fetches `glue.wasm` from. */
   wasmUri?: string;
   hashSeedEpoch?: number | null;

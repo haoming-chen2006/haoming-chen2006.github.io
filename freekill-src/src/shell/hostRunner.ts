@@ -35,6 +35,7 @@ import type { ClientReply, Envelope, WireCommand } from '../contract/protocol';
 import type { AdvanceOptions, AdvanceResult, WirePayloadMessage } from '../engine/types';
 import type { CommandRow, GameTransport } from './api/transport';
 import { BASE } from './boot';
+import { heroFilesOf } from './customHeroes';
 import { getLanguage, t } from '../i18n';
 import type { UiKey } from '../i18n';
 
@@ -173,7 +174,7 @@ export interface HostRunner {
 
 const workerModules = import.meta.glob<Record<string, unknown>>('../worker/index.ts');
 
-async function defaultHost(): Promise<GameHost> {
+async function defaultHost(extraFiles: Record<string, string>): Promise<GameHost> {
   const entry = Object.values(workerModules)[0];
   if (!entry) throw new Error(tr('host.error.missingWorker'));
   const mod = await entry();
@@ -182,8 +183,9 @@ async function defaultHost(): Promise<GameHost> {
     | undefined;
   if (typeof start !== 'function') throw new Error(tr('host.error.noExport'));
   // The worker fetches the 1.6 MB bundle itself; handing it over postMessage
-  // would copy the whole thing across the boundary for nothing.
-  return start({ bundleUrl: `${BASE}lua-bundle.json`, wasmUri: `${BASE}glue.wasm` });
+  // would copy the whole thing across the boundary for nothing. The room's
+  // designed heroes are a few KB and do go across, to be laid over it.
+  return start({ bundleUrl: `${BASE}lua-bundle.json`, wasmUri: `${BASE}glue.wasm`, extraFiles });
 }
 
 export function seatSpecs(seats: readonly HostSeat[]): SeatSpec[] {
@@ -227,7 +229,7 @@ export async function startHostRunner(spec: HostRunnerSpec): Promise<HostRunner>
     settings: { ...spec.settings },
   };
 
-  const host = await (spec.createHost ?? defaultHost)();
+  const host = await (spec.createHost ?? (() => defaultHost(heroFilesOf(spec.settings))))();
 
   let stopped = false;
   let wake: (() => void) | null = null;

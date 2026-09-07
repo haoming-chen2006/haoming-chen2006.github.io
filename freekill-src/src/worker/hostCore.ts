@@ -38,7 +38,12 @@ export function serveHost(endpoint: Endpoint): void {
     switch (req.op) {
       case 'init': {
         const p = a[0] as InitPayload;
-        const bundle: LuaBundle = p.bundle ?? (await fetchBundle(p.bundleUrl!));
+        const base: LuaBundle = p.bundle ?? (await fetchBundle(p.bundleUrl!));
+        // The same overlay every client VM applies (`shell/customHeroes.ts`):
+        // host and seats must boot on the same files or their general pools
+        // diverge with nothing to catch it. Same object when there is nothing.
+        const extra = p.extraFiles ?? {};
+        const bundle: LuaBundle = Object.keys(extra).length ? { ...base, ...extra } : base;
         host = await InProcessLuaHost.create(bundle, {
           wasmUri: p.wasmUri,
           hashSeedEpoch: p.hashSeedEpoch,

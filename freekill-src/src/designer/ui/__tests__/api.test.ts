@@ -1,25 +1,50 @@
 /**
- * The four calls, against a stubbed server — the shape sent and the shape read.
+ * The panel's calls, on both lanes.
  *
- * The endpoints are the other lane's and are not up while this suite runs, so
- * `fetch` is replaced. That is not a weaker test than hitting a live server: it
- * is the only way to assert the things that actually bite, which are all
- * failures. A 502 from a proxy is an HTML page; a validator's complaints come
- * back on a 400, so a wrapper that throws on `!response.ok` would swallow
- * exactly the payload the player needs; and a listing endpoint that returns
- * `{heroes: […]}` one week and `[…]` the next should not blank the panel.
+ * Validating is local now and never touches the network; creating and the AI
+ * lane run in the tab and ALSO talk to the dev back end when one answers. So
+ * what is asserted is the routing — which lane a call takes given what
+ * `/api/designer/heroes` says — and the failures that actually bite on the
+ * server lane: a 502 from a proxy is an HTML page, a validator's complaints
+ * come back on a 400, and a listing that returns `{heroes: […]}` one week and
+ * `[…]` the next should not blank the panel.
  *
- * What is asserted about the REQUEST matters as much: `{spec}` and
- * `{spec, image}` and `{messages, spec}` are the contract, and a rename here
- * would otherwise show up as an empty 我的武将 nobody could explain.
+ * The browser lane's engine work is stubbed here (`../../browser/build`,
+ * `../../browser/agent`); `browser/__tests__/build.test.ts` runs it for real.
  */
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { HeroSpec } from '../../spec';
-import { ApiError, chat, createHero, listHeroes, validateHero } from '../api';
+import { clearSavedHeroes, upsertSavedHero } from '../../../shell/customHeroes';
+
+vi.mock('../../browser/build', () => ({
+  buildInBrowser: vi.fn(async (spec: HeroSpec, opts: { save?: boolean }) => ({
+    ok: true, spec, general: spec.id, lua: `-- ${spec.id}`, errors: [], warnings: ['慢'],
+    test: { ok: true, fired: true, log: ['ok   fired'] },
+    saved: opts.save ? { id: spec.id } : undefined,
+  })),
+}));
+vi.mock('../../browser/agent', () => ({
+  NeedKeyError: class NeedKeyError extends Error {},
+  chatInBrowser: vi.fn(async () => ({
+    reply: '浏览器里做好了', spec: null, status: 'created',
+    attempts: [{ spec: undefined, errors: [], testLog: ['ok'] }],
+  })),
+}));
+
+import { ApiError, chat, createHero, listHeroes, resetBackendProbe, validateHero } from '../api';
+import { buildInBrowser } from '../../browser/build';
+import { chatInBrowser } from '../../browser/agent';
 
 const SPEC: HeroSpec = {
-  id: 'x', name: '测试将', title: '试作', kingdom: 'wei', hp: 4,
-  skills: [{ id: 's', name: '试技', description: '这是一个用来测试的技能。', effects: [] }],
+  id: 'dsgn_x', name: '测试将', title: '试作', kingdom: 'wei', hp: 4,
+  skills: [{
+    id: 'dsgn_x_s', name: '试技', description: '当你受到伤害后，你摸一张牌。',
+    effects: [{
+      trigger: { block: 'fk.Damaged', params: {} },
+      conditions: [{ block: 'self-is-subject', params: {} }],
+      actions: [{ block: 'draw', params: { who: 'self', count: 1 } }],
+    }],
+  }],
 };
 
 interface Call {
@@ -27,134 +52,152 @@ interface Call {
   init?: RequestInit;
 }
 
-/** Records what was sent and answers with one canned reply. */
-const server = (status: number, body: string): Call[] => {
+/** A fake server: the first `/heroes` call is the probe; every later call gets `reply`. */
+const server = (probe: { status: number; body: string }, reply?: { status: number; body: string }): Call[] => {
   const calls: Call[] = [];
+  let probed = false;
   vi.stubGlobal('fetch', (url: string, init?: RequestInit) => {
     calls.push({ url, init });
-    return Promise.resolve(
-      new Response(body, { status, headers: { 'content-type': 'application/json' } }),
-    );
+    const isProbe = url.endsWith('/heroes') && !init?.method && !probed;
+    if (isProbe) probed = true;
+    const r = isProbe ? probe : (reply ?? probe);
+    return Promise.resolve(new Response(r.body, { status: r.status, headers: { 'content-type': 'application/json' } }));
   });
   return calls;
 };
 
-afterEach(() => vi.unstubAllGlobals());
+const BACKEND = { status: 200, body: JSON.stringify({ heroes: [] }) };
+const NO_BACKEND = { status: 404, body: '<!doctype html><html><body>Not Found</body></html>' };
 
-describe('POST /api/designer/validate', () => {
-  it('sends {spec} and reads back the Lua', async () => {
-    const calls = server(200, JSON.stringify({ ok: true, errors: [], lua: 'local x = 1', warnings: ['慢'] }));
+const store = new Map<string, string>();
+beforeEach(() => {
+  store.clear();
+  Object.defineProperty(globalThis, 'localStorage', {
+    configurable: true,
+    value: {
+      getItem: (k: string) => store.get(k) ?? null,
+      setItem: (k: string, v: string) => void store.set(k, v),
+      removeItem: (k: string) => void store.delete(k),
+    },
+  });
+  clearSavedHeroes();
+  resetBackendProbe();
+  vi.mocked(buildInBrowser).mockClear();
+  vi.mocked(chatInBrowser).mockClear();
+});
+afterEach(() => {
+  vi.unstubAllGlobals();
+  Reflect.deleteProperty(globalThis, 'localStorage');
+});
+
+describe('validateHero', () => {
+  it('validates and compiles in the tab, touching no server', async () => {
+    const calls = server(NO_BACKEND);
     const result = await validateHero(SPEC);
-    expect(calls[0].url).toBe('/api/designer/validate');
-    expect(calls[0].init?.method).toBe('POST');
-    expect(JSON.parse(String(calls[0].init?.body))).toEqual({ spec: SPEC });
-    expect(result).toEqual({ ok: true, errors: [], lua: 'local x = 1', warnings: ['慢'] });
+    expect(calls).toEqual([]);
+    expect(result.ok).toBe(true);
+    expect(result.lua).toContain('General:new(extension, "dsgn_x"');
   });
 
-  /**
-   * The whole reason `request` reads the body before it judges the status: the
-   * errors ARE the answer, and they arrive on a 400.
-   */
-  it('keeps the errors that come back on a 400', async () => {
-    server(400, JSON.stringify({ ok: false, errors: [{ path: 'hp', message: 'hp must be 1..12' }] }));
-    const result = await validateHero(SPEC);
+  it('reports the validator\'s own paths', async () => {
+    const result = await validateHero({ ...SPEC, hp: 99 });
     expect(result.ok).toBe(false);
-    expect(result.errors).toEqual([{ path: 'hp', message: 'hp must be 1..12' }]);
-  });
-
-  it('turns a proxy error page into something a player can read', async () => {
-    server(502, '<html><body>Bad Gateway</body></html>');
-    await expect(validateHero(SPEC)).rejects.toThrow(/HTTP 502/);
-    await expect(validateHero(SPEC)).rejects.toBeInstanceOf(ApiError);
-  });
-
-  it('says the server is unreachable rather than leaking the fetch error', async () => {
-    vi.stubGlobal('fetch', () => Promise.reject(new TypeError('Failed to fetch')));
-    await expect(validateHero(SPEC)).rejects.toThrow(/连不上设计器后端/);
-    // And says what to do about it: the back end is a local process.
-    await expect(validateHero(SPEC)).rejects.toThrow(/npm run designer/);
-  });
-
-  /**
-   * What the published site answers. There is no back end behind GitHub
-   * Pages, so `/api/designer/validate` is a 404 page — and the player should
-   * be told the page needs the local back end, not shown a status code.
-   */
-  it('turns the published site\'s 404 page into the instruction to run the back end locally', async () => {
-    server(404, '<!doctype html><html><body>Not Found</body></html>');
-    await expect(validateHero(SPEC)).rejects.toThrow(/npm run designer/);
-    await expect(validateHero(SPEC)).rejects.toThrow(/404/);
-  });
-
-  it('tolerates errors sent as plain strings', async () => {
-    server(200, JSON.stringify({ ok: false, errors: ['坏了'] }));
-    expect((await validateHero(SPEC)).errors).toEqual([{ path: '', message: '坏了' }]);
+    expect(result.errors[0].path).toBe('hp');
   });
 });
 
-describe('POST /api/designer/create', () => {
-  it('sends the portrait alongside the spec and reads the test result', async () => {
-    const calls = server(
-      200,
-      JSON.stringify({ ok: true, general: 'custom__x', lua: '-- x', test: { ok: false, log: 'boom' } }),
-    );
+describe('createHero', () => {
+  it('builds in the tab and, with no back end, stops there', async () => {
+    const calls = server(NO_BACKEND);
+    const result = await createHero(SPEC, null);
+    expect(result.ok).toBe(true);
+    expect(result.savedInBrowser).toBe(true);
+    expect(result.wroteToDisk).toBeUndefined();
+    expect(result.test).toEqual({ ok: true, log: 'ok   fired' });
+    expect(vi.mocked(buildInBrowser).mock.calls[0][1]).toMatchObject({ save: true, image: null });
+    expect(calls.map((c) => c.url)).toEqual(['/api/designer/heroes']);
+  });
+
+  it('also writes to disk when the back end answers, sending the portrait along', async () => {
+    const calls = server(BACKEND, { status: 200, body: JSON.stringify({ ok: true, general: 'dsgn_x' }) });
     const result = await createHero(SPEC, { mime: 'image/png', base64: 'AAA' });
-    expect(JSON.parse(String(calls[0].init?.body))).toEqual({
-      spec: SPEC,
-      image: { mime: 'image/png', base64: 'AAA' },
-    });
-    expect(result.general).toBe('custom__x');
-    expect(result.test).toEqual({ ok: false, log: 'boom' });
+    expect(result.wroteToDisk).toBe(true);
+    const create = calls.find((c) => c.url === '/api/designer/create');
+    expect(create?.init?.method).toBe('POST');
+    expect(JSON.parse(String(create?.init?.body))).toMatchObject({ image: { mime: 'image/png', base64: 'AAA' } });
   });
 
-  it('omits the image key entirely when there is no portrait', async () => {
-    const calls = server(200, JSON.stringify({ ok: true }));
-    await createHero(SPEC, null);
-    expect(Object.keys(JSON.parse(String(calls[0].init?.body)))).toEqual(['spec']);
+  it('keeps the hero when the back end fails to write, and says so', async () => {
+    server(BACKEND, { status: 502, body: '<html>Bad Gateway</html>' });
+    const result = await createHero(SPEC, null);
+    expect(result.ok).toBe(true);
+    expect(result.savedInBrowser).toBe(true);
+    expect(result.warnings?.some((w) => w.includes('HTTP 502'))).toBe(true);
+  });
+
+  it('keeps the back end\'s complaints that come back on a 400', async () => {
+    server(BACKEND, { status: 400, body: JSON.stringify({ ok: false, errors: [{ path: 'hp', message: 'hp must be 1..12' }] }) });
+    const result = await createHero(SPEC, null);
+    expect(result.wroteToDisk).toBe(false);
+    expect(result.warnings?.some((w) => w.includes('hp must be 1..12'))).toBe(true);
   });
 });
 
-describe('GET /api/designer/heroes', () => {
-  it('reads a bare array', async () => {
-    server(200, JSON.stringify([{ id: 'a' }, { id: 'b' }]));
-    expect(await listHeroes()).toHaveLength(2);
+describe('listHeroes', () => {
+  const saved = { id: 'dsgn_mine', name: '我的', title: '', kingdom: 'wu', lua: 'return 1', spec: { id: 'dsgn_mine' }, at: '2026-09-06T00:00:00Z' };
+
+  it('is this browser\'s list when there is no back end', async () => {
+    server(NO_BACKEND);
+    upsertSavedHero(saved);
+    const rows = await listHeroes();
+    expect(rows.map((r) => [r.id, r.source])).toEqual([['dsgn_mine', 'browser']]);
   });
 
-  it('reads a wrapped array', async () => {
-    server(200, JSON.stringify({ heroes: [{ id: 'a' }] }));
-    expect((await listHeroes())[0].id).toBe('a');
+  it('adds the disk\'s rows after the browser\'s, minus any the browser already has', async () => {
+    server(BACKEND, { status: 200, body: JSON.stringify({ heroes: [{ spec: { id: 'dsgn_mine' } }, { spec: { id: 'dsgn_disk', name: '盘上' }, test: { ok: true, log: ['ok'] } }] }) });
+    upsertSavedHero(saved);
+    const rows = await listHeroes();
+    expect(rows.map((r) => [r.id, r.source])).toEqual([['dsgn_mine', 'browser'], ['dsgn_disk', 'disk']]);
+    expect(rows[1].test).toEqual({ ok: true, log: 'ok' });
   });
 
-  it('reads anything else as empty rather than throwing at the player', async () => {
-    server(200, JSON.stringify({ nope: true }));
+  it('reads a bare array from the back end too, and anything else as nothing', async () => {
+    server(BACKEND, { status: 200, body: JSON.stringify([{ spec: { id: 'dsgn_a' } }]) });
+    expect((await listHeroes()).map((r) => r.id)).toEqual(['dsgn_a']);
+    resetBackendProbe();
+    server(BACKEND, { status: 200, body: JSON.stringify({ nope: true }) });
     expect(await listHeroes()).toEqual([]);
   });
 });
 
-describe('POST /api/designer/chat', () => {
-  it('sends the transcript with the spec on the canvas, so it revises', async () => {
-    const calls = server(
-      200,
-      JSON.stringify({
-        reply: '给你写好了',
-        status: 'created',
-        spec: SPEC,
-        attempts: [{ spec: SPEC, errors: [{ path: 'skills[0]', message: '缺少效果' }], testLog: 'FAIL' }],
+describe('chat', () => {
+  it('goes through the back end when there is one, sending the canvas along', async () => {
+    const calls = server(BACKEND, {
+      status: 200,
+      body: JSON.stringify({
+        reply: '给你写好了', status: 'created', spec: SPEC,
+        attempts: [{ spec: SPEC, errors: [{ path: 'skills[0]', message: '缺少效果' }], testLog: ['FAIL x'] }],
       }),
-    );
-    const result = await chat([{ role: 'user', content: '一个吴势力女将' }], SPEC);
-    expect(JSON.parse(String(calls[0].init?.body))).toEqual({
-      messages: [{ role: 'user', content: '一个吴势力女将' }],
-      spec: SPEC,
     });
+    const result = await chat([{ role: 'user', content: '一个吴势力女将' }], SPEC);
+    const call = calls.find((c) => c.url === '/api/designer/chat');
+    expect(JSON.parse(String(call?.init?.body))).toEqual({ messages: [{ role: 'user', content: '一个吴势力女将' }], spec: SPEC });
     expect(result.status).toBe('created');
-    expect(result.spec?.name).toBe('测试将');
-    expect(result.attempts?.[0].errors).toHaveLength(1);
-    expect(result.attempts?.[0].testLog).toBe('FAIL');
+    expect(result.attempts?.[0]).toEqual({ spec: SPEC, errors: [{ path: 'skills[0]', message: '缺少效果' }], testLog: 'FAIL x' });
+    expect(chatInBrowser).not.toHaveBeenCalled();
   });
 
-  it('falls back to draft on a status it does not know', async () => {
-    server(200, JSON.stringify({ reply: '在想', status: 'thinking' }));
-    expect((await chat([])).status).toBe('draft');
+  it('runs in the tab when there is not', async () => {
+    server(NO_BACKEND);
+    const result = await chat([{ role: 'user', content: 'x' }], SPEC);
+    expect(chatInBrowser).toHaveBeenCalledTimes(1);
+    expect(result.reply).toBe('浏览器里做好了');
+    expect(result.attempts?.[0].testLog).toBe('ok');
+  });
+
+  it('turns a proxy error page on the back end into something a player can read', async () => {
+    server(BACKEND, { status: 502, body: '<html><body>Bad Gateway</body></html>' });
+    await expect(chat([{ role: 'user', content: 'x' }])).rejects.toThrow(/HTTP 502/);
+    await expect(chat([{ role: 'user', content: 'x' }])).rejects.toBeInstanceOf(ApiError);
   });
 });

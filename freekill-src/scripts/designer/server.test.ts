@@ -176,7 +176,9 @@ describe('the revision loop', () => {
 
 describe('the key', () => {
   it('refuses to guess which of two candidate files to spend', () => {
-    const r = resolveKey([]);
+    // A developer's gitignored freekill-src/.env may name a key file; the
+    // suite must not read it, so it is pointed at a path that does not exist.
+    const r = resolveKey([], { localEnv: '/nonexistent/freekill.env' });
     // The suite must not depend on the developer's environment either way.
     if (process.env.OPENAI_API_KEY || process.env.DESIGNER_KEY_FILE) {
       expect(r.from).not.toBe('nowhere');

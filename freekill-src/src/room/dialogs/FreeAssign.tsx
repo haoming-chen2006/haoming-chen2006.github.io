@@ -52,7 +52,8 @@
  */
 import { useDeferredValue, useMemo, useState } from 'react';
 import type { CSSProperties } from 'react';
-import { useRoom } from '../RoomContext';
+import { useRoom, useRoomState } from '../RoomContext';
+import { customPackEnabled, roomHeroesOf } from '../../shell/customHeroes';
 import { fillArgs } from '../ltk/prompt';
 import { Dialog, GeneralCard } from './parts';
 
@@ -83,6 +84,26 @@ export function freeAssignEnabled(settings: Readonly<Record<string, unknown>>): 
   return settings.enableFreeAssign === true;
 }
 
+/**
+ * The search, minus the designed heroes while their pack is off.
+ *
+ * `SearchAllGenerals` (lua/client/client_util.lua:173) walks every package
+ * and never looks at `disabled_packs`: upstream's free assign is "pick
+ * anything", and for the shipped packs that stays so. The `custom` pack is
+ * the exception because "off" is its default and the whole point of the
+ * default is that a table has to opt in to somebody's home-made general —
+ * an opt-in that a search box could otherwise walk straight around. The ids
+ * come off the same settings the pack switch does, so the two cannot disagree.
+ */
+export function withoutSwitchedOffHeroes(
+  found: readonly string[],
+  settings: Readonly<Record<string, unknown>>,
+): readonly string[] {
+  if (customPackEnabled(settings)) return found;
+  const off = new Set(roomHeroesOf(settings).map((h) => h.id));
+  return off.size ? found.filter((g) => !off.has(g)) : found;
+}
+
 /** Beyond this many results the grid is asking the browser to lay out several
  *  hundred portraits for a list nobody reads past the first row. Typing is
  *  faster than scrolling at that size, and the count tells you it is capped. */
@@ -99,12 +120,16 @@ export interface FreeAssignProps {
 
 export function FreeAssign({ current, offer, onPick, onClose }: FreeAssignProps) {
   const { lua } = useRoom();
+  const { settings } = useRoomState();
   const [word, setWord] = useState('');
   // 274 portraits re-filtered on every keystroke is the one place this dialog
   // can feel slow. The input stays live; the grid catches up.
   const deferred = useDeferredValue(word);
 
-  const found = useMemo(() => lua.searchGenerals(deferred.trim()), [lua, deferred]);
+  const found = useMemo(
+    () => withoutSwitchedOffHeroes(lua.searchGenerals(deferred.trim()), settings),
+    [lua, deferred, settings],
+  );
   const shown = found.slice(0, SHOWN);
 
   return (

@@ -21,7 +21,7 @@ import type { LtkLua } from '../../ltk/LtkLua';
 import { makeNaming, RoomProvider, type RoomServices } from '../../RoomContext';
 import { RoomStore } from '../../state/store';
 import { DialogHost } from '../DialogHost';
-import { freeAssignEnabled } from '../FreeAssign';
+import { freeAssignEnabled, withoutSwitchedOffHeroes } from '../FreeAssign';
 
 const EMPTY_MANIFEST: AssetManifest = { version: 1, base: '', entries: [], totals: {} };
 
@@ -186,5 +186,29 @@ describe('finding free assign', () => {
     // `ChooseGeneralBox.qml:29`. Survives the redesign, in both languages —
     // the key is the engine's, so English gets it from `src/i18n/engine`.
     expect(ask({ enableFreeAssign: true })).toContain('(Enable free assign)');
+  });
+});
+
+/**
+ * Designed heroes and the search box. The pack switch is the table's opt-in
+ * to somebody's home-made general; a search that ignored it would be a way
+ * around it. Only the `custom` pack is gated — upstream's "pick anything"
+ * stays true for every shipped pack, switched off or not.
+ */
+describe('free assign and the designed-hero pack', () => {
+  const carried = [{ id: 'dsgn_jianbi', name: '坚壁客', lua: 'return function(e) end' }];
+  const found = ['caocao', 'dsgn_jianbi', 'liubei'];
+
+  it('hides the room\'s designed heroes while the pack is off', () => {
+    expect(withoutSwitchedOffHeroes(found, { disabledPack: ['custom'], customHeroes: carried })).toEqual(['caocao', 'liubei']);
+  });
+
+  it('offers them once the pack is on, and leaves other disabled packs alone', () => {
+    expect(withoutSwitchedOffHeroes(found, { disabledPack: ['mobile'], customHeroes: carried })).toEqual(found);
+    expect(withoutSwitchedOffHeroes(found, { disabledPack: [], customHeroes: carried })).toEqual(found);
+  });
+
+  it('is the search itself when the room carries none', () => {
+    expect(withoutSwitchedOffHeroes(found, { disabledPack: ['custom'] })).toBe(found);
   });
 });

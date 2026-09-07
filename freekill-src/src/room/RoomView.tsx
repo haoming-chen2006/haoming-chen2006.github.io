@@ -35,6 +35,7 @@ import { LtkLua } from './ltk/LtkLua';
 import type { TargetTip } from './ltk/types';
 import { makeNaming, RoomProvider, useRoom, useRoomState, useScene, type RoomServices } from './RoomContext';
 import { SkinPicker } from './skins';
+import { heroArtOf, heroKeyOf } from '../shell/customHeroes';
 import { RoomStore } from './state/store';
 import './room.css';
 
@@ -71,6 +72,26 @@ export function RoomView(props: RoomViewProps) {
     (general: string) => services.assets.generalPortrait(general, 'mobile'),
   ), [services]);
   useEffect(() => () => anim.dispose(), [anim]);
+
+  /**
+   * Portraits the room brought with it. The designed heroes in the room's
+   * settings arrive on `EnterRoom` (and on every resync), each with a small
+   * data URL; the resolver serves those before the manifest. Subscribed to the
+   * store rather than read in render so the map is in place before the seat
+   * that just became that general paints — `commit` notifies synchronously,
+   * React re-renders after. Keyed so the 5 Hz commit does not rebuild it.
+   */
+  useEffect(() => {
+    let last = '';
+    const apply = () => {
+      const key = heroKeyOf(services.store.state.settings);
+      if (key === last) return;
+      last = key;
+      services.assets.setCustomArt(heroArtOf(services.store.state.settings));
+    };
+    apply();
+    return services.store.subscribe(apply);
+  }, [services]);
 
   /**
    * The table's sound. `RoomStore.onSound` is the hook the store has carried

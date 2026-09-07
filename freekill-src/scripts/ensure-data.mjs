@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url';
 const PUBLIC = join(dirname(fileURLToPath(import.meta.url)), '..', 'public');
 const need = (f) => !existsSync(join(PUBLIC, f));
 
-if (need('lua-bundle.json') || need('lua-manifest.json')) {
+if (need('lua-bundle.json') || need('lua-manifest.json') || need('lua-probe.json')) {
   const { buildLuaBundle } = await import('./build-lua-bundle.mjs');
   await buildLuaBundle();
 }

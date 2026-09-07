@@ -11,6 +11,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useT } from '../../i18n';
 import { useSession } from '../session';
+import { CUSTOM_PACK, readSavedHeroes, roomHeroesFromSaved } from '../customHeroes';
 import type { RoomSummary } from '../api';
 import { DEFAULT_MODE_ID, GAME_MODES, modeById, modeOfRoom, type ModeId } from '../../contract/modes';
 import { ModePicker, modeNameKey } from '../ModePicker';
@@ -22,7 +23,10 @@ const DEFAULT_SETTINGS = {
   enableDeputy: false,
   enableFreeAssign: false,
   enableObserverViewCard: false,
-  disabledPack: [] as string[],
+  // Designed heroes travel with every room the host opens (`customHeroes`
+  // below) but are not dealt until the pack is switched on. See
+  // `shell/customHeroes.ts`.
+  disabledPack: [CUSTOM_PACK] as string[],
   disabledGenerals: [] as string[],
   password: '',
 };
@@ -40,7 +44,7 @@ export function Lobby({ onEnterRoom }: { onEnterRoom: (roomId: string) => void }
   const [name, setName] = useState(() => t('lobby.defaultRoomName', { name: identity?.displayName ?? '' }));
   const [modeId, setModeId] = useState<ModeId>(DEFAULT_MODE_ID);
   const [generalNum, setGeneralNum] = useState(3);
-  const [disabled, setDisabled] = useState<readonly string[]>([]);
+  const [disabled, setDisabled] = useState<readonly string[]>(DEFAULT_SETTINGS.disabledPack);
   /**
    * 自由选将. The one room setting that changes what a player may *do* rather
    * than what the deal looks like, and the only route this build has to "let me
@@ -101,6 +105,9 @@ export function Lobby({ onEnterRoom }: { onEnterRoom: (roomId: string) => void }
         generalNum,
         enableFreeAssign: freeAssign,
         disabledPack: [...disabled],
+        // Every hero this browser designed rides along, dealt only if the pack
+        // above is on. The waiting room keeps the list in step after this.
+        customHeroes: roomHeroesFromSaved(readSavedHeroes()),
       },
       bundleSha: loaded.lua.bundleSha256_16,
     }));
@@ -181,14 +188,14 @@ export function Lobby({ onEnterRoom }: { onEnterRoom: (roomId: string) => void }
             <div className="field" style={{ marginTop: 14 }}>
               <label>{t('lobby.packs')}</label>
               <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
-                {[...packs.general, ...packs.card].map((p) => (
+                {[...packs.general, CUSTOM_PACK, ...packs.card].map((p) => (
                   <label key={p} style={{ display: 'flex', gap: 6, alignItems: 'center', fontSize: 13 }}>
                     <input
                       type="checkbox"
                       checked={!disabled.includes(p)}
                       onChange={(e) => setDisabled((d) => (e.target.checked ? d.filter((x) => x !== p) : [...d, p]))}
                     />
-                    {p}
+                    {p === CUSTOM_PACK ? t('pack.custom') : p}
                   </label>
                 ))}
               </div>

@@ -14,13 +14,16 @@
  * shows the in-game seating, which is real; this shows the deal, which is also
  * real; neither claims to know who gets what.
  */
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { WaitingRoomViewProps } from '../../contract/views';
 import { engineTr, useLanguage, useT } from '../../i18n';
 import { useSession } from '../session';
 import { generalAvatar } from '../boot';
 import { modeOfRoom } from '../../contract/modes';
 import { RoleStrip, SeatRing, modeNameKey } from '../ModePicker';
+import {
+  customPackEnabled, disabledPacksOf, heroKeyOf, roomHeroesFromSaved, roomHeroesOf, useSavedHeroes, withCustomPack,
+} from '../customHeroes';
 
 export function WaitingRoomView(props: WaitingRoomViewProps) {
   const {
@@ -106,6 +109,19 @@ export function WaitingRoomView(props: WaitingRoomViewProps) {
           </span>
         )}
       </div>
+
+      {/*
+        DESIGNED HEROES, IN THE ROOM.
+
+        The designer (designer.html) saves what it makes in this browser, and
+        every one of them rides along in every room this browser opens — the
+        lobby attaches them at creation and the host's tab keeps the list in
+        step here. What the host decides is only whether they are DEALT: the
+        switch is the `custom` pack in `disabledPack`, off by default, so a
+        table has to opt in to somebody's home-made general. Guests read the
+        state and the names off the same settings row.
+      */}
+      <CustomHeroesRow settings={settings} onChangeSettings={onChangeSettings} />
 
       {mode ? (
         <div className="waiting-composition">
@@ -208,6 +224,66 @@ export function WaitingRoomView(props: WaitingRoomViewProps) {
           />
           <button className="btn small" type="submit">{t('waiting.send')}</button>
         </form>
+      </div>
+    </div>
+  );
+}
+
+function CustomHeroesRow({
+  settings, onChangeSettings,
+}: {
+  settings: Readonly<Record<string, unknown>>;
+  onChangeSettings?: (patch: Record<string, unknown>) => void;
+}) {
+  const t = useT();
+  const [saved] = useSavedHeroes();
+  const inRoom = roomHeroesOf(settings);
+  const enabled = customPackEnabled(settings);
+  const names = inRoom.map((h) => h.name).join('、');
+
+  // The host's browser is the truth about which heroes exist; the room row is
+  // a copy. Keyed on the ids and their Lua so a chat line cannot trigger it,
+  // and compared before writing so it settles after one patch.
+  const roomKey = heroKeyOf(settings);
+  const savedKey = heroKeyOf({ customHeroes: roomHeroesFromSaved(saved) });
+  useEffect(() => {
+    if (!onChangeSettings || roomKey === savedKey) return;
+    onChangeSettings({ customHeroes: roomHeroesFromSaved(saved) });
+  }, [onChangeSettings, roomKey, savedKey, saved]);
+
+  if (!onChangeSettings) {
+    return (
+      <div className="waiting-composition" style={{ gap: 10 }}>
+        <span className="waiting-composition__label">{t('waiting.customHeroes')}</span>
+        <span style={{ fontSize: 13, color: 'var(--paper-faint)' }}>
+          {!inRoom.length
+            ? t('waiting.customHeroes.none')
+            : enabled ? t('waiting.customHeroes.on', { names }) : t('waiting.customHeroes.off', { names })}
+        </span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="waiting-composition" style={{ gap: 10, alignItems: 'flex-start' }}>
+      <span className="waiting-composition__label">{t('waiting.customHeroes')}</span>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 13 }}>
+        <label style={{ display: 'flex', gap: 8, alignItems: 'center', cursor: 'pointer' }}>
+          <input
+            type="checkbox"
+            checked={enabled}
+            onChange={(e) => onChangeSettings({ disabledPack: withCustomPack(disabledPacksOf(settings), e.target.checked) })}
+          />
+          <span>{t('waiting.customHeroes.enable')}</span>
+          {inRoom.length ? (
+            <span style={{ color: 'var(--paper-faint)' }}>{t('waiting.customHeroes.count', { n: inRoom.length, names })}</span>
+          ) : null}
+        </label>
+        <span style={{ color: 'var(--paper-faint)' }}>
+          {saved.length ? t('waiting.customHeroes.hint') : t('waiting.customHeroes.empty')}
+          {' '}
+          <a href="designer.html" target="_blank" rel="noreferrer">{t('waiting.customHeroes.design')}</a>
+        </span>
       </div>
     </div>
   );

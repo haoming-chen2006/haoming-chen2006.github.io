@@ -24,7 +24,8 @@ import { WaitingRoomView } from './WaitingRoom';
 import { RoomViewStub } from '../RoomViewStub';
 import { createFixtureClient } from '../fixtureClient';
 import { createEngineClient } from '../engineClient';
-import { prefetchLuaBundle } from '../boot';
+import { bundleForRoom } from '../boot';
+import { heroKeyOf } from '../customHeroes';
 import { ErrorBoundary } from '../ErrorBoundary';
 import { errorText } from '../hostRunner';
 import { startLiveTable, type TableStatus } from '../liveTable';
@@ -129,6 +130,15 @@ export function RoomPage({ roomId, onLeave }: { roomId: string; onLeave: () => v
   const [engineDown, setEngineDown] = useState<string | null>(null);
   const seat = me?.seat;
   const known = room !== undefined;
+  // The room row is refetched on every chat line and heartbeat, so the settings
+  // object is never a dependency here (see `latestRoom` below). The designed
+  // heroes a host attaches ARE something the VM has to be rebuilt for — they
+  // are files in its file system — so they enter as a primitive that changes
+  // exactly when that set does. In the waiting room, where the host does the
+  // attaching, a re-boot costs a second and no game.
+  const heroKey = heroKeyOf(room?.summary.settings);
+  const settingsRef = useRef(room?.summary.settings);
+  settingsRef.current = room?.summary.settings;
   useEffect(() => {
     // Booting a Lua VM costs a second and a few tens of MB. Doing it before the
     // room row has arrived means doing it twice: once as a seatless observer,
@@ -142,7 +152,7 @@ export function RoomPage({ roomId, onLeave }: { roomId: string; onLeave: () => v
       setFixtureOnly(true);
       setClient(made);
     };
-    void prefetchLuaBundle()
+    void bundleForRoom(settingsRef.current)
       .then((bundle) => createEngineClient({
         bundle,
         seat: seat ?? 1,
@@ -166,7 +176,7 @@ export function RoomPage({ roomId, onLeave }: { roomId: string; onLeave: () => v
         if (live) setEngineDown(errorText(e));
       });
     return () => { live = false; made?.dispose(); };
-  }, [known, loaded, seat, identity, t]);
+  }, [known, loaded, seat, identity, t, heroKey]);
 
   // A getter, deliberately, not a `Language`: `RoomView` memoizes its RoomStore
   // on client identity, so a wrapper whose identity changed on a language

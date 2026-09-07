@@ -1367,3 +1367,56 @@ textarea.fk-hd-bad {
     grid-column: 1 / -1;
   }
 }
+
+/* ---- browser lane: key form, lane chip, hero tools ------------------------ */
+.fk-hd-lane {
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(232, 224, 212, 0.25);
+  color: rgba(232, 224, 212, 0.75);
+  white-space: nowrap;
+}
+.fk-hd-keyform {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  margin-bottom: 10px;
+  border: 1px solid rgba(232, 224, 212, 0.18);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.03);
+}
+.fk-hd-keyform input {
+  font: inherit;
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid rgba(232, 224, 212, 0.25);
+  background: rgba(0, 0, 0, 0.25);
+  color: inherit;
+}
+.fk-hd-link {
+  font: inherit;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.fk-hd-heroes__tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 6px 0 10px;
+}
+.fk-hd-heroes__tools .fk-hd-btn {
+  text-decoration: none;
+}
+.fk-hd-btn--danger {
+  border-color: rgba(220, 90, 80, 0.55);
+  color: #e9a49c;
+}
+.fk-hd-btn--danger:hover {
+  background: rgba(220, 90, 80, 0.15);
+}

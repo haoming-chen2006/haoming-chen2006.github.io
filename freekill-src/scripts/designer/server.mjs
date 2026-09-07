@@ -28,8 +28,8 @@ import { HERO_SPEC_SCHEMA, normalizeSpec, validateSpec } from '../../src/designe
 import { CompileError, compileHero } from '../../src/designer/compile/index.ts';
 import { formatHeadless, testHero } from '../../src/designer/compile/headless.ts';
 import { buildLuaBundle } from '../build-lua-bundle.mjs';
+import { CHAT_SCHEMA, runAgent } from '../../src/designer/agent/loop.ts';
 import { DEFAULT_MODEL, chatJson, resolveKey } from './openai.mjs';
-import { failureMessage, systemPrompt } from './prompt.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const WEB_ROOT = join(here, '..', '..');
@@ -41,9 +41,6 @@ const PUBLIC = join(WEB_ROOT, 'public');
 const CACHE = join(WEB_ROOT, 'node_modules', '.cache', 'designer');
 
 export const PORT = Number(process.env.DESIGNER_PORT || 5175);
-
-/** Up to five revisions, then the agent stops and says what is still wrong. */
-const MAX_REVISIONS = 5;
 
 /* -------------------------------------------------------------------------- */
 /* Writing a hero                                                              */
@@ -160,17 +157,6 @@ export function listHeroes() {
 /* The agent path                                                              */
 /* -------------------------------------------------------------------------- */
 
-/** `{ reply, spec }`, the shape the model answers in. */
-const CHAT_SCHEMA = {
-  type: 'object',
-  properties: {
-    reply: { type: 'string', description: 'One or two sentences for the person, in their language.' },
-    spec: HERO_SPEC_SCHEMA,
-  },
-  required: ['reply', 'spec'],
-  additionalProperties: false,
-};
-
 function logAttempts(id, payload) {
   try {
     mkdirSync(CACHE, { recursive: true });
@@ -184,61 +170,21 @@ function logAttempts(id, payload) {
 }
 
 /**
- * Ask the model for a hero, then keep asking until the engine agrees it works.
- *
- * The loop is the point. A model writing Lua-by-blocks gets the composition
- * rules wrong in ways only the engine can see — a `can_trigger` that is never
- * true, a cost in the actions, `self-is-subject` on an event with no subject —
- * and every one of those produces a general that loads. So the failure fed back
- * is never "that was wrong": it is the validator's paths, the compiler's
- * sentence with its engine line number, or the headless probe's own report.
+ * The agent loop (`src/designer/agent/loop.ts`) with this process's two
+ * halves plugged in: the model through the key read off disk, and the build
+ * on disk — write, rebuild the bundle, boot — so what the model is told about
+ * is the same file the game will load.
  */
 export async function runChat({ messages, spec, callModel, model = DEFAULT_MODEL, key }) {
-  const call = callModel
-    ?? ((msgs) => chatJson({ key, model, messages: msgs, schema: CHAT_SCHEMA, schemaName: 'hero' }));
-
-  const convo = [
-    { role: 'system', content: systemPrompt() },
-    ...(spec ? [{ role: 'user', content: `The hero so far:\n${JSON.stringify(spec)}` }] : []),
-    ...messages,
-  ];
-
-  const attempts = [];
-  let reply = '';
-  let current = null;
-
-  for (let round = 0; round <= MAX_REVISIONS; round += 1) {
-    const answer = await call(convo);
-    reply = typeof answer?.reply === 'string' ? answer.reply : reply;
-    current = normalizeSpec(answer?.spec);
-
-    const result = await createHero({ spec: current });
-    const testLog = result.test?.ok === false || result.test?.fired === false
-      ? result.test.log
-      : [];
-    attempts.push({
-      spec: current,
-      errors: result.errors ?? [],
-      testLog: result.ok ? result.test.log : [],
-    });
-
-    if (result.ok && result.test.ok && result.test.fired !== false) {
-      const logged = logAttempts(current.id, { reply, attempts, status: 'created' });
-      return { reply, spec: current, status: 'created', attempts, log: logged };
-    }
-
-    if (round === MAX_REVISIONS) break;
-    convo.push(
-      { role: 'assistant', content: JSON.stringify(answer) },
-      {
-        role: 'user',
-        content: failureMessage({ errors: result.errors ?? [], testLog }),
-      },
-    );
-  }
-
-  const logged = logAttempts(current?.id, { reply, attempts, status: 'failed' });
-  return { reply, spec: current, status: 'failed', attempts, log: logged };
+  const out = await runAgent({
+    messages,
+    spec,
+    callModel: callModel
+      ?? ((msgs) => chatJson({ key, model, messages: msgs, schema: CHAT_SCHEMA, schemaName: 'hero' })),
+    build: (candidate) => createHero({ spec: candidate }),
+  });
+  const log = logAttempts(out.spec?.id, { reply: out.reply, attempts: out.attempts, status: out.status });
+  return { ...out, log };
 }
 
 /* -------------------------------------------------------------------------- */

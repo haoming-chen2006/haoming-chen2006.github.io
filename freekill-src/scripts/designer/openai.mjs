@@ -1,6 +1,5 @@
-// The whole OpenAI client. `fetch` is global in node 22, so this needs no
-// dependency, and a dependency is not free here: it would be the first one this
-// repo takes for a dev-only tool.
+// The dev back end's half of the OpenAI client: reading the key off disk. The
+// call itself is `src/designer/agent/openai.ts`, shared with the published page.
 //
 // Two things it is careful about, both about the key. It is never logged, never
 // echoed in an error, and never written to the attempt log — only where it was
@@ -11,9 +10,19 @@
 // files on this machine with different keys in them and picking one would be
 // spending somebody's money on a coin flip.
 import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const ENDPOINT = 'https://api.openai.com/v1/chat/completions';
-export const DEFAULT_MODEL = process.env.OPENAI_MODEL || 'gpt-4.1-mini';
+/** `freekill-src/.env`: local, gitignored, the place to name the key file once. */
+export const LOCAL_ENV = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '.env');
+
+import { DEFAULT_MODEL as MODEL_DEFAULT, chatJson as chatJsonPortable } from '../../src/designer/agent/openai.ts';
+
+export { OpenAIError } from '../../src/designer/agent/openai.ts';
+export const DEFAULT_MODEL = process.env.OPENAI_MODEL || MODEL_DEFAULT;
+
+/** The portable call, with this process's default model. */
+export const chatJson = (opts) => chatJsonPortable({ model: DEFAULT_MODEL, ...opts });
 
 /** `KEY=value`, `export KEY="value"`, `# comment`. Enough for a dotenv file. */
 function parseDotenv(text) {
@@ -33,16 +42,22 @@ function parseDotenv(text) {
 /**
  * @returns {{ key: string|null, from: string, why?: string }}
  */
-export function resolveKey(argv = process.argv.slice(2)) {
+export function resolveKey(argv = process.argv.slice(2), { localEnv = LOCAL_ENV } = {}) {
   if (process.env.OPENAI_API_KEY) return { key: process.env.OPENAI_API_KEY, from: '$OPENAI_API_KEY' };
 
+  // freekill-src/.env is gitignored and is where this machine's answer lives:
+  // `DESIGNER_KEY_FILE=~/.hermes/.env`, chosen once instead of typed per run.
+  let local = {};
+  try { local = parseDotenv(readFileSync(localEnv, 'utf8')); } catch { /* no .env: fine */ }
+  if (local.OPENAI_API_KEY) return { key: local.OPENAI_API_KEY, from: localEnv };
+
   const i = argv.indexOf('--key-file');
-  const file = (i >= 0 ? argv[i + 1] : undefined) ?? process.env.DESIGNER_KEY_FILE;
+  const file = (i >= 0 ? argv[i + 1] : undefined) ?? process.env.DESIGNER_KEY_FILE ?? local.DESIGNER_KEY_FILE;
   if (!file) {
     return {
       key: null,
       from: 'nowhere',
-      why: 'no OPENAI_API_KEY, and no key file named — pass --key-file <path> or set DESIGNER_KEY_FILE',
+      why: 'no OPENAI_API_KEY, and no key file named — pass --key-file <path>, set DESIGNER_KEY_FILE, or put DESIGNER_KEY_FILE=… in freekill-src/.env',
     };
   }
   let text;
@@ -54,58 +69,4 @@ export function resolveKey(argv = process.argv.slice(2)) {
   const key = parseDotenv(text).OPENAI_API_KEY;
   if (!key) return { key: null, from: file, why: `${file} has no OPENAI_API_KEY line` };
   return { key, from: file };
-}
-
-export class OpenAIError extends Error {
-  constructor(status, body) {
-    super(`OpenAI ${status}: ${String(body).slice(0, 400)}`);
-    this.name = 'OpenAIError';
-    this.status = status;
-  }
-}
-
-/**
- * One structured-output call. Returns the parsed object.
- *
- * `strict: true` is what makes the schema a guarantee rather than a suggestion,
- * and it is also what rejects a schema the API does not like — with a 400 that
- * names the offending keyword. Rather than pin a guess about which keywords are
- * currently accepted, an invalid_request that mentions the schema is retried
- * once without strict: a spec that then fails `validateSpec` costs one revision
- * round, where a hard failure costs the whole request.
- */
-export async function chatJson({
-  key, model = DEFAULT_MODEL, messages, schema, schemaName = 'result', timeoutMs = 90_000,
-}) {
-  const call = async (strict) => {
-    const ac = new AbortController();
-    const timer = setTimeout(() => ac.abort(), timeoutMs);
-    try {
-      const res = await fetch(ENDPOINT, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json', authorization: `Bearer ${key}` },
-        body: JSON.stringify({
-          model,
-          messages,
-          response_format: { type: 'json_schema', json_schema: { name: schemaName, strict, schema } },
-        }),
-        signal: ac.signal,
-      });
-      const text = await res.text();
-      if (!res.ok) throw new OpenAIError(res.status, text);
-      const body = JSON.parse(text);
-      const content = body.choices?.[0]?.message?.content;
-      if (typeof content !== 'string') throw new OpenAIError(res.status, 'no message content');
-      return JSON.parse(content);
-    } finally {
-      clearTimeout(timer);
-    }
-  };
-
-  try {
-    return await call(true);
-  } catch (e) {
-    if (e instanceof OpenAIError && e.status === 400 && /schema/i.test(e.message)) return call(false);
-    throw e;
-  }
 }

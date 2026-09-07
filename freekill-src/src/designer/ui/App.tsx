@@ -19,7 +19,7 @@ import { Canvas } from './components/Canvas';
 import { HeroCard } from './components/HeroCard';
 import { MyHeroes } from './components/MyHeroes';
 import { Palette } from './components/Palette';
-import { createHero, validateHero, type CreateResponse, type ValidateResponse } from './api';
+import { backendAvailable, createHero, validateHero, type CreateResponse, type ValidateResponse } from './api';
 import { problemsOf } from './problems';
 import type { Lane } from './palette';
 import { clearDraft, initialState, loadDraft, reduce, saveDraft, type DesignerState } from './state';
@@ -46,6 +46,9 @@ export function App() {
   const [failure, setFailure] = useState<string | null>(null);
   const [showLua, setShowLua] = useState(false);
   const [heroesKey, setHeroesKey] = useState(0);
+  /** null until asked; the header says which lane this page is on. */
+  const [backend, setBackend] = useState<boolean | null>(null);
+  useEffect(() => { void backendAvailable().then(setBackend); }, []);
 
   const problems = useMemo(() => problemsOf(state.spec), [state.spec]);
 
@@ -105,6 +108,11 @@ export function App() {
         <span className="fk-hd__page">武将设计器</span>
         <span className="fk-hd__lede">点右边的积木，搭出一个自己的武将。</span>
         <div className="fk-hd__topright">
+          {backend === null ? null : (
+            <span className="fk-hd-lane" title={backend ? '校验、试跑在浏览器里；创建的武将还会写进 packages/custom' : '一切都在这台浏览器里完成，不需要服务器'}>
+              {backend ? '本机后端已连接' : '浏览器模式'}
+            </span>
+          )}
           {problems.ok ? (
             <span className="fk-hd-ok">积木没问题</span>
           ) : (
@@ -195,9 +203,16 @@ export function App() {
                 </div>
                 {created.ok ? (
                   <p className="fk-hd-note">
-                    回到大厅开一局，在选将框里就能挑到「{state.spec.name || state.spec.id}」——
-                    它和其他武将一样从同一份武将池里发出来。
+                    「{state.spec.name || state.spec.id}」已经在这台浏览器的「我的武将」里，
+                    会自动带进你开的每一局。<a href="./#/lobby">去大厅开一局</a>，在等待室打开
+                    「自制武将 · 本局启用」，它就和其他武将一样从同一份武将池里发出来。
+                    {created.wroteToDisk ? '也写进了本机的 packages/custom，下次 deploy 会随站点一起发布。' : null}
                   </p>
+                ) : null}
+                {created.warnings?.length ? (
+                  <ul className="fk-hd-errlist fk-hd-errlist--warn">
+                    {created.warnings.map((w, i) => <li key={i}>{w}</li>)}
+                  </ul>
                 ) : null}
                 {created.test?.log ? <pre className="fk-hd-log">{created.test.log}</pre> : null}
               </div>

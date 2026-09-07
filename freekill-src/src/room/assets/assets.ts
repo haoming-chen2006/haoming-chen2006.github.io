@@ -22,6 +22,13 @@ export class Assets {
   private readonly index: ReadonlyMap<string, { href: string }>;
   private readonly base: string;
   private emojiCache?: readonly string[];
+  /**
+   * Portraits a room brought with it rather than the build: the designed
+   * heroes in the room's settings carry a small data URL each
+   * (`shell/customHeroes.ts`). Consulted first by `generalPortrait`, and only
+   * there — a designed hero has no avatar variant, no card, nothing else.
+   */
+  private customArt: ReadonlyMap<string, string> = new Map();
 
   constructor(manifest: AssetManifest) {
     this.index = assetIndex(manifest);
@@ -44,7 +51,14 @@ export class Assets {
     return undefined;
   }
 
+  /** Replace the room's set of designed-hero portraits. `{}` clears it. */
+  setCustomArt(art: Readonly<Record<string, string>>): void {
+    this.customArt = new Map(Object.entries(art));
+  }
+
   generalPortrait(name: string, extension?: string): string | undefined {
+    const custom = this.customArt.get(name);
+    if (custom) return custom;
     return this.first(
       extension && `packages/${extension}/image/generals/${name}.jpg`,
       `packages/standard/image/generals/${name}.jpg`,

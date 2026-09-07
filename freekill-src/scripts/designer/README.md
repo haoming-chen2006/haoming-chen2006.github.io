@@ -3,25 +3,62 @@
 Make a 三国杀 general — by clicking blocks or by describing it — and have it on
 the table a second later, with the engine's own word that its skills fire.
 
+## On the published site
+
+<https://haoming-chen2006.github.io/freekill/designer.html> works with nothing
+behind it. Blocks, 校验, and 创建武将 all run in the tab: the spec is validated
+and compiled to Lua there, and the real engine is booted there too —
+`lua-bundle.json` plus `lua-probe.json` (upstream's scripted-room harness,
+emitted by the build for exactly this) — to drive the hero's trigger in a
+real room before the page says it works. A hero that passes is kept in that
+browser's 「我的武将」 (`localStorage`, `fk.designer.heroes`), with 导出/导入
+to move a list between browsers.
+
+To play one: open a room. Every hero in that browser's list rides along in
+every room it opens — the lobby attaches them at creation and the host's tab
+keeps the room's copy in step — as the `custom` pack (自制武将), which is
+**off by default**: it sits unticked among the packs in the lobby's advanced
+options and as the 「本局启用」 switch in the waiting room. Switched on, the
+heroes enter the general pile like any other pack's; off, they are merged
+into every seat's engine but never dealt, and free assign does not offer
+them either. Each change writes the room's settings row; every seat's client
+VM re-boots with the files in it, the host's server VM boots on the same
+files at start, and guests read the state and the names off the same row.
+At most 12 per table, newest first, only heroes whose probe passed, and a
+portrait travels only if it shrinks under 16 KB.
+
+「AI 设计」 on the published page needs an OpenAI key, because a static site
+cannot hold one. The panel asks for it once and keeps it in that browser
+(`fk.designer.openai_key`); it is sent to api.openai.com and to nothing else.
+The loop is the same as below — validate, compile, boot, probe, feed the
+failure back — run in the tab.
+
+## In development
+
 ```sh
 npm run dev                                   # the game and the designer page
-npm run designer -- --key-file ~/x/.env       # the back end, port 5175
+npm run designer                              # the back end, port 5175
 ```
 
 Then open <http://localhost:5173/freekill/designer.html> — the dev server has a
-base of `/freekill/`. Vite proxies `/api` to 5175.
+base of `/freekill/`. Vite proxies `/api` to 5175. The page detects the back
+end (`GET /api/designer/heroes`) and, when it answers, adds two things to the
+browser lane: a created hero is ALSO written to `packages/custom/` so a deploy
+can ship it, and 「AI 设计」 goes through the server's key instead of asking.
 
-The key file is a dotenv holding `OPENAI_API_KEY=`. It is never guessed: with no
-`OPENAI_API_KEY` in the environment you must name the file, with `--key-file` or
-`DESIGNER_KEY_FILE`, because there is more than one plausible dotenv on this
-machine and they hold different keys. The server prints which path it read and
-never the key. Model defaults to `gpt-4.1-mini`; `OPENAI_MODEL` overrides it.
+The key file is a dotenv holding `OPENAI_API_KEY=`. Name it once in the
+gitignored `freekill-src/.env` as `DESIGNER_KEY_FILE=~/.hermes/.env`, or per
+run with `--key-file <path>` / `DESIGNER_KEY_FILE`; `OPENAI_API_KEY` in the
+environment wins over both. The server prints which path it read and never
+the key. Model defaults to `gpt-4.1-mini`; `OPENAI_MODEL` overrides it.
 Without a key the server still starts — `validate` and `create` do not need one.
 
-## Why there is a server at all
+## What the probe checks
 
-Because the only way to know whether a generated general works is to boot the
-real Lua engine on it and drive its trigger in a scripted room.
+The only way to know whether a generated general works is to boot the real
+Lua engine on it and drive its trigger in a scripted room — which is what both
+lanes do, the back end off disk (`compile/headless.ts`) and the page off the
+two JSON files (`browser/probe.ts`), through one `compile/probe.ts`.
 
 Neither of the two ways a designed general fails is visible from the file. A
 general carries its skills as STRINGS (`General:addSkill`), so one naming a
@@ -32,9 +69,8 @@ REPLACES the engine's default guard rather than extending it
 reachable. Both produce a card a player reads and a skill that never happens,
 and a player cannot tell.
 
-So `POST /api/designer/create` writes the file, rebuilds the bundle, boots the
-engine off disk, and answers four questions in order of how badly each failure
-hides:
+So a create — the page's, or `POST /api/designer/create` — answers four
+questions in order of how badly each failure hides:
 
 ```
 ok   general dsgn_jianbi is registered
@@ -61,7 +97,8 @@ runs", not that a bot would ever choose it.
 | `GET /api/designer/heroes` | every hero made so far, with its spec and its last test result |
 | `POST /api/designer/chat` | `{messages, spec?}` → `{reply, spec, status, attempts}` |
 
-`chat` is the agent path and it is a loop, not a call: the model answers with a
+`chat` is the agent path and it is a loop, not a call
+(`src/designer/agent/loop.ts`, shared with the page): the model answers with a
 spec under a JSON schema, and then validate → compile → create → boot runs, and
 any failure goes back to the model as the validator's paths, the compiler's
 sentence with the engine line number in it, or the probe's own report. Up to
@@ -172,8 +209,11 @@ ones that will be missed first:
   push. Delete the `.lua` (or move it aside) before deploying if it is not
   ready. `git merge` of this branch alone adds nothing, because nothing under
   `generals/` is tracked.
-- **`designer.html` ships in the build but only works in dev**, because its API
-  is on localhost. It is in the build so that it is type-checked and bundled by
-  the thing that actually publishes. On the published site every call answers
-  with GitHub Pages' 404 page, which `ui/api.ts` turns into the instruction to
-  run `npm run dev` and `npm run designer` locally.
+- **A hero lives in one browser.** `user_metadata` rides inside every access
+  token, and a table needs a migration nobody can apply from here, so the list
+  is per browser with 导出/导入 as the way across. When `player-record`'s
+  `fk_profiles` lands, that is the natural home.
+- **A guest's tab re-boots its client VM when the host ticks a hero.** A second
+  in the waiting room, where there is no game to lose; the set is keyed on the
+  hero ids and their Lua, never on the settings object, so chat and heartbeats
+  do not touch it.

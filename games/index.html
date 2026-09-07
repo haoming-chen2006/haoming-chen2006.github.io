@@ -4,11 +4,16 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Games — Haoming Chen</title>
-  <meta name="description" content="A series of games I vibe coded, enjoy! Crownfall, Hollowmere, Wiki Race, 狗卡杀, Draft and World Cup Guess, all playable in the browser.">
+  <meta name="description" content="A series of games I vibe coded, enjoy! Crownfall, Hollowmere, Pebblebrook, Wiki Race, 狗卡杀, Draft and World Cup Guess, all playable in the browser.">
   <link rel="icon" href="/favicon.ico">
   <link rel="stylesheet" href="/style.css">
   <link rel="stylesheet" href="/my-app/src/navbar.css">
   <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue',
+        'PingFang SC', 'Hiragino Sans GB', 'Noto Sans CJK SC', 'Microsoft YaHei', Arial, sans-serif;
+    }
+
     .games-content {
       max-width: 960px;
       margin: 72px auto 0;
@@ -39,11 +44,16 @@
 
     .games-hero p {
       margin: 0;
-      font-family: 'Georgia', serif;
+      font-family: 'Georgia', 'Songti SC', 'Noto Serif CJK SC', serif;
       font-size: 1.15rem;
       line-height: 1.6;
       color: #374151;
       max-width: 560px;
+    }
+
+    .lang-toggle {
+      font-family: inherit;
+      min-width: 3.5rem;
     }
 
     .games-grid {
@@ -113,7 +123,8 @@
     .game-title {
       display: flex;
       align-items: baseline;
-      gap: 0.6rem;
+      flex-wrap: wrap;
+      gap: 0.15rem 0.6rem;
       margin: 0;
       font-size: 1.2rem;
       font-weight: 600;
@@ -215,17 +226,18 @@
       </a>
     </div>
     <div class="nav-section">
-      <a class="link-styles" href="/">Home</a>
-      <a class="link-styles" href="/blog/">Blog</a>
-      <a class="link-styles-small nav-current" href="/games/" aria-current="page">Games</a>
+      <a class="link-styles" href="/" data-en="Home" data-zh="首页">Home</a>
+      <a class="link-styles" href="/blog/" data-en="Blog" data-zh="博客">Blog</a>
+      <a class="link-styles-small nav-current" href="/games/" aria-current="page" data-en="Games" data-zh="游戏">Games</a>
+      <button type="button" id="lang-toggle" class="link-styles-small lang-toggle">中文</button>
     </div>
   </nav>
 
   <main class="games-content">
     <header class="games-hero">
-      <p class="games-eyebrow">Games</p>
-      <h1>A series of games I vibe coded, enjoy!</h1>
-      <p>Everything here runs in the browser, no install needed. Pick a panel and play.</p>
+      <p class="games-eyebrow" data-en="Games" data-zh="游戏">Games</p>
+      <h1 data-en="A series of games I vibe coded, enjoy!" data-zh="一系列我氛围编程做出来的游戏，玩得开心！">A series of games I vibe coded, enjoy!</h1>
+      <p data-en="Everything here runs in the browser, no install needed. Pick a panel and play." data-zh="全都能在浏览器里直接玩，不用安装。挑一块面板开始吧。">Everything here runs in the browser, no install needed. Pick a panel and play.</p>
     </header>
 
     <div class="games-grid">
@@ -245,14 +257,17 @@
           </svg>
         </div>
         <div class="game-body">
-          <h2 class="game-title">Crownfall <span class="game-kicker">3D arena battler</span></h2>
-          <p class="game-desc">Clash Royale with a twist: deploy a troop, then possess it and fight in first person. WASD to move, mouse to aim, Space for its signature ability. A bot opponent that possesses its own champions.</p>
+          <h2 class="game-title">
+            <span data-en="Crownfall" data-zh="王冠陨落">Crownfall</span>
+            <span class="game-kicker" data-en="3D arena battler" data-zh="Crownfall · 3D 竞技场对战">3D arena battler</span>
+          </h2>
+          <p class="game-desc" data-en="Clash Royale with a twist: deploy a troop, then possess it and fight in first person. WASD to move, mouse to aim, Space for its signature ability. A bot opponent that possesses its own champions." data-zh="皇室战争玩法，多一个转折：放下一个兵，然后附身到它身上，用第一人称亲自开打。WASD 移动，鼠标瞄准，空格放招。对面的 AI 同样会附身自己的英雄。">Clash Royale with a twist: deploy a troop, then possess it and fight in first person. WASD to move, mouse to aim, Space for its signature ability. A bot opponent that possesses its own champions.</p>
           <div class="game-tags">
-            <span class="game-tag">3D</span>
-            <span class="game-tag">Single-player</span>
-            <span class="game-tag">Keyboard + mouse</span>
+            <span class="game-tag" data-en="3D" data-zh="3D">3D</span>
+            <span class="game-tag" data-en="Single-player" data-zh="单人">Single-player</span>
+            <span class="game-tag" data-en="Keyboard + mouse" data-zh="键鼠操作">Keyboard + mouse</span>
           </div>
-          <span class="game-play">Play Crownfall</span>
+          <span class="game-play" data-en="Play Crownfall" data-zh="开始游戏">Play Crownfall</span>
         </div>
       </a>
 
@@ -266,14 +281,46 @@
           </svg>
         </div>
         <div class="game-body">
-          <h2 class="game-title">Hollowmere <span class="game-kicker">a D&amp;D prologue</span></h2>
-          <p class="game-desc">A tabletop RPG brought to the browser: D&amp;D 5e dice, classes, skill checks and dialogue rolls, with Souls-style third-person combat. Rest, level up, and survive the prologue.</p>
+          <h2 class="game-title">
+            <span data-en="Hollowmere" data-zh="幽湖">Hollowmere</span>
+            <span class="game-kicker" data-en="a D&amp;D prologue" data-zh="Hollowmere · D&amp;D 序章">a D&amp;D prologue</span>
+          </h2>
+          <p class="game-desc" data-en="A tabletop RPG brought to the browser: D&amp;D 5e dice, classes, skill checks and dialogue rolls, with Souls-style third-person combat. Rest, level up, and survive the prologue." data-zh="把桌面跑团搬进浏览器：D&amp;D 5e 的骰子、职业、技能检定和对话检定，配上魂系的第三人称战斗。休整、升级，活着走完这段序章。">A tabletop RPG brought to the browser: D&amp;D 5e dice, classes, skill checks and dialogue rolls, with Souls-style third-person combat. Rest, level up, and survive the prologue.</p>
           <div class="game-tags">
-            <span class="game-tag">3D</span>
-            <span class="game-tag">Action RPG</span>
-            <span class="game-tag">Single-player</span>
+            <span class="game-tag" data-en="3D" data-zh="3D">3D</span>
+            <span class="game-tag" data-en="Action RPG" data-zh="动作 RPG">Action RPG</span>
+            <span class="game-tag" data-en="Single-player" data-zh="单人">Single-player</span>
           </div>
-          <span class="game-play">Play Hollowmere</span>
+          <span class="game-play" data-en="Play Hollowmere" data-zh="开始游戏">Play Hollowmere</span>
+        </div>
+      </a>
+
+      <a class="game-card" href="/pebblebrook/" style="--panel: linear-gradient(135deg, #78350f 0%, #b45309 45%, #4d7c0f 100%);">
+        <div class="game-panel">
+          <svg viewBox="0 0 64 64" aria-hidden="true">
+            <circle cx="47" cy="15" r="7" fill="#fde68a" stroke="#78350f" stroke-width="2"/>
+            <path d="M10 30 L32 14 L54 30" fill="none" stroke="#7f1d1d" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+            <rect x="15" y="29" width="34" height="21" rx="2" fill="#fef3c7" stroke="#78350f" stroke-width="2.5"/>
+            <path d="M12 30 L32 15.5 L52 30 Z" fill="#dc2626" stroke="#78350f" stroke-width="2.5" stroke-linejoin="round"/>
+            <rect x="28" y="38" width="9" height="12" rx="1" fill="#92400e" stroke="#78350f" stroke-width="2"/>
+            <rect x="18" y="34" width="7" height="6" rx="1" fill="#7dd3fc" stroke="#78350f" stroke-width="2"/>
+            <rect x="40" y="34" width="7" height="6" rx="1" fill="#7dd3fc" stroke="#78350f" stroke-width="2"/>
+            <path d="M4 55 Q16 50 28 55 T56 55" fill="none" stroke="#38bdf8" stroke-width="3" stroke-linecap="round"/>
+            <path d="M4 61 Q16 56 28 61 T56 61" fill="none" stroke="#7dd3fc" stroke-width="2.5" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div class="game-body">
+          <h2 class="game-title">
+            <span data-en="Pebblebrook" data-zh="卵石溪">Pebblebrook</span>
+            <span class="game-kicker" data-en="a living AI village" data-zh="Pebblebrook · AI 村庄模拟">a living AI village</span>
+          </h2>
+          <p class="game-desc" data-en="Ten villagers, each run by their own AI agent with needs, memories and opinions about everyone else. They farm, gossip, trade, fall out and fall in love. Live among them, take their requests, or open Director mode and throw events at the village." data-zh="十位村民，每人由一个独立的 AI 智能体驱动，各有需求、记忆，以及对其他人的看法。他们种地、八卦、做买卖，会闹翻也会相爱。你住在村里，接他们的委托，也可以切到导演模式，往村子里扔点事件。">Ten villagers, each run by their own AI agent with needs, memories and opinions about everyone else. They farm, gossip, trade, fall out and fall in love. Live among them, take their requests, or open Director mode and throw events at the village.</p>
+          <div class="game-tags">
+            <span class="game-tag" data-en="AI agents" data-zh="AI 智能体">AI agents</span>
+            <span class="game-tag" data-en="Simulation" data-zh="模拟经营">Simulation</span>
+            <span class="game-tag" data-en="Sandbox" data-zh="沙盒">Sandbox</span>
+          </div>
+          <span class="game-play" data-en="Play Pebblebrook" data-zh="开始游戏">Play Pebblebrook</span>
         </div>
       </a>
 
@@ -290,14 +337,17 @@
           </svg>
         </div>
         <div class="game-body">
-          <h2 class="game-title">Wiki Race <span class="game-kicker">Wikipedia link race</span></h2>
-          <p class="game-desc">Race from one Wikipedia article to another clicking only in-article links, five rounds of five minutes. Play solo, or open a room and share the link to race friends peer-to-peer. English or 中文.</p>
+          <h2 class="game-title">
+            <span data-en="Wiki Race" data-zh="维基竞速">Wiki Race</span>
+            <span class="game-kicker" data-en="Wikipedia link race" data-zh="Wiki Race · 维基百科链接竞速">Wikipedia link race</span>
+          </h2>
+          <p class="game-desc" data-en="Race from one Wikipedia article to another clicking only in-article links, five rounds of five minutes. Play solo, or open a room and share the link to race friends peer-to-peer. English or 中文." data-zh="只靠词条里的链接，从一篇维基百科文章点到另一篇，五轮，每轮五分钟。可以单人玩，也可以开个房间把链接发给朋友，点对点同步一起比。中英文都能玩。">Race from one Wikipedia article to another clicking only in-article links, five rounds of five minutes. Play solo, or open a room and share the link to race friends peer-to-peer. English or 中文.</p>
           <div class="game-tags">
-            <span class="game-tag">Multiplayer</span>
-            <span class="game-tag">Party</span>
-            <span class="game-tag">EN / 中文</span>
+            <span class="game-tag" data-en="Multiplayer" data-zh="多人">Multiplayer</span>
+            <span class="game-tag" data-en="Party" data-zh="派对">Party</span>
+            <span class="game-tag" data-en="EN / 中文" data-zh="中英双语">EN / 中文</span>
           </div>
-          <span class="game-play">Play Wiki Race</span>
+          <span class="game-play" data-en="Play Wiki Race" data-zh="开始游戏">Play Wiki Race</span>
         </div>
       </a>
 
@@ -312,14 +362,17 @@
           </svg>
         </div>
         <div class="game-body">
-          <h2 class="game-title">狗卡杀 <span class="game-kicker">FreeKill on the web</span></h2>
-          <p class="game-desc">三国杀 in a browser tab: a web port of the open-source FreeKill (新月杀) client. Open the link, type a name, and play with friends. No install, no extension packages, no server address.</p>
+          <h2 class="game-title">
+            <span data-en="狗卡杀" data-zh="狗卡杀">狗卡杀</span>
+            <span class="game-kicker" data-en="FreeKill on the web" data-zh="网页版新月杀">FreeKill on the web</span>
+          </h2>
+          <p class="game-desc" data-en="三国杀 in a browser tab: a web port of the open-source FreeKill (新月杀) client. Open the link, type a name, and play with friends. No install, no extension packages, no server address." data-zh="浏览器里的三国杀：开源客户端新月杀的网页移植版。打开链接，输个名字，就能和朋友开局。不用装客户端，不用同步扩展包，也不用填服务器地址。">三国杀 in a browser tab: a web port of the open-source FreeKill (新月杀) client. Open the link, type a name, and play with friends. No install, no extension packages, no server address.</p>
           <div class="game-tags">
-            <span class="game-tag">Multiplayer</span>
-            <span class="game-tag">Card game</span>
-            <span class="game-tag">中文</span>
+            <span class="game-tag" data-en="Multiplayer" data-zh="多人">Multiplayer</span>
+            <span class="game-tag" data-en="Card game" data-zh="卡牌">Card game</span>
+            <span class="game-tag" data-en="中文" data-zh="中文">中文</span>
           </div>
-          <span class="game-play">Play 狗卡杀</span>
+          <span class="game-play" data-en="Play 狗卡杀" data-zh="开始游戏">Play 狗卡杀</span>
         </div>
       </a>
 
@@ -336,14 +389,17 @@
           </svg>
         </div>
         <div class="game-body">
-          <h2 class="game-title">Draft <span class="game-kicker">auction draft party game</span></h2>
-          <p class="game-desc">Bid from a fixed budget on NBA stars, footballers or Honor of Kings heroes, fill your roster, poach from rivals, then let an AI judge rule on whose lineup is best. Hot seat on one screen or online rooms.</p>
+          <h2 class="game-title">
+            <span data-en="Draft" data-zh="选秀竞拍">Draft</span>
+            <span class="game-kicker" data-en="auction draft party game" data-zh="Draft · 竞拍选秀派对游戏">auction draft party game</span>
+          </h2>
+          <p class="game-desc" data-en="Bid from a fixed budget on NBA stars, footballers or Honor of Kings heroes, fill your roster, poach from rivals, then let an AI judge rule on whose lineup is best. Hot seat on one screen or online rooms." data-zh="用固定预算竞拍 NBA 球星、足球运动员或王者荣耀英雄，凑齐自己的阵容，还能从对手那儿挖角，最后交给 AI 裁判评判谁的阵容更强。可以一台设备轮流玩，也能开线上房间。">Bid from a fixed budget on NBA stars, footballers or Honor of Kings heroes, fill your roster, poach from rivals, then let an AI judge rule on whose lineup is best. Hot seat on one screen or online rooms.</p>
           <div class="game-tags">
-            <span class="game-tag">Party</span>
-            <span class="game-tag">Multiplayer</span>
-            <span class="game-tag">AI judge</span>
+            <span class="game-tag" data-en="Party" data-zh="派对">Party</span>
+            <span class="game-tag" data-en="Multiplayer" data-zh="多人">Multiplayer</span>
+            <span class="game-tag" data-en="AI judge" data-zh="AI 裁判">AI judge</span>
           </div>
-          <span class="game-play">Play Draft</span>
+          <span class="game-play" data-en="Play Draft" data-zh="开始游戏">Play Draft</span>
         </div>
       </a>
 
@@ -357,24 +413,69 @@
           </svg>
         </div>
         <div class="game-body">
-          <h2 class="game-title">World Cup Guess <span class="game-kicker">prediction league</span></h2>
-          <p class="game-desc">A prediction game for the 2026 World Cup. Call every match score, the group tables and the bracket before kickoff, then climb the leaderboard with friends as the real results come in.</p>
+          <h2 class="game-title">
+            <span data-en="World Cup Guess" data-zh="世界杯竞猜">World Cup Guess</span>
+            <span class="game-kicker" data-en="prediction league" data-zh="World Cup Guess · 竞猜联赛">prediction league</span>
+          </h2>
+          <p class="game-desc" data-en="A prediction game for the 2026 World Cup. Call every match score, the group tables and the bracket before kickoff, then climb the leaderboard with friends as the real results come in." data-zh="2026 世界杯的竞猜游戏。开赛前把每场比分、小组排名和淘汰赛对阵都猜一遍，随着真实结果出炉，和朋友一起冲排行榜。">A prediction game for the 2026 World Cup. Call every match score, the group tables and the bracket before kickoff, then climb the leaderboard with friends as the real results come in.</p>
           <div class="game-tags">
-            <span class="game-tag">Prediction</span>
-            <span class="game-tag">Leaderboard</span>
-            <span class="game-tag">Friends</span>
+            <span class="game-tag" data-en="Prediction" data-zh="竞猜">Prediction</span>
+            <span class="game-tag" data-en="Leaderboard" data-zh="排行榜">Leaderboard</span>
+            <span class="game-tag" data-en="Friends" data-zh="好友同乐">Friends</span>
           </div>
-          <span class="game-play">Play World Cup Guess</span>
+          <span class="game-play" data-en="Play World Cup Guess" data-zh="开始游戏">Play World Cup Guess</span>
         </div>
       </a>
 
     </div>
 
-    <p class="games-footer">
-      Each game's source lives next to it in the
-      <a href="https://github.com/haoming-chen2006/haoming-chen2006.github.io">site repo</a>.
-      Found a bug? Tell me and I'll vibe it away.
-    </p>
+    <p class="games-footer"><span data-en="Each game&#39;s source lives next to it in the " data-zh="每个游戏的源码都放在旁边的">Each game's source lives next to it in the </span><a href="https://github.com/haoming-chen2006/haoming-chen2006.github.io" data-en="site repo" data-zh="网站仓库">site repo</a><span data-en=". Found a bug? Tell me and I&#39;ll vibe it away." data-zh="里。发现 bug 了？告诉我，我再氛围编程修掉。">. Found a bug? Tell me and I'll vibe it away.</span></p>
   </main>
+
+  <script>
+    (function () {
+      var KEY = 'games-lang';
+      var toggle = document.getElementById('lang-toggle');
+
+      function stored() {
+        try {
+          var v = localStorage.getItem(KEY);
+          if (v === 'en' || v === 'zh') return v;
+        } catch (e) {}
+        return null;
+      }
+
+      function preferred() {
+        var langs = navigator.languages || [navigator.language || 'en'];
+        for (var i = 0; i < langs.length; i++) {
+          var l = String(langs[i]).toLowerCase();
+          if (l.indexOf('zh') === 0) return 'zh';
+          if (l.indexOf('en') === 0) return 'en';
+        }
+        return 'en';
+      }
+
+      function apply(lang) {
+        var nodes = document.querySelectorAll('[data-en][data-zh]');
+        for (var i = 0; i < nodes.length; i++) {
+          var value = nodes[i].getAttribute('data-' + lang);
+          if (value !== null) nodes[i].textContent = value;
+        }
+        document.documentElement.lang = lang === 'zh' ? 'zh-Hans' : 'en';
+        document.title = lang === 'zh' ? '游戏 — Haoming Chen' : 'Games — Haoming Chen';
+        toggle.textContent = lang === 'zh' ? 'EN' : '中文';
+        toggle.setAttribute('aria-label', lang === 'zh' ? 'Switch to English' : '切换到中文');
+      }
+
+      var current = stored() || preferred();
+      apply(current);
+
+      toggle.addEventListener('click', function () {
+        current = current === 'zh' ? 'en' : 'zh';
+        try { localStorage.setItem(KEY, current); } catch (e) {}
+        apply(current);
+      });
+    })();
+  </script>
 </body>
 </html>

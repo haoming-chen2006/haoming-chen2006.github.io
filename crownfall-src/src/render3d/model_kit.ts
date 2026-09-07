@@ -1,10 +1,12 @@
 import * as THREE from 'three';
+import { teamHex } from './perspective.ts';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import type { Team, WeaponKind } from '../game/types.ts';
 
 export type UnitMat = THREE.MeshStandardMaterial | THREE.MeshToonMaterial;
-export const TEAM_HEX: Record<Team, number> = { 0: 0x3d9bff, 1: 0xff4d4d };
+/** Resolved against the viewer's side: blue is always "mine". See perspective.ts. */
+export const TEAM_HEX: Record<Team, number> = { get 0() { return teamHex(0); }, get 1() { return teamHex(1); } };
 export const SKIN = 0xf1c9a5;
 export const OUTLINES = true;
 

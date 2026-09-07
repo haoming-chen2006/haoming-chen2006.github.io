@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { ARENA_H, ARENA_W } from '../game/constants.ts';
 import type { Vec } from '../engine/math.ts';
+import type { Team } from '../game/types.ts';
 
 export type ViewMode = 'commander' | 'first' | 'third';
 
@@ -18,6 +19,8 @@ const UP = new THREE.Vector3(0, 1, 0);
 export class CameraRig {
   readonly camera: THREE.PerspectiveCamera;
   mode: ViewMode = 'commander';
+  /** Which end of the arena the commander seat is at. Team 1 looks down the arena from the top. */
+  viewTeam: Team = 0;
   yaw = -Math.PI / 2; // simulation angle convention: 0 = +x, pi/2 = +z (toward the player)
   pitch = 0.05;
   zoom = 1; // commander zoom (1 = default)
@@ -53,8 +56,8 @@ export class CameraRig {
     const z = this.zoom;
     // Behind and above the player's king tower, tilted toward the enemy side.
     const aspectFactor = Math.max(0.75, Math.min(1.35, 1.2 / this.camera.aspect));
-    outPos.set(ARENA_W / 2, (25 + aspectFactor * 6) / z, ARENA_H + (10 + aspectFactor * 4) / z);
-    outLook.set(ARENA_W / 2, 0, 13 + (1 - 1 / z) * 4);
+    outPos.set(ARENA_W / 2, (25 + aspectFactor * 6) / z, this.mz(ARENA_H + (10 + aspectFactor * 4) / z));
+    outLook.set(ARENA_W / 2, 0, this.mz(13 + (1 - 1 / z) * 4));
   }
 
   private possessPose(t: RigTarget, outPos: THREE.Vector3, outLook: THREE.Vector3): void {
@@ -131,14 +134,20 @@ export class CameraRig {
 
   get inCinematic(): boolean { return !!this.cinematic; }
 
+  /** Mirror an arena z (and x, so the picture stays a rotation rather than a flip) for the top-side viewer. */
+  private mz(z: number): number { return this.viewTeam === 0 ? z : ARENA_H - z; }
+  private mx(x: number): number { return this.viewTeam === 0 ? x : ARENA_W - x; }
+
+  setViewTeam(team: Team): void { this.viewTeam = team; }
+
   /** Match intro: swoop from above the enemy throne down the arena into the commander seat. */
   playIntro(duration = 3.2): void {
-    const start = new THREE.Vector3(ARENA_W / 2 + 14, 22, -8);
-    const mid = new THREE.Vector3(ARENA_W / 2 - 10, 9, ARENA_H / 2 - 4);
+    const start = new THREE.Vector3(this.mx(ARENA_W / 2 + 14), 22, this.mz(-8));
+    const mid = new THREE.Vector3(this.mx(ARENA_W / 2 - 10), 9, this.mz(ARENA_H / 2 - 4));
     const end = new THREE.Vector3(), endLook = new THREE.Vector3();
     this.commanderPose(end, endLook);
-    const curve = new THREE.CatmullRomCurve3([start, mid, new THREE.Vector3(ARENA_W / 2 + 4, 14, ARENA_H - 2), end], false, 'catmullrom', 0.6);
-    const lookA = new THREE.Vector3(ARENA_W / 2, 2, 8), lookB = new THREE.Vector3(ARENA_W / 2, 1.5, ARENA_H / 2);
+    const curve = new THREE.CatmullRomCurve3([start, mid, new THREE.Vector3(this.mx(ARENA_W / 2 + 4), 14, this.mz(ARENA_H - 2)), end], false, 'catmullrom', 0.6);
+    const lookA = new THREE.Vector3(ARENA_W / 2, 2, this.mz(8)), lookB = new THREE.Vector3(ARENA_W / 2, 1.5, ARENA_H / 2);
     this.cinematic = {
       t: 0, dur: duration, loop: false,
       path: (t, out) => {
@@ -238,6 +247,7 @@ export class CameraRig {
   /** Snap straight to the commander view (new match). */
   resetToCommander(): void {
     this.mode = 'commander';
+    this.yaw = this.viewTeam === 0 ? -Math.PI / 2 : Math.PI / 2;
     this.zoom = 1;
     this.transT = 1;
     this.commanderPose(this.pos, this.look);

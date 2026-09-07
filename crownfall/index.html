@@ -8,8 +8,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800;900&family=Nunito:wght@500;700;800;900&display=swap" rel="stylesheet" />
-  <script type="module" crossorigin src="/crownfall/assets/index-DztxxV-4.js"></script>
-  <link rel="stylesheet" crossorigin href="/crownfall/assets/index-DGGViZaI.css">
+  <script type="module" crossorigin src="/crownfall/assets/index-D7AjCr5D.js"></script>
+  <link rel="stylesheet" crossorigin href="/crownfall/assets/index-CHLk1Yfj.css">
 </head>
 <body>
   <div id="app">
@@ -36,6 +36,7 @@
         </div>
         <div class="menu-buttons">
           <button id="btnPlay" class="btn primary big"><span class="btn-icon">⚔</span>Battle</button>
+          <button id="btnOnline" class="btn big online"><span class="btn-icon">⚑</span>Online Duel<span class="btn-sub">invite a friend</span></button>
           <div class="menu-row">
             <button id="btnDeck" class="btn"><span class="btn-icon">▤</span>Deck Builder</button>
             <button id="btnHelp" class="btn"><span class="btn-icon">?</span>How to Play</button>
@@ -172,6 +173,58 @@
       </div>
     </section>
 
+    <!-- Online hub -->
+    <section id="online" class="screen hidden">
+      <div class="menu-card online-card">
+        <h2 class="heading">Online Duel</h2>
+        <p class="lede">Invite a friend and fight head to head — every troop, every possession, in real time.</p>
+        <label class="field"><span>Your name</span><input id="onlineName" type="text" maxlength="18" placeholder="Commander" autocomplete="nickname" /></label>
+        <div class="online-actions">
+          <button id="btnCreateRoom" class="btn primary big"><span class="btn-icon">♛</span>Create Room</button>
+          <div class="join-row">
+            <input id="joinCode" type="text" placeholder="ROOM CODE" maxlength="8" autocapitalize="characters" autocomplete="off" spellcheck="false" />
+            <button id="btnJoinRoom" class="btn">Join</button>
+          </div>
+        </div>
+        <div class="online-deck"><span class="label">Your deck</span><span id="onlineDeckInfo" class="muted"></span><button id="btnOnlineDeck" class="btn small ghost">Change</button></div>
+        <div class="open-rooms">
+          <div class="label">Open rooms</div>
+          <div id="openRooms" class="rooms-list"><span class="muted">Looking for rooms…</span></div>
+        </div>
+        <p id="onlineStatus" class="status"></p>
+        <button id="btnOnlineBack" class="btn ghost">Back</button>
+      </div>
+    </section>
+
+    <!-- Waiting room -->
+    <section id="room" class="screen hidden">
+      <div class="menu-card room-card">
+        <div class="room-head">
+          <h2 class="heading">Waiting Room</h2>
+          <div class="room-code-wrap"><span class="label">Room</span><span id="roomCode" class="room-code">····</span></div>
+        </div>
+        <div class="sharebar"><code id="roomLink"></code><button id="btnCopyLink" class="btn small primary">Copy link</button></div>
+        <div class="seats">
+          <div class="seat blue" id="seatHost"><div class="seat-role">Host · Blue</div><div class="seat-name">—</div><div class="seat-deck"></div><div class="seat-state"></div></div>
+          <div class="vs-badge">VS</div>
+          <div class="seat red empty" id="seatGuest"><div class="seat-role">Guest · Red</div><div class="seat-name">Waiting for a challenger…</div><div class="seat-deck"></div><div class="seat-state"></div></div>
+        </div>
+        <div class="room-chat">
+          <div id="roomChatLog" class="chat-log"></div>
+          <form id="roomChatForm" class="chat-form"><input id="roomChatInput" type="text" placeholder="Say hello…" maxlength="140" autocomplete="off" /><button class="btn small">Send</button></form>
+        </div>
+        <div class="room-foot">
+          <span id="roomLink2" class="link-mode connecting">Connecting…</span>
+          <p id="roomStatus" class="status"></p>
+        </div>
+        <div class="row">
+          <button id="btnRoomLeave" class="btn ghost">Leave</button>
+          <button id="btnRoomReady" class="btn primary">Ready</button>
+          <button id="btnRoomStart" class="btn primary big" disabled>Waiting for a challenger…</button>
+        </div>
+      </div>
+    </section>
+
     <!-- Game -->
     <section id="game" class="screen hidden">
       <div id="stage">
@@ -184,6 +237,7 @@
           <div class="tb-center">
             <div id="timer">3:00</div>
             <div id="phase"></div>
+            <div id="netPill" class="net-pill hidden"></div>
           </div>
           <div class="tb-side right">
             <span class="tb-crowns" id="p1crowns"></span>
@@ -210,8 +264,8 @@
       </aside>
       <div id="pauseOverlay" class="overlay hidden">
         <div class="dialog">
-          <h2 class="heading">Paused</h2>
-          <p class="muted">The battle waits for no one… except you.</p>
+          <h2 class="heading" id="pauseTitle">Paused</h2>
+          <p class="muted" id="pauseSub">The battle waits for no one… except you.</p>
           <button id="btnResume" class="btn primary">Resume</button>
           <button id="btnPauseSettings" class="btn">Settings</button>
           <button id="btnQuit" class="btn ghost">Quit to Menu</button>

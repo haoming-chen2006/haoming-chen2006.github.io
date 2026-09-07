@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { isMine } from './perspective.ts';
 import type { BuildingDef, Look, Team } from '../game/types.ts';
 import { TEAM_HEX, boxGeo, buildWeapon, coneGeo, cylGeo, mat, attach, mergeByMaterial, mesh, rboxGeo, sphereGeo, toon, torusGeo, type UnitMat } from './model_kit.ts';
 import { buildBeast, buildBrute, buildDragon, buildFlyer, buildHumanoid, buildWraith, type UnitParts } from './models_units.ts';
@@ -67,7 +68,7 @@ export function buildUnitModel(look: Look, team: Team, seed = 0): UnitModel {
 export function setHeroLook(m: UnitModel, on: boolean, team: Team): void {
   if (!on) { if (m.heroMarker) { m.root.remove(m.heroMarker); m.heroMarker = undefined; } return; }
   if (m.heroMarker) return;
-  const col = team === 0 ? 0xffd54a : 0xff4d4d;
+  const col = isMine(team) ? 0xffd54a : 0xff4d4d;
   const gm = mat(col, { metalness: 0.6, roughness: 0.35, emissive: col, emissiveIntensity: 0.9, flat: false });
   m.mats.push(gm);
   const g = new THREE.Group();
@@ -223,7 +224,7 @@ let stoneDarkTex: THREE.Texture | null = null;
 const getStone = () => (stoneTex ??= stoneTexture(256, [172, 170, 168]));
 const getStoneDark = () => (stoneDarkTex ??= stoneTexture(256, [120, 122, 128]));
 const bannerCache = new Map<string, THREE.Texture>();
-const getBanner = (team: Team) => { const k = String(team); let t = bannerCache.get(k); if (!t) { t = bannerTexture(team === 0 ? '#2f7fd6' : '#d63b3b'); bannerCache.set(k, t); } return t; };
+const getBanner = (team: Team) => { const mine = isMine(team); const k = mine ? 'mine' : 'foe'; let t = bannerCache.get(k); if (!t) { t = bannerTexture(mine ? '#2f7fd6' : '#d63b3b'); bannerCache.set(k, t); } return t; };
 
 export interface TowerModel { root: THREE.Group; turret: THREE.Object3D; crown?: THREE.Object3D; mats: UnitMat[]; top: number; height: number; flag?: THREE.Object3D; flags?: THREE.Mesh[] }
 
@@ -246,7 +247,7 @@ export function buildTowerModel(type: 'king' | 'princess', team: Team, radius: n
   const trim = mat(0x6b6f76, { flat: false });
   const teamM = mat(TEAM_HEX[team], { emissive: TEAM_HEX[team], emissiveIntensity: 0.25, flat: false });
   const wood = mat(0x6b4a2b, { flat: false });
-  const roofM = mat(team === 0 ? 0x2f5f9e : 0x8a2626, { flat: false });
+  const roofM = mat(isMine(team) ? 0x2f5f9e : 0x8a2626, { flat: false });
   const slitM = mat(0x0f1216);
   mats.push(stone, stoneDark, trim, teamM, wood, roofM, slitM);
   const base = mesh(cylGeo(radius * 1.1, radius * 1.22, 0.55, 20), stoneDark, 0, 0.27, 0); base.receiveShadow = true; root.add(base);
@@ -295,7 +296,7 @@ export function buildTowerModel(type: 'king' | 'princess', team: Team, radius: n
     const roof = mesh(coneGeo(radius * 0.85, 0.9, 8), roofM, 0, 1.9, 0); turret.add(roof);
     turret.add(mesh(cylGeo(radius * 0.9, radius * 0.9, 0.08, 8), trim, 0, 1.48, 0));
     turret.add(mesh(sphereGeo(0.1, 6), mat(0xe9c46a, { metalness: 0.6, flat: false }), 0, 2.4, 0));
-    const archer = buildHumanoid({ color: team === 0 ? '#3d9bff' : '#ff4d4d', accent: '#2a2a2a', shape: 'humanoid', weapon: 'bow', size: 0.34 }, team);
+    const archer = buildHumanoid({ color: isMine(team) ? '#3d9bff' : '#ff4d4d', accent: '#2a2a2a', shape: 'humanoid', weapon: 'bow', size: 0.34 }, team);
     turret.add(archer.grp);
     mats.push(...archer.mats);
   }

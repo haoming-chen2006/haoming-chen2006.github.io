@@ -5,6 +5,7 @@ import type { Team, Unit } from '../game/types.ts';
 import type { World } from '../game/world.ts';
 import { bannerTexture, cobbleTexture, dirtTexture, grassTexture, stoneTexture, woodTexture } from './textures.ts';
 import { mergeByMaterial } from './model_kit.ts';
+import { isMine } from './perspective.ts';
 
 const hash = (x: number, y: number, s = 0): number => { const v = Math.sin(x * 127.1 + y * 311.7 + s * 74.7) * 43758.5453; return v - Math.floor(v); };
 
@@ -28,6 +29,8 @@ export class Arena3D {
   private torches: THREE.Mesh[] = [];
   private clouds: THREE.Group[] = [];
   private flags: THREE.Mesh[] = [];
+  private wallBanners: { flag: THREE.Mesh; team: Team }[] = [];
+  private bannerTex!: { mine: THREE.Texture; foe: THREE.Texture };
   private lanterns: THREE.Mesh[] = [];
   private birds: THREE.Group[] = [];
   private windMats: THREE.MeshStandardMaterial[] = [];
@@ -213,15 +216,15 @@ export class Arena3D {
       this.torches.push(flame);
     }
     // team banners along the side walls
-    const bannerTex: Record<0 | 1, THREE.Texture> = { 0: bannerTexture('#2f7fd6'), 1: bannerTexture('#d63b3b') };
+    this.bannerTex = { mine: bannerTexture('#2f7fd6'), foe: bannerTexture('#d63b3b') };
     for (const side of [-1, 1]) for (const z of [5, 11, 21, 27]) {
       const team: 0 | 1 = z > 16 ? 0 : 1;
       const x = side < 0 ? -wallT - 0.05 : ARENA_W + wallT + 0.05;
       const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 2.6, 6), railM);
       pole.position.set(x, 1.3, z); this.statics.add(pole);
-      const flag = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 1.3, 6, 1), new THREE.MeshStandardMaterial({ map: bannerTex[team], side: THREE.DoubleSide, roughness: 0.9 }));
+      const flag = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 1.3, 6, 1), new THREE.MeshStandardMaterial({ map: isMine(team) ? this.bannerTex.mine : this.bannerTex.foe, side: THREE.DoubleSide, roughness: 0.9 }));
       flag.position.set(x, 1.9, z + 0.5); flag.rotation.y = Math.PI / 2; flag.castShadow = true;
-      this.group.add(flag); this.flags.push(flag);
+      this.group.add(flag); this.flags.push(flag); this.wallBanners.push({ flag, team });
     }
     // flower / tuft scatter inside the arena (instanced)
     const tuftGeo = new THREE.ConeGeometry(0.11, 0.22, 4);
@@ -409,6 +412,11 @@ export class Arena3D {
   }
 
   /** Show/hide the deployable-tile overlay for a team. */
+  /** The viewer changed sides: the side-wall banners follow the blue-is-mine rule. */
+  refreshTeamColours(): void {
+    for (const b of this.wallBanners) { const m = b.flag.material as THREE.MeshStandardMaterial; m.map = isMine(b.team) ? this.bannerTex.mine : this.bannerTex.foe; m.needsUpdate = true; }
+  }
+
   showDeployZone(w: World | null, team: Team, hero: Unit | undefined, isSpell: boolean): void {
     const key = w && !isSpell ? `${team}:${w.towers(0).length}:${w.towers(1).length}` : '';
     if (key !== this.zoneKey) {

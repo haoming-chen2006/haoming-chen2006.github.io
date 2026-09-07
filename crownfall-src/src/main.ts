@@ -3,9 +3,11 @@ import { sfx } from './audio/sfx.ts';
 import { PRESET_DECKS, cardsFromIds } from './game/cards.ts';
 import { idleCommand } from './game/hero.ts';
 import { Simulation } from './game/sim.ts';
-import { GameScreen } from './game_screen.ts';
+import { other } from './game/types.ts';
+import { GameScreen, type MatchConfig } from './game_screen.ts';
 import { GameView } from './render3d/scene.ts';
-import { Menus, loadSettings, saveSettings, showLoading } from './ui/menu.ts';
+import { Menus, loadSettings, saveSettings, showLoading, type ScreenName } from './ui/menu.ts';
+import { Multiplayer } from './ui/multiplayer.ts';
 import { Tutorial } from './ui/tutorial.ts';
 
 const $ = (id: string): HTMLElement => {
@@ -32,9 +34,10 @@ const game = new GameScreen(view, canvas);
 game.preferFirst = settings.firstPerson;
 game.onViewToggle = (first) => { settings.firstPerson = first; saveSettings(settings); };
 game.onAutoQuality = (q) => { settings.quality = q; saveSettings(settings); menus.refreshMenu(); };
-game.onEnd = (winner) => {
-  if (winner === 0) settings.record.wins++; else if (winner === 1) settings.record.losses++; else settings.record.draws++;
+game.onEnd = (winner, me) => {
+  if (winner === me) settings.record.wins++; else if (winner === other(me)) settings.record.losses++; else settings.record.draws++;
   saveSettings(settings);
+  if (game.online) mp.matchEnded();
 };
 
 const applyAudioSettings = () => {
@@ -83,19 +86,44 @@ function startBattle(): void {
   game.start({ deck: cardsFromIds(settings.deck), botDeck: cardsFromIds(pickBotDeck()), difficulty: settings.difficulty, tutorial: settings.showTutorial && !settings.tutorialDone });
 }
 
-function quitToMenu(): void {
+/** An online duel: the multiplayer controller hands over a fully described match. */
+function startOnline(cfg: MatchConfig): void {
+  demo = null;
+  view.clear();
+  menus.show('game');
+  applyAudioSettings();
+  game.start(cfg);
+}
+
+function backToMenus(screen: ScreenName): void {
   game.stop();
-  menus.show('menu');
-  newDemo();
+  menus.show(screen);
+  if (!demo) newDemo();
   music.setScene('menu');
   sfx.setAmbience('menu');
 }
 
+function quitToMenu(): void { backToMenus('menu'); }
+
+const mp = new Multiplayer({
+  settings,
+  show: (s) => { if (s === 'deck') menus.deckReturnTo = 'online'; menus.show(s); },
+  startMatch: startOnline,
+  endMatch: () => { game.stop(); if (!demo) newDemo(); music.setScene('menu'); sfx.setAmbience('menu'); },
+  toast: (t) => game.toast(t, 'warn'),
+  playUi: () => sfx.play('ui'),
+});
+menus.onShow = (name) => { if (name === 'online') mp.refreshDeckInfo(); };
+window.addEventListener('crownfall:opponent-gone', (e) => {
+  if (game.online) game.forfeit(other(game.me), `Opponent ${(e as CustomEvent<string>).detail}`);
+});
+
 $('btnPlay').addEventListener('click', () => { sfx.init(); applyAudioSettings(); startBattle(); });
+$('btnOnline').addEventListener('click', () => { sfx.init(); applyAudioSettings(); void mp.openHub(); });
 $('btnResume').addEventListener('click', () => game.setPaused(false));
-$('btnQuit').addEventListener('click', quitToMenu);
-$('btnAgain').addEventListener('click', () => { game.stop(); startBattle(); });
-$('btnMenu').addEventListener('click', quitToMenu);
+$('btnQuit').addEventListener('click', () => { if (game.online) { game.setPaused(false); game.concede(); } else quitToMenu(); });
+$('btnAgain').addEventListener('click', () => { if (game.online) void mp.requestRematch(); else { game.stop(); startBattle(); } });
+$('btnMenu').addEventListener('click', () => { if (game.online) { backToMenus('room'); mp.backToRoom(); } else quitToMenu(); });
 
 let audioReady = false;
 const wakeAudio = () => { sfx.init(); if (!audioReady && sfx.ctx) { audioReady = true; applyAudioSettings(); if (!game.active) { music.setScene('menu'); sfx.startAmbience('menu'); } } };
@@ -114,6 +142,15 @@ menus.show('menu');
 newDemo();
 showLoading(false);
 
+// Invite links: #/join/CODE opens the online hub and joins the room straight away.
+function handleRoute(): void {
+  const m = /^#\/join\/([A-Za-z0-9]{4,8})/.exec(location.hash);
+  if (m) { sfx.init(); void mp.openHub(m[1].toUpperCase()); return; }
+  if (/^#\/room\//.test(location.hash)) history.replaceState(null, '', `${location.pathname}${location.search}`);
+}
+handleRoute();
+window.addEventListener('hashchange', () => { if (/^#\/join\//.test(location.hash) && !mp.active) handleRoute(); });
+
 // Favicon: a small painted crown, so the tab has an identity without shipping an image.
 (() => {
   const c = document.createElement('canvas'); c.width = c.height = 64;
@@ -124,9 +161,11 @@ showLoading(false);
   const link = document.createElement('link'); link.rel = 'icon'; link.href = c.toDataURL('image/png'); document.head.appendChild(link);
 })();
 
-// Debug/test hook: lets scripted play-tests project world coordinates to the screen.
+// Debug/test hook: lets scripted play-tests project world coordinates to the screen and read the match.
 (window as unknown as { __cf: unknown }).__cf = {
-  view, game, settings, sfx, music,
+  view, game, settings, sfx, music, mp,
+  net: () => game.netDebug(),
+  world: () => game.world,
   toScreen(x: number, z: number, y = 0.05): { x: number; y: number } {
     const r = canvas.getBoundingClientRect();
     const p = view.rig.project(x, y, z, r.width, r.height);
@@ -142,7 +181,7 @@ function loop(ts: number): void {
   const dt = Math.min(0.1, raw);
   last = ts;
   time += dt;
-  if (game.active) { game.frame(dt, Math.min(0.5, raw)); return; }
+  if (game.active) { game.frame(dt, Math.min(0.5, raw), mp.linkStatus()); return; }
   if (demo) {
     demo.advance(dt, idleCommand());
     demo.w.events.length = 0;

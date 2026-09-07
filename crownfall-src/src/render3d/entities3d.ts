@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { teamHex } from './perspective.ts';
 import type { Building, Entity, Tower, Unit } from '../game/types.ts';
 import type { World } from '../game/world.ts';
 import { activeFx } from './effects3d.ts';
@@ -216,7 +217,7 @@ export class Entities3D {
     const isHero = u.id === heroId;
     m.root.visible = !(isHero && hideHero);
     if (u.shield > 0) { m.ring.scale.setScalar(1.15); (m.ring.material as THREE.MeshBasicMaterial).color.setHex(0xffe9a0); }
-    else { m.ring.scale.setScalar(1); (m.ring.material as THREE.MeshBasicMaterial).color.setHex(u.team === 0 ? 0x3d9bff : 0xff4d4d); }
+    else { m.ring.scale.setScalar(1); (m.ring.material as THREE.MeshBasicMaterial).color.setHex(teamHex(u.team)); }
   }
 
   private syncTower(t: Tower, dt: number, time: number): void {

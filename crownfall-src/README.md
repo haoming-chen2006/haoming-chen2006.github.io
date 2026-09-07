@@ -15,6 +15,7 @@ npm run dev        # http://localhost:5173
 npm run build      # production build in dist/
 npm run check      # tsc --noEmit
 npm run sim        # headless bot-vs-bot matches (node scripts/sim.ts [games] [seed])
+npm run test:sim   # determinism, deterministic maths, snapshot round-trip, lockstep-over-a-fake-network
 node scripts/hero_test.ts   # exercises every troop's possession kit headlessly
 node scripts/stress.ts 24   # many seeds x difficulties, crash + outcome stats
 ```
@@ -67,6 +68,43 @@ node scripts/stress.ts 24   # many seeds x difficulties, crash + outcome stats
 * When the champion dies you return to the Commander view; possess again after 4 s (6 s if you
   left voluntarily).
 
+## Online duels
+
+Press **Online Duel** on the main menu, type a name, and either **Create Room** (you get a four-letter
+code and a link such as `…/crownfall/#/join/ABCD` to send to a friend) or **Join** with a code. The
+waiting room shows both seats with their decks, a chat box, and whether the two browsers found a direct
+connection. The host presses **Start Battle**; the results screen offers a **Rematch** that starts the
+moment both players ask for it.
+
+How it works, in one paragraph: the simulation is deterministic, so both browsers run the *same* match
+from a shared seed and only exchange inputs — one small packet per tick per seat — in **lockstep**
+(`src/net/lockstep.ts`). Each side stamps its input for a few ticks in the future (the "input delay",
+chosen from the measured round trip: 3 ticks on a direct link, more when relayed) and steps a tick only
+once it holds both seats' inputs for it. Every second both worlds are hashed and compared; if they ever
+differ, the guest asks the host for a full snapshot (`src/game/snapshot.ts`) and replays from there.
+`src/engine/dmath.ts` replaces `Math.sin/cos/atan2/exp/hypot` in the simulation with bit-exact software
+versions, because those differ between V8 and JavaScriptCore and a Chrome-vs-Safari match would drift
+without it (`scripts/determinism_test.ts` proves the hashes agree under `node` and `bun`).
+
+Transport (`src/net/peer.ts`): a WebRTC data channel straight between the two browsers when NAT allows
+(typically 1–60 ms), signalled over Supabase Realtime; otherwise every packet is relayed through the
+same Supabase channel. A late direct channel is picked up whenever it opens. Rooms (`src/net/room.ts`)
+are Realtime channels with presence — no database tables, so there is nothing to migrate; a room lives
+as long as its host's tab does. Identity is an anonymous Supabase sign-in plus a locally stored name.
+
+The guest plays team 1 (the top of the arena) but sees the arena from their own end: the camera,
+minimap, colours (blue is always *you*), HUD and results all go through `src/render3d/perspective.ts`
+rather than assuming team 0.
+
+Leaving mid-match (Esc → Leave Battle) concedes. If the other browser disappears — closed tab, dead
+connection for 25 s — the remaining player wins by forfeit. There is no pause online; Esc opens a menu
+over a battle that keeps going.
+
+Tests: `npm run test:sim` runs the determinism, maths, snapshot and lockstep suites headlessly (the last
+one plays 150 s of a duel through a fake network with 30–300 ms of latency, jitter and duplicated
+packets, then corrupts the guest and checks the snapshot heals it). `node e2e/duel.cjs` drives two real
+browsers through the whole flow against the dev server — see `e2e/README.md`.
+
 ## Deploying
 
 `scripts/deploy.sh` type-checks, builds with base `/crownfall/`, and copies the build to
@@ -94,11 +132,12 @@ placement noise and elixir income (0.85x / 1.0x / 1.15x).
 ## Code layout
 
 ```
-src/engine/    math, seeded RNG, keyboard/pointer input, camera (zoom, follow, shake)
+src/net/       online duels: identity, rooms (Supabase presence), WebRTC/relay link, lockstep driver
+src/engine/    math, seeded RNG, keyboard/pointer input, camera (zoom, follow, shake); dmath = bit-exact trig/exp
 src/game/      pure simulation, no DOM: cards, world, terrain/pathing, combat, unit AI,
                structures, abilities, hero (possession), deploy/spells, bot, sim orchestrator
 src/render/    Canvas 2D: procedural sprites, arena, effects/projectiles, renderer + minimap
-src/ui/        DOM HUD, menus, deck builder, card elements
+src/ui/        DOM HUD, menus, deck builder, card elements, the online hub + waiting room
 src/audio/     WebAudio synthesised SFX and ambience
 scripts/       headless tests that run the simulation under Node
 ```

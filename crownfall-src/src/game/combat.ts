@@ -1,3 +1,4 @@
+import { dsin } from '../engine/dmath.ts';
 import { add, dist, norm, pointSegDist, scale, sub, type Vec } from '../engine/math.ts';
 import { other, type Entity, type Projectile, type ProjectileStyle, type Team, type Unit } from './types.ts';
 import { POSSESS, STREAK_WINDOW } from './constants.ts';
@@ -286,7 +287,7 @@ export function updateProjectiles(w: World, dt: number): void {
       p.lobT += dt / p.lobDur;
       const t = Math.min(1, p.lobT);
       p.pos = { x: p.lobFrom.x + (p.lobTo.x - p.lobFrom.x) * t, y: p.lobFrom.y + (p.lobTo.y - p.lobFrom.y) * t };
-      p.height = Math.sin(t * Math.PI) * Math.min(2.5, 0.6 + dist(p.lobFrom, p.lobTo) * 0.35);
+      p.height = dsin(t * Math.PI) * Math.min(2.5, 0.6 + dist(p.lobFrom, p.lobTo) * 0.35);
       if (t >= 1) {
         const primary = p.targetId >= 0 ? w.get(p.targetId) ?? null : null;
         impact(w, p, primary && dist(primary.pos, p.lobTo) <= primary.radius + 0.4 ? primary : null, p.lobTo);

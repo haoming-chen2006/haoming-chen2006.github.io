@@ -1,3 +1,4 @@
+import { dexp } from '../engine/dmath.ts';
 import { add, angleOf, dist, len, norm, scale, sub, type Vec } from '../engine/math.ts';
 import { updateAbilityMotion } from './abilities.ts';
 import { fireProjectile, heal, meleeHit, tickStatus } from './combat.ts';
@@ -16,7 +17,7 @@ export function updateUnits(w: World, dt: number): void {
     if (u.buffT > 0) { u.buffT -= dt; if (u.buffT <= 0) { u.buffSpeed = 1; u.buffAttack = 1; } }
     if (u.vel.x !== 0 || u.vel.y !== 0) {
       u.pos = add(u.pos, scale(u.vel, dt));
-      u.vel = scale(u.vel, Math.exp(-9 * dt));
+      u.vel = scale(u.vel, dexp(-9 * dt));
       if (len(u.vel) < 0.05) u.vel = { x: 0, y: 0 };
     }
     if (u.def.healAura) healAura(w, u, dt);

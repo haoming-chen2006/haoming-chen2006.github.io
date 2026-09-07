@@ -12,6 +12,7 @@ import { Effects3D } from './effects3d.ts';
 import { Entities3D } from './entities3d.ts';
 import { buildViewmodel, type Viewmodel } from './viewmodel.ts';
 import { Overlay } from './overlay.ts';
+import { setViewTeam } from './perspective.ts';
 
 export interface ViewState {
   mode: ViewMode;
@@ -110,6 +111,17 @@ export class GameView {
 
   /** Drop all match objects so a new match starts clean. */
   clear(): void { this.ents.clear(); }
+
+  /**
+   * Which side this browser plays. Must be called before the first `render` of a match: models are
+   * coloured as they are built, so a side change needs `clear()` (a new match always does that).
+   */
+  setViewTeam(team: Team): void {
+    setViewTeam(team);
+    this.rig.setViewTeam(team);
+    this.arena.refreshTeamColours();
+    this.viewmodelKey = '';
+  }
 
   private updateViewmodel(hero: Unit | undefined, st: ViewState, dt: number, time: number): void {
     const show = st.mode === 'first' && !!hero;

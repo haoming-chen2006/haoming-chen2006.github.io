@@ -6,7 +6,7 @@ import { updateHero, type HeroCommand } from './hero.ts';
 import { updateBuildings, updateTowers } from './structures.ts';
 import { updateProjectiles } from './combat.ts';
 import { updateUnits } from './unit_ai.ts';
-import type { Award, CardDef, PlayerState, Stats, Team } from './types.ts';
+import { other, type Award, type CardDef, type PlayerState, type Stats, type Team } from './types.ts';
 import { World } from './world.ts';
 
 export interface SimConfig {
@@ -17,19 +17,39 @@ export interface SimConfig {
   playerName?: string;
   /** Make both sides bots (used by the headless simulation and the menu demo). */
   botVsBot?: boolean;
+  /**
+   * Online duel: two human commanders and no bots. `playerDeck` belongs to team 0 (the host, bottom side)
+   * and `botDeck` to team 1 (the guest, top side). Every tick then takes a command per team.
+   */
+  duel?: { names: [string, string] };
 }
+
+/** One command per team. Bot-controlled teams ignore theirs. */
+export type TeamCommands = readonly [HeroCommand, HeroCommand];
+
+/** Simulation state that is not part of the World but must travel with a snapshot. */
+export interface SimInternals { acc: number; countdownStep: number }
 
 export class Simulation {
   readonly w: World;
   readonly bots: Bot[] = [];
   readonly botHeroes: BotHero[] = [];
   readonly difficulty: Difficulty;
+  readonly duel: boolean;
   private acc = 0;
   private countdownStep = 4;
 
   constructor(cfg: SimConfig) {
     const d = DIFFICULTIES[cfg.difficulty];
     this.difficulty = cfg.difficulty;
+    this.duel = !!cfg.duel;
+    if (cfg.duel) {
+      this.w = new World([
+        { deck: cfg.playerDeck, isBot: false, name: cfg.duel.names[0] },
+        { deck: cfg.botDeck, isBot: false, name: cfg.duel.names[1] },
+      ], cfg.seed);
+      return;
+    }
     this.w = new World([
       { deck: cfg.playerDeck, isBot: !!cfg.botVsBot, name: cfg.playerName ?? 'You' },
       { deck: cfg.botDeck, isBot: true, name: d.name, elixirMult: d.elixirMult },
@@ -38,6 +58,10 @@ export class Simulation {
     this.botHeroes.push(new BotHero(1, d));
     if (cfg.botVsBot) { this.bots.push(new Bot(0, DIFFICULTIES.normal)); this.botHeroes.push(new BotHero(0, DIFFICULTIES.normal)); }
   }
+
+  /** Snapshot support: the per-instance state that lives outside the World. */
+  get internals(): SimInternals { return { acc: this.acc, countdownStep: this.countdownStep }; }
+  restoreInternals(s: SimInternals): void { this.acc = s.acc; this.countdownStep = s.countdownStep; }
 
   /** Jump straight into the fight (tests and background demos). */
   skipCountdown(): void {
@@ -57,13 +81,17 @@ export class Simulation {
   }
 
   /** Advance the simulation by wall-clock `elapsed` seconds using fixed ticks. */
-  advance(elapsed: number, cmd: HeroCommand): void {
+  advance(elapsed: number, cmd: HeroCommand | TeamCommands): void {
     this.acc += Math.min(elapsed, 0.25);
     while (this.acc >= TICK) { this.step(TICK, cmd); this.acc -= TICK; }
   }
 
-  step(dt: number, cmd: HeroCommand): void {
+  /** The other side conceded or dropped: the match ends now, in `winner`'s favour. */
+  forfeit(loser: Team, reason: string): void { this.finish(other(loser), reason); }
+
+  step(dt: number, cmd: HeroCommand | TeamCommands): void {
     const w = this.w;
+    const cmds: TeamCommands = Array.isArray(cmd) ? (cmd as TeamCommands) : [cmd as HeroCommand, cmd as HeroCommand];
     if (w.phase === 'ended') return;
     if (w.phase === 'countdown') {
       if (this.countdownStep === 4) { this.countdownStep = 3; w.emit({ type: 'countdown', text: '3' }); }
@@ -88,7 +116,7 @@ export class Simulation {
       if (p.possessCd > 0) p.possessCd -= dt;
       if (p.heroId >= 0 && !p.isBot) p.stats.heroTime += dt;
     }
-    if (!w.players[0].isBot) updateHero(w, 0, cmd, dt);
+    for (const team of [0, 1] as Team[]) if (!w.players[team].isBot) updateHero(w, team, cmds[team], dt);
     for (const b of this.bots) b.update(w, dt);
     for (const bh of this.botHeroes) updateHero(w, bh.team, bh.update(w, dt), dt);
     updateUnits(w, dt);

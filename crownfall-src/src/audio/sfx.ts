@@ -6,6 +6,7 @@
  * Public API: init(), setEnabled(), play(name, pos?), handle(event), startAmbience(scene?),
  * stopAmbience(), setAmbience(scene), listener {x,y,yaw,enabled}. See NAMES below.
  */
+import type { Team } from '../game/types.ts';
 import type { GameEvent } from '../game/types.ts';
 import { bell, clamp, crash, kick, makeImpulse, makeNoise, midi, noise as noiseBurst, note as synthNote, pool, snare, timpani, tom, type Ctx, type NoiseOpts, type NoteOpts } from './synth.ts';
 
@@ -43,6 +44,8 @@ export class Sfx {
   volume = 0.6;
   /** Listener position in arena units; used for attenuation/panning while possessed. */
   listener = { x: 9, y: 24, enabled: false, yaw: -Math.PI / 2 };
+  /** The team this browser plays: hit markers only ring for the viewer's own champion. */
+  viewTeam: Team = 0;
   private base: Ctx | null = null;
   private sfxBus: GainNode | null = null;
   private dry: GainNode | null = null;
@@ -286,7 +289,7 @@ export class Sfx {
         const s = ev.style;
         const n: SoundName = s === 'rock' ? 'meleeHit' : s === 'arrow' || s === 'spear' ? 'hitArrow' : s === 'bolt' ? 'hitBolt' : s === 'fireball' || s === 'flame' ? 'hitFire' : s === 'bomb' ? 'hitBomb' : s === 'cannonball' ? 'hitCannon' : s === 'shadow' ? 'hitShadow' : s === 'holy' ? 'hitHoly' : s === 'ice' ? 'hitIce' : 'meleeHit';
         this.play(n, p);
-        if (ev.hero && ev.team === 0) this.play('hitmarker');
+        if (ev.hero && ev.team === this.viewTeam) this.play('hitmarker');
         break;
       }
       case 'death': this.play(Math.random() < 0.2 ? 'deathSkeleton' : 'death', p); break;

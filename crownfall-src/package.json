@@ -8,13 +8,16 @@
     "build": "vite build",
     "preview": "vite preview",
     "check": "tsc --noEmit",
-    "sim": "node scripts/sim.ts"
+    "sim": "node scripts/sim.ts",
+    "test:sim": "node scripts/determinism_test.ts && node scripts/dmath_test.ts && node scripts/snapshot_test.ts && node scripts/lockstep_test.ts",
+    "e2e:duel": "node e2e/duel.cjs"
   },
   "devDependencies": {
     "typescript": "^5.6.0",
     "vite": "^6.0.0"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.115.0",
     "@types/three": "^0.185.4",
     "three": "^0.185.1"
   }

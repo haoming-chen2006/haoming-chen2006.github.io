@@ -2,6 +2,7 @@ import { ARENA_H, ARENA_W } from '../game/constants.ts';
 import type { CardDef, Entity, Team, Unit } from '../game/types.ts';
 import type { World } from '../game/world.ts';
 import type { CameraRig, ViewMode } from './camera3d.ts';
+import { getViewTeam, isMine, teamCss } from './perspective.ts';
 import type { Entities3D } from './entities3d.ts';
 
 export interface OverlayState {
@@ -15,7 +16,6 @@ export interface OverlayState {
   locked: boolean;
 }
 
-const TEAM_COLOR: Record<Team, string> = { 0: '#4da3ff', 1: '#ff5a5a' };
 
 /** Crisp 2D layer drawn over the WebGL canvas: bars, numbers, crosshair, minimap. */
 export class Overlay {
@@ -48,7 +48,7 @@ export class Overlay {
     // health bars
     for (const e of world.alive()) {
       if (e.kind === 'unit' && e.id === st.heroId && fp) continue;
-      const showBar = e.kind !== 'unit' || e.hp < e.maxHp || e.id === st.heroId || e.shield > 0 || st.hover === e || (!fp && st.mode !== 'commander' && e.team !== 0) || (fp && e.team !== 0);
+      const showBar = e.kind !== 'unit' || e.hp < e.maxHp || e.id === st.heroId || e.shield > 0 || st.hover === e || (!fp && st.mode !== 'commander' && !isMine(e.team)) || (fp && !isMine(e.team));
       if (!showBar) continue;
       const top = ents.headHeight(e);
       const p = rig.project(e.pos.x, top, e.pos.y, this.w, this.h);
@@ -95,7 +95,7 @@ export class Overlay {
       let onTarget = false;
       const cx = this.w / 2, cy = this.h / 2;
       for (const e of world.alive()) {
-        if (e.team === 0) continue;
+        if (isMine(e.team)) continue;
         const p = rig.project(e.pos.x, ents.headHeight(e) * 0.5, e.pos.y, this.w, this.h);
         if (!p.visible) continue;
         const size = Math.max(10, (e.radius * 60) / Math.max(0.05, p.depth + 1.001 - 1)) ;
@@ -111,7 +111,7 @@ export class Overlay {
     const ctx = this.ctx;
     ctx.fillStyle = 'rgba(0,0,0,0.65)'; ctx.fillRect(x - w / 2 - 1.5, y - 1.5, w + 3, h + 3);
     ctx.fillStyle = '#2a2a2a'; ctx.fillRect(x - w / 2, y, w, h);
-    ctx.fillStyle = hero ? '#ffd86b' : TEAM_COLOR[team]; ctx.fillRect(x - w / 2, y, w * Math.max(0, Math.min(1, frac)), h);
+    ctx.fillStyle = hero ? '#ffd86b' : teamCss(team); ctx.fillRect(x - w / 2, y, w * Math.max(0, Math.min(1, frac)), h);
     if (shield > 0) { ctx.fillStyle = 'rgba(255,240,180,0.95)'; ctx.fillRect(x - w / 2, y - 3, w * Math.min(1, shield), 2.5); }
     if (text !== null) {
       ctx.font = `700 ${Math.max(9, h * 1.7)}px system-ui, sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
@@ -161,6 +161,9 @@ export class Overlay {
     const mw = 100, mh = mw * (ARENA_H / ARENA_W);
     const x0 = 16, y0 = this.h - mh - 16;
     const sx = mw / ARENA_W, sy = mh / ARENA_H;
+    // the viewer's own side always sits at the bottom of the map
+    const flip = getViewTeam() === 1;
+    const px = (x: number) => x0 + (flip ? ARENA_W - x : x) * sx, py = (y: number) => y0 + (flip ? ARENA_H - y : y) * sy;
     ctx.save();
     ctx.globalAlpha = 0.9;
     ctx.fillStyle = 'rgba(10,14,20,0.7)'; ctx.beginPath(); ctx.roundRect(x0 - 5, y0 - 5, mw + 10, mh + 10, 6); ctx.fill();
@@ -168,18 +171,18 @@ export class Overlay {
     ctx.fillStyle = '#3f7fbf'; ctx.fillRect(x0, y0 + 15 * sy, mw, 2 * sy);
     ctx.fillStyle = '#b08a52'; ctx.fillRect(x0 + 2.5 * sx, y0 + 15 * sy, 2 * sx, 2 * sy); ctx.fillRect(x0 + 13.5 * sx, y0 + 15 * sy, 2 * sx, 2 * sy);
     for (const e of world.alive() as Iterable<Entity>) {
-      ctx.fillStyle = e.kind === 'unit' && e.id === st.heroId ? '#ffe27a' : TEAM_COLOR[e.team];
+      ctx.fillStyle = e.kind === 'unit' && e.id === st.heroId ? '#ffe27a' : teamCss(e.team);
       const r = e.kind === 'tower' ? (e.towerType === 'king' ? 5 : 4) : e.kind === 'building' ? 3 : 2;
-      ctx.beginPath(); ctx.arc(x0 + e.pos.x * sx, y0 + e.pos.y * sy, r, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(px(e.pos.x), py(e.pos.y), r, 0, Math.PI * 2); ctx.fill();
     }
     // view cone
-    const hero = world.hero(0);
+    const hero = world.hero(getViewTeam());
     if (hero) {
       const f = rig.forward();
-      const hx = x0 + hero.pos.x * sx, hy = y0 + hero.pos.y * sy;
+      const hx = px(hero.pos.x), hy = py(hero.pos.y);
       ctx.fillStyle = 'rgba(255,255,255,0.18)';
       ctx.beginPath(); ctx.moveTo(hx, hy);
-      const a = Math.atan2(f.y, f.x);
+      const a = Math.atan2(f.y, f.x) + (flip ? Math.PI : 0);
       ctx.arc(hx, hy, 22, a - 0.6, a + 0.6); ctx.closePath(); ctx.fill();
     }
     ctx.restore();

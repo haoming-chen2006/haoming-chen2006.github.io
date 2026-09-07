@@ -1,3 +1,4 @@
+import { dhypot } from '../engine/dmath.ts';
 import { dist, type Vec } from '../engine/math.ts';
 import { ARENA_H, ARENA_W, LANE_X, RIVER_BOT, RIVER_MID, RIVER_TOP } from './constants.ts';
 import { canDeploy, deployCard } from './deploy.ts';
@@ -207,7 +208,7 @@ export class Bot {
     const towerY = this.forward(6.5);
     const tower: Vec = { x: LANE_X[t.lane], y: towerY };
     const dx = t.centroid.x - tower.x, dy = t.centroid.y - tower.y;
-    const d = Math.hypot(dx, dy) || 1;
+    const d = dhypot(dx, dy) || 1;
     const ranged = card.kind === 'troop' && card.range >= 3;
     const dep = card.kind === 'building' ? 1.5 : ranged ? 2.0 : Math.min(d - 1.2, 3.2);
     const pull = card.kind === 'building' ? { x: ARENA_W / 2, y: this.forward(9) } : null; // buildings go central to pull

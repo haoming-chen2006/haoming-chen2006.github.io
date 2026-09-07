@@ -119,6 +119,10 @@ export class World {
 
   newProjectileId(): number { return this.nextId++; }
 
+  /** Snapshot support: the id the next spawned entity or projectile will receive. */
+  get nextEntityId(): number { return this.nextId; }
+  set nextEntityId(v: number) { this.nextId = v; }
+
   *alive(): IterableIterator<Entity> { for (const e of this.entities) if (!e.dead) yield e; }
   *units(team?: Team): IterableIterator<Unit> { for (const e of this.entities) if (!e.dead && e.kind === 'unit' && (team === undefined || e.team === team)) yield e; }
   *enemiesOf(team: Team): IterableIterator<Entity> { for (const e of this.entities) if (!e.dead && e.team !== team) yield e; }

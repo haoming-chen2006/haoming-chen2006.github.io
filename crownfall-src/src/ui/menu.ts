@@ -70,7 +70,7 @@ export function showLoading(on: boolean, text?: string): void {
 // Safety net: never leave the splash up if nobody dismisses it explicitly.
 loadingFallback = window.setTimeout(() => showLoading(false), 2500);
 
-export type ScreenName = 'menu' | 'deck' | 'help' | 'game';
+export type ScreenName = 'menu' | 'deck' | 'help' | 'game' | 'online' | 'room';
 
 const DIFFICULTY_DESC: Record<Difficulty, string> = {
   easy: 'Squire Bot plays slowly and defends poorly. Learn the ropes.',
@@ -90,6 +90,9 @@ export class Menus {
   private deckBuilt = false;
   /** Called when the settings modal closes (e.g. to re-capture the mouse in game). */
   onSettingsClosed: () => void = () => {};
+  /** Where the deck builder's Done button leads (the online hub opens it too). */
+  deckReturnTo: ScreenName = 'menu';
+  onShow: (name: ScreenName) => void = () => {};
 
   constructor(settings: Settings, onSettingsChanged: () => void) {
     this.settings = settings;
@@ -99,8 +102,9 @@ export class Menus {
   }
 
   show(name: ScreenName): void {
-    for (const s of ['menu', 'deck', 'help', 'game']) $(s).classList.toggle('hidden', s !== name);
+    for (const s of ['menu', 'deck', 'help', 'game', 'online', 'room']) $(s).classList.toggle('hidden', s !== name);
     if (name === 'menu') this.refreshMenu();
+    this.onShow(name);
     if (name === 'deck') { if (!this.deckBuilt) this.buildDeckScreen(); this.renderDeck(); this.renderCollection(); }
   }
 
@@ -123,7 +127,7 @@ export class Menus {
     $('btnDeck').addEventListener('click', () => this.show('deck'));
     $('btnHelp').addEventListener('click', () => this.show('help'));
     $('btnHelpBack').addEventListener('click', () => this.show('menu'));
-    $('btnDeckBack').addEventListener('click', () => { this.persist(); this.show('menu'); });
+    $('btnDeckBack').addEventListener('click', () => { this.persist(); const to = this.deckReturnTo; this.deckReturnTo = 'menu'; this.show(to); });
     $('btnSettings').addEventListener('click', () => this.openSettings());
     $('btnPauseSettings').addEventListener('click', () => this.openSettings());
     $('btnSettingsClose').addEventListener('click', () => this.closeSettings());

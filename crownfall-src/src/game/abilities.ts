@@ -1,3 +1,4 @@
+import { datan2 } from '../engine/dmath.ts';
 import { add, angleDiff, angleOf, dist, fromAngle, norm, scale, sub, type Vec } from '../engine/math.ts';
 import { troopById } from './cards.ts';
 import { areaDamage, damage, fireProjectile, heal } from './combat.ts';
@@ -191,7 +192,7 @@ export function updateAbilityMotion(w: World, u: Unit, dt: number): boolean {
           const d = dist(e.pos, u.pos) - e.radius;
           if (d > range) continue;
           const ang = angleOf(sub(e.pos, u.pos));
-          const tol = Math.atan2(e.radius, Math.max(0.3, d));
+          const tol = datan2(e.radius, Math.max(0.3, d));
           if (Math.abs(angleDiff(base, ang)) <= half + tol) damage(w, e, a.damage ?? 0, { source: u, burn: a.burn });
         }
         w.addEffect({ type: 'cone', pos: { ...u.pos }, dur: 0.3, radius: range, color: a.color ?? '#ffb347', angle: base, arc: half * 2 });

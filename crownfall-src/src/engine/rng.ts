@@ -2,6 +2,9 @@
 export class Rng {
   private s: number;
   constructor(seed: number) { this.s = seed >>> 0; }
+  /** Raw generator state, for snapshots and world hashes. */
+  get state(): number { return this.s; }
+  set state(v: number) { this.s = v >>> 0; }
   next(): number {
     this.s = (this.s + 0x6d2b79f5) >>> 0;
     let t = this.s;

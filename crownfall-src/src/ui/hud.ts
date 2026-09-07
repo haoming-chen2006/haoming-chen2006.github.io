@@ -1,5 +1,5 @@
 import { MAX_ELIXIR, POSSESS } from '../game/constants.ts';
-import type { CardDef, Stats, Team, Unit } from '../game/types.ts';
+import { other, type CardDef, type Stats, type Team, type Unit } from '../game/types.ts';
 import type { World } from '../game/world.ts';
 import { cardThumbnail } from '../render3d/thumbnails.ts';
 import { makeCardEl } from './cards_dom.ts';
@@ -40,13 +40,17 @@ export class Hud {
   private streakT = 0;
   private lastCountdown = -1;
   private fightT = 0;
+  /** The viewer's team: the left half of the top bar, the hand, the elixir bar. */
+  private me: Team = 0;
 
-  reset(w: World): void {
+  reset(w: World, me: Team = 0): void {
+    this.me = me;
     this.handIds = [];
     this.nextId = '';
     this.lastTimer = ''; this.lastPhase = ''; this.lastCrowns = [-1, -1]; this.lastElixir = -1; this.heroPanelKey = ''; this.heroStatus = ''; this.hintHtml = '';
     this.lastCountdown = -1; this.fightT = 0;
-    $('p1name').textContent = w.players[1].name;
+    $('p0name').textContent = w.players[me].name;
+    $('p1name').textContent = w.players[other(me)].name;
     $('hint').innerHTML = '';
     $('toast').innerHTML = '';
     $('feed').innerHTML = '';
@@ -60,7 +64,7 @@ export class Hud {
   private crownsHtml(n: number): string { return [0, 1, 2].map((i) => `<span class="${i < n ? 'on' : ''}">${i < n ? '♛' : '·'}</span>`).join(''); }
 
   update(w: World, st: HudState, dt: number): void {
-    const p = w.players[0];
+    const p = w.players[this.me];
     const phaseName = w.phase as string;
     // countdown (optional sim phase)
     const cdVal = (w as unknown as { countdown?: number }).countdown;
@@ -80,9 +84,9 @@ export class Hud {
     const phase = w.phase === 'overtime' ? '<span class="badge ot">Overtime · next tower wins</span>' : w.elixirRate > 1 ? '<span class="badge">2× Elixir</span>' : phaseName === 'countdown' ? '<span class="badge">Prepare</span>' : '';
     if (phase !== this.lastPhase) { $('phase').innerHTML = phase; this.lastPhase = phase; }
     // crowns
-    for (const team of [0, 1] as Team[]) {
+    for (const [slot, team] of [[0, this.me], [1, other(this.me)]] as [number, Team][]) {
       const c = w.players[team].crowns;
-      if (c !== this.lastCrowns[team]) { $(`p${team}crowns`).innerHTML = this.crownsHtml(c); this.lastCrowns[team] = c; }
+      if (c !== this.lastCrowns[slot]) { $(`p${slot}crowns`).innerHTML = this.crownsHtml(c); this.lastCrowns[slot] = c; }
     }
     // elixir
     const e = Math.floor(p.elixir * 10) / 10;
@@ -244,26 +248,43 @@ export class Hud {
 
   setPaused(on: boolean): void { $('pauseOverlay').classList.toggle('hidden', !on); }
 
-  showResults(w: World, winner: Team | -1, reason: string): void {
+  /** Online duels cannot pause: the same overlay becomes a menu over a battle that keeps going. */
+  setPauseMode(online: boolean): void {
+    $('pauseTitle').textContent = online ? 'Menu' : 'Paused';
+    $('pauseSub').textContent = online ? 'The battle rages on without you — be quick.' : 'The battle waits for no one… except you.';
+    $('btnQuit').textContent = online ? 'Leave Battle' : 'Quit to Menu';
+  }
+
+  /** Connection status pill under the timer: latency, relay warnings, "waiting for opponent". */
+  setNetPill(text: string, kind: 'ok' | 'warn' | 'bad' = 'ok'): void {
+    const el = $('netPill');
+    el.textContent = text;
+    el.className = `net-pill ${kind}${text ? '' : ' hidden'}`;
+  }
+
+  showResults(w: World, winner: Team | -1, reason: string, opts: { online?: boolean } = {}): void {
+    const me = this.me, foe = other(me);
     const title = $('resultTitle');
-    title.textContent = winner === 0 ? 'Victory' : winner === 1 ? 'Defeat' : 'Draw';
-    title.className = winner === 0 ? 'win' : winner === 1 ? 'lose' : 'draw';
+    title.textContent = winner === me ? 'Victory' : winner === foe ? 'Defeat' : 'Draw';
+    title.className = winner === me ? 'win' : winner === foe ? 'lose' : 'draw';
     const crowns = (n: number, color: string) => (n ? Array.from({ length: n }, () => `<span class="crown" style="color:${color}">♛</span>`).join('') : `<span class="crown" style="color:${color};opacity:.35">–</span>`);
-    $('resultCrowns').innerHTML = `<span>${crowns(w.players[0].crowns, 'var(--blue)')}</span><span class="vs">VS</span><span>${crowns(w.players[1].crowns, 'var(--red)')}</span>`;
+    $('resultCrowns').innerHTML = `<span>${crowns(w.players[me].crowns, 'var(--blue)')}</span><span class="vs">VS</span><span>${crowns(w.players[foe].crowns, 'var(--red)')}</span>`;
     $('resultReason').textContent = reason;
-    const s0 = w.players[0].stats, s1 = w.players[1].stats;
+    $('btnAgain').textContent = opts.online ? 'Rematch' : 'Play Again';
+    $('btnMenu').textContent = opts.online ? 'Back to Room' : 'Main Menu';
+    const s0 = w.players[me].stats, s1 = w.players[foe].stats;
     const given = (w.result as unknown as { awards?: Award[] } | null)?.awards;
     const awards: Award[] = given && given.length ? given : [
-      { title: 'Champion', value: Math.round(Math.max(s0.heroDamage, s1.heroDamage)), team: s0.heroDamage >= s1.heroDamage ? (s0.heroDamage > 0 ? 0 : -1) : 1 },
-      { title: 'Warlord', value: Math.round(Math.max(s0.towerDamage, s1.towerDamage)), team: s0.towerDamage >= s1.towerDamage ? 0 : 1 },
-      { title: 'Executioner', value: Math.max(s0.unitKills, s1.unitKills), team: s0.unitKills >= s1.unitKills ? 0 : 1 },
+      { title: 'Champion', value: Math.round(Math.max(s0.heroDamage, s1.heroDamage)), team: s0.heroDamage >= s1.heroDamage ? (s0.heroDamage > 0 ? me : -1) : foe },
+      { title: 'Warlord', value: Math.round(Math.max(s0.towerDamage, s1.towerDamage)), team: s0.towerDamage >= s1.towerDamage ? me : foe },
+      { title: 'Executioner', value: Math.max(s0.unitKills, s1.unitKills), team: s0.unitKills >= s1.unitKills ? me : foe },
     ];
-    $('resultAwards').innerHTML = awards.slice(0, 3).map((a) => `<div class="award ${a.team === 0 ? 'you' : a.team === 1 ? 'foe' : ''}"><div class="a-title">${a.title}</div><div class="a-value">${a.value}</div><div class="a-who">${a.team === 0 ? 'You' : a.team === 1 ? w.players[1].name : '—'}</div></div>`).join('');
+    $('resultAwards').innerHTML = awards.slice(0, 3).map((a) => `<div class="award ${a.team === me ? 'you' : a.team === foe ? 'foe' : ''}"><div class="a-title">${a.title}</div><div class="a-value">${a.value}</div><div class="a-who">${a.team === me ? 'You' : a.team === foe ? w.players[foe].name : '—'}</div></div>`).join('');
     const row = (label: string, k: keyof Stats) => {
       const a = Math.round(s0[k]), b = Math.round(s1[k]);
       return `<tr><td>${label}</td><td class="${a > b ? 'best' : ''}">${a}</td><td class="${b > a ? 'best' : ''}">${b}</td></tr>`;
     };
-    $('resultStats').innerHTML = `<tr><th></th><th>You</th><th>${w.players[1].name}</th></tr>` +
+    $('resultStats').innerHTML = `<tr><th></th><th>${opts.online ? w.players[me].name : 'You'}</th><th>${w.players[foe].name}</th></tr>` +
       row('Tower damage', 'towerDamage') + row('Cards played', 'unitsDeployed') + row('Elixir spent', 'elixirSpent') + row('Troops defeated', 'unitKills') +
       row('Possessions', 'possessions') + row('Champion damage', 'heroDamage') + row('Champion kills', 'heroKills') + row('Champion deaths', 'heroDeaths');
     $('results').classList.remove('hidden');

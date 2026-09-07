@@ -66,6 +66,12 @@ export function App() {
           >
             {t('nav.overview')}
           </a>
+          {/* Its own page, not a route: `designer.html` is a second entry in
+              the same build, at the same base, so a relative href reaches it
+              from every route the shell renders. */}
+          <a href="designer.html">
+            {t('nav.designer')}
+          </a>
         </nav>
         {/* The whole game switches from here, on every page: the header is
             rendered for all four routes, so the control is always one click

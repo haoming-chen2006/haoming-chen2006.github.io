@@ -50,6 +50,7 @@ export const UI = {
   // src/shell/App.tsx
   'nav.lobby': { zh_CN: '大厅', en_US: 'Lobby' },
   'nav.overview': { zh_CN: '资料', en_US: 'Reference' },
+  'nav.designer': { zh_CN: '设计武将', en_US: 'Hero designer' },
   'app.changeName': { zh_CN: '换个名字', en_US: 'Change name' },
   'app.join.title': { zh_CN: '正在加入 {code}', en_US: 'Joining {code}' },
   'app.join.wait': { zh_CN: '稍等…', en_US: 'One moment…' },

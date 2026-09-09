@@ -38,6 +38,7 @@ figcaption strong { color: var(--ink); font-weight: 600; }
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 1.25rem; margin: 0 0 1.5rem; }
 .grid figcaption { font-size: .88rem; }
 .plate { font-weight: 600; margin: 1.75rem 0 .6rem; }
+.single { max-width: 640px; margin: 0 0 1.5rem; }
 
 table { border-collapse: collapse; font-size: .85rem; font-variant-numeric: tabular-nums; margin: .5rem 0 1.5rem; }
 th, td { text-align: left; padding: .3rem 1.4rem .3rem 0; border-bottom: 1px solid var(--rule); white-space: nowrap; }

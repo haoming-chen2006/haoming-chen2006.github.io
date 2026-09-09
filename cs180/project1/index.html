@@ -187,22 +187,29 @@
 <h2>Better features (edges)</h2>
 <p>
   This is specially to tackle the emir image, which is the only image that didn't come
-  out correctly from my original approach. I think it has to deal with the image
-  specifically, quality is not suitable for the current measure functions I use –
+  out correctly from my original approach. emir's robe is bright in the red exposure but
+  nearly black in the blue one (one up one down), so lining up intensities will displace
+  the red channels.
 </p>
 <p>
-  emir's robe is bright in the red exposure but nearly black in the blue one (one up one
-  down), so lining up intensities will displace the red channels. I decided to implement
-  a different measure function to match on edges. I wrote the following program after
-  some search online:
+  I first studied what an edge is and what an edge map is, and I came across
+  <a href="https://www.youtube.com/watch?v=uihBwtPIBxM">this video</a>. I then found its
+  original implementation
+  <a href="https://pyimagesearch.com/2021/05/12/image-gradients-with-opencv-sobel-and-scharr/">here</a>,
+  which I used to generate this edge map:
 </p>
 <pre><code>def edges(im):
     gx = cv.Sobel(im, cv.CV_32F, 1, 0, ksize=3)
     gy = cv.Sobel(im, cv.CV_32F, 0, 1, ksize=3)
     return np.sqrt(gx * gx + gy * gy)</code></pre>
+<figure class="single">
+  <img src="assets/feat_emir_edgemap.jpg" alt="emir edge map">
+  <figcaption>emir's green channel as an edge map — bright where the image changes, dark where it is flat.</figcaption>
+</figure>
 <p>
-  Basically, I run each channel through a Sobel gradient filter first, turning it into
-  an edge map; an edge is an edge in every channel regardless of exposure.
+  I then implemented a measurement based on the edge differences. This works way better
+  than brightness, because an edge is contrast and relative — it doesn't depend on
+  absolute brightness and these deviations, so it works.
 </p>
 <div class="pair">
   <figure><img src="assets/feat_emir_before.jpg" alt="emir raw intensity"><figcaption><strong>Before</strong> — raw intensity <span>R (483, −461)</span></figcaption></figure>

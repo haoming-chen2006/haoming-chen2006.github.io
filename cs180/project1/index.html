@@ -156,7 +156,7 @@
         def scan(mean, std, n):
             lim = int(n * max_frac)
             def is_frame(k):
-                return mean[k] &lt; 0.20 or mean[k] &gt; 0.86 or std[k] &lt; 0.06
+                return mean[k] &lt; 0.20 or mean[k] &gt; 0.9 or std[k] &lt; 0.05
             lo = 0
             while lo &lt; lim and is_frame(lo):
                 lo += 1
@@ -173,9 +173,10 @@
     return b[t:btm, l:rgt], g[t:btm, l:rgt], r[t:btm, l:rgt]</code></pre>
 <p>
   It scans inward from each edge and treats a row or column as frame while it is nearly
-  all black, nearly all white, or nearly flat (no detail). The current numbers are a
-  little hard coded but it worked well with the current example — I tried to be lenient,
-  better to not cut enough than cut too much. The results:
+  all black (&lt;0.2 intensity), nearly all white (&gt;0.9 intensity), or nearly flat
+  (&lt;0.05 std). The current numbers are a little hard coded (I changed several values)
+  but it worked well with the current example — I tried to be lenient, better to not cut
+  enough than cut too much.
 </p>
 <div class="pair">
   <figure><img src="assets/crop_before.jpg" alt="before crop"><figcaption><strong>Before</strong> — raw frame</figcaption></figure>

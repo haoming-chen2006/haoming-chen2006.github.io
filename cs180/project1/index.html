@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Project 1 — Haoming Chen</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="nav-section">
+    <a class="nav-name" href="https://haoming-chen2006.github.io">Haoming Chen</a>
+  </div>
+  <div class="nav-section">
+    <a class="nav-link" href="#method">Method</a>
+    <a class="nav-link" href="#single">Single-scale</a>
+    <a class="nav-link" href="#depth">Pyramid depth</a>
+    <a class="nav-link" href="#results">Results</a>
+  </div>
+</nav>
+
+<main>
+
+  <header class="masthead">
+    <h1>Project 1</h1>
+    <p class="note" style="margin-top:0">
+      Colorizing the Prokudin-Gorskii photo collection. Around 1907 Sergei
+      Prokudin-Gorskii photographed the Russian Empire in color by shooting each
+      scene three times through blue, green, and red filters, recording all three
+      as one stacked grayscale glass plate. This project reassembles the color:
+      split each plate into its three exposures, align them, and stack them back
+      into a single RGB image.
+    </p>
+  </header>
+
+  <!-- ═══════════════════════════ METHOD ═══════════════════════════ -->
+  <section class="section" id="method">
+    <h2>Method</h2>
+    <p class="note" style="margin-top:0">
+      Each plate is cut into equal thirds — blue on top, green in the middle, red
+      on the bottom. The blue channel is held fixed and the green and red channels
+      are shifted to line up with it. A shift is scored two ways: <strong>L2</strong>
+      (sum of squared differences) and <strong>NCC</strong> (normalized
+      cross-correlation), and the best-scoring displacement is kept.
+    </p>
+    <p class="note">
+      <strong>Small JPEGs</strong> are aligned by a single exhaustive search over a
+      ±15&nbsp;pixel window. <strong>Large TIFs</strong> can't be brute-forced — the
+      true offset runs to hundreds of pixels — so they use an <strong>image
+      pyramid</strong>: estimate the shift on a heavily downsized copy, then refine
+      it level by level up to full resolution.
+    </p>
+    <p class="note">
+      <strong>Automatic cropping.</strong> The black-and-white scan frame around each
+      plate would otherwise dominate the score and pull the alignment onto the border
+      instead of the picture. A small <code>auto_crop</code> function detects the frame
+      — rows and columns that are nearly all black, nearly all white, or nearly flat
+      (no detail) — and trims all three channels to a common interior before aligning.
+    </p>
+  </section>
+
+  <!-- ═══════════════════════ SINGLE-SCALE ═════════════════════════ -->
+  <section class="section" id="single">
+    <h2>Single-scale · small JPEGs · L2 vs NCC</h2>
+
+    <div class="rows">
+      <div>
+        <p class="plate">Sirenʹ (Lilacs)</p>
+        <div class="pair">
+          <figure>
+            <img src="assets/siren_jpg_L2.jpg" alt="Lilacs, single-scale L2">
+            <figcaption><strong>L2</strong><span class="off">G (dy,dx) = (1, 0) · R = (1, 0)</span></figcaption>
+          </figure>
+          <figure>
+            <img src="assets/siren_jpg_NCC.jpg" alt="Lilacs, single-scale NCC">
+            <figcaption><strong>NCC</strong><span class="off">G (dy,dx) = (1, 0) · R = (1, 0)</span></figcaption>
+          </figure>
+        </div>
+      </div>
+
+      <div>
+        <p class="plate">V IAsnoĭ poli͡anie (In Yasnaya Polyana)</p>
+        <div class="pair">
+          <figure>
+            <img src="assets/yasnaya_jpg_L2.jpg" alt="Yasnaya Polyana, single-scale L2">
+            <figcaption><strong>L2</strong><span class="off">G (dy,dx) = (1, 0) · R = (2, 0)</span></figcaption>
+          </figure>
+          <figure>
+            <img src="assets/yasnaya_jpg_NCC.jpg" alt="Yasnaya Polyana, single-scale NCC">
+            <figcaption><strong>NCC</strong><span class="off">G (dy,dx) = (1, 0) · R = (2, 0)</span></figcaption>
+          </figure>
+        </div>
+      </div>
+
+      <div>
+        <p class="plate">Sultan-Bentskaya Dam</p>
+        <div class="pair">
+          <figure>
+            <img src="assets/dam_jpg_L2.jpg" alt="Dam, single-scale L2">
+            <figcaption><strong>L2</strong><span class="off">G (dy,dx) = (0, 0) · R = (1, 0)</span></figcaption>
+          </figure>
+          <figure>
+            <img src="assets/dam_jpg_NCC.jpg" alt="Dam, single-scale NCC">
+            <figcaption><strong>NCC</strong><span class="off">G (dy,dx) = (0, 0) · R = (1, 0)</span></figcaption>
+          </figure>
+        </div>
+      </div>
+    </div>
+
+    <p class="note">
+      At 150&nbsp;px the previews need only a pixel or two of shift, and L2 and NCC
+      agree exactly — on easy, similar-brightness plates the two metrics are
+      interchangeable. The interesting differences show up at full resolution below.
+    </p>
+  </section>
+
+  <!-- ═══════════════════════ PYRAMID DEPTH ════════════════════════ -->
+  <section class="section" id="depth">
+    <h2>Choosing the pyramid depth</h2>
+    <p class="note" style="margin-top:0">
+      How far down should the pyramid go? Using <em>In Yasnaya Polyana</em> (true
+      offset R = (133, −32)) as a test, three depths, NCC held fixed:
+    </p>
+
+    <div class="trio">
+      <figure>
+        <img src="assets/yasnaya_depth_shallow.jpg" alt="Shallow pyramid">
+        <figcaption><strong>Shallow</strong> · 2 levels
+          <span class="off">R = (66, −32) — 4.6 s</span></figcaption>
+      </figure>
+      <figure>
+        <img src="assets/yasnaya_depth_medium.jpg" alt="Medium pyramid">
+        <figcaption><strong>Medium</strong> · auto depth
+          <span class="off">R = (133, −32) — 2.5 s</span></figcaption>
+      </figure>
+      <figure>
+        <img src="assets/yasnaya_depth_deep.jpg" alt="Deep pyramid">
+        <figcaption><strong>Deep</strong> · 8 levels
+          <span class="off">R = (−2962, −3648) — 2.8 s</span></figcaption>
+      </figure>
+    </div>
+
+    <p class="note">
+      <strong>Medium is the sweet spot.</strong> <strong>Shallow</strong> doesn't
+      downsize enough: its coarsest search can only reach ≈60&nbsp;px, so it stalls at
+      R&nbsp;dy&nbsp;=&nbsp;66 — barely half the true 133 — and the result stays fringed.
+      <strong>Deep</strong> goes too far the other way: the coarsest image is shrunk to a
+      handful of pixels, and the search lands on a meaningless displacement of
+      (−2962,&nbsp;−3648). Because the shift wraps around circularly, that number happens
+      to alias back to roughly the right offset here, so the scene survives — but the
+      reported displacement is unusable and the leftover frame never gets trimmed (note
+      the colored border). On a less forgiving plate that same instability breaks the
+      picture outright. The automatically-chosen middle depth returns the true offset
+      directly — trustworthy and clean — so every result below uses it.
+    </p>
+  </section>
+
+  <!-- ═══════════════════════════ RESULTS ══════════════════════════ -->
+  <section class="section" id="results">
+    <h2>Results · large TIFs · image pyramid · L2 vs NCC</h2>
+
+    <div class="rows">
+      <div>
+        <p class="plate"><a href="https://www.loc.gov/item/2018679039/">Sirenʹ (Lilacs) — Library of Congress ↗</a></p>
+        <div class="pair">
+          <figure>
+            <img src="assets/siren_tif_L2.jpg" alt="Lilacs, pyramid L2">
+            <figcaption><strong>L2</strong><span class="off">G (dy,dx) = (50, −7) · R = (96, −25)</span></figcaption>
+          </figure>
+          <figure>
+            <img src="assets/siren_tif_NCC.jpg" alt="Lilacs, pyramid NCC">
+            <figcaption><strong>NCC</strong><span class="off">G (dy,dx) = (50, −7) · R = (96, −25)</span></figcaption>
+          </figure>
+        </div>
+      </div>
+
+      <div>
+        <p class="plate"><a href="https://www.loc.gov/item/2018679023/">V IAsnoĭ poli͡anie (In Yasnaya Polyana) — Library of Congress ↗</a></p>
+        <div class="pair">
+          <figure>
+            <img src="assets/yasnaya_tif_L2.jpg" alt="Yasnaya Polyana, pyramid L2">
+            <figcaption><strong>L2</strong><span class="off">G (dy,dx) = (96, −12) · R = (133, −32)</span></figcaption>
+          </figure>
+          <figure>
+            <img src="assets/yasnaya_tif_NCC.jpg" alt="Yasnaya Polyana, pyramid NCC">
+            <figcaption><strong>NCC</strong><span class="off">G (dy,dx) = (96, −12) · R = (133, −32)</span></figcaption>
+          </figure>
+        </div>
+      </div>
+
+      <div>
+        <p class="plate"><a href="https://www.loc.gov/item/2018681263/">Sultan-Bentskaya Dam, Murghab Estate — Library of Congress ↗</a></p>
+        <div class="pair">
+          <figure>
+            <img src="assets/dam_tif_L2.jpg" alt="Dam, pyramid L2">
+            <figcaption><strong>L2</strong><span class="off">G (dy,dx) = (0, 6) · R = (7, 4)</span></figcaption>
+          </figure>
+          <figure>
+            <img src="assets/dam_tif_NCC.jpg" alt="Dam, pyramid NCC">
+            <figcaption><strong>NCC</strong><span class="off">G (dy,dx) = (0, 6) · R = (7, 4)</span></figcaption>
+          </figure>
+        </div>
+      </div>
+    </div>
+
+    <p class="note">
+      L2 and NCC land on identical offsets for all three plates — these are
+      well-behaved, similar-brightness scenes where the cheaper metric is already
+      enough. The lilacs and the Yasnaya Polyana landscape come out crisp; the dam
+      keeps a little red/cyan haloing because the water was moving between the three
+      exposures, so no single shift can register the spray.
+    </p>
+  </section>
+
+  <footer class="footer">
+    <p>Haoming Chen · CS 180, Fall 2026.</p>
+    <p>Source plates: <a href="https://www.loc.gov/collections/prokudin-gorskii/">Prokudin-Gorskii
+      Collection</a>, Library of Congress — digitized glass-plate negatives.</p>
+  </footer>
+
+</main>
+
+</body>
+</html>

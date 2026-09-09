@@ -101,7 +101,7 @@
 
 <div class="grid">
   <figure><img src="assets/pyr_church.jpg" alt="church"><figcaption>church <span>(58, −4)</span></figcaption></figure>
-  <figure><img src="assets/pyr_emir.jpg" alt="emir"><figcaption>emir — <strong>failed</strong></figcaption></figure>
+  <figure><img src="assets/pyr_emir.jpg" alt="emir"><figcaption>emir <span>(107, 40) · edges</span></figcaption></figure>
   <figure><img src="assets/pyr_harvesters.jpg" alt="harvesters"><figcaption>harvesters <span>(124, 13)</span></figcaption></figure>
   <figure><img src="assets/pyr_icon.jpg" alt="icon"><figcaption>icon <span>(89, 23)</span></figcaption></figure>
   <figure><img src="assets/pyr_ilemselga.jpg" alt="ilemselga"><figcaption>ilemselga <span>(130, 11)</span></figcaption></figure>
@@ -120,7 +120,7 @@
   <tr><td>monastery</td><td>(−3, 2)</td><td>(3, 2)</td></tr>
   <tr><td>tobolsk</td><td>(3, 3)</td><td>(6, 3)</td></tr>
   <tr><td>church</td><td>(25, 4)</td><td>(58, −4)</td></tr>
-  <tr><td>emir</td><td>(49, 24)</td><td>(483, −461) — failed</td></tr>
+  <tr><td>emir</td><td>(49, 24)</td><td>(107, 40) — on edges</td></tr>
   <tr><td>harvesters</td><td>(60, 17)</td><td>(124, 13)</td></tr>
   <tr><td>icon</td><td>(41, 17)</td><td>(89, 23)</td></tr>
   <tr><td>ilemselga</td><td>(40, 7)</td><td>(130, 11)</td></tr>
@@ -133,13 +133,10 @@
 </table>
 
 <p>
-  <strong>The one failure: emir.</strong> Sixteen of seventeen plates (14 here plus
-  the three selections below) align cleanly; only <em>emir</em> breaks, landing on a
-  nonsense R offset of (483, −461). The reason is brightness: Prokudin-Gorskii's
-  subject wears a bright robe that is very light in the red exposure but nearly black
-  in the blue one, so matching raw intensities — even with NCC — locks onto the wrong
-  place. The standard fix is to align on <em>edges</em> (image gradients) instead of
-  raw pixels, since an edge is an edge in every channel regardless of brightness.
+  All fourteen provided plates align cleanly (plus the three selections below), but
+  one — <em>emir</em> — takes an extra step. On raw intensity it fails badly; the fix
+  is to align on <em>edges</em>, covered in the bells &amp; whistles below. The offset
+  listed for emir above already uses it, so nothing is left broken.
 </p>
 
 <!-- ══════════════ DEPTH ══════════════ -->
@@ -178,6 +175,23 @@
 <div class="pair">
   <figure><img src="assets/crop_before.jpg" alt="before crop"><figcaption><strong>Before</strong> — raw frame</figcaption></figure>
   <figure><img src="assets/crop_after.jpg" alt="after crop"><figcaption><strong>After</strong> — auto-cropped</figcaption></figure>
+</div>
+
+<!-- ══════════════ BETTER FEATURES ══════════════ -->
+<h2>Bells &amp; whistles · better features (edges)</h2>
+<p>
+  emir is the plate raw-intensity matching can't solve: the subject's robe is bright
+  in the red exposure but nearly black in the blue one, so lining up intensities —
+  even with mean-subtracted, normalized NCC — pulls the red channel hundreds of pixels
+  off. The fix is to stop matching brightness and match <em>structure</em>. I run each
+  channel through a Sobel gradient filter first, turning it into an edge map; an edge
+  is an edge in every channel regardless of exposure. Aligning the edge maps drops
+  emir's red offset from a nonsense (483, −461) onto the correct (107, 40), and it
+  leaves every other plate's offset unchanged.
+</p>
+<div class="pair">
+  <figure><img src="assets/feat_emir_before.jpg" alt="emir raw intensity"><figcaption><strong>Before</strong> — raw intensity <span>R (483, −461)</span></figcaption></figure>
+  <figure><img src="assets/pyr_emir.jpg" alt="emir on edges"><figcaption><strong>After</strong> — aligned on edges <span>R (107, 40)</span></figcaption></figure>
 </div>
 
 <!-- ══════════════ GALLERY ══════════════ -->

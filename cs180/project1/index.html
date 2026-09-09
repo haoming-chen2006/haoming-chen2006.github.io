@@ -14,24 +14,20 @@
 <!-- ══════════════ DECIDING THE MEASUREMENT ══════════════ -->
 <h2>Deciding the measurement</h2>
 <p>
-  Each glass plate stacks three grayscale exposures — blue on top, green in the
-  middle, red on the bottom. To rebuild the color photograph we hold the blue
-  channel fixed and slide the green and red channels until they line up, then
-  stack the three as an RGB image. "Line up" needs a number that says how well two
-  channels match at a given shift. I use two.
+  The core use of the measurement is telling how good the current overlay is. So it
+  takes in two images and outputs a single number that we will use to decide whether
+  the image current overlay is accurate or not. I used two methods.
 </p>
 
 <h3>L2 measurement</h3>
 <pre><code>def measure_l2(a, b):
     return np.sum((a - b) ** 2)</code></pre>
 <p>
-  The L2 norm (sum of squared differences) overlays the two channels and adds up
-  the squared difference at every pixel. When the channels are aligned, the same
-  edges and textures sit on top of each other, every difference is small, and the
-  sum is low; when they are off, bright edges land on dark regions and the squared
-  differences blow up. So the best shift is the one that <em>minimizes</em> this
-  number. Squaring removes the sign and punishes big mismatches hard, which sharpens
-  the minimum.
+  The L2 norm (sum of squared differences) overlays the two channels and adds up the
+  squared difference at every pixel. When the channels are aligned, the same edges and
+  textures sit on top of each other, every difference is small, and the sum is low;
+  when they are off, bright edges land on dark regions and the squared differences blow
+  up. We want to minimize this number.
 </p>
 
 <h3>NCC measurement</h3>
@@ -41,32 +37,24 @@
     ncc = np.dot(a / np.linalg.norm(a), b / np.linalg.norm(b))
     return -ncc</code></pre>
 <p>
-  Normalized cross-correlation flattens each channel to a vector, subtracts its
-  mean, scales it to unit length, and takes the dot product. Two aligned channels
-  point in nearly the same direction, so the dot product is near 1; misaligned ones
-  are closer to orthogonal. Because it subtracts the mean and normalizes the length,
-  NCC is far less sensitive to one channel being globally brighter or higher-contrast
-  than another. It is a similarity (higher is better), so I return its negative and
-  keep the same "lower is better" search as L2.
+  Normalized cross-correlation flattens each channel to a vector, subtracts its mean,
+  scales it to unit length, and takes the dot product.
 </p>
 
 <p>
-  <strong>How alignment uses the measure.</strong> The naive aligner tries every
-  integer shift of the channel within a fixed window (±15&nbsp;px), scores each one
-  with the chosen measure, and keeps the best. Shifts are applied with
-  <code>np.roll</code>. One important detail: the score is computed on the
-  <em>interior</em> of the plate, not the whole thing — the black-and-white scan
-  frame around the edges would otherwise dominate the metric and pull the alignment
-  onto the border instead of the picture, so I crop ~12% off every side before
-  scoring.
+  <strong>How alignment uses the measure.</strong> I had two aligners, one naive for
+  jpeg, the other uses the pyramid idea and is for larger images. Both use measurement
+  in the same way, during their loop in looping through all the different offsets, we
+  overlay the images with the offset and throw the result into the measurement, only
+  keeping the offset number producing the lowest measurement.
 </p>
 
 <!-- ══════════════ SINGLE-SCALE ══════════════ -->
-<h2>Single-scale alignment · low-resolution JPEGs</h2>
+<h2>low-resolution JPEGs</h2>
 <p>
-  On the small JPEGs the exhaustive ±15 search is fast enough. L2 and NCC find
-  identical offsets on all three — these are easy, similar-brightness plates where
-  the two metrics are interchangeable.
+  For stage 1 we have the small JPEGs, and the exhaustive ±15 search is fast enough. We
+  basically search for offset in the x y direction each ±15, and use our measurement to
+  track the most 'successful' example, here are the results.
 </p>
 
 <p class="plate">cathedral &nbsp;·&nbsp; G (dy, dx) = (5, 2) &nbsp; R = (12, 3)</p>
@@ -88,15 +76,25 @@
 </div>
 
 <!-- ══════════════ PYRAMID ══════════════ -->
-<h2>Multi-scale pyramid · all provided plates</h2>
+<h2>Multi-scale pyramid</h2>
 <p>
-  The full-resolution TIFs can't be brute-forced — the true offset runs to well over
-  a hundred pixels, and a window that large at full resolution would be hopelessly
-  slow. Instead the aligner builds an image pyramid: it shrinks both channels by
-  repeated factors of two, finds the shift on the smallest (a wide ±15 search on a
-  tiny image is cheap), scales that estimate up by two, and refines it with a narrow
-  ±2 search at each finer level up to full resolution. Same NCC score, computed on
-  the interior at every level. Every plate aligns in about two seconds.
+  The true offset for bigger images can go way beyond 15 pixels so we use the pyramid
+  approach, it roughly follows three steps. 1. Deciding a scale factor (the default is
+  scale down until the smaller side is about 64 pixels, so ⌊log₂(smaller side)⌋ − 6
+  levels). We use the following downsample method:
+</p>
+<pre><code>def downsize(img, factor):
+    if factor == 1:
+        return img
+    h, w = img.shape
+    return cv.resize(img, (w // factor, h // factor), interpolation=cv.INTER_AREA)</code></pre>
+<p>
+  2. With the current scale, run naive align as described above to extract the current
+  best offset under the current scale. 3. We take the current scale and then upsample
+  our image and scale to get a new scale (usually just multiply by 2), and we search
+  locally (±15 default) around that new offset, following the same naive algorithm,
+  just different starting point. Here are the results, notice one of the images (emir)
+  requires a special trick that I will explain later.
 </p>
 
 <div class="grid">
@@ -132,45 +130,52 @@
   <tr><td>wharf</td><td>(15, −7)</td><td>(82, −16)</td></tr>
 </table>
 
-<p>
-  All fourteen provided plates align cleanly (plus the three selections below), but
-  one — <em>emir</em> — takes an extra step. On raw intensity it fails badly; the fix
-  is to align on <em>edges</em>, covered in the bells &amp; whistles below. The offset
-  listed for emir above already uses it, so nothing is left broken.
-</p>
-
 <!-- ══════════════ DEPTH ══════════════ -->
 <h2>Choosing the pyramid depth</h2>
 <p>
-  How far down should the pyramid go? Using <em>three_generations</em> (true offset
-  R = (111, 11)) as a test, NCC held fixed:
+  I also need to choose the pyramid depth, I did experiments with different depth and
+  decided to end up with medium.
 </p>
 <div class="trio">
   <figure><img src="assets/depth_shallow.jpg" alt="shallow"><figcaption><strong>Shallow</strong> · 2 levels <span>R = (66, 12)</span></figcaption></figure>
   <figure><img src="assets/depth_medium.jpg" alt="medium"><figcaption><strong>Medium</strong> · auto depth <span>R = (111, 11)</span></figcaption></figure>
-  <figure><img src="assets/depth_deep.jpg" alt="deep"><figcaption><strong>Deep</strong> · 8 levels <span>R = (−3098, −3703)</span></figcaption></figure>
+  <figure><img src="assets/depth_deep.jpg" alt="deep"><figcaption><strong>Deep</strong> · 7 levels <span>R = (111, 11)</span></figcaption></figure>
 </div>
 <p>
-  <strong>Medium is the sweet spot.</strong> Shallow doesn't downsize enough — its
-  coarsest search reaches only ~60&nbsp;px, so it stalls at R&nbsp;dy&nbsp;=&nbsp;66,
-  barely half the true 111, and the result stays fringed. Deep shrinks the coarsest
-  image to a handful of pixels, where the search lands on a meaningless offset of
-  ~−3000; because <code>np.roll</code> wraps around, that happens to alias back near
-  the right shift here, but the number is unusable and on a less forgiving plate it
-  breaks outright. The automatically-chosen middle depth reaches the true offset
-  cheaply, so every result uses it.
+  Shallow doesn't downsize enough so its range might not be wide enough to cover it, and
+  the result stays fringed. If we search too deep, we are wasting time and computation
+  while medium gives the same result.
 </p>
 
 <!-- ══════════════ AUTO CROP ══════════════ -->
-<h2>Bells &amp; whistles · automatic cropping</h2>
+<h2>Automatic cropping</h2>
+<p>I implemented auto_crop, which removes the borders automatically:</p>
+<pre><code>def auto_crop(b, g, r, max_frac=0.18):
+    def bounds(im):
+        h, w = im.shape
+        def scan(mean, std, n):
+            lim = int(n * max_frac)
+            def is_frame(k):
+                return mean[k] &lt; 0.20 or mean[k] &gt; 0.86 or std[k] &lt; 0.06
+            lo = 0
+            while lo &lt; lim and is_frame(lo):
+                lo += 1
+            hi = n - 1
+            while hi &gt; n - 1 - lim and is_frame(hi):
+                hi -= 1
+            return lo, hi + 1
+        t, btm = scan(im.mean(axis=1), im.std(axis=1), h)
+        l, rgt = scan(im.mean(axis=0), im.std(axis=0), w)
+        return t, btm, l, rgt
+    box = [bounds(x) for x in (b, g, r)]
+    t = max(x[0] for x in box);  btm = min(x[1] for x in box)
+    l = max(x[2] for x in box);  rgt = min(x[3] for x in box)
+    return b[t:btm, l:rgt], g[t:btm, l:rgt], r[t:btm, l:rgt]</code></pre>
 <p>
-  Ignoring the border while <em>scoring</em> fixes the alignment, but the finished
-  image still carries the ugly scan frame. <code>auto_crop</code> removes it
-  automatically — no fixed margin. It scans inward from each edge and treats a row or
-  column as frame while it is nearly all black, nearly all white, or nearly flat (no
-  detail), stopping at the first line that looks like real picture, and trims all
-  three channels to that common box. Below, the same aligned <em>harvesters</em>
-  plate before and after:
+  It scans inward from each edge and treats a row or column as frame while it is nearly
+  all black, nearly all white, or nearly flat (no detail). The current numbers are a
+  little hard coded but it worked well with the current example — I tried to be lenient,
+  better to not cut enough than cut too much. The results:
 </p>
 <div class="pair">
   <figure><img src="assets/crop_before.jpg" alt="before crop"><figcaption><strong>Before</strong> — raw frame</figcaption></figure>
@@ -178,16 +183,25 @@
 </div>
 
 <!-- ══════════════ BETTER FEATURES ══════════════ -->
-<h2>Bells &amp; whistles · better features (edges)</h2>
+<h2>Better features (edges)</h2>
 <p>
-  emir is the plate raw-intensity matching can't solve: the subject's robe is bright
-  in the red exposure but nearly black in the blue one, so lining up intensities —
-  even with mean-subtracted, normalized NCC — pulls the red channel hundreds of pixels
-  off. The fix is to stop matching brightness and match <em>structure</em>. I run each
-  channel through a Sobel gradient filter first, turning it into an edge map; an edge
-  is an edge in every channel regardless of exposure. Aligning the edge maps drops
-  emir's red offset from a nonsense (483, −461) onto the correct (107, 40), and it
-  leaves every other plate's offset unchanged.
+  This is specially to tackle the emir image, which is the only image that didn't come
+  out correctly from my original approach. I think it has to deal with the image
+  specifically, quality is not suitable for the current measure functions I use –
+</p>
+<p>
+  emir's robe is bright in the red exposure but nearly black in the blue one (one up one
+  down), so lining up intensities will displace the red channels. I decided to implement
+  a different measure function to match on edges. I wrote the following program after
+  some search online:
+</p>
+<pre><code>def edges(im):
+    gx = cv.Sobel(im, cv.CV_32F, 1, 0, ksize=3)
+    gy = cv.Sobel(im, cv.CV_32F, 0, 1, ksize=3)
+    return np.sqrt(gx * gx + gy * gy)</code></pre>
+<p>
+  Basically, I run each channel through a Sobel gradient filter first, turning it into
+  an edge map; an edge is an edge in every channel regardless of exposure.
 </p>
 <div class="pair">
   <figure><img src="assets/feat_emir_before.jpg" alt="emir raw intensity"><figcaption><strong>Before</strong> — raw intensity <span>R (483, −461)</span></figcaption></figure>
@@ -197,9 +211,9 @@
 <!-- ══════════════ GALLERY ══════════════ -->
 <h2 class="big">Gallery · my selections</h2>
 <p>
-  Three plates I picked from the Library of Congress Prokudin-Gorskii collection,
-  each shown as the low-resolution JPEG aligned single-scale and the full-resolution
-  TIF aligned with the pyramid (L2 and NCC).
+  Three plates I picked from the Library of Congress Prokudin-Gorskii collection, each
+  shown as the low-resolution JPEG aligned single-scale and the full-resolution TIF
+  aligned with the pyramid (L2 and NCC).
 </p>
 
 <p class="plate"><a href="https://www.loc.gov/item/2018679039/">Sirenʹ (Lilacs) — Library of Congress ↗</a></p>
@@ -219,11 +233,6 @@
   <figure><img src="assets/sel_dam_jpg_NCC.jpg" alt="dam jpg"><figcaption><strong>JPEG · single-scale</strong> <span>G (1, 0) · R (2, 0)</span></figcaption></figure>
   <figure><img src="assets/sel_dam_tif_NCC.jpg" alt="dam pyramid"><figcaption><strong>TIF · pyramid</strong> <span>G (47, 15) · R (108, 28)</span></figcaption></figure>
 </div>
-<p>
-  Lilacs and Yasnaya Polyana come out crisp. The dam aligns cleanly on the brickwork
-  and gates; the only haze is in the spillway, where the water moved between the
-  three exposures, so no single shift can register it.
-</p>
 
 </main>
 </body>

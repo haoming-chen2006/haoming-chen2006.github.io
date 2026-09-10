@@ -81,7 +81,15 @@
   The true offset for bigger images can go way beyond 15 pixels so we use the pyramid
   approach, it roughly follows three steps. 1. Deciding a scale factor (the default is
   scale down until the smaller side is about 64 pixels, so ⌊log₂(smaller side)⌋ − 6
-  levels). We use the following downsample method:
+  levels).
+</p>
+<p>
+  Currently, I looked at the Van Gogh test video in the lecture, and I think the method
+  of directly decimating pixels isn't the most ideal. I looked at the function definition
+  and decided to use <code>cv.INTER_AREA</code>, which we're using right now, because it
+  takes an average and it's generally more reasonable when computing things like
+  alignment — colors or blobs and their general distribution are reasonable things to be
+  averaged. We use the following downsample method:
 </p>
 <pre><code>def downsize(img, factor):
     if factor == 1:
@@ -206,6 +214,24 @@
   <img src="assets/feat_emir_edgemap.jpg" alt="emir edge map">
   <figcaption>emir's green channel as an edge map — bright where the image changes, dark where it is flat.</figcaption>
 </figure>
+<p>
+  I understand Sobel roughly as designing a filter to slide across the image to produce
+  different contrasting regions. The contrasting regions are generated from this kernel,
+  which is very similar to the one you use in a convolutional neural network. However,
+  this kernel is specially designed to detect a change, so it has a negative on one side
+  and a positive on the other — negative on the left and positive on the right. That way
+  we can detect a change in X, and the Y kernel detects a change in Y, which we use to
+  find the different edges.
+</p>
+<p>
+  This makes sense in terms of a dot product: sliding the kernel over a patch and summing
+  is exactly a dot product of the kernel with that patch, and a dot product is largest
+  when the two point the same way. Where the patch genuinely steps from dark to bright the
+  way the kernel's negative-to-positive pattern does, the terms reinforce and the response
+  is large — a strong edge. Where the patch is flat, the negatives and positives cancel to
+  nearly zero. So the kernel is a little template for "a change," and the dot product
+  measures how strongly each spot matches it.
+</p>
 <p>
   I then implemented a measurement based on the edge differences. This works way better
   than brightness, because an edge is contrast and relative — it doesn't depend on

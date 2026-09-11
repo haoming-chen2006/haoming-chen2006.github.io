@@ -85,17 +85,17 @@
 </p>
 <p>
   Currently, I looked at the Van Gogh test video in the lecture, and I think the method
-  of directly decimating pixels isn't the most ideal. I looked at the function definition
-  and decided to use <code>cv.INTER_AREA</code>, which we're using right now, because it
-  takes an average and it's generally more reasonable when computing things like
-  alignment — colors or blobs and their general distribution are reasonable things to be
-  averaged. We use the following downsample method:
+  of directly decimating pixels isn't the most ideal, because it aliases. I learned in the
+  lecture that Gaussian smoothing and then cutting is the anti-aliasing technique, so I
+  used it here: blur the image with a Gaussian to wipe out the fine detail that can't
+  survive at the smaller size, then cut out every nth pixel. We use the following
+  downsample method:
 </p>
 <pre><code>def downsize(img, factor):
     if factor == 1:
         return img
-    h, w = img.shape
-    return cv.resize(img, (w // factor, h // factor), interpolation=cv.INTER_AREA)</code></pre>
+    blurred = cv.GaussianBlur(img, (0, 0), factor)
+    return blurred[::factor, ::factor]</code></pre>
 <p>
   2. With the current scale, run naive align as described above to extract the current
   best offset under the current scale. 3. We take the current scale and then upsample
@@ -216,12 +216,13 @@
 </figure>
 <p>
   I understand Sobel roughly as designing a filter to slide across the image to produce
-  different contrasting regions. The contrasting regions are generated from this kernel,
-  which is very similar to the one you use in a convolutional neural network. However,
-  this kernel is specially designed to detect a change, so it has a negative on one side
-  and a positive on the other — negative on the left and positive on the right. That way
-  we can detect a change in X, and the Y kernel detects a change in Y, which we use to
-  find the different edges.
+  different contrasting regions. The contrasting regions are generated from this kernel —
+  a small grid of weights that slides over the image and, at each spot, combines the
+  neighboring pixels into one number. This kernel is specially designed to detect a
+  change, the gradient of the pixels, so it has a negative on one side and a positive on
+  the other — negative on the left and positive on the right. That way we can detect a
+  change in X, and the Y kernel detects a change in Y, which we use to find the different
+  edges.
 </p>
 <p>
   This makes sense in terms of a dot product: sliding the kernel over a patch and summing

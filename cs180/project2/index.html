@@ -78,6 +78,9 @@ def finite_difference(im, threshold, filter_x=Dx, filter_y=Dy):
 </p>
 <h2>Part 1.3: Derivative of Gaussian (DoG) filter</h2>
 <p>
+  I believe the whole point of this is to use the property of convolutions, that order doesn't really matter. And thus, you can apply the flatten and filter operations sequentially, or you can even convolve them together to have a composite function that has the same effect. Below, I try to demonstrate this.
+</p>
+<p>
   The 2D Gaussian is the outer product of <code>cv2.getGaussianKernel</code> with itself (9x9, sigma 1.5). I blur the image with it and then repeat Part 1.2.
 </p>
 <pre><code>def gaussian_2d(ksize, sigma):
@@ -276,6 +279,9 @@ def laplacian_stack(im, levels, sigma=1.0):
 </p>
 <figure class="single"><img src="assets/p23_oraple_figure.jpg" alt="levels 0, 2, 4, then the final blend"><figcaption>levels 0, 2, 4, then the final blend</figcaption></figure>
 <h2>Part 2.4: Multiresolution blending</h2>
+<p>
+  This is a very interesting problem. I think it is connected to an interesting way of mixing information: we mix at different abstraction scales and gradually add the information back. Because adding all the Laplacian levels recovers the whole image, we can mix at each scale and then add the scales up to gradually recover the mixed image. So the mixing is more gentle than one direct mix of the whole image. In other words, we mix at different frequency scales.
+</p>
 <p>
   I build Laplacian stacks of both images and a Gaussian stack of the mask, blend each level as mask * A + (1 - mask) * B, and sum the levels. All blends are done in color, one channel at a time.
 </p>

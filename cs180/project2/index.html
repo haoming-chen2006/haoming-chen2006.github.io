@@ -13,32 +13,18 @@
 
 <h2 class="big">Part 1: Fun with Filters</h2>
 <h2>Part 1.1: Convolutions from scratch</h2>
-<p></p>
-<h3>Padding</h3>
+<p>
+  I started by looking at the normal applying of padding and kernels. I noticed that padding uses a single number to pad on both sides, and I made the assumption that you pad both sides equally. Although I did some research and see this is not always the case, as in some cases, for example, causal convolutional layers, the padding could be different, and below is my padding function.
+</p>
 <pre><code>def pad_same(image, kernel_h, kernel_w):
     image_h, image_w = image.shape
     top, left = kernel_h // 2, kernel_w // 2
     padded = np.zeros((image_h + kernel_h - 1, image_w + kernel_w - 1))
     padded[top:top + image_h, left:left + image_w] = image
     return padded</code></pre>
-<p></p>
-<h3>Four loops</h3>
-<pre><code>def conv2d_four(image, kernel):
-    image_h, image_w = image.shape
-    kernel_h, kernel_w = kernel.shape
-    padded = pad_same(image, kernel_h, kernel_w)
-    flipped = kernel[::-1, ::-1]
-    out = np.zeros((image_h, image_w))
-    for i in range(image_h):
-        for j in range(image_w):
-            val = 0.0
-            for h in range(kernel_h):
-                for w in range(kernel_w):
-                    val += padded[i + h, j + w] * flipped[h, w]
-            out[i, j] = val
-    return out</code></pre>
-<p></p>
-<h3>Two loops</h3>
+<p>
+  Then I also had a conv2d for both four loops and two loops, and here I only showed the two loops function, which is what I used later on too. It basically takes a kernel and puts it across the image.
+</p>
 <pre><code>def conv2d_two(image, kernel):
     image_h, image_w = image.shape
     kernel_h, kernel_w = kernel.shape
@@ -49,38 +35,78 @@
         for j in range(image_w):
             out[i, j] = np.sum(padded[i:i + kernel_h, j:j + kernel_w] * flipped)
     return out</code></pre>
-<p></p>
 <h3>Comparison with scipy</h3>
-<p></p>
-<h3>Box filter and finite differences</h3>
-<p></p>
 <div class="quad">
   <figure><img src="assets/p11_input.jpg" alt="input"><figcaption>input</figcaption></figure>
-  <figure><img src="assets/p11_box.jpg" alt="9x9 box filter"><figcaption>9x9 box filter</figcaption></figure>
-  <figure><img src="assets/p11_dx.jpg" alt="Dx"><figcaption>Dx</figcaption></figure>
-  <figure><img src="assets/p11_dy.jpg" alt="Dy"><figcaption>Dy</figcaption></figure>
+  <figure><img src="assets/p11_box.jpg" alt="ours: 9x9 box filter"><figcaption>ours: 9x9 box filter</figcaption></figure>
+  <figure><img src="assets/p11_dx.jpg" alt="ours: Dx"><figcaption>ours: Dx</figcaption></figure>
+  <figure><img src="assets/p11_dy.jpg" alt="ours: Dy"><figcaption>ours: Dy</figcaption></figure>
 </div>
+<div class="quad">
+  <figure><img src="assets/p11_input.jpg" alt="input"><figcaption>input</figcaption></figure>
+  <figure><img src="assets/p11_box_scipy.jpg" alt="scipy: 9x9 box filter"><figcaption>scipy: 9x9 box filter</figcaption></figure>
+  <figure><img src="assets/p11_dx_scipy.jpg" alt="scipy: Dx"><figcaption>scipy: Dx</figcaption></figure>
+  <figure><img src="assets/p11_dy_scipy.jpg" alt="scipy: Dy"><figcaption>scipy: Dy</figcaption></figure>
+</div>
+<p>
+  Both pad the boundary with zeros, and the results match <code>scipy.signal.convolve2d</code> to within 1e-15. On a 100x100 image with the 9x9 box filter, four loops took about 130 ms, two loops about 20 ms, and scipy under 1 ms, because each step moves more of the looping from Python into compiled code.
+</p>
 <h2>Part 1.2: Finite difference operator</h2>
-<p></p>
+<p>
+  The derivative in x uses the kernel D<sub>x</sub> = [1, -1] and the derivative in y uses D<sub>y</sub> = [1, -1]<sup>T</sup>. The gradient magnitude is sqrt(dx<sup>2</sup> + dy<sup>2</sup>).
+</p>
+<pre><code>Dx = np.array([[1.0, -1.0]])
+Dy = np.array([[1.0], [-1.0]])
+
+
+def finite_difference(im, threshold, filter_x=Dx, filter_y=Dy):
+    dx = convolve2d(im, filter_x, mode=&#x27;same&#x27;, boundary=&#x27;symm&#x27;)
+    dy = convolve2d(im, filter_y, mode=&#x27;same&#x27;, boundary=&#x27;symm&#x27;)
+    magnitude = np.sqrt(dx**2 + dy**2)
+    edges = magnitude &gt; threshold
+    return dx, dy, magnitude, edges</code></pre>
 <div class="pair">
   <figure><img src="assets/p12_dx.jpg" alt="partial derivative in x"><figcaption>partial derivative in x</figcaption></figure>
   <figure><img src="assets/p12_dy.jpg" alt="partial derivative in y"><figcaption>partial derivative in y</figcaption></figure>
 </div>
 <div class="pair">
   <figure><img src="assets/p12_magnitude.jpg" alt="gradient magnitude"><figcaption>gradient magnitude</figcaption></figure>
-  <figure><img src="assets/p12_edges.png" alt="binarized edges"><figcaption>binarized edges</figcaption></figure>
+  <figure><img src="assets/p12_edges.png" alt="binarized edges, threshold 0.25"><figcaption>binarized edges, threshold 0.25</figcaption></figure>
 </div>
-<p></p>
+<p>
+  I binarized the gradient magnitude at a threshold of 0.25. A lower threshold keeps more of the background buildings but lets in the grass noise, so I gave up a few faint edges for a cleaner image.
+</p>
 <h2>Part 1.3: Derivative of Gaussian (DoG) filter</h2>
-<p></p>
+<p>
+  The 2D Gaussian is the outer product of <code>cv2.getGaussianKernel</code> with itself (9x9, sigma 1.5). I blur the image with it and then repeat Part 1.2.
+</p>
+<pre><code>def gaussian_2d(ksize, sigma):
+    g = cv.getGaussianKernel(ksize, sigma)
+    return g @ g.T
+
+
+def blur_then_difference(im, gaussian, threshold):
+    blurred = convolve2d(im, gaussian, mode=&#x27;same&#x27;, boundary=&#x27;symm&#x27;)
+    return finite_difference(blurred, threshold)</code></pre>
 <div class="trio">
   <figure><img src="assets/p13_blurred.jpg" alt="blurred input"><figcaption>blurred input</figcaption></figure>
   <figure><img src="assets/p13_magnitude.jpg" alt="gradient magnitude"><figcaption>gradient magnitude</figcaption></figure>
-  <figure><img src="assets/p13_edges.png" alt="binarized edges"><figcaption>binarized edges</figcaption></figure>
+  <figure><img src="assets/p13_edges.png" alt="binarized edges, threshold 0.075"><figcaption>binarized edges, threshold 0.075</figcaption></figure>
 </div>
-<p></p>
+<p>
+  Compared to the plain finite difference, the grass noise is gone and the edges are thicker and continuous. Blurring makes the gradients smaller, so the threshold drops to 0.075.
+</p>
 <h3>DoG filters</h3>
-<p></p>
+<p>
+  Convolving the Gaussian with D<sub>x</sub> and D<sub>y</sub> gives two DoG filters, so the blur and the derivative become one convolution.
+</p>
+<pre><code>def dog_filters(gaussian):
+    return convolve2d(gaussian, Dx), convolve2d(gaussian, Dy)
+
+
+def dog_difference(im, gaussian, threshold):
+    dog_x, dog_y = dog_filters(gaussian)
+    return finite_difference(im, threshold, dog_x, dog_y)</code></pre>
 <div class="pair small">
   <figure><img src="assets/p13_dog_x.png" alt="DoG x filter"><figcaption>DoG x filter</figcaption></figure>
   <figure><img src="assets/p13_dog_y.png" alt="DoG y filter"><figcaption>DoG y filter</figcaption></figure>
@@ -89,124 +115,210 @@
   <figure><img src="assets/p13_dog_magnitude.jpg" alt="gradient magnitude, single convolution"><figcaption>gradient magnitude, single convolution</figcaption></figure>
   <figure><img src="assets/p13_dog_edges.png" alt="binarized edges, single convolution"><figcaption>binarized edges, single convolution</figcaption></figure>
 </div>
-<p></p>
+<p>
+  The result is the same as blurring first: the gradient magnitudes differ by at most 7e-16 and the edge images are identical.
+</p>
 <h3>Bells &amp; Whistles: gradient orientation</h3>
-<p></p>
-<figure class="single"><img src="assets/p13_orientation.png" alt="gradient orientation as hue, magnitude as brightness"><figcaption>gradient orientation as hue, magnitude as brightness</figcaption></figure>
+<p>
+  The gradient divided by its magnitude is already the cosine and sine of the orientation, so no angle function is needed. Each color channel is a cosine of the orientation shifted by 120 degrees, expanded with cos(a - b) = cos a cos b + sin a sin b, and the brightness is the gradient magnitude.
+</p>
+<pre><code>def orientation(dx, dy, magnitude):
+    cos, sin = dx / (magnitude + 1e-8), dy / (magnitude + 1e-8)
+    half, root = 0.5, np.sqrt(3) / 2
+    rgb = np.dstack([cos, -half * cos + root * sin, -half * cos - root * sin])
+    return (0.5 + 0.5 * rgb) * normalize(magnitude)[:, :, None]</code></pre>
+<figure class="single"><img src="assets/p13_orientation.png" alt="gradient orientation as color, magnitude as brightness"><figcaption>gradient orientation as color, magnitude as brightness</figcaption></figure>
 <h2 class="big">Part 2: Fun with Frequencies</h2>
 <h2>Part 2.1: Image sharpening</h2>
-<p></p>
-<div class="pair">
+<p>
+  A Gaussian blur keeps only the low frequencies, so the image minus its blur is the high frequencies. Adding alpha times the high frequencies back sharpens the image, and this folds into a single filter: (1 + alpha) * impulse - alpha * Gaussian.
+</p>
+<p>
+  I also find out that sharpen and blur are not reverses of each other. So sharpen is not gonna cancel blurring. It's gonna try to "use what is left" with its best ability.
+</p>
+<pre><code>def unsharp_filter(sigma, alpha):
+    ksize = kernel_size(sigma)
+    impulse = np.zeros((ksize, ksize))
+    impulse[ksize // 2, ksize // 2] = 1
+    return (1 + alpha) * impulse - alpha * gaussian_2d(ksize, sigma)
+
+
+def sharpen(im, sigma, alpha):
+    return np.clip(filter_image(im, unsharp_filter(sigma, alpha)), 0, 1)</code></pre>
+<div class="quad">
   <figure><img src="assets/p21_taj.jpg" alt="taj, original"><figcaption>taj, original</figcaption></figure>
-  <figure><img src="assets/p21_taj_sharp.jpg" alt="taj, sharpened"><figcaption>taj, sharpened</figcaption></figure>
+  <figure><img src="assets/p21_taj_blur.jpg" alt="blurred"><figcaption>blurred</figcaption></figure>
+  <figure><img src="assets/p21_taj_high.jpg" alt="high frequencies"><figcaption>high frequencies</figcaption></figure>
+  <figure><img src="assets/p21_taj_sharp.jpg" alt="sharpened"><figcaption>sharpened</figcaption></figure>
 </div>
-<div class="pair">
+<p>
+  Taj sharpens well, the edges of the building come out clearly.
+</p>
+<p>
+  I'm also interested to discover what happens if we try to sharpen an image that is already kind of blurry, for instance, this motion blur image.
+</p>
+<div class="quad">
   <figure><img src="assets/p21_walking.jpg" alt="walking, original"><figcaption>walking, original</figcaption></figure>
-  <figure><img src="assets/p21_walking_sharp.jpg" alt="walking, sharpened"><figcaption>walking, sharpened</figcaption></figure>
+  <figure><img src="assets/p21_walking_blur.jpg" alt="blurred"><figcaption>blurred</figcaption></figure>
+  <figure><img src="assets/p21_walking_high.jpg" alt="high frequencies"><figcaption>high frequencies</figcaption></figure>
+  <figure><img src="assets/p21_walking_sharp.jpg" alt="sharpened"><figcaption>sharpened</figcaption></figure>
 </div>
-<p></p>
+<p>
+  The result is sharpened, but doesn't totally sharpen. The shoes and the outline of the jacket get crisper, but the smear behind the walker is still there, because the unsharp mask only boosts the high frequencies that are left and cannot undo motion blur.
+</p>
+<h3>Varying the sharpening amount</h3>
+<div class="quad">
+  <figure><img src="assets/p21_taj_alpha_0.5.jpg" alt="alpha 0.5"><figcaption>alpha 0.5</figcaption></figure>
+  <figure><img src="assets/p21_taj_alpha_1.jpg" alt="alpha 1"><figcaption>alpha 1</figcaption></figure>
+  <figure><img src="assets/p21_taj_alpha_2.jpg" alt="alpha 2"><figcaption>alpha 2</figcaption></figure>
+  <figure><img src="assets/p21_taj_alpha_4.jpg" alt="alpha 4"><figcaption>alpha 4</figcaption></figure>
+</div>
+<p>
+  A larger alpha gives stronger edges. Past about 2, halos and noise start to show.
+</p>
 <h3>Blur, then sharpen</h3>
-<p></p>
+<p>
+  I also decided to sharpen Evanbot.
+</p>
 <div class="trio">
   <figure><img src="assets/p21_eval_original.jpg" alt="original"><figcaption>original</figcaption></figure>
   <figure><img src="assets/p21_eval_blurred.jpg" alt="blurred"><figcaption>blurred</figcaption></figure>
   <figure><img src="assets/p21_eval_resharpened.jpg" alt="re-sharpened"><figcaption>re-sharpened</figcaption></figure>
 </div>
-<p></p>
 <h2>Part 2.2: Hybrid images</h2>
-<p></p>
+<p>
+  I align the two images on two points, low-pass one with a Gaussian, high-pass the other by subtracting its Gaussian blur, and add them.
+</p>
+<pre><code>def align(im, target, pts, target_pts):
+    (x1, y1), (x2, y2) = pts
+    (u1, v1), (u2, v2) = target_pts
+    scale = np.hypot(u2 - u1, v2 - v1) / np.hypot(x2 - x1, y2 - y1)
+    angle = np.degrees(np.arctan2(y2 - y1, x2 - x1) - np.arctan2(v2 - v1, u2 - u1))
+    matrix = cv.getRotationMatrix2D((x1, y1), angle, scale)
+    matrix[:, 2] += (u1 - x1, v1 - y1)
+    h, w = target.shape[:2]
+    return cv.warpAffine(im, matrix, (w, h), borderMode=cv.BORDER_REFLECT)
+
+
+def hybrid(im_low, im_high, sigma_low, sigma_high):
+    return np.clip(low_pass(im_low, sigma_low) + high_pass(im_high, sigma_high), 0, 1)</code></pre>
 <h3>Derek and Nutmeg</h3>
 <div class="trio">
   <figure><img src="assets/p22_derek_nutmeg_low.jpg" alt="Derek (low frequency)"><figcaption>Derek (low frequency)</figcaption></figure>
   <figure><img src="assets/p22_derek_nutmeg_high.jpg" alt="Nutmeg (high frequency)"><figcaption>Nutmeg (high frequency)</figcaption></figure>
   <figure><img src="assets/p22_derek_nutmeg_hybrid.jpg" alt="hybrid"><figcaption>hybrid</figcaption></figure>
 </div>
-<p></p>
 <h3>Messi and Ronaldo</h3>
 <div class="trio">
   <figure><img src="assets/p22_messi_ronaldo_low.jpg" alt="Messi (low frequency)"><figcaption>Messi (low frequency)</figcaption></figure>
   <figure><img src="assets/p22_messi_ronaldo_high.jpg" alt="Ronaldo (high frequency)"><figcaption>Ronaldo (high frequency)</figcaption></figure>
   <figure><img src="assets/p22_messi_ronaldo_hybrid.jpg" alt="hybrid"><figcaption>hybrid</figcaption></figure>
 </div>
-<p></p>
-<h3>Lily pond: photo and painting</h3>
-<div class="trio">
-  <figure><img src="assets/p22_pond_low.jpg" alt="photo (low frequency)"><figcaption>photo (low frequency)</figcaption></figure>
-  <figure><img src="assets/p22_pond_high.jpg" alt="painting (high frequency)"><figcaption>painting (high frequency)</figcaption></figure>
-  <figure><img src="assets/p22_pond_hybrid.jpg" alt="hybrid"><figcaption>hybrid</figcaption></figure>
-</div>
-<p></p>
 <h3>Anthropic and ChatGPT logos</h3>
 <div class="trio">
   <figure><img src="assets/p22_logos_low.jpg" alt="Anthropic logo (low frequency)"><figcaption>Anthropic logo (low frequency)</figcaption></figure>
   <figure><img src="assets/p22_logos_high.jpg" alt="ChatGPT logo (high frequency)"><figcaption>ChatGPT logo (high frequency)</figcaption></figure>
   <figure><img src="assets/p22_logos_hybrid.jpg" alt="hybrid"><figcaption>hybrid</figcaption></figure>
 </div>
-<p></p>
-<h3>Frequency analysis: Messi and Ronaldo</h3>
-<p></p>
+<h3>Full process: lily pond</h3>
+<p>
+  The photo is the low-frequency image and the painting is the high-frequency one. I aligned them on the two ends of the bridge.
+</p>
 <div class="pair">
-  <figure><img src="assets/p22_low_filtered.jpg" alt="low-pass filtered"><figcaption>low-pass filtered</figcaption></figure>
-  <figure><img src="assets/p22_high_filtered.jpg" alt="high-pass filtered"><figcaption>high-pass filtered</figcaption></figure>
+  <figure><img src="assets/p22_original_low.jpg" alt="original photo"><figcaption>original photo</figcaption></figure>
+  <figure><img src="assets/p22_original_high.jpg" alt="original painting"><figcaption>original painting</figcaption></figure>
 </div>
+<div class="pair">
+  <figure><img src="assets/p22_pond_low.jpg" alt="aligned photo"><figcaption>aligned photo</figcaption></figure>
+  <figure><img src="assets/p22_pond_high.jpg" alt="aligned painting"><figcaption>aligned painting</figcaption></figure>
+</div>
+<div class="pair">
+  <figure><img src="assets/p22_low_filtered.jpg" alt="low-pass filtered, sigma 8"><figcaption>low-pass filtered, sigma 8</figcaption></figure>
+  <figure><img src="assets/p22_high_filtered.jpg" alt="high-pass filtered, sigma 5"><figcaption>high-pass filtered, sigma 5</figcaption></figure>
+</div>
+<p>
+  I used sigma 8 for the low-pass, enough to remove the fine detail of the photo, and sigma 5 for the high-pass, so the painting keeps its brush strokes but not its large shapes.
+</p>
 <div class="five">
-  <figure><img src="assets/p22_fft_low_input.jpg" alt="FFT: low input"><figcaption>FFT: low input</figcaption></figure>
-  <figure><img src="assets/p22_fft_high_input.jpg" alt="FFT: high input"><figcaption>FFT: high input</figcaption></figure>
+  <figure><img src="assets/p22_fft_low_input.jpg" alt="FFT: photo"><figcaption>FFT: photo</figcaption></figure>
+  <figure><img src="assets/p22_fft_high_input.jpg" alt="FFT: painting"><figcaption>FFT: painting</figcaption></figure>
   <figure><img src="assets/p22_fft_low_filtered.jpg" alt="FFT: low-pass"><figcaption>FFT: low-pass</figcaption></figure>
   <figure><img src="assets/p22_fft_high_filtered.jpg" alt="FFT: high-pass"><figcaption>FFT: high-pass</figcaption></figure>
   <figure><img src="assets/p22_fft_hybrid.jpg" alt="FFT: hybrid"><figcaption>FFT: hybrid</figcaption></figure>
 </div>
-<p></p>
-<h3>Bells &amp; Whistles: color</h3>
-<p></p>
-<div class="quad">
-  <figure><img src="assets/p22_messi_ronaldo_hybrid.jpg" alt="color on both"><figcaption>color on both</figcaption></figure>
-  <figure><img src="assets/p22_color_low_only.jpg" alt="color on low only"><figcaption>color on low only</figcaption></figure>
-  <figure><img src="assets/p22_color_high_only.jpg" alt="color on high only"><figcaption>color on high only</figcaption></figure>
-  <figure><img src="assets/p22_color_neither.jpg" alt="grayscale"><figcaption>grayscale</figcaption></figure>
-</div>
-<p></p>
+<p>
+  The low-pass keeps only the center of the spectrum, the high-pass removes the center, and the hybrid has both.
+</p>
+<figure class="single"><img src="assets/p22_pond_hybrid.jpg" alt="hybrid"><figcaption>hybrid</figcaption></figure>
 <h2>Part 2.3: Gaussian and Laplacian stacks</h2>
-<p></p>
+<p>
+  Each Gaussian level blurs the previous one, with sigma doubling each time and no downsampling. Each Laplacian level is the difference of two neighboring Gaussian levels, and the last one is the final Gaussian level, so the stack sums back to the image.
+</p>
+<pre><code>def gaussian_stack(im, levels, sigma=1.0):
+    stack = [im]
+    for i in range(levels - 1):
+        stack.append(blur(stack[-1], sigma * 2**i))
+    return stack
+
+
+def laplacian_stack(im, levels, sigma=1.0):
+    g = gaussian_stack(im, levels, sigma)
+    return [g[i] - g[i + 1] for i in range(levels - 1)] + [g[-1]]</code></pre>
 <h3>Apple</h3>
 <figure class="wide"><img src="assets/p23_gaussian_apple.jpg" alt="Gaussian stack"><figcaption>Gaussian stack</figcaption></figure>
 <figure class="wide"><img src="assets/p23_laplacian_apple.jpg" alt="Laplacian stack"><figcaption>Laplacian stack</figcaption></figure>
 <h3>Orange</h3>
 <figure class="wide"><img src="assets/p23_gaussian_orange.jpg" alt="Gaussian stack"><figcaption>Gaussian stack</figcaption></figure>
 <figure class="wide"><img src="assets/p23_laplacian_orange.jpg" alt="Laplacian stack"><figcaption>Laplacian stack</figcaption></figure>
-<p></p>
 <h3>Recreating Szeliski Figure 3.42</h3>
-<p></p>
+<p>
+  Rows are Laplacian levels 0, 2 and 4, then the sum of all levels. Columns are the masked apple, the masked orange, and their sum.
+</p>
 <figure class="single"><img src="assets/p23_oraple_figure.jpg" alt="levels 0, 2, 4, then the final blend"><figcaption>levels 0, 2, 4, then the final blend</figcaption></figure>
 <h2>Part 2.4: Multiresolution blending</h2>
-<p></p>
+<p>
+  I build Laplacian stacks of both images and a Gaussian stack of the mask, blend each level as mask * A + (1 - mask) * B, and sum the levels. All blends are done in color, one channel at a time.
+</p>
+<pre><code>def blend_levels(a, b, mask, levels):
+    la, lb = laplacian_stack(a, levels), laplacian_stack(b, levels)
+    gm = [m[:, :, None] for m in gaussian_stack(mask, levels)]
+    left = [gm[i] * la[i] for i in range(levels)]
+    right = [(1 - gm[i]) * lb[i] for i in range(levels)]
+    return left, right, [left[i] + right[i] for i in range(levels)]
+
+
+def blend(a, b, mask, levels=6):
+    return np.clip(sum(blend_levels(a, b, mask, levels)[2]), 0, 1)</code></pre>
 <h3>The oraple</h3>
 <div class="pair">
   <figure><img src="assets/p24_oraple_naive.jpg" alt="naive cut and paste"><figcaption>naive cut and paste</figcaption></figure>
   <figure><img src="assets/p24_oraple.jpg" alt="multiresolution blend"><figcaption>multiresolution blend</figcaption></figure>
 </div>
-<p></p>
-<h3>Irregular mask: Messi and Ronaldo</h3>
-<p></p>
+<h3>Irregular mask</h3>
 <div class="quad">
   <figure><img src="assets/p24_face_a.jpg" alt="Messi"><figcaption>Messi</figcaption></figure>
   <figure><img src="assets/p24_face_b.jpg" alt="Ronaldo"><figcaption>Ronaldo</figcaption></figure>
   <figure><img src="assets/p24_face_mask.png" alt="mask"><figcaption>mask</figcaption></figure>
   <figure><img src="assets/p24_face_blend.jpg" alt="blend"><figcaption>blend</figcaption></figure>
 </div>
-<p></p>
-<h3>Irregular mask: lily pond</h3>
-<p></p>
 <div class="quad">
   <figure><img src="assets/p24_pond_a.jpg" alt="painting"><figcaption>painting</figcaption></figure>
   <figure><img src="assets/p24_pond_b.jpg" alt="photo"><figcaption>photo</figcaption></figure>
   <figure><img src="assets/p24_pond_mask.png" alt="mask"><figcaption>mask</figcaption></figure>
   <figure><img src="assets/p24_pond_blend.jpg" alt="blend"><figcaption>blend</figcaption></figure>
 </div>
-<p></p>
+<p>
+  I think it's much harder to mix human faces, especially in this case, because they're not directly aligned. While in the lily pond, the two pictures are much more aligned, so the mask is easier to design.
+</p>
 <h3>The blending process</h3>
-<p></p>
-<figure class="single"><img src="assets/p24_face_figure.jpg" alt="levels 0, 2, 4, then the final blend"><figcaption>levels 0, 2, 4, then the final blend</figcaption></figure>
+<p>
+  Rows are Laplacian levels 0, 2 and 4, then the sum of all levels. Columns are the masked painting, the masked photo, and their sum.
+</p>
+<figure class="single"><img src="assets/p24_pond_figure.jpg" alt="levels 0, 2, 4, then the final blend"><figcaption>levels 0, 2, 4, then the final blend</figcaption></figure>
+<h2>What I learned</h2>
+<p>
+  The most important thing I learned is that an image can be split into frequency bands, and that sharpening, hybrid images and blending are all the same idea of treating those bands differently.
+</p>
 
 </main>
 </body>

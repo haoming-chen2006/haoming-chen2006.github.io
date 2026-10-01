@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Project 2 — Haoming Chen</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main>
+
+<h1>Project 2</h1>
+
+<h2 class="big">Part 1: Fun with Filters</h2>
+<h2>Part 1.1: Convolutions from scratch</h2>
+<p></p>
+<h3>Padding</h3>
+<pre><code>def pad_same(image, kernel_h, kernel_w):
+    image_h, image_w = image.shape
+    top, left = kernel_h // 2, kernel_w // 2
+    padded = np.zeros((image_h + kernel_h - 1, image_w + kernel_w - 1))
+    padded[top:top + image_h, left:left + image_w] = image
+    return padded</code></pre>
+<p></p>
+<h3>Four loops</h3>
+<pre><code>def conv2d_four(image, kernel):
+    image_h, image_w = image.shape
+    kernel_h, kernel_w = kernel.shape
+    padded = pad_same(image, kernel_h, kernel_w)
+    flipped = kernel[::-1, ::-1]
+    out = np.zeros((image_h, image_w))
+    for i in range(image_h):
+        for j in range(image_w):
+            val = 0.0
+            for h in range(kernel_h):
+                for w in range(kernel_w):
+                    val += padded[i + h, j + w] * flipped[h, w]
+            out[i, j] = val
+    return out</code></pre>
+<p></p>
+<h3>Two loops</h3>
+<pre><code>def conv2d_two(image, kernel):
+    image_h, image_w = image.shape
+    kernel_h, kernel_w = kernel.shape
+    padded = pad_same(image, kernel_h, kernel_w)
+    flipped = kernel[::-1, ::-1]
+    out = np.zeros((image_h, image_w))
+    for i in range(image_h):
+        for j in range(image_w):
+            out[i, j] = np.sum(padded[i:i + kernel_h, j:j + kernel_w] * flipped)
+    return out</code></pre>
+<p></p>
+<h3>Comparison with scipy</h3>
+<p></p>
+<h3>Box filter and finite differences</h3>
+<p></p>
+<div class="quad">
+  <figure><img src="assets/p11_input.jpg" alt="input"><figcaption>input</figcaption></figure>
+  <figure><img src="assets/p11_box.jpg" alt="9x9 box filter"><figcaption>9x9 box filter</figcaption></figure>
+  <figure><img src="assets/p11_dx.jpg" alt="Dx"><figcaption>Dx</figcaption></figure>
+  <figure><img src="assets/p11_dy.jpg" alt="Dy"><figcaption>Dy</figcaption></figure>
+</div>
+<h2>Part 1.2: Finite difference operator</h2>
+<p></p>
+<div class="pair">
+  <figure><img src="assets/p12_dx.jpg" alt="partial derivative in x"><figcaption>partial derivative in x</figcaption></figure>
+  <figure><img src="assets/p12_dy.jpg" alt="partial derivative in y"><figcaption>partial derivative in y</figcaption></figure>
+</div>
+<div class="pair">
+  <figure><img src="assets/p12_magnitude.jpg" alt="gradient magnitude"><figcaption>gradient magnitude</figcaption></figure>
+  <figure><img src="assets/p12_edges.png" alt="binarized edges"><figcaption>binarized edges</figcaption></figure>
+</div>
+<p></p>
+<h2>Part 1.3: Derivative of Gaussian (DoG) filter</h2>
+<p></p>
+<div class="trio">
+  <figure><img src="assets/p13_blurred.jpg" alt="blurred input"><figcaption>blurred input</figcaption></figure>
+  <figure><img src="assets/p13_magnitude.jpg" alt="gradient magnitude"><figcaption>gradient magnitude</figcaption></figure>
+  <figure><img src="assets/p13_edges.png" alt="binarized edges"><figcaption>binarized edges</figcaption></figure>
+</div>
+<p></p>
+<h3>DoG filters</h3>
+<p></p>
+<div class="pair small">
+  <figure><img src="assets/p13_dog_x.png" alt="DoG x filter"><figcaption>DoG x filter</figcaption></figure>
+  <figure><img src="assets/p13_dog_y.png" alt="DoG y filter"><figcaption>DoG y filter</figcaption></figure>
+</div>
+<div class="pair">
+  <figure><img src="assets/p13_dog_magnitude.jpg" alt="gradient magnitude, single convolution"><figcaption>gradient magnitude, single convolution</figcaption></figure>
+  <figure><img src="assets/p13_dog_edges.png" alt="binarized edges, single convolution"><figcaption>binarized edges, single convolution</figcaption></figure>
+</div>
+<p></p>
+<h3>Bells &amp; Whistles: gradient orientation</h3>
+<p></p>
+<figure class="single"><img src="assets/p13_orientation.png" alt="gradient orientation as hue, magnitude as brightness"><figcaption>gradient orientation as hue, magnitude as brightness</figcaption></figure>
+<h2 class="big">Part 2: Fun with Frequencies</h2>
+<h2>Part 2.1: Image sharpening</h2>
+<p></p>
+<div class="pair">
+  <figure><img src="assets/p21_taj.jpg" alt="taj, original"><figcaption>taj, original</figcaption></figure>
+  <figure><img src="assets/p21_taj_sharp.jpg" alt="taj, sharpened"><figcaption>taj, sharpened</figcaption></figure>
+</div>
+<div class="pair">
+  <figure><img src="assets/p21_walking.jpg" alt="walking, original"><figcaption>walking, original</figcaption></figure>
+  <figure><img src="assets/p21_walking_sharp.jpg" alt="walking, sharpened"><figcaption>walking, sharpened</figcaption></figure>
+</div>
+<p></p>
+<h3>Blur, then sharpen</h3>
+<p></p>
+<div class="trio">
+  <figure><img src="assets/p21_eval_original.jpg" alt="original"><figcaption>original</figcaption></figure>
+  <figure><img src="assets/p21_eval_blurred.jpg" alt="blurred"><figcaption>blurred</figcaption></figure>
+  <figure><img src="assets/p21_eval_resharpened.jpg" alt="re-sharpened"><figcaption>re-sharpened</figcaption></figure>
+</div>
+<p></p>
+<h2>Part 2.2: Hybrid images</h2>
+<p></p>
+<h3>Derek and Nutmeg</h3>
+<div class="trio">
+  <figure><img src="assets/p22_derek_nutmeg_low.jpg" alt="Derek (low frequency)"><figcaption>Derek (low frequency)</figcaption></figure>
+  <figure><img src="assets/p22_derek_nutmeg_high.jpg" alt="Nutmeg (high frequency)"><figcaption>Nutmeg (high frequency)</figcaption></figure>
+  <figure><img src="assets/p22_derek_nutmeg_hybrid.jpg" alt="hybrid"><figcaption>hybrid</figcaption></figure>
+</div>
+<p></p>
+<h3>Messi and Ronaldo</h3>
+<div class="trio">
+  <figure><img src="assets/p22_messi_ronaldo_low.jpg" alt="Messi (low frequency)"><figcaption>Messi (low frequency)</figcaption></figure>
+  <figure><img src="assets/p22_messi_ronaldo_high.jpg" alt="Ronaldo (high frequency)"><figcaption>Ronaldo (high frequency)</figcaption></figure>
+  <figure><img src="assets/p22_messi_ronaldo_hybrid.jpg" alt="hybrid"><figcaption>hybrid</figcaption></figure>
+</div>
+<p></p>
+<h3>Lily pond: photo and painting</h3>
+<div class="trio">
+  <figure><img src="assets/p22_pond_low.jpg" alt="photo (low frequency)"><figcaption>photo (low frequency)</figcaption></figure>
+  <figure><img src="assets/p22_pond_high.jpg" alt="painting (high frequency)"><figcaption>painting (high frequency)</figcaption></figure>
+  <figure><img src="assets/p22_pond_hybrid.jpg" alt="hybrid"><figcaption>hybrid</figcaption></figure>
+</div>
+<p></p>
+<h3>Anthropic and ChatGPT logos</h3>
+<div class="trio">
+  <figure><img src="assets/p22_logos_low.jpg" alt="Anthropic logo (low frequency)"><figcaption>Anthropic logo (low frequency)</figcaption></figure>
+  <figure><img src="assets/p22_logos_high.jpg" alt="ChatGPT logo (high frequency)"><figcaption>ChatGPT logo (high frequency)</figcaption></figure>
+  <figure><img src="assets/p22_logos_hybrid.jpg" alt="hybrid"><figcaption>hybrid</figcaption></figure>
+</div>
+<p></p>
+<h3>Frequency analysis: Messi and Ronaldo</h3>
+<p></p>
+<div class="pair">
+  <figure><img src="assets/p22_low_filtered.jpg" alt="low-pass filtered"><figcaption>low-pass filtered</figcaption></figure>
+  <figure><img src="assets/p22_high_filtered.jpg" alt="high-pass filtered"><figcaption>high-pass filtered</figcaption></figure>
+</div>
+<div class="five">
+  <figure><img src="assets/p22_fft_low_input.jpg" alt="FFT: low input"><figcaption>FFT: low input</figcaption></figure>
+  <figure><img src="assets/p22_fft_high_input.jpg" alt="FFT: high input"><figcaption>FFT: high input</figcaption></figure>
+  <figure><img src="assets/p22_fft_low_filtered.jpg" alt="FFT: low-pass"><figcaption>FFT: low-pass</figcaption></figure>
+  <figure><img src="assets/p22_fft_high_filtered.jpg" alt="FFT: high-pass"><figcaption>FFT: high-pass</figcaption></figure>
+  <figure><img src="assets/p22_fft_hybrid.jpg" alt="FFT: hybrid"><figcaption>FFT: hybrid</figcaption></figure>
+</div>
+<p></p>
+<h3>Bells &amp; Whistles: color</h3>
+<p></p>
+<div class="quad">
+  <figure><img src="assets/p22_messi_ronaldo_hybrid.jpg" alt="color on both"><figcaption>color on both</figcaption></figure>
+  <figure><img src="assets/p22_color_low_only.jpg" alt="color on low only"><figcaption>color on low only</figcaption></figure>
+  <figure><img src="assets/p22_color_high_only.jpg" alt="color on high only"><figcaption>color on high only</figcaption></figure>
+  <figure><img src="assets/p22_color_neither.jpg" alt="grayscale"><figcaption>grayscale</figcaption></figure>
+</div>
+<p></p>
+<h2>Part 2.3: Gaussian and Laplacian stacks</h2>
+<p></p>
+<h3>Apple</h3>
+<figure class="wide"><img src="assets/p23_gaussian_apple.jpg" alt="Gaussian stack"><figcaption>Gaussian stack</figcaption></figure>
+<figure class="wide"><img src="assets/p23_laplacian_apple.jpg" alt="Laplacian stack"><figcaption>Laplacian stack</figcaption></figure>
+<h3>Orange</h3>
+<figure class="wide"><img src="assets/p23_gaussian_orange.jpg" alt="Gaussian stack"><figcaption>Gaussian stack</figcaption></figure>
+<figure class="wide"><img src="assets/p23_laplacian_orange.jpg" alt="Laplacian stack"><figcaption>Laplacian stack</figcaption></figure>
+<p></p>
+<h3>Recreating Szeliski Figure 3.42</h3>
+<p></p>
+<figure class="single"><img src="assets/p23_oraple_figure.jpg" alt="levels 0, 2, 4, then the final blend"><figcaption>levels 0, 2, 4, then the final blend</figcaption></figure>
+<h2>Part 2.4: Multiresolution blending</h2>
+<p></p>
+<h3>The oraple</h3>
+<div class="pair">
+  <figure><img src="assets/p24_oraple_naive.jpg" alt="naive cut and paste"><figcaption>naive cut and paste</figcaption></figure>
+  <figure><img src="assets/p24_oraple.jpg" alt="multiresolution blend"><figcaption>multiresolution blend</figcaption></figure>
+</div>
+<p></p>
+<h3>Irregular mask: Messi and Ronaldo</h3>
+<p></p>
+<div class="quad">
+  <figure><img src="assets/p24_face_a.jpg" alt="Messi"><figcaption>Messi</figcaption></figure>
+  <figure><img src="assets/p24_face_b.jpg" alt="Ronaldo"><figcaption>Ronaldo</figcaption></figure>
+  <figure><img src="assets/p24_face_mask.png" alt="mask"><figcaption>mask</figcaption></figure>
+  <figure><img src="assets/p24_face_blend.jpg" alt="blend"><figcaption>blend</figcaption></figure>
+</div>
+<p></p>
+<h3>Irregular mask: lily pond</h3>
+<p></p>
+<div class="quad">
+  <figure><img src="assets/p24_pond_a.jpg" alt="painting"><figcaption>painting</figcaption></figure>
+  <figure><img src="assets/p24_pond_b.jpg" alt="photo"><figcaption>photo</figcaption></figure>
+  <figure><img src="assets/p24_pond_mask.png" alt="mask"><figcaption>mask</figcaption></figure>
+  <figure><img src="assets/p24_pond_blend.jpg" alt="blend"><figcaption>blend</figcaption></figure>
+</div>
+<p></p>
+<h3>The blending process</h3>
+<p></p>
+<figure class="single"><img src="assets/p24_face_figure.jpg" alt="levels 0, 2, 4, then the final blend"><figcaption>levels 0, 2, 4, then the final blend</figcaption></figure>
+
+</main>
+</body>
+</html>

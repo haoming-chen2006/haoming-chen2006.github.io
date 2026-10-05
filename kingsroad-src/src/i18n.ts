@@ -1,0 +1,173 @@
+/**
+ * Localisation: English and Simplified Chinese.
+ *
+ * The simulation never holds display text — it emits stable keys (`@streak.double`, `@award.champion`)
+ * and the UI translates them at the edge, so an online match between a Chinese and an English browser
+ * stays in lockstep. `t()` reads a module-level language; `setLanguage()` swaps it and re-paints every
+ * `data-i18n` element.
+ */
+
+import type { AbilityDef, UnitDef } from './game/types.ts';
+
+export const LANG_KEY = 'kingsroad-lang';
+export type Lang = 'en' | 'zh';
+
+export const translations: Record<Lang, Record<string, string>> = {
+  en: {
+    'common.back': 'Back', 'common.done': 'Done', 'common.you': 'You', 'common.bot': 'Bot', 'common.human': 'Player',
+    'loading.forging': 'Raising the towers…', 'loading.raising': 'Raising the towers…',
+    'menu.tagline': 'Three lanes. Ten heroes. One crystal. Seen through your own eyes.',
+    'menu.play': 'Play', 'menu.online': 'Online Lobby', 'menu.onlineSub': 'friends and bots, up to 5v5', 'menu.heroes': 'Heroes', 'menu.howToPlay': 'How to Play', 'menu.settings': 'Settings',
+    'menu.record': '{w}W · {l}L',
+    'mode.5v5': 'Full Kingsroad: three lanes, jungle, Tyrant and Overlord. Five heroes a side.',
+    'mode.3v3': 'Three heroes a side on the full map: faster lanes, more room to roam.',
+    'mode.1v1': 'Mid lane only. Just you, your rival, the minions and the jungle.',
+    'diff.easy': 'Easy', 'diff.normal': 'Normal', 'diff.hard': 'Hard',
+    'select.title': 'Choose your hero', 'select.start': 'To Battle', 'select.mode': '{mode} · {diff}', 'select.yourTeam': 'Your team', 'select.enemyTeam': 'Enemy team',
+    'select.skills': 'Skills', 'select.passive': 'Twist', 'select.cooldown': '{s}s cooldown', 'select.mana': '{m} mana', 'select.build': 'Recommended build',
+    'codex.title': 'Heroes',
+    'role.tank': 'Tank', 'role.warrior': 'Warrior', 'role.assassin': 'Assassin', 'role.mage': 'Mage', 'role.marksman': 'Marksman', 'role.support': 'Support',
+    'team.blue': 'Blue', 'team.red': 'Red',
+    'help.title': 'How to play',
+    'help.body': `<div><h3>Goal</h3><p>Push down the three lanes with your minion waves, destroy the towers in order, and break the enemy <b>crystal</b>. Lose yours and it's over.</p>
+      <h3>Controls</h3><ul><li><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> move, mouse looks</li><li><b>Left click</b> basic attack toward the crosshair</li><li><kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> (or <kbd>Q</kbd> <kbd>W</kbd> <kbd>E</kbd>) skills, aimed at the crosshair</li><li><kbd>Space</kbd> dash · <kbd>F</kbd> flash · <kbd>B</kbd> recall · <kbd>I</kbd> shop · <kbd>Tab</kbd> scoreboard · <kbd>M</kbd> big map · <kbd>V</kbd> view</li></ul></div>
+      <div><h3>Growing</h3><p>Last-hit minions for gold, share XP with nearby allies, buy items anywhere (auto-buy follows the recommended build). Skills rank up automatically; the ultimate unlocks at level 4.</p>
+      <h3>Jungle</h3><p>Blue buff: mana and cooldowns. Red buff: burn and slow on hit. The <b>Tyrant</b> (bottom-right pit, 2:00) empowers the whole team; the <b>Overlord</b> (top-left, 8:00) supercharges your next waves.</p>
+      <h3>Bushes and towers</h3><p>Bushes hide you until an enemy walks in. Towers shoot minions first, but turn on any hero that attacks a hero under them.</p></div>`,
+    'hud.shop': 'Shop (I)', 'hud.shopTitle': 'Shop', 'hud.autoBuy': 'Auto buy', 'hud.slain': 'You were slain', 'hud.respawnHint': 'Watching your team…', 'hud.buy': 'Buy', 'hud.owned': 'Owned', 'hud.full': 'Full',
+    'hud.gold': '{g} gold', 'hud.level': 'Lv {l}', 'hud.wave': 'Wave {n}', 'hud.recalling': 'Recalling…', 'hud.tab': 'Hold Tab for the scoreboard',
+    'hud.tipStart': 'Walk to your lane. Minions arrive at 0:25.', 'hud.tipRecall': 'Low health? Press B to recall and heal.',
+    'score.hero': 'Hero', 'score.kda': 'K / D / A', 'score.gold': 'Gold', 'score.level': 'Lv', 'score.items': 'Items',
+    'overlay.captureMouse': 'Click to capture the mouse', 'overlay.towerAggro': 'TOWER!',
+    'pause.paused': 'Paused', 'pause.sub': 'The lanes keep moving without you.', 'pause.resume': 'Resume', 'pause.settings': 'Settings', 'pause.quit': 'Surrender & Quit', 'pause.online': 'The match continues while this is open.',
+    'results.victory': 'Victory', 'results.defeat': 'Defeat', 'results.draw': 'Draw', 'results.again': 'Play Again', 'results.menu': 'Main Menu', 'results.duration': '{m}:{s} · {k0} – {k1} kills',
+    'result.crystal': 'The crystal has fallen', 'result.surrender': 'Surrender', 'result.forfeit': 'The other side left',
+    'award.champion': 'Champion · most hero damage', 'award.warlord': 'Siegebreaker · most tower damage', 'award.executioner': 'Executioner · most kills', 'award.farmer': 'Harvester · most minions',
+    'award.guardian': 'Guardian · most healing', 'award.rampage': 'Rampage · best streak', 'award.bigSpender': 'Magnate · most gold', 'award.objectives': 'Dragonslayer · objectives',
+    'streak.firstBlood': 'First Blood!', 'streak.double': 'Double Kill!', 'streak.triple': 'Triple Kill!', 'streak.quad': 'Quadra Kill!', 'streak.penta': 'PENTA KILL!',
+    'streak.killingSpree': 'Killing Spree', 'streak.unstoppable': 'Unstoppable!', 'streak.legendary': 'LEGENDARY!', 'streak.ace': 'ACE!',
+    'feed.kill': '{killer} slew {victim}', 'feed.tower': '{team} destroyed a {tier} tower', 'feed.crystal': '{team} broke the crystal!', 'feed.objective': '{team} took the {obj}',
+    'tier.outer': 'outer', 'tier.inner': 'inner', 'tier.base': 'base', 'tier.crystal': 'crystal',
+    'objective.tyrant': 'Tyrant slain!', 'objective.overlord': 'Overlord slain!', 'objective.tyrantSpawned': 'The Tyrant has risen', 'objective.overlordSpawned': 'The Overlord has risen',
+    'buff.blue': 'Blue buff', 'buff.red': 'Red buff', 'buff.tyrant': 'Tyrant', 'buff.overlord': 'Overlord',
+    'countdown.fight': 'Fight!', 'toast.recallInterrupted': 'Recall interrupted', 'toast.skillLocked': 'Skill not learned yet', 'toast.noMana': 'Not enough mana', 'toast.immortal': 'Immortal Shield!', 'toast.levelup': 'Level {l}!',
+    'unit.tower': 'Tower', 'unit.minions': 'Minions',
+    'bot.easy': 'Rookie', 'bot.normal': 'Veteran', 'bot.hard': 'Champion',
+    'fx.noTargets': 'no targets',
+    'settings.title': 'Settings', 'settings.sfx': 'Sound volume', 'settings.music': 'Music volume', 'settings.sensitivity': 'Mouse sensitivity', 'settings.fov': 'Field of view',
+    'settings.invert': 'Invert mouse Y', 'settings.firstPerson': 'Start in first person', 'settings.quality': 'Graphics', 'settings.high': 'High', 'settings.low': 'Low', 'settings.language': 'Language', 'settings.reset': 'Reset record',
+    'online.title': 'Online Lobby', 'online.soon': 'Online rooms are being wired up. Play against bots meanwhile.',
+  },
+  zh: {
+    'common.back': '返回', 'common.done': '完成', 'common.you': '你', 'common.bot': '电脑', 'common.human': '玩家',
+    'loading.forging': '正在筑起防御塔…', 'loading.raising': '正在筑起防御塔…',
+    'menu.tagline': '三路。十位英雄。一座水晶。以第一人称亲历。',
+    'menu.play': '开始', 'menu.online': '在线大厅', 'menu.onlineSub': '邀好友，补电脑，最多 5v5', 'menu.heroes': '英雄', 'menu.howToPlay': '玩法说明', 'menu.settings': '设置',
+    'menu.record': '{w} 胜 · {l} 负',
+    'mode.5v5': '完整王者之路：三路、野区、暴君与主宰。每边五名英雄。',
+    'mode.3v3': '完整地图，每边三名英雄：节奏更快，更多游走空间。',
+    'mode.1v1': '只开中路。只有你、对手、小兵和野区。',
+    'diff.easy': '简单', 'diff.normal': '普通', 'diff.hard': '困难',
+    'select.title': '选择英雄', 'select.start': '出征', 'select.mode': '{mode} · {diff}', 'select.yourTeam': '我方', 'select.enemyTeam': '敌方',
+    'select.skills': '技能', 'select.passive': '彩蛋', 'select.cooldown': '冷却 {s} 秒', 'select.mana': '{m} 法力', 'select.build': '推荐出装',
+    'codex.title': '英雄图鉴',
+    'role.tank': '坦克', 'role.warrior': '战士', 'role.assassin': '刺客', 'role.mage': '法师', 'role.marksman': '射手', 'role.support': '辅助',
+    'team.blue': '蓝方', 'team.red': '红方',
+    'help.title': '玩法说明',
+    'help.body': `<div><h3>目标</h3><p>跟随小兵推进三路，依次摧毁防御塔，击碎敌方<b>水晶</b>。己方水晶被毁则落败。</p>
+      <h3>操作</h3><ul><li><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> 移动，鼠标转视角</li><li><b>左键</b> 朝准星普攻</li><li><kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd>（或 <kbd>Q</kbd> <kbd>W</kbd> <kbd>E</kbd>）释放技能，瞄准准星</li><li><kbd>空格</kbd> 冲刺 · <kbd>F</kbd> 闪现 · <kbd>B</kbd> 回城 · <kbd>I</kbd> 商店 · <kbd>Tab</kbd> 战绩 · <kbd>M</kbd> 大地图 · <kbd>V</kbd> 视角</li></ul></div>
+      <div><h3>成长</h3><p>补刀小兵获得金币，附近队友共享经验，随时随地购买装备（自动购买按推荐出装）。技能自动升级，4 级解锁大招。</p>
+      <h3>野区</h3><p>蓝 buff：回蓝与冷却。红 buff：攻击灼烧减速。<b>暴君</b>（右下坑，2:00）强化全队；<b>主宰</b>（左上坑，8:00）强化接下来的兵线。</p>
+      <h3>草丛与防御塔</h3><p>草丛会隐藏你，直到敌人走进来。防御塔优先攻击小兵，但会立即转向在塔下攻击英雄的敌方英雄。</p></div>`,
+    'hud.shop': '商店 (I)', 'hud.shopTitle': '商店', 'hud.autoBuy': '自动购买', 'hud.slain': '你被击败了', 'hud.respawnHint': '观战队友中…', 'hud.buy': '购买', 'hud.owned': '已拥有', 'hud.full': '已满',
+    'hud.gold': '{g} 金币', 'hud.level': '{l} 级', 'hud.wave': '第 {n} 波', 'hud.recalling': '回城中…', 'hud.tab': '按住 Tab 查看战绩',
+    'hud.tipStart': '走向你的分路。小兵将在 0:25 出发。', 'hud.tipRecall': '血量低了？按 B 回城回复。',
+    'score.hero': '英雄', 'score.kda': '击杀 / 死亡 / 助攻', 'score.gold': '金币', 'score.level': '等级', 'score.items': '装备',
+    'overlay.captureMouse': '点击以捕获鼠标', 'overlay.towerAggro': '塔在打你！',
+    'pause.paused': '已暂停', 'pause.sub': '兵线不会等你。', 'pause.resume': '继续', 'pause.settings': '设置', 'pause.quit': '投降并退出', 'pause.online': '对局仍在进行。',
+    'results.victory': '胜利', 'results.defeat': '失败', 'results.draw': '平局', 'results.again': '再来一局', 'results.menu': '主菜单', 'results.duration': '{m}:{s} · 击杀 {k0} – {k1}',
+    'result.crystal': '水晶已被摧毁', 'result.surrender': '投降', 'result.forfeit': '对方已离开',
+    'award.champion': '冠军 · 对英雄伤害最高', 'award.warlord': '破城者 · 对塔伤害最高', 'award.executioner': '处刑者 · 击杀最多', 'award.farmer': '收割者 · 补刀最多',
+    'award.guardian': '守护者 · 治疗最多', 'award.rampage': '狂暴 · 最佳连杀', 'award.bigSpender': '富豪 · 金币最多', 'award.objectives': '屠龙者 · 野区目标',
+    'streak.firstBlood': '一血！', 'streak.double': '双杀！', 'streak.triple': '三杀！', 'streak.quad': '四杀！', 'streak.penta': '五杀！',
+    'streak.killingSpree': '大杀特杀', 'streak.unstoppable': '无人能挡！', 'streak.legendary': '超神！', 'streak.ace': '团灭！',
+    'feed.kill': '{killer} 击杀了 {victim}', 'feed.tower': '{team} 摧毁了{tier}塔', 'feed.crystal': '{team} 摧毁了水晶！', 'feed.objective': '{team} 击杀了{obj}',
+    'tier.outer': '一', 'tier.inner': '二', 'tier.base': '高地', 'tier.crystal': '水晶',
+    'objective.tyrant': '暴君已被击杀！', 'objective.overlord': '主宰已被击杀！', 'objective.tyrantSpawned': '暴君已出现', 'objective.overlordSpawned': '主宰已出现',
+    'buff.blue': '蓝 buff', 'buff.red': '红 buff', 'buff.tyrant': '暴君', 'buff.overlord': '主宰',
+    'countdown.fight': '开战！', 'toast.recallInterrupted': '回城被打断', 'toast.skillLocked': '技能尚未学习', 'toast.noMana': '法力不足', 'toast.immortal': '复活甲！', 'toast.levelup': '升到 {l} 级！',
+    'unit.tower': '防御塔', 'unit.minions': '小兵',
+    'bot.easy': '新兵', 'bot.normal': '老兵', 'bot.hard': '王者',
+    'fx.noTargets': '没有目标',
+    'settings.title': '设置', 'settings.sfx': '音效音量', 'settings.music': '音乐音量', 'settings.sensitivity': '鼠标灵敏度', 'settings.fov': '视野',
+    'settings.invert': '反转鼠标 Y 轴', 'settings.firstPerson': '默认第一人称', 'settings.quality': '画质', 'settings.high': '高', 'settings.low': '低', 'settings.language': '语言', 'settings.reset': '重置战绩',
+    'online.title': '在线大厅', 'online.soon': '在线房间正在接入中，先和电脑来一局吧。',
+    // heroes
+    'hero.xuanwu.name': '玄武', 'hero.xuanwu.title': '磐石', 'hero.qinglong.name': '青龙', 'hero.qinglong.title': '风雷枪骑', 'hero.yingren.name': '影刃', 'hero.yingren.title': '暗影之刃',
+    'hero.wukong.name': '悟空', 'hero.wukong.title': '石猴', 'hero.huofeng.name': '火凤', 'hero.huofeng.title': '烈焰先知', 'hero.bingji.name': '冰姬', 'hero.bingji.title': '霜织者',
+    'hero.shenshe.name': '神射', 'hero.shenshe.title': '射日者', 'hero.huochong.name': '火铳', 'hero.huochong.title': '炮手', 'hero.mingyue.name': '明月', 'hero.mingyue.title': '月祭司', 'hero.leigong.name': '雷公', 'hero.leigong.title': '雷霆守望',
+    'skill.Shield Bash': '盾击', 'skill.Stone Skin': '石肤', 'skill.Earthquake': '地震', 'skill.Dragon Thrust': '龙枪突刺', 'skill.Whirl': '旋风', 'skill.Sky Dive': '天降',
+    'skill.Shadowstep': '影步', 'skill.Fan of Knives': '飞刀扇', 'skill.Execution': '处决', 'skill.Cloud Leap': '筋斗云', 'skill.Staff Sweep': '横扫', 'skill.Golden Cyclone': '金箍旋风',
+    'skill.Fireball': '火球术', 'skill.Flame Breath': '烈焰吐息', 'skill.Meteor Rain': '陨石雨', 'skill.Ice Lance': '冰矛', 'skill.Frost Nova': '霜冻新星', 'skill.Blizzard': '暴风雪',
+    'skill.Piercing Arrow': '穿云箭', 'skill.Rapid Fire': '连珠箭', 'skill.Arrow Storm': '箭雨', 'skill.Scatter': '霰弹', 'skill.Combat Roll': '翻滚', 'skill.Barrage': '弹幕',
+    'skill.Moonlight': '月华', 'skill.Lunar Bind': '月缚', 'skill.Sanctuary': '圣域', 'skill.Chain Lightning': '连锁闪电', 'skill.Thunder Dash': '雷霆冲锋', 'skill.Storm Call': '呼风唤雷',
+    'item.boots_swift': '疾行靴', 'item.boots_tank': '守护靴', 'item.boots_arcane': '秘法靴', 'item.bloodthirst': '嗜血之刃', 'item.storm_lance': '风暴之枪', 'item.shadow_fang': '暗影獠牙',
+    'item.sage_tome': '贤者之书', 'item.void_staff': '虚空法杖', 'item.phoenix_feather': '凤凰之羽', 'item.red_crystal': '红莲水晶', 'item.guardian_plate': '守护胸甲', 'item.frost_heart': '冰霜之心', 'item.crimson_crown': '赤红王冠', 'item.immortal_shield': '不死之盾',
+  },
+};
+
+export const CANVAS_FONT = '"Nunito", "Segoe UI", system-ui, "PingFang SC", "Hiragino Sans GB", "Noto Sans CJK SC", "Microsoft YaHei", sans-serif';
+
+const isLang = (v: unknown): v is Lang => v === 'en' || v === 'zh';
+
+export function getLang(): Lang {
+  try { const stored = localStorage.getItem(LANG_KEY); if (isLang(stored)) return stored; } catch { /* storage unavailable */ }
+  return typeof navigator !== 'undefined' && navigator.language?.toLowerCase().startsWith('zh') ? 'zh' : 'en';
+}
+export function setLang(lang: Lang): void { try { localStorage.setItem(LANG_KEY, lang); } catch { /* storage unavailable */ } }
+
+let current: Lang = getLang();
+export const lang = (): Lang => current;
+const listeners = new Set<() => void>();
+export function onLanguageChange(fn: () => void): void { listeners.add(fn); }
+
+export type Vars = Record<string, string | number>;
+
+export function t(key: string, vars?: Vars): string {
+  let s = translations[current][key] ?? translations.en[key] ?? key;
+  if (vars) for (const [k, v] of Object.entries(vars)) s = s.replaceAll(`{${k}}`, String(v));
+  return s;
+}
+
+export function tSim(text: string): string {
+  if (!text.startsWith('@')) return text;
+  const [key, ...args] = text.slice(1).split('|');
+  return t(key, Object.fromEntries(args.map((a, i) => [String(i), tSim(a)])));
+}
+
+export function setLanguage(next: Lang): void {
+  if (next === current) return;
+  current = next;
+  setLang(next);
+  applyStaticDom();
+  for (const fn of listeners) fn();
+}
+
+export function applyStaticDom(root: ParentNode = document): void {
+  document.documentElement.lang = current === 'zh' ? 'zh-CN' : 'en';
+  root.querySelectorAll<HTMLElement>('[data-i18n]').forEach((el) => { el.textContent = t(el.dataset.i18n!); });
+  root.querySelectorAll<HTMLElement>('[data-i18n-html]').forEach((el) => { el.innerHTML = t(el.dataset.i18nHtml!); });
+  root.querySelectorAll<HTMLElement>('[data-i18n-placeholder]').forEach((el) => { el.setAttribute('placeholder', t(el.dataset.i18nPlaceholder!)); });
+  root.querySelectorAll<HTMLElement>('[data-i18n-title]').forEach((el) => { el.title = t(el.dataset.i18nTitle!); });
+}
+
+const tCard = (key: string, fallback: string): string => translations[current][key] ?? translations.en[key] ?? fallback;
+export const cardName = (c: UnitDef): string => tCard(`hero.${c.id}.name`, c.name);
+export const heroTitle = (c: UnitDef): string => tCard(`hero.${c.id}.title`, c.title ?? '');
+export const cardDesc = (c: UnitDef): string => tCard(`hero.${c.id}.desc`, c.desc);
+export const skillName = (a: AbilityDef): string => tCard(`skill.${a.name}`, a.name);
+export const skillDesc = (a: AbilityDef): string => tCard(`skilldesc.${a.name}`, a.desc);
+export const abilityName = (c: UnitDef): string => skillName(c.skills[0]);
+export const abilityDesc = (c: UnitDef): string => skillDesc(c.skills[0]);
+export const itemName = (id: string, fallback: string): string => tCard(`item.${id}`, fallback);
+export const roleName = (r: string): string => t(`role.${r}`);

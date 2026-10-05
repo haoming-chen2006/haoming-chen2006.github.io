@@ -24,7 +24,8 @@ export const BUSHES: readonly { pos: Vec; r: number }[] = (() => {
 /** Lane polylines per team, from the team's own base toward the enemy. */
 export function lanePath(lane: LaneId, team: Team): Vec[] {
   const base = LANE_PATHS[lane];
-  return team === 0 ? base.map((p) => ({ ...p })) : [...base].reverse().map(mirrorPos);
+  // point mirroring already swaps the ends: the mirrored path runs from red's base toward blue's
+  return team === 0 ? base.map((p) => ({ ...p })) : base.map(mirrorPos);
 }
 
 export function spawnPoint(team: Team): Vec { return team === 0 ? { ...SPAWN_POINT } : mirrorPos(SPAWN_POINT); }

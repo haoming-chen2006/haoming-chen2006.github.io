@@ -62,7 +62,7 @@ export class BotHero {
     const threat = enemies.reduce((s, e) => s + e.hp / Math.max(1, e.maxHp) * (1 + e.level * 0.05), 0);
     const strength = (hpFrac * (1 + u.level * 0.05)) + allies.reduce((s, a) => s + a.hp / a.maxHp * (1 + a.level * 0.05), 0);
     const underEnemyTower = this.enemyTowerNear(w, u, 7.5);
-    const retreatHp = this.spec.retreatHp + (enemies.length ? 0.1 : 0);
+    const retreatHp = this.spec.retreatHp + (enemies.length ? 0.1 : 0) + (u.def.range <= 3 ? 0.05 : 0);
 
     if (inFountain(u.pos, team) && hpFrac < 0.97) { b.mode = 'fountain'; return; }
     // hysteresis: once retreating, keep going until healthy again or safely home
@@ -76,7 +76,9 @@ export class BotHero {
     }
     // fight when an enemy hero is close and we are not clearly losing
     const target = this.pickFightTarget(w, u, enemies);
-    if (target && (threat <= strength * (1.2 * this.spec.aggression) || hpFrac > 0.8)) {
+    const melee = u.def.range <= 3;
+    const outnumbered = enemies.length >= 2 && allies.length === 0;
+    if (target && !(melee && outnumbered && target.hp / target.maxHp > 0.35) && (threat <= strength * (1.2 * this.spec.aggression) || hpFrac > 0.8)) {
       const victimUnderTower = this.enemyTowerNear(w, target, 7.5);
       const diveOk = target.hp / target.maxHp < 0.3 && hpFrac > 0.6;
       if (!victimUnderTower || diveOk || this.alliedMinionsNear(w, u, 6) >= 3) { b.mode = 'fight'; b.targetId = target.id; return; }
@@ -328,7 +330,7 @@ export class BotHero {
       let ok = false;
       switch (a.kind) {
         case 'dashStrike': case 'leap': ok = d > 1 && d <= (a.range ?? 4) + 0.5; break;
-        case 'blink': ok = d > u.def.range + 0.5 && d <= (a.range ?? 5) + u.def.range; break;
+        case 'blink': ok = u.def.range <= 3 && d > u.def.range + 0.5 && d <= (a.range ?? 5) + u.def.range; break;
         case 'aoeAim': ok = d <= (a.range ?? 6) + 0.5; break;
         case 'lineShot': case 'spreadShot': ok = d <= (a.range ?? 6); break;
         case 'cone': ok = d <= (a.radius ?? 3) - 0.3; break;

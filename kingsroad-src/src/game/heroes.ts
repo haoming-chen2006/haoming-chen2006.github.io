@@ -35,7 +35,7 @@ const HERO_SPECS: HeroSpec[] = [
   {
     id: 'qinglong', name: 'Qinglong', title: 'Storm Lancer', role: 'warrior', ...base('warrior'),
     look: look('#2f8f6a', '#e0f5d8', 'lance', 0.45),
-    hp: 3250, damage: 180, power: 0, armor: 85, resist: 50, hitSpeed: 1.0, range: 1.6, speed: 4.0, radius: 0.46, mana: 440, attackType: 'physical',
+    hp: 3300, damage: 195, power: 0, armor: 88, resist: 52, hitSpeed: 0.95, range: 1.7, speed: 4.0, radius: 0.46, mana: 440, attackType: 'physical',
     lore: 'The azure dragon of the east, riding thunderheads into battle with a lance as long as a river.',
     tips: 'Dragon Thrust pokes through a whole wave. Dive on a target with Sky Dive, then Whirl while they are stunned.',
     skills: [
@@ -49,7 +49,7 @@ const HERO_SPECS: HeroSpec[] = [
   {
     id: 'yingren', name: 'Yingren', title: 'Shadow Blade', role: 'assassin', ...base('assassin'),
     look: look('#3a2f5c', '#d4b2ff', 'dagger', 0.4),
-    hp: 2950, damage: 200, power: 0, armor: 72, resist: 46, hitSpeed: 0.85, range: 1.2, speed: 4.3, radius: 0.42, mana: 400, attackType: 'physical',
+    hp: 3050, damage: 215, power: 0, armor: 74, resist: 46, hitSpeed: 0.82, range: 1.3, speed: 4.4, radius: 0.42, mana: 400, attackType: 'physical',
     lore: 'Nobody has seen Yingren arrive. A few have seen them leave.',
     tips: 'Shadowstep behind a squishy target to crit, throw Fan of Knives, then finish with Execution when they drop low.',
     skills: [
@@ -81,9 +81,9 @@ const HERO_SPECS: HeroSpec[] = [
     lore: 'She reads the future in embers and sets fire to the parts she dislikes.',
     tips: 'Fireball is your bread and butter. Save Meteor Rain for a grouped enemy team or a tower dive.',
     skills: [
-      S({ kind: 'aoeAim', name: 'Fireball', desc: 'Hurl a fireball that bursts at the aimed point and burns.', cooldown: 6, mana: 60, damage: 300, damageGrowth: 80, ratio: 0.8, type: 'magic', range: 8, radius: 1.6, burn: 40, color: '#ff8a3c' }),
+      S({ kind: 'aoeAim', name: 'Fireball', desc: 'Hurl a fireball that bursts at the aimed point and burns.', cooldown: 6.5, mana: 60, damage: 250, damageGrowth: 60, ratio: 0.7, type: 'magic', range: 8, radius: 1.6, burn: 40, color: '#ff8a3c' }),
       S({ kind: 'cone', name: 'Flame Breath', desc: 'Breathe fire in a cone for 1.6 s.', cooldown: 11, mana: 75, damage: 110, damageGrowth: 35, ratio: 0.35, type: 'magic', radius: 4.2, duration: 1.6, tick: 0.25, burn: 25, color: '#ff6a2a' }),
-      S({ kind: 'aoeAim', name: 'Meteor Rain', desc: 'Call a meteor down on a wide area after a short delay.', cooldown: 42, mana: 140, damage: 700, damageGrowth: 220, ratio: 1.4, type: 'magic', range: 9, radius: 3.0, burn: 60, stun: 0.4, color: '#ff4e2a' }),
+      S({ kind: 'aoeAim', name: 'Meteor Rain', desc: 'Call a meteor down on a wide area after a short delay.', cooldown: 45, mana: 140, damage: 600, damageGrowth: 180, ratio: 1.2, type: 'magic', range: 9, radius: 3.0, burn: 60, stun: 0.4, color: '#ff4e2a' }),
     ],
     skillOrder: [0, 1, 0, 2, 0, 0, 1, 2, 0, 1, 1, 2, 1, 1, 2],
     build: ['boots_arcane', 'sage_tome', 'void_staff', 'frost_heart', 'phoenix_feather', 'immortal_shield'],
@@ -95,7 +95,7 @@ const HERO_SPECS: HeroSpec[] = [
     lore: 'Every winter has a weaver. Bingji is the one that never stops.',
     tips: 'Ice Lance slows; chase with it. Frost Nova freezes anyone who dives you. Blizzard holds a choke point.',
     skills: [
-      S({ kind: 'lineShot', name: 'Ice Lance', desc: 'Fire a lance of ice that pierces and slows.', cooldown: 6, mana: 55, damage: 260, damageGrowth: 70, ratio: 0.7, type: 'magic', range: 8, slow: 0.4, slowT: 2, color: '#9fe3ff' }),
+      S({ kind: 'lineShot', name: 'Ice Lance', desc: 'Fire a lance of ice that pierces and slows.', cooldown: 6.5, mana: 55, damage: 220, damageGrowth: 55, ratio: 0.6, type: 'magic', range: 8, slow: 0.4, slowT: 2, color: '#9fe3ff' }),
       S({ kind: 'aoeSelf', name: 'Frost Nova', desc: 'Freeze everyone around you for 1.2 s.', cooldown: 13, mana: 80, damage: 220, damageGrowth: 60, ratio: 0.6, type: 'magic', radius: 3, stun: 1.2, color: '#c7f0ff' }),
       S({ kind: 'aoeAim', name: 'Blizzard', desc: 'A blizzard rages at the aimed point for 4 s, damaging and slowing.', cooldown: 40, mana: 140, damage: 150, damageGrowth: 50, ratio: 0.45, type: 'magic', range: 8, radius: 3.4, duration: 4, tick: 0.5, slow: 0.5, slowT: 1, color: '#bfe8ff' }),
     ],
@@ -105,13 +105,13 @@ const HERO_SPECS: HeroSpec[] = [
   {
     id: 'shenshe', name: 'Shenshe', title: 'Divine Archer', role: 'marksman', ...base('marksman'),
     look: look('#2e7a4a', '#ffe9a8', 'bow', 0.4),
-    hp: 2800, damage: 210, power: 0, armor: 66, resist: 42, hitSpeed: 0.95, range: 7.0, speed: 3.9, radius: 0.4, mana: 400, attackType: 'physical', projectile: 'arrow', projectileSpeed: 14,
+    hp: 2800, damage: 195, power: 0, armor: 64, resist: 42, hitSpeed: 1.0, range: 6.8, speed: 3.9, radius: 0.4, mana: 400, attackType: 'physical', projectile: 'arrow', projectileSpeed: 14,
     lore: 'Shenshe once shot down nine suns. The tenth surrendered.',
     tips: 'Stay behind your tank and keep shooting. Rapid Fire shreds towers. Arrow Storm wins team fights from range.',
     skills: [
       S({ kind: 'lineShot', name: 'Piercing Arrow', desc: 'A long arrow that pierces every enemy in its path.', cooldown: 7, mana: 50, damage: 260, damageGrowth: 70, ratio: 1.0, type: 'physical', range: 10, color: '#fff2b0' }),
-      S({ kind: 'selfBuff', name: 'Rapid Fire', desc: 'Attack 60% faster and move faster for 5 s.', cooldown: 15, mana: 60, duration: 5, buff: { speed: 1.2, attack: 1.6 }, color: '#ffe27a' }),
-      S({ kind: 'aoeAim', name: 'Arrow Storm', desc: 'Rain arrows on a wide area for 3 s.', cooldown: 40, mana: 120, damage: 160, damageGrowth: 55, ratio: 0.5, type: 'physical', range: 10, radius: 3.4, duration: 3, tick: 0.4, color: '#ffd86b' }),
+      S({ kind: 'selfBuff', name: 'Rapid Fire', desc: 'Attack 40% faster and move faster for 5 s.', cooldown: 16, mana: 60, duration: 5, buff: { speed: 1.15, attack: 1.4 }, color: '#ffe27a' }),
+      S({ kind: 'aoeAim', name: 'Arrow Storm', desc: 'Rain arrows on a wide area for 3 s.', cooldown: 42, mana: 120, damage: 130, damageGrowth: 45, ratio: 0.45, type: 'physical', range: 10, radius: 3.4, duration: 3, tick: 0.4, color: '#ffd86b' }),
     ],
     skillOrder: [0, 1, 0, 2, 0, 0, 1, 2, 0, 1, 1, 2, 1, 1, 2],
     build: ['boots_swift', 'bloodthirst', 'storm_lance', 'shadow_fang', 'crimson_crown', 'immortal_shield'],
@@ -119,7 +119,7 @@ const HERO_SPECS: HeroSpec[] = [
   {
     id: 'huochong', name: 'Huochong', title: 'Gunner', role: 'marksman', ...base('marksman'),
     look: look('#6b4a2b', '#ffb060', 'rifle', 0.42),
-    hp: 2900, damage: 220, power: 0, armor: 68, resist: 42, hitSpeed: 1.1, range: 6.5, speed: 3.9, radius: 0.42, mana: 380, attackType: 'physical', projectile: 'bolt', projectileSpeed: 16,
+    hp: 3100, damage: 240, power: 0, armor: 72, resist: 44, hitSpeed: 1.0, range: 6.8, speed: 3.9, radius: 0.42, mana: 380, attackType: 'physical', projectile: 'bolt', projectileSpeed: 16,
     lore: 'A tinkerer who decided that bows were simply too quiet.',
     tips: 'Scatter melts anything close. Combat Roll resets your position; Barrage holds a lane.',
     skills: [
@@ -147,7 +147,7 @@ const HERO_SPECS: HeroSpec[] = [
   {
     id: 'leigong', name: 'Leigong', title: 'Thunder Warden', role: 'support', ...base('support'),
     look: look('#3b4a8a', '#9fd0ff', 'axe', 0.46),
-    hp: 3300, damage: 160, power: 50, armor: 82, resist: 56, hitSpeed: 1.05, range: 1.4, speed: 4.0, radius: 0.46, mana: 460, attackType: 'physical',
+    hp: 3500, damage: 185, power: 60, armor: 90, resist: 60, hitSpeed: 1.0, range: 1.5, speed: 4.0, radius: 0.46, mana: 460, attackType: 'physical',
     lore: 'The storm keeps its own warden, and the warden keeps his own counsel.',
     tips: 'Thunder Dash to engage, Chain Lightning to stun a crowd, Storm Call to lock down the fight.',
     skills: [

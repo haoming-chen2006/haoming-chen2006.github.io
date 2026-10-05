@@ -262,7 +262,7 @@ export class GameScreen {
       mode: this.mode, heroId: hero?.id ?? -1, hover: null, selectedCard: null, reticle: null, hitMarkerT: this.hitMarkerT, paused: this.paused,
       locked: inp.isLocked(), deployTeam: null, moving: this.moving, bigMap: this.bigMap, aim: cursor, aimRange: this.aimRange,
     }, this.paused ? 0 : dt, this.time);
-    this.hud.update(w, { me: this.me, hero, seat, mode: this.mode, locked: inp.isLocked(), scoreboard: inp.isDown('Tab') || w.phase === 'ended', shop: this.shopOpen, online: this.online }, dt);
+    this.hud.update(w, { me: this.me, hero, seat, mode: this.mode, locked: inp.isLocked(), scoreboard: inp.isDown('Tab') || (w.phase === 'ended' && !this.resultsShown), shop: this.shopOpen, online: this.online }, dt);
     this.canvas.style.cursor = this.mode !== 'commander' ? (inp.isLocked() ? 'none' : 'crosshair') : 'default';
   }
 

@@ -16,8 +16,8 @@ export function updateSpawns(w: World, dt: number): void {
       for (const lane of w.lanesOpen as LaneId[]) {
         const path = lanePath(lane, team);
         const start = path[0];
-        const list = ['melee', 'melee', 'melee', 'ranged', 'ranged', 'ranged', ...(siege ? ['siege'] : [])];
-        // super minions when the enemy has lost a base tower on this lane... (overlord buff) handled in sim
+        // late game escalates so matches close: siege engines every wave from 18 min, super minions from 21 min
+        const list = ['melee', 'melee', 'melee', 'ranged', 'ranged', 'ranged', ...(siege || w.time >= 1080 ? ['siege'] : []), ...(w.time >= 1260 ? ['super'] : [])];
         list.forEach((id, i) => {
           const jitter = { x: start.x + (w.rng.next() - 0.5) * 1.2 - (i * 0.25) * (team === 0 ? 1 : -1), y: start.y + (w.rng.next() - 0.5) * 1.2 };
           const def = MINIONS[id];
@@ -28,6 +28,8 @@ export function updateSpawns(w: World, dt: number): void {
       }
     }
     w.emit({ type: 'wave', text: String(w.waveNo) });
+    if (w.time >= 1080 && w.time - WAVE_EVERY < 1080) w.emit({ type: 'objective', text: '@objective.siegeHour' });
+    if (w.time >= 1260 && w.time - WAVE_EVERY < 1260) w.emit({ type: 'objective', text: '@objective.superHour' });
   }
   // jungle camps
   for (const team of [0, 1] as Team[]) {

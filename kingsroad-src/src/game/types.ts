@@ -231,6 +231,10 @@ export interface Unit extends EntityBase {
   /** Resonance: skill hits on enemy heroes charge the crown (0..100); at 100 the next skill is crowned. */
   crown: number;
   crowned: boolean;
+  /** Storm Lance: basic attacks landed since the last chain bolt. */
+  stormN: number;
+  /** Void Staff marks stacked on this unit by enemy skills; three detonate. */
+  voidMarks: number;
 }
 
 export interface Tower extends EntityBase {

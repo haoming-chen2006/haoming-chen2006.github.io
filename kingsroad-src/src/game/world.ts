@@ -115,7 +115,7 @@ export class World {
       buffT: 0, buffSpeed: 1, buffAttack: 1, critNext: 1, lane: 1, laneIndex: 0, vel: { x: 0, y: 0 }, bobT: this.rng.next() * 10, heroAttackHeld: false,
       lastPos: { ...pos }, stuckT: 0, waypoint: null, path: [], pathT: 0, fromSpawner: false,
       level: 1, xp: 0, mana: def.mana, maxMana: def.mana, items: [], gold: 0, recallT: 0, respawnT: 0, kills: 0, deaths: 0, assists: 0, streak: 0,
-      lastHurtBy: [], damageTaken: 0, inBush: false, camp: null, home: null, leashT: 0, owner: -1, autoBuy: true, skillPoints: 0, lastAttackT: -10, crown: 0, crowned: false,
+      lastHurtBy: [], damageTaken: 0, inBush: false, camp: null, home: null, leashT: 0, owner: -1, autoBuy: true, skillPoints: 0, lastAttackT: -10, crown: 0, crowned: false, stormN: 0, voidMarks: 0,
     };
   }
 

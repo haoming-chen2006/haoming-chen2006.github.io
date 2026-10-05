@@ -24,6 +24,8 @@ export interface DamageOpts {
   /** Damage came from a skill (charges the crown). */
   skill?: boolean;
   crowned?: boolean;
+  /** Damage produced by an item passive; never re-triggers passives. */
+  chain?: boolean;
 }
 
 const isHeroUnit = (e?: Entity): e is Unit => !!e && e.kind === 'unit' && e.isHero;
@@ -77,6 +79,34 @@ export function damage(w: World, target: Entity, amount: number, opts: DamageOpt
         if (src.crown >= 100 && !src.crowned) { src.crowned = true; w.addEffect({ type: 'crown', pos: { ...src.pos }, dur: 1.0, radius: 1, color: '#ffd700', team: src.team }); w.emit({ type: 'crown', team: src.team, pos: src.pos, hero: src.possessed }); }
       }
       if (opts.crowned) { target.status.stun = Math.max(target.status.stun, 0.5); }
+    }
+    if (src.isHero && target.kind === 'unit' && !opts.chain && amt > 0) {
+      // Storm Lance: every fourth basic attack calls down a bolt that forks to nearby enemies
+      if (!opts.skill && type === 'physical' && src.items.includes('storm_lance')) {
+        src.stormN += 1;
+        if (src.stormN >= 4) {
+          src.stormN = 0;
+          const bolt = w.stats(src).attack * 0.35 + 40;
+          const forks: Unit[] = [];
+          for (const e of w.units(target.team as Team)) if (e !== target && !e.dead && dist(e.pos, target.pos) <= 3.5 && canTarget(src.def.targets, e)) forks.push(e);
+          forks.sort((a, b) => dist(a.pos, target.pos) - dist(b.pos, target.pos));
+          w.addEffect({ type: 'lightning', pos: { ...target.pos }, to: { ...target.pos }, dur: 0.35, radius: 0.4, color: '#e8fbff', team: src.team });
+          for (const e of forks.slice(0, 2)) w.addEffect({ type: 'lightning', pos: { ...target.pos }, to: { ...e.pos }, dur: 0.3, radius: 0.15, color: '#7cf7d5', team: src.team });
+          w.emit({ type: 'spell', pos: target.pos, team: src.team, text: 'storm' });
+          for (const e of [target, ...forks.slice(0, 2)]) damage(w, e, bolt, { source: src, hero: true, type: 'magic', chain: true, noVamp: true, slow: 0.25, slowT: 0.8 });
+        }
+      }
+      // Void Staff: skills mark enemy heroes; the third mark detonates for a slice of their health
+      if (opts.skill && target.isHero && src.items.includes('void_staff')) {
+        target.voidMarks += 1;
+        if (target.voidMarks >= 3) {
+          target.voidMarks = 0;
+          const pop = target.maxHp * 0.07 + w.stats(src).power * 0.4;
+          w.addEffect({ type: 'burst', pos: { ...target.pos }, dur: 0.5, radius: 1.4, color: '#b47cff', team: src.team });
+          w.emit({ type: 'spell', pos: target.pos, team: src.team, text: 'void' });
+          damage(w, target, pop, { source: src, hero: true, type: 'magic', chain: true, noVamp: true });
+        } else w.addEffect({ type: 'ring', pos: { ...target.pos }, dur: 0.35, radius: 0.9, color: '#b47cff', team: src.team });
+      }
     }
     if (src.isHero && !opts.noVamp && target.kind === 'unit') {
       const d = w.stats(src);

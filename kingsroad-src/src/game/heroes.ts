@@ -168,7 +168,7 @@ export const HERO_BY_ID: Record<string, UnitDef> = Object.fromEntries(HEROES.map
 export const heroDef = (id: string): UnitDef => { const d = HERO_BY_ID[id]; if (!d) throw new Error(`unknown hero ${id}`); return d; };
 
 /** Lane assignment per role for a team of bots. */
-export const ROLE_LANE: Record<Role, 0 | 1 | 2 | 3> = { tank: 2, warrior: 0, assassin: 3, mage: 1, marksman: 2, support: 2 };
+export const ROLE_LANE: Record<Role, 0 | 1 | 2 | 3> = { tank: 0, warrior: 0, assassin: 3, mage: 1, marksman: 2, support: 2 };
 
 /** A reasonable five-hero team around (or without) the chosen hero. */
 export function pickTeam(include: string | null, rng: { next(): number }): string[] {

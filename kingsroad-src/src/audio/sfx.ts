@@ -263,7 +263,7 @@ export class Sfx {
     const p = ev.pos;
     switch (ev.type) {
       case 'wave': break;
-      case 'spell': this.play('meteor', p); break;
+      case 'spell': this.play(ev.text === 'storm' ? 'shock' : ev.text === 'void' ? 'hitShadow' : 'meteor', p); break;
       case 'ranged': this.play((ev.style ?? 'arrow') as SoundName, p); break;
       case 'hit': {
         const s = ev.style;

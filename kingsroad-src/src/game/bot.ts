@@ -281,10 +281,43 @@ export class BotHero {
     // enemy jungle monster nearby and nothing else to do: take it
     const underEnemyTower = this.enemyTowerNear(w, u, 7.5);
     if (underEnemyTower && this.alliedMinionsNear(w, u, 5) < 2) { this.moveTo(w, u, b, this.retreatPoint(w, u), cmd, dt); return; }
+    // supports: escort the lane partner and keep them healthy instead of farming
+    let stand = u.def.range > 3 ? this.behind(w, front, lane, 2.2) : front;
+    if (u.def.role === 'support') {
+      const partner = this.lanePartner(w, u);
+      if (partner) {
+        if (target && partner.hp / partner.maxHp > 0.5 && dist(partner.pos, target.pos) < 7) { cmd.attack = false; target = undefined; }
+        const toFront = norm(sub(front, partner.pos));
+        stand = { x: partner.pos.x - toFront.x * 1.8, y: partner.pos.y - toFront.y * 1.8 };
+        this.useSupportSkill(w, u, partner, cmd);
+      }
+    }
     // positioning: stay near the front, ranged stays a bit behind
-    const stand = u.def.range > 3 ? this.behind(w, front, lane, 2.2) : front;
     if (dist(u.pos, stand) > 1.6) this.moveTo(w, u, b, stand, cmd, dt);
     else if (target && dist(target.pos, u.pos) - target.radius > u.def.range) this.moveTo(w, u, b, target.pos, cmd, dt);
+  }
+
+  /** The allied hero a support should shadow: the closest carry (marksman first) within reach. */
+  private lanePartner(w: World, u: Unit): Unit | undefined {
+    let best: Unit | undefined, bs = Infinity;
+    for (const h of w.heroes(this.team)) {
+      if (h === u || h.recallT > 0) continue;
+      const d = dist(h.pos, u.pos) - (h.def.role === 'marksman' ? 6 : h.def.role === 'mage' ? 2 : 0);
+      if (d < 16 && d < bs) { bs = d; best = h; }
+    }
+    return best;
+  }
+
+  /** Heals and shields on a wounded partner; usable outside fights. */
+  private useSupportSkill(w: World, u: Unit, partner: Unit, cmd: HeroCommand): void {
+    if (cmd.skill >= 0 || !w.rng.chance(this.spec.skillUse)) return;
+    const hurt = partner.hp / partner.maxHp < 0.55 || u.hp / u.maxHp < 0.5;
+    for (const i of [0, 1, 2]) {
+      const a = u.def.skills[i];
+      if (!a || !skillReady(u, i)) continue;
+      if (a.kind === 'healBurst' && hurt && dist(partner.pos, u.pos) <= (a.radius ?? 4)) { cmd.skill = i; return; }
+      if (a.kind === 'aoeSelf' && a.heal && i === 2 && partner.hp / partner.maxHp < 0.4 && this.nearbyEnemyHeroes(w, u, 7).length && dist(partner.pos, u.pos) <= (a.radius ?? 4)) { cmd.skill = i; return; }
+    }
   }
 
   private behind(_w: World, p: Vec, lane: LaneId, d: number): Vec {

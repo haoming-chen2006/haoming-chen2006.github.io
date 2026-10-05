@@ -68,6 +68,10 @@ export interface Look {
   shape: ShapeKind;
   weapon: WeaponKind;
   size: number; // visual radius in tiles
+  /** Optional outfit overrides (defaults come from the weapon kit). */
+  gear?: 'helm' | 'hornhelm' | 'hood' | 'hat' | 'tricorn' | 'halo' | 'bandana' | 'cap' | 'goblincap';
+  armor?: 'plate' | 'leather' | 'robe' | 'cloth';
+  cape?: boolean;
 }
 
 /** Base stats of anything that walks: minions, monsters and heroes. */

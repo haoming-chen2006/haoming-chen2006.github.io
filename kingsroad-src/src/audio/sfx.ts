@@ -30,6 +30,17 @@ const ABILITY_SOUND: Record<string, SoundName> = {
   'Piercing Shot': 'piercingShot', 'Firestorm': 'firestorm', 'Whirlwind': 'whirlwind', 'Inferno Breath': 'infernoBreath', 'Dive': 'dive',
   'Stampede': 'stampede', 'Lance Charge': 'lanceCharge', 'Raise Dead': 'raiseDead', 'Death Leap': 'deathLeap', 'Cluster Bomb': 'clusterBomb',
   'Sanctuary': 'sanctuary', 'Shadowstep': 'shadowstep', 'Thunderstorm': 'thunderstorm',
+  // Kingsroad hero kits
+  'Fireball': 'fireball', 'Flame Breath': 'infernoBreath', 'Meteor Rain': 'meteorIncoming',
+  'Ice Lance': 'ice', 'Frost Nova': 'frost', 'Blizzard': 'frost',
+  'Piercing Arrow': 'piercingShot', 'Rapid Fire': 'adrenaline', 'Arrow Storm': 'rainOfArrows',
+  'Barrage': 'clusterBomb', 'Scatter': 'spearFan', 'Execution': 'cannon',
+  'Stone Skin': 'adrenaline', 'Earthquake': 'groundSlam',
+  'Dragon Thrust': 'lanceCharge', 'Whirl': 'whirlwind', 'Sky Dive': 'dive',
+  'Combat Roll': 'dash', 'Fan of Knives': 'spearFan',
+  'Cloud Leap': 'dive', 'Staff Sweep': 'whirlwind', 'Golden Cyclone': 'stampede',
+  'Moonlight': 'sanctuary', 'Lunar Bind': 'holy',
+  'Chain Lightning': 'bolt', 'Thunder Dash': 'shock', 'Storm Call': 'thunderstorm',
 };
 const KIND_SOUND: Record<string, SoundName> = { dashStrike: 'shieldBash', aoeSelf: 'groundSlam', aoeAim: 'firestorm', lineShot: 'piercingShot', spreadShot: 'spearFan', cone: 'infernoBreath', blink: 'shadowstep', leap: 'dive', summon: 'raiseDead', selfBuff: 'adrenaline', healBurst: 'sanctuary', chain: 'thunderstorm', spin: 'whirlwind' };
 export const CALL_SOUND: Record<string, SoundName> = {

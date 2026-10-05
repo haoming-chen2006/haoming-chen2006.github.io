@@ -129,7 +129,7 @@ function headgear(headG: THREE.Group, s: number, gear: HeadGear, pal: Palette, m
 export function buildHumanoid(look: Look, team: Team, opts: { scale?: number; rider?: boolean; bone?: boolean; glowEyes?: number } = {}): BuiltUnit {
   const s = look.size * (opts.scale ?? 1);
   const mats: UnitMat[] = [];
-  const kit = KITS[look.weapon];
+  const kit: Kit = { ...KITS[look.weapon], gear: look.gear ?? KITS[look.weapon].gear, armor: look.armor ?? KITS[look.weapon].armor, cape: look.cape ?? KITS[look.weapon].cape };
   const pal: Palette = { body: hex(look.color), accent: hex(look.accent), team: TEAM_HEX[team], dark: shade(hex(look.color), 0.5), metal: 0x9aa5b1, leather: 0x6d4a2b, boot: 0x3a2a1e };
   const bone = !!opts.bone;
   const bodyM = toon(bone ? 0xe8e4d8 : pal.body), accM = toon(pal.accent), skinM = toon(bone ? 0xe8e4d8 : SKIN), teamM = toon(pal.team, { emissive: pal.team, emissiveIntensity: 0.15 });

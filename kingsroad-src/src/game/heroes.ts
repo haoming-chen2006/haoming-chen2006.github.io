@@ -13,14 +13,14 @@ const base = (role: Role): Pick<UnitDef, 'hpRegen' | 'manaRegen' | 'attackSpeedG
   }
 };
 
-const look = (color: string, accent: string, weapon: Look['weapon'], size = 0.42, shape: Look['shape'] = 'humanoid'): Look => ({ color, accent, shape, weapon, size });
+const look = (color: string, accent: string, weapon: Look['weapon'], size = 0.42, shape: Look['shape'] = 'humanoid', outfit: Pick<Look, 'gear' | 'armor' | 'cape'> = {}): Look => ({ color, accent, shape, weapon, size, ...outfit });
 
 const S = (a: AbilityDef): AbilityDef => a;
 
 const HERO_SPECS: HeroSpec[] = [
   {
     id: 'xuanwu', name: 'Xuanwu', title: 'the Bulwark', role: 'tank', ...base('tank'),
-    look: look('#4f6f8f', '#c9d6e3', 'hammer', 0.5),
+    look: look('#4f6f8f', '#c9d6e3', 'hammer', 0.5, 'humanoid', { armor: 'plate', cape: true }),
     hp: 3600, damage: 165, power: 0, armor: 95, resist: 50, hitSpeed: 1.1, range: 1.3, speed: 3.9, radius: 0.5, mana: 420, attackType: 'physical',
     lore: 'A mountain that learned to walk. Xuanwu holds the line so that others may strike.',
     tips: 'Open with Shield Bash to stun, then Earthquake when enemies cluster. You are the frontline: stand between the enemy and your carries.',
@@ -48,7 +48,7 @@ const HERO_SPECS: HeroSpec[] = [
   },
   {
     id: 'yingren', name: 'Yingren', title: 'Shadow Blade', role: 'assassin', ...base('assassin'),
-    look: look('#3a2f5c', '#d4b2ff', 'dagger', 0.4),
+    look: look('#3a2f5c', '#d4b2ff', 'dagger', 0.4, 'humanoid', { gear: 'hood' }),
     hp: 3050, damage: 215, power: 0, armor: 74, resist: 46, hitSpeed: 0.82, range: 1.3, speed: 4.4, radius: 0.42, mana: 400, attackType: 'physical',
     lore: 'Nobody has seen Yingren arrive. A few have seen them leave.',
     tips: 'Shadowstep behind a squishy target to crit, throw Fan of Knives, then finish with Execution when they drop low.',
@@ -62,7 +62,7 @@ const HERO_SPECS: HeroSpec[] = [
   },
   {
     id: 'wukong', name: 'Wukong', title: 'Stone Monkey', role: 'assassin', ...base('assassin'),
-    look: look('#b8742a', '#ffd86b', 'staff', 0.42, 'beast'),
+    look: look('#b8742a', '#ffd86b', 'staff', 0.42, 'humanoid', { gear: 'bandana', armor: 'leather', cape: true }),
     hp: 3100, damage: 195, power: 0, armor: 78, resist: 48, hitSpeed: 0.9, range: 1.5, speed: 4.3, radius: 0.44, mana: 380, attackType: 'physical',
     lore: 'Born from stone, armed with a cudgel that weighs as much as the sea.',
     tips: 'Cloud Leap in, Staff Sweep to scatter the backline, then Golden Cyclone while chasing.',
@@ -76,7 +76,7 @@ const HERO_SPECS: HeroSpec[] = [
   },
   {
     id: 'huofeng', name: 'Huofeng', title: 'Flame Oracle', role: 'mage', ...base('mage'),
-    look: look('#c9412a', '#ffb15e', 'orb', 0.4),
+    look: look('#c9412a', '#ffb15e', 'orb', 0.4, 'humanoid', { gear: 'hat', cape: false }),
     hp: 2700, damage: 140, power: 80, armor: 62, resist: 52, hitSpeed: 1.0, range: 6.5, speed: 3.8, radius: 0.4, mana: 560, attackType: 'magic', projectile: 'fireball', projectileSpeed: 11,
     lore: 'She reads the future in embers and sets fire to the parts she dislikes.',
     tips: 'Fireball is your bread and butter. Save Meteor Rain for a grouped enemy team or a tower dive.',
@@ -146,7 +146,7 @@ const HERO_SPECS: HeroSpec[] = [
   },
   {
     id: 'leigong', name: 'Leigong', title: 'Thunder Warden', role: 'support', ...base('support'),
-    look: look('#3b4a8a', '#9fd0ff', 'axe', 0.46),
+    look: look('#3b4a8a', '#9fd0ff', 'axe', 0.46, 'humanoid', { gear: 'halo', armor: 'robe' }),
     hp: 3500, damage: 185, power: 60, armor: 90, resist: 60, hitSpeed: 1.0, range: 1.5, speed: 4.0, radius: 0.46, mana: 460, attackType: 'physical',
     lore: 'The storm keeps its own warden, and the warden keeps his own counsel.',
     tips: 'Thunder Dash to engage, Chain Lightning to stun a crowd, Storm Call to lock down the fight.',

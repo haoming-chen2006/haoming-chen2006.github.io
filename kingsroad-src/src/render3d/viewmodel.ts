@@ -91,8 +91,8 @@ function gripWeapon(kind: WeaponKind, w: THREE.Group): void {
     case 'hammer': w.rotation.set(-0.4, 0, -0.15); break;
     case 'scythe': w.rotation.set(-0.5, 0.3, 0.65); w.position.y -= 0.02; break;
     case 'staff': w.rotation.set(-0.12, 0, -0.08); w.position.y -= 0.12; break;
-    case 'spear': w.rotation.set(-1.25, 0, 0); w.position.y += 0.01; break;
-    case 'lance': w.rotation.set(-1.4, 0, 0); w.position.y += 0.02; break;
+    case 'spear': w.rotation.set(-1.18, 0.08, 0.02); w.position.y += 0.01; break;
+    case 'lance': w.rotation.set(1.1, 0, 0.3); w.position.y += 0.02; break;
     case 'rifle': w.rotation.set(-1.42, 0, 0); w.position.set(0.0, 0.015, 0.02); break;
     case 'bow': w.rotation.set(0.05, Math.PI / 2, 0); w.position.y -= 0.35; break;
     case 'orb': w.rotation.set(0, 0, 0); w.position.y += 0.02; break;

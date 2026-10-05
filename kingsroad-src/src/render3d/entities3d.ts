@@ -3,7 +3,7 @@ import { getViewTeam as viewTeamNow, teamHex } from './perspective.ts';
 import type { Building, Entity, Tower, Unit } from '../game/types.ts';
 import type { World } from '../game/world.ts';
 import { activeFx } from './effects3d.ts';
-import { animateUnit, buildBuildingModel, buildTowerModel, buildUnitModel, disposeModel, disposeObject, setTint, type BuildingModel, type TowerModel, type UnitModel, animateTowerFlags, setHeroLook } from './models.ts';
+import { animateUnit, buildBuildingModel, buildTowerModel, buildUnitModel, disposeModel, disposeObject, setTint, type BuildingModel, type TowerModel, type UnitModel, animateTowerFlags } from './models.ts';
 
 interface StatusFx { ice?: THREE.Mesh; stars?: THREE.Group; bubble?: THREE.Mesh; aura?: THREE.Mesh; champ?: THREE.Mesh }
 interface UnitRec { model: UnitModel; unit: Unit; squash: number; lastFlash: number; lastHp: number; fx: StatusFx; wasDashing: boolean; emberT: number; heroLook: boolean }
@@ -147,7 +147,6 @@ export class Entities3D {
     r.unit = u;
     const m = r.model;
     const fx = activeFx;
-    if (u.isHero !== r.heroLook) { r.heroLook = u.isHero; setHeroLook(m, u.isHero, u.team as never); }
     m.root.position.set(u.pos.x, 0, u.pos.y);
     m.body.rotation.y = -u.facing;
     const moving = Math.hypot(u.pos.x - u.lastPos.x, u.pos.y - u.lastPos.y) > 0.003 || !!u.dashVel;

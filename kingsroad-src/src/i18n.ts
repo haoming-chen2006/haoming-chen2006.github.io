@@ -125,6 +125,16 @@ export const translations: Record<Lang, Record<string, string>> = {
     'skill.Piercing Arrow': '穿云箭', 'skill.Rapid Fire': '连珠箭', 'skill.Arrow Storm': '箭雨', 'skill.Scatter': '霰弹', 'skill.Combat Roll': '翻滚', 'skill.Barrage': '弹幕',
     'skill.Moonlight': '月华', 'skill.Lunar Bind': '月缚', 'skill.Sanctuary': '圣域', 'skill.Chain Lightning': '连锁闪电', 'skill.Thunder Dash': '雷霆冲锋', 'skill.Storm Call': '呼风唤雷',
     'item.boots_swift': '疾行靴', 'item.boots_tank': '守护靴', 'item.boots_arcane': '秘法靴', 'item.bloodthirst': '嗜血之刃', 'item.storm_lance': '风暴之枪', 'item.shadow_fang': '暗影獠牙',
+    'passive.xuanwu': '山岳', 'passivedesc.xuanwu': '每承受 500 点伤害便硬化一层：每层 +14 护甲与法抗（最多 5 层），持续 8 秒。',
+    'passive.qinglong': '龙尾', 'passivedesc.qinglong': '每第三次突刺会贯穿，对目标身后的敌人造成 60% 伤害。',
+    'passive.yingren': '背刺', 'passivedesc.yingren': '攻击背对你的敌人时伤害提高 30%。',
+    'passive.wukong': '铜皮铁骨', 'passivedesc.wukong': '筋斗云落地后 2.5 秒内受到的伤害降低 30%。',
+    'passive.huofeng': '余烬', 'passivedesc.huofeng': '处于燃烧状态的敌人死亡时会爆燃，点燃周围所有敌人。',
+    'passive.bingji': '深冻', 'passivedesc.bingji': '对已被减速的敌人再次减速会将其冻结 0.6 秒。',
+    'passive.shenshe': '双矢', 'passivedesc.shenshe': '每第四支箭会额外射出一支，命中最近的另一名敌人（60% 伤害）。',
+    'passive.huochong': '上膛', 'passivedesc.huochong': '击杀会缩短战术翻滚的冷却：小兵 1 秒，英雄 4 秒。',
+    'passive.mingyue': '月下疾行', 'passivedesc.mingyue': '被月光治疗的队友 1.6 秒内移速提高 30%。',
+    'passive.leigong': '雷击', 'passivedesc.leigong': '被眩晕的敌人受到雷公斧击的伤害提高 60%。',
     'item.sage_tome': '贤者之书', 'item.void_staff': '虚空法杖', 'item.phoenix_feather': '凤凰之羽', 'item.red_crystal': '红莲水晶', 'item.guardian_plate': '守护胸甲', 'item.frost_heart': '冰霜之心', 'item.crimson_crown': '赤红王冠', 'item.immortal_shield': '不死之盾',
   },
 };
@@ -174,7 +184,7 @@ export function applyStaticDom(root: ParentNode = document): void {
   root.querySelectorAll<HTMLElement>('[data-i18n-title]').forEach((el) => { el.title = t(el.dataset.i18nTitle!); });
 }
 
-const tCard = (key: string, fallback: string): string => translations[current][key] ?? translations.en[key] ?? fallback;
+export const tCard = (key: string, fallback: string): string => translations[current][key] ?? translations.en[key] ?? fallback;
 export const cardName = (c: UnitDef): string => tCard(`hero.${c.id}.name`, c.name);
 export const heroTitle = (c: UnitDef): string => tCard(`hero.${c.id}.title`, c.title ?? '');
 export const cardDesc = (c: UnitDef): string => tCard(`hero.${c.id}.desc`, c.desc);

@@ -1,11 +1,11 @@
 import { angleDiff, angleOf, dist, fromAngle, norm, sub, type Vec } from '../engine/math.ts';
 import { skillReady, startDash, useSkill } from './abilities.ts';
-import { attackDamage, fireProjectile, meleeHit } from './combat.ts';
+import { areaDamage, attackDamage, fireProjectile, meleeHit } from './combat.ts';
 import { POSSESS, RECALL_TIME } from './constants.ts';
 import { ITEMS } from './items.ts';
 import { inFountain, inWall, spawnPoint } from './map.ts';
 import { clampArena, resolveGround, resolveObstacles } from './terrain.ts';
-import { NEUTRAL, type Entity, type Seat, type Team, type Unit } from './types.ts';
+import { NEUTRAL, other, type Entity, type Seat, type Team, type Unit } from './types.ts';
 import { attackSpeedMult, frozen, speedMult, World } from './world.ts';
 
 /** What a human (or a hero bot) wants its hero to do this tick. */
@@ -185,6 +185,13 @@ export function heroAttack(w: World, u: Unit, aim: Vec, dir: Vec): void {
       splash: d.splash, splashAir: true, hero: true, radius: crit ? 0.32 : 0.22,
     });
     w.emit({ type: 'ranged', pos: u.pos, style: d.projectile, hero: u.possessed });
+    // Shenshe's Twin Shot: every fourth arrow brings a second one for the nearest other enemy
+    if (d.id === 'shenshe' && ++u.passiveN >= 4) {
+      u.passiveN = 0;
+      let best: Entity | null = null, bd = Infinity;
+      for (const e of w.enemiesOf(u.team)) { if (e.kind === 'tower' && !e.active) continue; const ed = dist(e.pos, u.pos); const ang = Math.abs(angleDiff(u.facing, angleOf(sub(e.pos, u.pos)))); if (ed <= d.range + 1 && ang > 0.15 && ed < bd) { bd = ed; best = e; } }
+      if (best) { const dir2 = norm(sub(best.pos, u.pos)); fireProjectile(w, { team: u.team, from, style: d.projectile, speed: (d.projectileSpeed ?? 9) * 1.15, damage: dmg * 0.6, type: d.attackType, sourceId: u.id, mode: 'linear', dir: dir2, maxDist: bd + 0.5, splash: d.splash, splashAir: true, hero: true, radius: 0.22 }); }
+    }
     return;
   }
   let best: Entity | null = null, bd = Infinity;
@@ -198,8 +205,21 @@ export function heroAttack(w: World, u: Unit, aim: Vec, dir: Vec): void {
     if (Math.abs(angleDiff(u.facing, ang)) > 1.35 && ed > 0.15) continue;
     if (ed < bd) { bd = ed; best = e; }
   }
-  if (best) meleeHit(w, u, best, dmg, { crit });
-  else w.addEffect({ type: 'slash', pos: { ...u.pos }, dur: 0.18, radius: d.range + u.radius + 0.2, color: '#ffffff88', angle: u.facing, arc: 1.4 });
+  if (best) {
+    let hit = dmg;
+    // Yingren's Backstab: striking an enemy that faces away hurts 30% more
+    if (d.id === 'yingren' && best.kind === 'unit' && Math.abs(angleDiff(best.facing, angleOf(sub(u.pos, best.pos)))) > 2.0) { hit *= 1.3; w.addEffect({ type: 'spark', pos: { ...best.pos }, dur: 0.2, radius: 0.5, color: '#d4b2ff' }); }
+    // Leigong's Thunderstruck: stunned enemies take 60% more from his axe
+    if (d.id === 'leigong' && best.kind === 'unit' && best.status.stun > 0) { hit *= 1.6; w.addEffect({ type: 'spark', pos: { ...best.pos }, dur: 0.2, radius: 0.5, color: '#9fd0ff' }); }
+    meleeHit(w, u, best, hit, { crit });
+    // Qinglong's Dragon's Wake: every third thrust carries through to whatever stands behind the target
+    if (d.id === 'qinglong' && ++u.passiveN >= 3) {
+      u.passiveN = 0;
+      const at = { x: best.pos.x + dir.x * 1.3, y: best.pos.y + dir.y * 1.3 };
+      w.addEffect({ type: 'beam', pos: { ...u.pos }, to: at, dur: 0.2, radius: 0.1, color: '#7cf7d5' });
+      areaDamage(w, other(u.team as Team), at, 1.2, dmg * 0.6, { source: u, hero: true, type: 'physical', chain: true });
+    }
+  } else w.addEffect({ type: 'slash', pos: { ...u.pos }, dur: 0.18, radius: d.range + u.radius + 0.2, color: '#ffffff88', angle: u.facing, arc: 1.4 });
 }
 
 /** The seat's hero is alive and controllable. */

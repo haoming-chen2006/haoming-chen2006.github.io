@@ -4,7 +4,7 @@ import { ITEMS } from '../game/items.ts';
 import { MODE_SIZE, type MatchMode } from '../game/sim.ts';
 import type { UnitDef } from '../game/types.ts';
 import { Rng } from '../engine/rng.ts';
-import { cardName, heroTitle, itemName, lang, onLanguageChange, roleName, setLanguage, skillDesc, skillName, t, type Lang } from '../i18n.ts';
+import { cardName, heroTitle, itemName, lang, onLanguageChange, roleName, setLanguage, skillDesc, skillName, t, tCard, type Lang } from '../i18n.ts';
 import { cardThumbnail } from '../render3d/thumbnails.ts';
 
 export interface Settings {
@@ -71,6 +71,7 @@ export function heroDetailHtml(def: UnitDef): string {
   return `<div class="hd-head"><div class="hd-port"></div><div><h3>${cardName(def)}</h3><div class="hd-title">${heroTitle(def)} · <span class="role ${def.role}">${roleName(def.role)}</span></div></div></div>
     <p class="hd-lore">${def.lore ?? ''}</p>
     <div class="hd-stats">${stat('HP', def.hp)}${stat('ATK', def.damage)}${stat('POW', def.power)}${stat('ARM', def.armor)}${stat('SPD', def.speed)}${stat('RNG', def.range)}</div>
+    ${def.passive ? `<h4>${t('select.passive')}</h4><div class="hd-skill hd-passive"><div class="hd-skill-icon" style="background:radial-gradient(circle at 35% 35%, #ffd166, #3a2a05 85%)">✦</div><div><b>${tCard(`passive.${def.id}`, def.passive.name)}</b><p>${tCard(`passivedesc.${def.id}`, def.passive.desc)}</p></div></div>` : ''}
     <h4>${t('select.skills')}</h4>${skills}
     <p class="hd-tips">${def.tips ?? ''}</p>
     <h4>${t('select.build')}</h4><div class="hd-build">${build}</div>`;

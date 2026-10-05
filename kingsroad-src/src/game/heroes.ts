@@ -23,6 +23,7 @@ const HERO_SPECS: HeroSpec[] = [
     look: look('#4f6f8f', '#c9d6e3', 'hammer', 0.5, 'humanoid', { armor: 'plate', cape: true }),
     hp: 3600, damage: 165, power: 0, armor: 95, resist: 50, hitSpeed: 1.1, range: 1.3, speed: 3.9, radius: 0.5, mana: 420, attackType: 'physical',
     lore: 'A mountain that learned to walk. Xuanwu holds the line so that others may strike.',
+    passive: { name: 'Mountain', desc: "Every 500 damage taken hardens Xuanwu: +14 armour and magic resist per stack (up to 5) for 8 s." },
     tips: 'Open with Shield Bash to stun, then Earthquake when enemies cluster. You are the frontline: stand between the enemy and your carries.',
     skills: [
       S({ kind: 'dashStrike', name: 'Shield Bash', desc: 'Charge forward, knocking back and stunning enemies in the way.', cooldown: 9, mana: 60, damage: 240, damageGrowth: 60, ratio: 0.6, type: 'physical', range: 4.5, stun: 0.9, knockback: 1.6, radius: 1.0, color: '#9ec5ff' }),
@@ -37,6 +38,7 @@ const HERO_SPECS: HeroSpec[] = [
     look: look('#2f8f6a', '#e0f5d8', 'lance', 0.45),
     hp: 3300, damage: 195, power: 0, armor: 88, resist: 52, hitSpeed: 0.95, range: 1.7, speed: 4.0, radius: 0.46, mana: 440, attackType: 'physical',
     lore: 'The azure dragon of the east, riding thunderheads into battle with a lance as long as a river.',
+    passive: { name: "Dragon's Wake", desc: "Every third thrust carries through, striking whatever stands behind the target for 60% damage." },
     tips: 'Dragon Thrust pokes through a whole wave. Dive on a target with Sky Dive, then Whirl while they are stunned.',
     skills: [
       S({ kind: 'lineShot', name: 'Dragon Thrust', desc: 'Thrust a lance of storm energy that pierces everything in a line.', cooldown: 7, mana: 55, damage: 280, damageGrowth: 70, ratio: 0.9, type: 'physical', range: 7, color: '#7cf7d5' }),
@@ -51,6 +53,7 @@ const HERO_SPECS: HeroSpec[] = [
     look: look('#3a2f5c', '#d4b2ff', 'dagger', 0.4, 'humanoid', { gear: 'hood' }),
     hp: 3050, damage: 215, power: 0, armor: 74, resist: 46, hitSpeed: 0.82, range: 1.3, speed: 4.4, radius: 0.42, mana: 400, attackType: 'physical',
     lore: 'Nobody has seen Yingren arrive. A few have seen them leave.',
+    passive: { name: 'Backstab', desc: "Attacks on enemies facing away deal 30% more damage." },
     tips: 'Shadowstep behind a squishy target to crit, throw Fan of Knives, then finish with Execution when they drop low.',
     skills: [
       S({ kind: 'blink', name: 'Shadowstep', desc: 'Blink to the aimed point; your next attack crits for 2.2x.', cooldown: 10, mana: 60, range: 6, critMult: 2.2, color: '#c08bff' }),
@@ -65,6 +68,7 @@ const HERO_SPECS: HeroSpec[] = [
     look: look('#b8742a', '#ffd86b', 'staff', 0.42, 'humanoid', { gear: 'bandana', armor: 'leather', cape: true }),
     hp: 3100, damage: 195, power: 0, armor: 78, resist: 48, hitSpeed: 0.9, range: 1.5, speed: 4.3, radius: 0.44, mana: 380, attackType: 'physical',
     lore: 'Born from stone, armed with a cudgel that weighs as much as the sea.',
+    passive: { name: 'Stone Body', desc: "After Cloud Leap, Wukong takes 30% less damage for 2.5 s." },
     tips: 'Cloud Leap in, Staff Sweep to scatter the backline, then Golden Cyclone while chasing.',
     skills: [
       S({ kind: 'leap', name: 'Cloud Leap', desc: 'Somersault to a point, striking enemies where you land.', cooldown: 9, mana: 55, damage: 220, damageGrowth: 55, ratio: 0.8, type: 'physical', range: 6, radius: 1.8, color: '#ffd86b' }),
@@ -79,6 +83,7 @@ const HERO_SPECS: HeroSpec[] = [
     look: look('#c9412a', '#ffb15e', 'orb', 0.4, 'humanoid', { gear: 'hat', cape: false }),
     hp: 2700, damage: 140, power: 80, armor: 62, resist: 52, hitSpeed: 1.0, range: 6.5, speed: 3.8, radius: 0.4, mana: 560, attackType: 'magic', projectile: 'fireball', projectileSpeed: 11,
     lore: 'She reads the future in embers and sets fire to the parts she dislikes.',
+    passive: { name: 'Cinders', desc: "Enemies that die while burning burst into flame, burning everyone nearby." },
     tips: 'Fireball is your bread and butter. Save Meteor Rain for a grouped enemy team or a tower dive.',
     skills: [
       S({ kind: 'aoeAim', name: 'Fireball', desc: 'Hurl a fireball that bursts at the aimed point and burns.', cooldown: 6.5, mana: 60, damage: 250, damageGrowth: 60, ratio: 0.7, type: 'magic', range: 8, radius: 1.6, burn: 40, color: '#ff8a3c' }),
@@ -93,6 +98,7 @@ const HERO_SPECS: HeroSpec[] = [
     look: look('#4e8fd6', '#dff3ff', 'staff', 0.4),
     hp: 2750, damage: 135, power: 75, armor: 60, resist: 55, hitSpeed: 1.0, range: 6.5, speed: 3.8, radius: 0.4, mana: 580, attackType: 'magic', projectile: 'ice', projectileSpeed: 12,
     lore: 'Every winter has a weaver. Bingji is the one that never stops.',
+    passive: { name: 'Deep Freeze', desc: "Slowing an already-slowed enemy freezes them for 0.6 s." },
     tips: 'Ice Lance slows; chase with it. Frost Nova freezes anyone who dives you. Blizzard holds a choke point.',
     skills: [
       S({ kind: 'lineShot', name: 'Ice Lance', desc: 'Fire a lance of ice that pierces and slows.', cooldown: 6.5, mana: 55, damage: 220, damageGrowth: 55, ratio: 0.6, type: 'magic', range: 8, slow: 0.4, slowT: 2, color: '#9fe3ff' }),
@@ -107,6 +113,7 @@ const HERO_SPECS: HeroSpec[] = [
     look: look('#2e7a4a', '#ffe9a8', 'bow', 0.4),
     hp: 2800, damage: 182, power: 0, armor: 64, resist: 42, hitSpeed: 1.0, range: 6.6, speed: 3.9, radius: 0.4, mana: 400, attackType: 'physical', projectile: 'arrow', projectileSpeed: 14,
     lore: 'Shenshe once shot down nine suns. The tenth surrendered.',
+    passive: { name: 'Twin Shot', desc: "Every fourth arrow brings a second arrow for the nearest other enemy (60% damage)." },
     tips: 'Stay behind your tank and keep shooting. Rapid Fire shreds towers. Arrow Storm wins team fights from range.',
     skills: [
       S({ kind: 'lineShot', name: 'Piercing Arrow', desc: 'A long arrow that pierces every enemy in its path.', cooldown: 7, mana: 50, damage: 260, damageGrowth: 70, ratio: 1.0, type: 'physical', range: 10, color: '#fff2b0' }),
@@ -121,6 +128,7 @@ const HERO_SPECS: HeroSpec[] = [
     look: look('#6b4a2b', '#ffb060', 'rifle', 0.42),
     hp: 3100, damage: 240, power: 0, armor: 72, resist: 44, hitSpeed: 1.0, range: 6.8, speed: 3.9, radius: 0.42, mana: 380, attackType: 'physical', projectile: 'bolt', projectileSpeed: 16,
     lore: 'A tinkerer who decided that bows were simply too quiet.',
+    passive: { name: 'Reload', desc: "Kills shorten Combat Roll's cooldown: 1 s per minion, 4 s per hero." },
     tips: 'Scatter melts anything close. Combat Roll resets your position; Barrage holds a lane.',
     skills: [
       S({ kind: 'spreadShot', name: 'Scatter', desc: 'Fire a spread of seven shells.', cooldown: 8, mana: 55, damage: 120, damageGrowth: 35, ratio: 0.5, type: 'physical', count: 7, spread: 1.1, range: 5, color: '#ffc27a' }),
@@ -135,6 +143,7 @@ const HERO_SPECS: HeroSpec[] = [
     look: look('#8e7fd6', '#fff6d0', 'book', 0.4),
     hp: 3000, damage: 140, power: 60, armor: 70, resist: 58, hitSpeed: 1.05, range: 5.5, speed: 3.9, radius: 0.4, mana: 520, attackType: 'magic', projectile: 'holy', projectileSpeed: 11,
     lore: 'She carries the moon in a book and lends its light to whoever is losing.',
+    passive: { name: 'Moonlit Steps', desc: "Allies healed by Moonlight move 30% faster for 1.6 s." },
     tips: 'Stick to your marksman. Lunar Bind stops a diver; Sanctuary turns a losing fight around.',
     skills: [
       S({ kind: 'healBurst', name: 'Moonlight', desc: 'Heal nearby allies and shield yourself.', cooldown: 10, mana: 70, heal: 320, healRatio: 0.8, shield: 180, radius: 4.5, color: '#fff4c2' }),
@@ -149,6 +158,7 @@ const HERO_SPECS: HeroSpec[] = [
     look: look('#3b4a8a', '#9fd0ff', 'axe', 0.46, 'humanoid', { gear: 'halo', armor: 'robe' }),
     hp: 3500, damage: 185, power: 60, armor: 90, resist: 60, hitSpeed: 1.0, range: 1.5, speed: 4.0, radius: 0.46, mana: 460, attackType: 'physical',
     lore: 'The storm keeps its own warden, and the warden keeps his own counsel.',
+    passive: { name: 'Thunderstruck', desc: "Stunned enemies take 60% more damage from Leigong's axe." },
     tips: 'Thunder Dash to engage, Chain Lightning to stun a crowd, Storm Call to lock down the fight.',
     skills: [
       S({ kind: 'chain', name: 'Chain Lightning', desc: 'Lightning jumps between up to four enemies, stunning briefly.', cooldown: 9, mana: 65, damage: 230, damageGrowth: 60, ratio: 0.7, type: 'magic', range: 6, count: 4, stun: 0.5, color: '#9fd0ff' }),

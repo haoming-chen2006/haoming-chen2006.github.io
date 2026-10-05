@@ -45,6 +45,7 @@ export function damage(w: World, target: Entity, amount: number, opts: DamageOpt
   if (target.kind === 'tower' && opts.towerMult !== undefined) amt *= opts.towerMult;
   if (opts.execute && target.kind === 'unit') amt += (target.maxHp - target.hp) * opts.execute;
   if (opts.crowned) amt *= 1.5;
+  if (target.kind === 'unit' && target.wardT > 0) amt *= 0.7; // Stone Body
   if (target.shield > 0) {
     const absorbed = Math.min(target.shield, amt);
     target.shield -= absorbed;
@@ -62,6 +63,11 @@ export function damage(w: World, target: Entity, amount: number, opts: DamageOpt
       if (target.lastHurtBy.length > 8) target.lastHurtBy.shift();
     }
     if (target.possessed && wasAbove && target.hp > 0 && target.hp / target.maxHp < 0.25) w.emit({ type: 'lowHp', team: target.team, pos: target.pos });
+    // Xuanwu's Mountain: every 500 damage taken hardens him (+14 armour/resist per stack, 5 stacks, 8 s)
+    if (target.isHero && target.def.id === 'xuanwu') {
+      target.passiveN += amt;
+      if (target.passiveN >= 500) { target.passiveN -= 500; target.passiveStacks = Math.min(5, target.passiveStacks + 1); target.passiveT = 8; w.refreshDerived(target); w.addEffect({ type: 'shield', pos: { ...target.pos }, dur: 0.4, radius: target.radius + 0.4, color: '#c9d6e3' }); }
+    }
     if (target.recallT > 0) { target.recallT = 0; if (target.possessed) w.emit({ type: 'invalid', text: '@toast.recallInterrupted', team: target.team }); }
     // frost heart passive: attackers are slowed
     if (target.isHero && target.items.includes('frost_heart') && opts.source && opts.source.kind === 'unit') { opts.source.status.slow = Math.max(opts.source.status.slow, 0.3); opts.source.status.slowT = Math.max(opts.source.status.slowT, 1); }
@@ -121,6 +127,11 @@ export function damage(w: World, target: Entity, amount: number, opts: DamageOpt
     target.status.stun = Math.max(target.status.stun, opts.stun);
     if (target.kind === 'unit') { target.charging = false; target.moveT = 0; }
     target.targetId = -1;
+  }
+  // Bingji's Deep Freeze: slowing an already-slowed enemy freezes them briefly
+  if (opts.slow && opts.slow > 0 && target.kind === 'unit' && src && src.kind === 'unit' && src.def.id === 'bingji' && target.status.slowT > 0.3 && target.status.stun <= 0 && !target.def.monster?.boss) {
+    target.status.stun = 0.6; target.status.slowT = 0; target.status.slow = 0; target.charging = false; target.moveT = 0; target.targetId = -1;
+    w.addEffect({ type: 'frost', pos: { ...target.pos }, dur: 0.6, radius: 1.0, color: '#c7f0ff' });
   }
   if (opts.slow && opts.slow > 0 && target.kind === 'unit') { target.status.slow = Math.max(target.status.slow, opts.slow); target.status.slowT = Math.max(target.status.slowT, opts.slowT ?? 1.5); }
   if (opts.burn && opts.burn > 0) { target.status.burnDps = Math.max(target.status.burnDps, opts.burn); target.status.burnT = 3; }
@@ -187,6 +198,16 @@ export function kill(w: World, target: Entity, source?: Entity): void {
   if (target.dead) return;
   target.dead = true;
   target.hp = 0;
+  if (source && source.kind === 'unit' && source.isHero && target.kind === 'unit') {
+    // Huofeng's Cinders: burning victims burst into flame
+    if (source.def.id === 'huofeng' && target.status.burnT > 0) {
+      const d = w.stats(source);
+      w.addEffect({ type: 'burst', pos: { ...target.pos }, dur: 0.5, radius: 1.6, color: '#ff8a3c', team: source.team });
+      areaDamage(w, target.team, target.pos, 1.6, 90 + source.level * 18 + d.power * 0.25, { source, hero: true, type: 'magic', chain: true, burn: 30 });
+    }
+    // Huochong's Reload: kills shorten Combat Roll
+    if (source.def.id === 'huochong') source.skillCd[1] = Math.max(0, source.skillCd[1] - (target.isHero ? 4 : 1));
+  }
   const killerTeam: Side = source ? source.team : other(target.team as Team);
   const killerUnit = source && source.kind === 'unit' ? source : undefined;
   const killerSeat = killerUnit ? w.seatOf(killerUnit) : undefined;
@@ -338,6 +359,10 @@ export function tickStatus(w: World, e: Entity, dt: number): void {
   if (s.slowT > 0) { s.slowT -= dt; if (s.slowT <= 0) s.slow = 0; }
   if (s.rage > 0) { s.rage -= dt; if (s.rage <= 0) { s.rageSpeed = 1; s.rageAttack = 1; } }
   let refresh = false;
+  if (e.kind === 'unit') {
+    if (e.wardT > 0) e.wardT -= dt;
+    if (e.passiveT > 0) { e.passiveT -= dt; if (e.passiveT <= 0 && e.passiveStacks > 0) { e.passiveStacks = 0; refresh = true; } }
+  }
   if (s.blueT > 0) { s.blueT -= dt; if (s.blueT <= 0) refresh = true; }
   if (s.redT > 0) { s.redT -= dt; if (s.redT <= 0) refresh = true; }
   if (s.tyrantT > 0) { s.tyrantT -= dt; if (s.tyrantT <= 0) refresh = true; }

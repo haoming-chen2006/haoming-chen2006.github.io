@@ -118,6 +118,8 @@ export interface UnitDef {
   title?: string;
   lore?: string;
   tips?: string;
+  /** Hero signature passive (flavour + rules text). */
+  passive?: { name: string; desc: string };
   /** A per-hero legacy slot so older code paths that expect `ability` keep working (= skills[0]). */
   ability?: AbilityDef;
 }
@@ -239,6 +241,12 @@ export interface Unit extends EntityBase {
   stormN: number;
   /** Void Staff marks stacked on this unit by enemy skills; three detonate. */
   voidMarks: number;
+  /** Hero passive bookkeeping: attack counter / accumulated damage, stacks, and a timer. */
+  passiveN: number;
+  passiveStacks: number;
+  passiveT: number;
+  /** Damage reduction window (Wukong's Stone Body). */
+  wardT: number;
 }
 
 export interface Tower extends EntityBase {

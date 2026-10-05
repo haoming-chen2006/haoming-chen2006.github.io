@@ -141,6 +141,7 @@ export function useSkill(w: World, u: Unit, i: number, aim: Vec): boolean {
       (u as never as { leapSkill: number }).leapSkill = i;
       (u as never as { leapDamage: number }).leapDamage = dmg;
       u.flying = true; // pass over walls while airborne
+      if (u.def.id === 'wukong') { u.wardT = 2.5; w.addEffect({ type: 'shield', pos: { ...u.pos }, dur: 0.4, radius: u.radius + 0.4, color: '#ffd86b' }); } // Stone Body
       break;
     }
     case 'summon':
@@ -154,7 +155,11 @@ export function useSkill(w: World, u: Unit, i: number, aim: Vec): boolean {
     case 'healBurst': {
       const amount = skillHeal(w, u, a, rank);
       const seat = w.seatOf(u);
-      for (const e of w.within(u.pos, a.radius ?? 3, (x) => x.team === u.team && x.kind === 'unit' && x.isHero)) { const h = heal(w, e, amount); if (seat) seat.stats.healing += h; }
+      for (const e of w.within(u.pos, a.radius ?? 3, (x) => x.team === u.team && x.kind === 'unit' && x.isHero)) {
+        const h = heal(w, e, amount); if (seat) seat.stats.healing += h;
+        // Mingyue's Moonlit Steps: her heals quicken allies' feet
+        if (u.def.id === 'mingyue' && e.kind === 'unit' && e.buffT <= 0) { e.buffT = 1.6; e.buffSpeed = 1.3; e.buffAttack = 1; }
+      }
       u.shield = Math.max(u.shield, (a.shield ?? 0) * (1 + 0.3 * (rank - 1)));
       w.addEffect({ type: 'heal', pos: { ...u.pos }, dur: 0.8, radius: a.radius ?? 3, color });
       w.addEffect({ type: 'ring', pos: { ...u.pos }, dur: 0.6, radius: a.radius ?? 3, color: '#9dffb0' });

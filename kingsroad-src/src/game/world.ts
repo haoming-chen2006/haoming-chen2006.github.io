@@ -116,7 +116,7 @@ export class World {
       buffT: 0, buffSpeed: 1, buffAttack: 1, critNext: 1, lane: 1, laneIndex: 0, vel: { x: 0, y: 0 }, bobT: this.rng.next() * 10, heroAttackHeld: false,
       lastPos: { ...pos }, stuckT: 0, waypoint: null, path: [], pathT: 0, fromSpawner: false,
       level: 1, xp: 0, mana: def.mana, maxMana: def.mana, items: [], gold: 0, recallT: 0, respawnT: 0, kills: 0, deaths: 0, assists: 0, streak: 0,
-      lastHurtBy: [], damageTaken: 0, inBush: false, camp: null, home: null, leashT: 0, owner: -1, autoBuy: true, skillPoints: 0, lastAttackT: -10, crown: 0, crowned: false, stormN: 0, voidMarks: 0,
+      lastHurtBy: [], damageTaken: 0, inBush: false, camp: null, home: null, leashT: 0, owner: -1, autoBuy: true, skillPoints: 0, lastAttackT: -10, crown: 0, crowned: false, stormN: 0, voidMarks: 0, passiveN: 0, passiveStacks: 0, passiveT: 0, wardT: 0,
     };
   }
 
@@ -170,8 +170,8 @@ export class World {
       maxHp: d.hp + d.hpGrowth * L + it.hp,
       attack: (d.damage + d.damageGrowth * L + it.damage) * (tyrant ? 1.1 : 1),
       power: (d.power + d.powerGrowth * L + it.power) * (tyrant ? 1.1 : 1),
-      armor: d.armor + d.armorGrowth * L + it.armor + (over ? 60 : 0),
-      resist: d.resist + d.resistGrowth * L + it.resist + (over ? 60 : 0),
+      armor: d.armor + d.armorGrowth * L + it.armor + (over ? 60 : 0) + u.passiveStacks * 14,
+      resist: d.resist + d.resistGrowth * L + it.resist + (over ? 60 : 0) + u.passiveStacks * 14,
       hitSpeed: d.hitSpeed / (1 + d.attackSpeedGrowth * L + it.attackSpeed + (red ? 0.15 : 0)),
       speed: d.speed + it.speed + (blue ? 0.3 : 0),
       lifesteal: it.lifesteal, spellvamp: it.spellvamp, cooldown: Math.min(0.4, it.cooldown + (blue ? 0.15 : 0)), crit: it.crit,

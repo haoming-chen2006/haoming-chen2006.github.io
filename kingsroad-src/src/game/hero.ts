@@ -121,9 +121,21 @@ export function updateHero(w: World, u: Unit, cmd: HeroCommand, dt: number): voi
     const spd = w.stats(u).speed * speedMult(u) * POSSESS.speedMult * sustainedSlow;
     let next = { x: u.pos.x + cmd.move.x * spd * dt, y: u.pos.y + cmd.move.y * spd * dt };
     // slide along walls
-    if (inWall(next, u.radius)) {
+    // already overlapping something (spawn jitter against the crystal): any step is allowed so the hero can walk out
+    if (inWall(next, u.radius) && !inWall(u.pos, u.radius)) {
       const nx = { x: next.x, y: u.pos.y }, ny = { x: u.pos.x, y: next.y };
-      next = !inWall(nx, u.radius) ? nx : !inWall(ny, u.radius) ? ny : u.pos;
+      if (!inWall(nx, u.radius)) next = nx;
+      else if (!inWall(ny, u.radius)) next = ny;
+      else {
+        // head-on into a round obstacle (tower, crystal): slide around it along the nearest free deflection
+        next = u.pos;
+        const base = angleOf(cmd.move);
+        for (const off of [1.2, -1.2, Math.PI / 2, -Math.PI / 2, 2.0, -2.0]) {
+          const dir = fromAngle(base + off, spd * dt * 0.8);
+          const cand = { x: u.pos.x + dir.x, y: u.pos.y + dir.y };
+          if (!inWall(cand, u.radius)) { next = cand; break; }
+        }
+      }
     }
     u.pos = u.flying ? clampArena(next, u.radius) : resolveGround(next, u.radius);
     u.pos = resolveObstacles(u.pos, u.radius, w.alive(), u);

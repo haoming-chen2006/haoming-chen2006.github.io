@@ -85,7 +85,7 @@ export const TOWER_LAYOUT: readonly TowerSpec[] = [
   { tier: 'base', lane: 2, pos: { x: 14, y: 49 } },
   { tier: 'crystal', lane: -1, pos: { x: 6, y: 50 } },
 ];
-export const SPAWN_POINT: Vec = { x: 4.5, y: 51.5 };
+export const SPAWN_POINT: Vec = { x: 3.4, y: 52.6 }; // clear of the crystal obstacle (6,50 r2) by more than a hero radius
 export const FOUNTAIN_RADIUS = 5;
 
 /** Jungle camps for team 0 (mirrored for team 1) and the two river objectives. */

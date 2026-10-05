@@ -56,7 +56,10 @@ export const POSSESS = {
   zoom: 1.75,
 };
 
-export const mirrorPos = (p: Vec): Vec => ({ x: MAP_W - p.x, y: MAP_H - p.y });
+/** Point mirror through the map centre, snapped to 1e-4 so mirrored walls land on exactly mirrored numbers (float noise at a
+ *  wall edge once blocked one extra nav cell on the red side only). */
+const snap = (v: number): number => Math.round(v * 10000) / 10000;
+export const mirrorPos = (p: Vec): Vec => ({ x: snap(MAP_W - p.x), y: snap(MAP_H - p.y) });
 export const mirrorY = (y: number): number => MAP_H - y;
 
 /** Where the three lanes run for team 0, from its base to the enemy base. */

@@ -89,6 +89,7 @@ export class World {
   closeSideLanes(): void {
     this.lanesOpen = [1];
     for (const e of this.entities) if (e.kind === 'tower' && (e.lane === 0 || e.lane === 2)) { e.dead = true; }
+    for (const p of this.players) for (const s of p.seats) s.lane = 1;
     this.sweep();
     this.refreshObstacles();
   }

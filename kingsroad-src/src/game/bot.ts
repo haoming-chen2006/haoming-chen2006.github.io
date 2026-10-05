@@ -246,7 +246,8 @@ export class BotHero {
     }
     // never go deeper than just outside the next enemy tower unless minions are there
     const foe = (team === 0 ? 1 : 0) as Team;
-    const enemyTowers = w.towers(foe).filter((t) => t.lane === lane && t.active);
+    // lane ids are per team (mirrored): the enemy's towers on this physical lane carry id 2 - lane
+    const enemyTowers = w.towers(foe).filter((t) => t.lane === (2 - lane) && t.active);
     let cap = path.length - 1;
     for (const t of enemyTowers) { const tp = laneProgress(path, t.pos); cap = Math.min(cap, laneAdvance(path, tp, -9)); }
     if (best < 0) {

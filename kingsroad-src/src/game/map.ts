@@ -9,8 +9,8 @@ import type { Team } from './types.ts';
 export const WALLS: readonly Box[] = (() => {
   const out: Box[] = [...WALLS_HALF];
   for (const b of WALLS_HALF) {
-    const c = mirrorPos({ x: b.x + b.w / 2, y: b.y + b.h / 2 });
-    out.push({ x: c.x - b.w / 2, y: c.y - b.h / 2, w: b.w, h: b.h });
+    const far = mirrorPos({ x: b.x + b.w, y: b.y + b.h });
+    out.push({ x: far.x, y: far.y, w: b.w, h: b.h });
   }
   return out;
 })();
@@ -113,9 +113,16 @@ export function nearestFree(p: Vec): Vec {
 
 const pathCache = new Map<string, Vec[] | null>();
 
-/** A* path from `from` to `to`; returns waypoints excluding `from`, ending at `to`. Straight line when clear. */
+/** A* path from `from` to `to`; returns waypoints excluding `from`, ending at `to`. Straight line when clear.
+ *  Searches starting on the red half are solved in the mirrored frame so tie-breaking in A* and string pulling
+ *  gives both sides exactly mirrored routes. */
 export function findPath(from: Vec, to: Vec, r = 0.35): Vec[] {
   if (clearLine(from, to, r)) return [{ ...to }];
+  if (sideOf(from) === 1) return findPathRaw(mirrorPos(from), mirrorPos(to), r).map(mirrorPos);
+  return findPathRaw(from, to, r);
+}
+
+function findPathRaw(from: Vec, to: Vec, r: number): Vec[] {
   const goal = nearestFree(to);
   const start = nearestFree(from);
   const [sx, sy] = cellOf(start), [gx, gy] = cellOf(goal);

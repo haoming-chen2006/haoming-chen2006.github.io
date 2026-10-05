@@ -141,7 +141,9 @@ export function buildViewmodel(look: Look, team: Team): Viewmodel {
     return w;
   };
 
-  switch (look.shape) {
+  // 'beast' first-person rigs are mounts (boar/wolf riders); a beast-shaped hero with any other weapon just gets hands
+  const shape = look.shape === 'beast' && wk !== 'lance' && wk !== 'hammer' ? 'humanoid' : look.shape;
+  switch (shape) {
     case 'humanoid': case 'skeleton': case 'wraith': case 'building': {
       const bone = look.shape === 'skeleton', shadow = look.shape === 'wraith';
       const plate = wk === 'sword' || wk === 'lance' || wk === 'axe' || wk === 'hammer' || wk === 'shield';

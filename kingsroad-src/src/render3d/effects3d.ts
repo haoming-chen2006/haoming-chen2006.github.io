@@ -295,6 +295,19 @@ export class Effects3D {
         this.sparks.burst(x, 0.6, z, 40, { color: 0xbfefff, colorEnd: 0xffffff, speed: 3, up: 1, life: 0.9, size: 0.3, gravity: 2 });
         break;
       }
+      case 'levelup': {
+        const g = this.glow(0xffe27a, 0.5, 3.0);
+        g.position.set(x, 0.3, z);
+        this.add(e, g);
+        this.sparks.burst(x, 0.4, z, 40, { color: 0xffe27a, colorEnd: 0xffffff, speed: 1.5, up: 4, life: 0.9, size: 0.28, gravity: -2, spin: 6 });
+        break;
+      }
+      case 'recall': {
+        const g = this.glow(0x9fe3ff, 0.18, 2.5);
+        g.position.set(x, 0.2, z);
+        this.add(e, g);
+        break;
+      }
       case 'soul': {
         const g = this.glow(0xffe27a, 0.35, 3.5);
         g.position.set(x, 0.8, z);
@@ -404,6 +417,17 @@ export class Effects3D {
         if (crM) crM.opacity = 0.9 * fade;
         for (let i = 0; i < v.extra.length; i++) { const cr = v.extra[i]; const g = Math.min(1, Math.max(0, (e.t - i * 0.03) / 0.35)); cr.scale.y = (0.9 + (i % 3) * 0.3) * g; cr.position.y = 0.3 + g * 0.2; }
         if (shatter && !v.d.shattered) { v.d.shattered = 1; this.sparks.burst(e.pos.x, 0.8, e.pos.y, 60, { color: 0xe8fbff, colorEnd: 0x9fd9ff, speed: 4, up: 1.2, life: 0.9, size: 0.3, gravity: 6, bounce: 0.4, spin: 10 }); this.debris.spawn(e.pos.x, 0.5, e.pos.y, 14, { color: 0xdff5ff, color2: 0xbfefff, speed: 4, up: 1, size: 0.14, life: 1.6 }); }
+        break;
+      }
+      case 'levelup': {
+        o.position.set(e.pos.x, 0.3 + ease * 2.2, e.pos.y);
+        o.scale.setScalar(1 + ease * 1.5);
+        if (mat) mat.opacity = 1 - p;
+        break;
+      }
+      case 'recall': {
+        o.position.set(e.pos.x, 0.2 + ease * 2.5, e.pos.y);
+        if (mat) mat.opacity = 0.8 * (1 - p);
         break;
       }
       case 'soul': {

@@ -104,6 +104,8 @@ export class GameScreen {
     this.hud.setNetPill('');
     const h = this.hero();
     this.hud.banner(h ? cardName(h.def) : 'Kingsroad', t('hud.tipStart'));
+    this.hud.hint(t('hud.controls'));
+    setTimeout(() => { if (this.active && this.time < 40) this.hud.hint(''); }, 25000);
     document.body.classList.add('in-game');
     sfx.startAmbience('battle');
     sfx.listener.enabled = false;

@@ -93,8 +93,11 @@ export class BotHero {
       const myDist = dist(u.pos, obj.pos);
       if ((near >= 2 || seat.lane === 3) && myDist < 24 && hpFrac > 0.6) { b.mode = 'objective'; b.targetId = obj.id; b.dest = { ...obj.pos }; return; }
     }
-    // late game: group up
+    // late game: push when we have the numbers (enemy heroes dead or we outnumber them), else group mid
     const late = w.time > 600 || w.players[team === 0 ? 1 : 0].towersLost >= 3;
+    const enemyAlive = [...w.heroes(team === 0 ? 1 : 0)].length;
+    const allyAlive = [...w.heroes(team)].length;
+    if ((late || w.time > 300) && (enemyAlive <= allyAlive - 2 || (late && w.players[team].kills > w.players[team === 0 ? 1 : 0].kills + 5)) && hpFrac > 0.45) { b.mode = 'push'; return; }
     if (late && seat.lane !== 3 && w.rng.chance(0.6)) { b.mode = 'group'; return; }
     b.mode = seat.lane === 3 && !late ? 'jungle' : 'lane';
   }
@@ -174,6 +177,17 @@ export class BotHero {
         return;
       }
       case 'jungle': { this.jungle(w, seat, u, b, cmd, dt); return; }
+      case 'push': {
+        const foe = this.nearbyEnemyHeroes(w, u, 8)[0];
+        if (foe && foe.hp / foe.maxHp < 0.6) { b.mode = 'fight'; b.targetId = foe.id; this.fight(w, u, b, foe, cmd, dt); return; }
+        const tower = this.pushTarget(w, u);
+        if (!tower) { b.mode = 'group'; break; }
+        const d = dist(tower.pos, u.pos) - tower.radius;
+        cmd.aim = { ...tower.pos };
+        if (d <= u.def.range + 0.3) { cmd.attack = u.attackCd <= 0; if (u.def.role !== 'mage') this.useWaveSkillOnTower(w, u, cmd); }
+        else this.moveTo(w, u, b, tower.pos, cmd, dt);
+        return;
+      }
       case 'group': {
         // group at the most advanced allied minion wave in mid, then push
         const front = this.laneFront(w, 1);
@@ -191,6 +205,23 @@ export class BotHero {
     }
     // fallthrough after a mode change: do a light default step
     this.moveTo(w, u, b, b.dest ?? this.laneFront(w, (seat.lane === 3 ? 1 : seat.lane) as LaneId), cmd, dt);
+  }
+
+  /** The enemy structure to push: the active tower on the lane where our wave is deepest, else the nearest active one. */
+  private pushTarget(w: World, u: Unit): Entity | undefined {
+    const foe = (this.team === 0 ? 1 : 0) as Team;
+    const towers = w.towers(foe).filter((t) => t.active);
+    if (!towers.length) return undefined;
+    let best: Entity | undefined, bd = Infinity;
+    for (const t of towers) {
+      const minions = this.alliedMinionsNear(w, t as never, 9);
+      const d = dist(t.pos, u.pos) - minions * 6 + (t.tier === 'crystal' ? -10 : 0);
+      if (d < bd) { bd = d; best = t; }
+    }
+    return best;
+  }
+  private useWaveSkillOnTower(w: World, u: Unit, cmd: HeroCommand): void {
+    for (const i of [1, 0]) { const a = u.def.skills[i]; if (a && skillReady(u, i) && (a.kind === 'selfBuff' || a.kind === 'spin') && u.mana > u.maxMana * 0.4 && w.rng.chance(0.3)) { cmd.skill = i; return; } }
   }
 
   private enemyMinionsNear(w: World, u: Unit, r: number): number {

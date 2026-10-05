@@ -2,7 +2,7 @@ import { skillDamage } from '../game/abilities.ts';
 import { ITEMS, ITEM_LIST, itemDef } from '../game/items.ts';
 import type { Seat, Team, Unit } from '../game/types.ts';
 import { World } from '../game/world.ts';
-import { cardName, itemName, skillDesc, skillName, t, tSim } from '../i18n.ts';
+import { cardName, itemName, skillDesc, skillName, t, tCard, tSim } from '../i18n.ts';
 import { cardThumbnail } from '../render3d/thumbnails.ts';
 import { isMine, teamCss } from '../render3d/perspective.ts';
 
@@ -43,6 +43,8 @@ export class Hud {
     $('feed').innerHTML = ''; $('toast').innerHTML = ''; $('streak').classList.add('hidden'); $('banner').classList.add('hidden'); $('countdown').classList.add('hidden');
     $('respawn').classList.add('hidden'); $('scoreboard').classList.add('hidden'); $('shop').classList.add('hidden');
     const skills = $('skills'); skills.innerHTML = ''; this.skillEls = [];
+    const passive = document.createElement('div'); passive.className = 'skill passive'; passive.innerHTML = `<div class="sk-icon">✦</div><div class="sk-name"></div>`; passive.id = 'skPassive';
+    skills.appendChild(passive);
     const keys = ['1', '2', '3'];
     for (let i = 0; i < 3; i++) {
       const el = document.createElement('div'); el.className = 'skill'; el.innerHTML = `<div class="sk-icon"></div><div class="sk-cd"></div><div class="sk-key">${keys[i]}</div><div class="sk-rank"></div><div class="sk-name"></div>`;
@@ -77,6 +79,14 @@ export class Hud {
       ($('xpFill')).style.width = `${need === Infinity ? 100 : (100 * seat.xp) / need}%`;
       $('gold').textContent = String(Math.floor(seat.gold));
       ($('crownFill')).style.width = `${h.crown}%`; $('crownBar').classList.toggle('full', h.crowned);
+      // passive badge: name + rules text on hover, lit while the hero's twist is in effect
+      const pv = $('skPassive');
+      if (h.def.passive) {
+        const pname = tCard(`passive.${h.def.id}`, h.def.passive.name);
+        (pv.querySelector('.sk-name') as HTMLElement).textContent = pname;
+        pv.title = `${pname} · ${tCard(`passivedesc.${h.def.id}`, h.def.passive.desc)}`;
+        pv.classList.toggle('lit', h.wardT > 0 || h.passiveStacks > 0 || (h.def.id === 'shenshe' && h.passiveN === 3) || (h.def.id === 'qinglong' && h.passiveN === 2));
+      } else pv.classList.add('hidden');
       // skills
       for (let i = 0; i < 3; i++) {
         const el = this.skillEls[i], a = h.def.skills[i], cd = h.skillCd[i], rank = h.skillRank[i];

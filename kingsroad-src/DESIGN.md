@@ -67,14 +67,21 @@ e2e/           Playwright play-tests with screenshots
   bots fill in the rest locally and deterministically (seeded rng), so no bot traffic crosses the wire.
 * Every hero skill, dash, flash, recall, shop purchase and skill point goes through `HeroCommand`.
 
-## The twist
+## The twist (as shipped)
 
-Honor of Kings-shaped, but every skill and item has a second, playful effect:
-* Skills have **"resonance"**: landing a skill on an enemy hero charges the hero's crown; at full charge the
-  next skill is "crowned" (bigger, with an extra effect, e.g. Fireball leaves a lava pool, Shield Bash carries
-  the victim with you).
-* Items carry **moods**: e.g. Bloodthirst Blade heals *allies* near your kills; Frost Heart makes attackers
-  slip (brief knockback); Phoenix Feather explodes when you die; Swift Boots leave a speed trail allies can use.
-* Towers "wake up": a tower that kills a hero gets a crown and shoots faster for 30 s; a crystal at low health
-  summons guardian minions.
-* Jungle buffs are stealable and the Tyrant can be *ridden* for 20 s by whoever lands the last hit.
+Honor of Kings-shaped, but with a second, playful layer on top:
+* **Resonance crown**: every skill that hits an enemy hero charges the hero's crown (+25); at 100 the next skill
+  is *crowned* — 1.5× damage, +radius, a 0.5 s stun, and Fireball leaves a lava pool.
+* **Hero twists** (signature passives, `UnitDef.passive`): Xuanwu *Mountain* (armour stacks from damage taken),
+  Qinglong *Dragon's Wake* (3rd thrust pierces behind), Yingren *Backstab*, Wukong *Stone Body* (30% DR after
+  Cloud Leap), Huofeng *Cinders* (burning victims explode), Bingji *Deep Freeze* (double slow = freeze),
+  Shenshe *Twin Shot* (4th arrow forks), Huochong *Reload* (kills refund Combat Roll), Mingyue *Moonlit Steps*
+  (heals grant speed), Leigong *Thunderstruck* (+60% vs stunned).
+* **Item moods**: Storm Lance forks a bolt every 4th hit, Void Staff detonates on the 3rd skill mark, Frost Heart
+  slows attackers, Phoenix Feather explodes on death, Bloodthirst heals allies near kills, Immortal Shield revives.
+* **Crowned towers**: a tower that sees a hero kill fires 1.4× faster for 30 s. **Tyrant fury**: the last-hitter
+  rages for 20 s.
+* **Siege Hour**: from 18:00 every wave carries a siege engine, from 21:00 a super minion, so games close.
+
+### Ideas not built
+* Crystal at low health summons guardians; Swift Boots speed trail; stealable jungle buffs; riding the Tyrant.

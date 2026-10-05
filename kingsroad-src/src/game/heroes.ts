@@ -21,7 +21,7 @@ const HERO_SPECS: HeroSpec[] = [
   {
     id: 'xuanwu', name: 'Xuanwu', title: 'the Bulwark', role: 'tank', ...base('tank'),
     look: look('#4f6f8f', '#c9d6e3', 'hammer', 0.5, 'humanoid', { armor: 'plate', cape: true }),
-    hp: 3600, damage: 165, power: 0, armor: 95, resist: 50, hitSpeed: 1.1, range: 1.3, speed: 3.9, radius: 0.5, mana: 420, attackType: 'physical',
+    hp: 3900, damage: 175, power: 0, armor: 100, resist: 55, hitSpeed: 1.1, range: 1.3, speed: 3.95, radius: 0.5, mana: 420, attackType: 'physical',
     lore: 'A mountain that learned to walk. Xuanwu holds the line so that others may strike.',
     passive: { name: 'Mountain', desc: "Every 500 damage taken hardens Xuanwu: +14 armour and magic resist per stack (up to 5) for 8 s." },
     tips: 'Open with Shield Bash to stun, then Earthquake when enemies cluster. You are the frontline: stand between the enemy and your carries.',
@@ -36,7 +36,7 @@ const HERO_SPECS: HeroSpec[] = [
   {
     id: 'qinglong', name: 'Qinglong', title: 'Storm Lancer', role: 'warrior', ...base('warrior'),
     look: look('#2f8f6a', '#e0f5d8', 'lance', 0.45),
-    hp: 3300, damage: 195, power: 0, armor: 88, resist: 52, hitSpeed: 0.95, range: 1.7, speed: 4.0, radius: 0.46, mana: 440, attackType: 'physical',
+    hp: 3500, damage: 215, power: 0, armor: 92, resist: 56, hitSpeed: 0.95, range: 1.7, speed: 4.05, radius: 0.46, mana: 440, attackType: 'physical',
     lore: 'The azure dragon of the east, riding thunderheads into battle with a lance as long as a river.',
     passive: { name: "Dragon's Wake", desc: "Every third thrust carries through, striking whatever stands behind the target for 60% damage." },
     tips: 'Dragon Thrust pokes through a whole wave. Dive on a target with Sky Dive, then Whirl while they are stunned.',
@@ -51,7 +51,7 @@ const HERO_SPECS: HeroSpec[] = [
   {
     id: 'yingren', name: 'Yingren', title: 'Shadow Blade', role: 'assassin', ...base('assassin'),
     look: look('#3a2f5c', '#d4b2ff', 'dagger', 0.4, 'humanoid', { gear: 'hood' }),
-    hp: 3050, damage: 215, power: 0, armor: 74, resist: 46, hitSpeed: 0.82, range: 1.3, speed: 4.4, radius: 0.42, mana: 400, attackType: 'physical',
+    hp: 3200, damage: 225, power: 0, armor: 76, resist: 50, hitSpeed: 0.82, range: 1.3, speed: 4.45, radius: 0.42, mana: 400, attackType: 'physical',
     lore: 'Nobody has seen Yingren arrive. A few have seen them leave.',
     passive: { name: 'Backstab', desc: "Attacks on enemies facing away deal 30% more damage." },
     tips: 'Shadowstep behind a squishy target to crit, throw Fan of Knives, then finish with Execution when they drop low.',
@@ -66,7 +66,7 @@ const HERO_SPECS: HeroSpec[] = [
   {
     id: 'wukong', name: 'Wukong', title: 'Stone Monkey', role: 'assassin', ...base('assassin'),
     look: look('#b8742a', '#ffd86b', 'staff', 0.42, 'humanoid', { gear: 'bandana', armor: 'leather', cape: true }),
-    hp: 3100, damage: 195, power: 0, armor: 78, resist: 48, hitSpeed: 0.9, range: 1.5, speed: 4.3, radius: 0.44, mana: 380, attackType: 'physical',
+    hp: 3250, damage: 205, power: 0, armor: 80, resist: 52, hitSpeed: 0.9, range: 1.5, speed: 4.35, radius: 0.44, mana: 380, attackType: 'physical',
     lore: 'Born from stone, armed with a cudgel that weighs as much as the sea.',
     passive: { name: 'Stone Body', desc: "After Cloud Leap, Wukong takes 30% less damage for 2.5 s." },
     tips: 'Cloud Leap in, Staff Sweep to scatter the backline, then Golden Cyclone while chasing.',
@@ -101,7 +101,7 @@ const HERO_SPECS: HeroSpec[] = [
     passive: { name: 'Deep Freeze', desc: "Slowing an already-slowed enemy freezes them for 0.6 s." },
     tips: 'Ice Lance slows; chase with it. Frost Nova freezes anyone who dives you. Blizzard holds a choke point.',
     skills: [
-      S({ kind: 'lineShot', name: 'Ice Lance', desc: 'Fire a lance of ice that pierces and slows.', cooldown: 6.5, mana: 55, damage: 220, damageGrowth: 55, ratio: 0.6, type: 'magic', range: 8, slow: 0.4, slowT: 2, color: '#9fe3ff' }),
+      S({ kind: 'lineShot', name: 'Ice Lance', desc: 'Fire a lance of ice that pierces and slows.', cooldown: 6.5, mana: 55, damage: 205, damageGrowth: 55, ratio: 0.6, type: 'magic', range: 8, slow: 0.4, slowT: 2, color: '#9fe3ff' }),
       S({ kind: 'aoeSelf', name: 'Frost Nova', desc: 'Freeze everyone around you for 1.2 s.', cooldown: 13, mana: 80, damage: 220, damageGrowth: 60, ratio: 0.6, type: 'magic', radius: 3, stun: 1.2, color: '#c7f0ff' }),
       S({ kind: 'aoeAim', name: 'Blizzard', desc: 'A blizzard rages at the aimed point for 4 s, damaging and slowing.', cooldown: 40, mana: 140, damage: 150, damageGrowth: 50, ratio: 0.45, type: 'magic', range: 8, radius: 3.4, duration: 4, tick: 0.5, slow: 0.5, slowT: 1, color: '#bfe8ff' }),
     ],
@@ -111,7 +111,7 @@ const HERO_SPECS: HeroSpec[] = [
   {
     id: 'shenshe', name: 'Shenshe', title: 'Divine Archer', role: 'marksman', ...base('marksman'),
     look: look('#2e7a4a', '#ffe9a8', 'bow', 0.4),
-    hp: 2800, damage: 182, power: 0, armor: 64, resist: 42, hitSpeed: 1.0, range: 6.6, speed: 3.9, radius: 0.4, mana: 400, attackType: 'physical', projectile: 'arrow', projectileSpeed: 14,
+    hp: 2800, damage: 176, power: 0, armor: 62, resist: 42, hitSpeed: 1.0, range: 6.5, speed: 3.9, radius: 0.4, mana: 400, attackType: 'physical', projectile: 'arrow', projectileSpeed: 14,
     lore: 'Shenshe once shot down nine suns. The tenth surrendered.',
     passive: { name: 'Twin Shot', desc: "Every fourth arrow brings a second arrow for the nearest other enemy (60% damage)." },
     tips: 'Stay behind your tank and keep shooting. Rapid Fire shreds towers. Arrow Storm wins team fights from range.',

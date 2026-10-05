@@ -309,6 +309,11 @@ body.in-game #viewport { right: var(--panel-w); }
 .skill .sk-rank i { width: 7px; height: 4px; background: var(--gold); border-radius: 1px; box-shadow: 0 0 4px var(--gold); }
 .skill .sk-name { position: absolute; top: 100%; left: 50%; transform: translateX(-50%); margin-top: 4px; font-size: 10px; white-space: nowrap; color: #ddd; text-shadow: 0 1px 2px #000; font-weight: 700; }
 .skill.locked { opacity: 0.4; }
+.skill.passive { width: 40px; height: 40px; align-self: flex-end; margin-right: 4px; border-color: #5a4a1a; background: #171208; }
+.skill.passive .sk-name { display: none; }
+.skill.passive .sk-icon { font-size: 18px; color: #ffd166; background: radial-gradient(circle at 35% 35%, #4a3a0a, #0b0804 85%); }
+.skill.passive.lit { border-color: var(--gold); box-shadow: 0 0 12px rgba(255, 209, 102, 0.6); }
+.skill.passive.lit .sk-icon { background: radial-gradient(circle at 35% 35%, #ffd166, #6a4a05 85%); color: #fff; }
 .skill.nomana .sk-icon { filter: saturate(0.2); box-shadow: 0 0 0 2px rgba(80,140,255,0.5) inset; }
 .skill.ready { border-color: var(--gold); box-shadow: 0 0 14px rgba(240,196,90,0.35); }
 .skill.active { border-color: #fff; transform: scale(1.06); }

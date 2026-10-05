@@ -5,7 +5,9 @@ import { other } from './game/types.ts';
 import { GameScreen, type MatchConfig } from './game_screen.ts';
 import { applyStaticDom, t } from './i18n.ts';
 import { GameView } from './render3d/scene.ts';
+import { hashWorld } from './game/hash.ts';
 import { Menus, loadSettings, saveSettings, showLoading, type ScreenName } from './ui/menu.ts';
+import { Online } from './ui/online.ts';
 
 const $ = (id: string): HTMLElement => { const el = document.getElementById(id); if (!el) throw new Error(`missing #${id}`); return el; };
 
@@ -30,6 +32,7 @@ game.onAutoQuality = (q) => { settings.quality = q; saveSettings(settings); menu
 game.onEnd = (winner, me) => {
   if (winner === me) settings.record.wins++; else if (winner === other(me)) settings.record.losses++; else settings.record.draws++;
   saveSettings(settings);
+  if (game.online) online.matchEnded();
 };
 
 const applyAudioSettings = () => {
@@ -76,12 +79,36 @@ function backToMenus(screen: ScreenName): void {
 }
 const quitToMenu = (): void => backToMenus('menu');
 
+/** Online: the lobby controller hands over a fully described match. */
+function startOnline(cfg: MatchConfig): void {
+  demo = null;
+  view.clear();
+  menus.show('game');
+  applyAudioSettings();
+  game.start(cfg);
+}
+const online = new Online({
+  settings,
+  show: (s) => menus.show(s),
+  startMatch: startOnline,
+  endMatch: () => { game.stop(); if (!demo) newDemo(); music.setScene('menu'); sfx.setAmbience('menu'); },
+  toast: (t2) => game.toast(t2, 'warn'),
+  playUi: () => sfx.play('ui'),
+  simulation: () => game.simulation,
+});
 menus.onStart = () => { sfx.init(); applyAudioSettings(); startBattle(); };
-$('btnOnline').addEventListener('click', () => { sfx.init(); applyAudioSettings(); menus.show('online'); $('onlineCard').innerHTML = `<h2 class="heading">${t('online.title')}</h2><p class="muted">${t('online.soon')}</p><button id="btnOnlineBack" class="btn">${t('common.back')}</button>`; $('btnOnlineBack').addEventListener('click', () => menus.show('menu')); });
+$('btnOnline').addEventListener('click', () => { sfx.init(); applyAudioSettings(); void online.openHub(); });
 $('btnResume').addEventListener('click', () => game.setPaused(false));
-$('btnQuit').addEventListener('click', () => { game.setPaused(false); game.surrender(); });
-$('btnAgain').addEventListener('click', () => { game.stop(); startBattle(); });
-$('btnMenu').addEventListener('click', () => quitToMenu());
+$('btnQuit').addEventListener('click', () => { game.setPaused(false); game.surrender(); if (game.online) { setTimeout(() => { game.stop(); online.backToRoom(); if (!demo) newDemo(); music.setScene('menu'); sfx.setAmbience('menu'); }, 2600); } });
+$('btnAgain').addEventListener('click', () => { if (game.online) { game.stop(); online.backToRoom(); if (!demo) newDemo(); } else { game.stop(); startBattle(); } });
+$('btnMenu').addEventListener('click', () => { if (game.online) { game.stop(); online.backToRoom(); if (!demo) newDemo(); music.setScene('menu'); sfx.setAmbience('menu'); } else quitToMenu(); });
+
+// Invite links: #/join/CODE opens the online hub and joins the room straight away.
+function handleRoute(): void {
+  const m = /^#\/join\/([A-Za-z0-9]{4,8})/.exec(location.hash);
+  if (m) { sfx.init(); void online.openHub(m[1].toUpperCase()); history.replaceState(null, '', `${location.pathname}${location.search}`); }
+}
+window.addEventListener('hashchange', () => { if (/^#\/join\//.test(location.hash) && !online.active) handleRoute(); });
 
 let audioReady = false;
 const wakeAudio = () => { sfx.init(); if (!audioReady && sfx.ctx) { audioReady = true; applyAudioSettings(); if (!game.active) { music.setScene('menu'); sfx.startAmbience('menu'); } } };
@@ -91,6 +118,7 @@ window.addEventListener('keydown', wakeAudio);
 menus.show('menu');
 newDemo();
 showLoading(false);
+handleRoute();
 
 // Favicon: a small painted crown.
 (() => {
@@ -104,9 +132,11 @@ showLoading(false);
 
 // Debug/test hook for scripted play-tests.
 (window as unknown as { __kr: unknown }).__kr = {
-  view, game, settings, sfx, music, menus,
+  view, game, settings, sfx, music, menus, online,
   world: () => game.world,
   hero: () => game.hero(),
+  hash: () => (game.world ? hashWorld(game.world) : 0),
+  net: () => online.stats,
   start: startBattle,
   toScreen(x: number, z: number, y = 0.05): { x: number; y: number } {
     const r = canvas.getBoundingClientRect();

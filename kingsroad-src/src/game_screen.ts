@@ -4,7 +4,7 @@ import { Input } from './engine/input.ts';
 import { norm, type Vec } from './engine/math.ts';
 import type { Difficulty } from './game/bot.ts';
 import { idleCommand, type HeroCommand } from './game/hero.ts';
-import { Simulation, seatKey, type MatchMode, type SeatCommands, type SeatSetup } from './game/sim.ts';
+import { Simulation, seatKey, type MatchMode, type SeatSetup } from './game/sim.ts';
 import { other, type GameEvent, type Seat, type Team, type Unit } from './game/types.ts';
 import type { World } from './game/world.ts';
 import { cardName, t, tSim } from './i18n.ts';
@@ -16,7 +16,7 @@ export interface OnlineConfig {
   me: Team;
   seat: number;
   /** Called with this frame's command; returns the commands to step with, or null to wait. */
-  advance: (dt: number, cmd: HeroCommand) => SeatCommands | null;
+  advance: (dt: number, cmd: HeroCommand) => void;
   onLeave?: () => void;
   concede?: () => void;
   status?: () => { text: string; kind: 'ok' | 'warn' | 'bad' } | null;
@@ -225,8 +225,7 @@ export class GameScreen {
       const cmd = this.menuOpen || this.shopOpen ? this.quietCommand(hero) : this.handleInput(w, hero, cursor);
       if (this.pendingBuy) { cmd.buy = this.pendingBuy; this.pendingBuy = null; }
       if (this.cfg?.online) {
-        const cmds = this.cfg.online.advance(dt, cmd);
-        if (cmds) sim.advance(dt, cmds);
+        this.cfg.online.advance(dt, cmd); // the lockstep driver steps the simulation itself
         const st = this.cfg.online.status?.(); if (st) this.hud.setNetPill(st.text, st.kind);
       } else {
         const map = new Map<string, HeroCommand>([[seatKey(this.me, this.mySeat), cmd]]);
@@ -342,6 +341,7 @@ export class GameScreen {
         case 'streak': if (ev.team === me) { this.hud.streak(ev.text ?? '', '#ff9f5a'); rig.addShake(ev.big ? 0.4 : 0.2); } else this.hud.feed(`${escapeHtml(tSim(ev.killer ?? ''))}: ${tSim(ev.text ?? '')}`, '#ff6b6b'); break;
         case 'objective': if (ev.big) { this.hud.banner(ev.text ?? '', '', ev.team === me ? '' : '#ff6b6b'); music.stinger('kingAwake'); this.hud.feed(t('feed.objective', { team: teamName(ev.team), obj: tSim(ev.text ?? '') }), ev.team === me ? '#ffd166' : '#ff6b6b'); } else this.hud.toast(ev.text ?? '', 'info'); break;
         case 'buff': if (ev.team === me) this.hud.toast(ev.text ?? '', 'good'); break;
+        case 'crown': if (ev.hero && ev.team === me) { this.hud.toast('@toast.crowned', 'good'); rig.kickFov(6); } break;
         case 'invalid': if (ev.team === me && ev.text) this.hud.toast(tSim(ev.text)); break;
         case 'spell': if (ev.text === 'meteor') rig.addShake(0.5); break;
         case 'ability': if (ev.team === me && myHero && ev.pos && ev.pos.x === myHero.pos.x) rig.addShake(0.15); break;

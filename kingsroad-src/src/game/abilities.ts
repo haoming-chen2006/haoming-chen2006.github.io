@@ -63,10 +63,13 @@ export function useSkill(w: World, u: Unit, i: number, aim: Vec): boolean {
   const dir = dirRaw.x === 0 && dirRaw.y === 0 ? fromAngle(u.facing) : norm(dirRaw);
   const color = a.color ?? '#ffffff';
   const type = a.type ?? 'physical';
-  const common = { source: u, type, hero: u.isHero };
+  const crowned = u.crowned;
+  const common = { source: u, type, hero: u.isHero, skill: true, crowned };
+  const radiusBonus = crowned ? 1 : 0;
   switch (a.kind) {
     case 'dashStrike':
-      startDash(w, u, dir, a.range ?? 3, dmg, { stun: a.stun, knockback: a.knockback, buildingMult: a.buildingMult, kind: 'ability', execute: a.execute, type, slow: a.slow, slowT: a.slowT });
+      startDash(w, u, dir, a.range ?? 3, dmg * (crowned ? 1.5 : 1), { stun: (a.stun ?? 0) + (crowned ? 0.5 : 0), knockback: a.knockback, buildingMult: a.buildingMult, kind: 'ability', execute: a.execute, type, slow: a.slow, slowT: a.slowT });
+      (u as never as { dashSkill: boolean }).dashSkill = true;
       break;
     case 'aoeSelf':
       if (a.heal) {
@@ -74,8 +77,8 @@ export function useSkill(w: World, u: Unit, i: number, aim: Vec): boolean {
         w.zones.push({ kind: 'sanctuary', pos: { ...u.pos }, radius: a.radius ?? 3, t: a.duration ?? 4, team: u.team, speed: 1, attack: 1, heal: skillHeal(w, u, a, rank), slow: a.slow, sourceId: u.id, tick: a.tick ?? 0.5 });
         w.addEffect({ type: 'ring', pos: { ...u.pos }, dur: 0.8, radius: a.radius ?? 3, color });
       } else {
-        areaDamage(w, u.team, u.pos, a.radius ?? 2, dmg, { ...common, stun: a.stun, knockback: a.knockback, from: u.pos, slow: a.slow, slowT: a.slowT });
-        w.addEffect({ type: 'shockwave', pos: { ...u.pos }, dur: 0.5, radius: a.radius ?? 2, color });
+        areaDamage(w, u.team, u.pos, (a.radius ?? 2) + radiusBonus, dmg, { ...common, stun: a.stun, knockback: a.knockback, from: u.pos, slow: a.slow, slowT: a.slowT });
+        w.addEffect({ type: 'shockwave', pos: { ...u.pos }, dur: 0.5, radius: (a.radius ?? 2) + radiusBonus, color });
         if (a.stun && a.stun >= 1.2 && !a.slow) w.addEffect({ type: 'crater', pos: { ...u.pos }, dur: 4, radius: 0.9, color: '#5a4a3a' });
         if (a.slow) w.addEffect({ type: 'frost', pos: { ...u.pos }, dur: 0.8, radius: a.radius ?? 2, color });
       }
@@ -84,30 +87,31 @@ export function useSkill(w: World, u: Unit, i: number, aim: Vec): boolean {
       const at = clampAim(u.pos, aim, a.range ?? 5);
       if (a.duration && a.tick) {
         // sustained zone: blizzard / arrow storm
-        w.zones.push({ kind: 'blizzard', pos: at, radius: a.radius ?? 2, t: a.duration, team: u.team, speed: 1, attack: 1, dps: dmg / a.tick, slow: a.slow, sourceId: u.id, tick: a.tick });
+        w.zones.push({ kind: 'blizzard', pos: at, radius: (a.radius ?? 2) + radiusBonus, t: a.duration * (crowned ? 1.5 : 1), team: u.team, speed: 1, attack: 1, dps: dmg / a.tick * (crowned ? 1.5 : 1), slow: a.slow, sourceId: u.id, tick: a.tick });
         w.addEffect({ type: 'ring', pos: { ...at }, dur: 0.6, radius: a.radius ?? 2, color });
       } else if (a.burn && (a.damage ?? 0) >= 500) {
         // meteor: short delay then a big impact
-        w.effects.push({ type: 'meteor', pos: { ...at }, t: 0, dur: 0.9, radius: a.radius ?? 2, color, team: u.team, text: String(u.id), size: dmg, angle: a.stun ?? 0 });
+        w.effects.push({ type: 'meteor', pos: { ...at }, t: 0, dur: 0.9, radius: (a.radius ?? 2) + radiusBonus, color, team: u.team, text: String(u.id), size: dmg * (crowned ? 1.5 : 1), angle: (a.stun ?? 0) + (crowned ? 0.6 : 0) });
       } else if (a.burn) {
-        fireProjectile(w, { team: u.team, from: u.pos, style: 'fireball', speed: 13, damage: dmg, type, sourceId: u.id, mode: 'lob', lobTo: at, splash: a.radius ?? 2, splashAir: true, hero: true, burn: a.burn, radius: 0.35 });
+        fireProjectile(w, { team: u.team, from: u.pos, style: 'fireball', speed: 13, damage: dmg, type, sourceId: u.id, mode: 'lob', lobTo: at, splash: (a.radius ?? 2) + radiusBonus, splashAir: true, hero: true, burn: a.burn, radius: 0.35, skill: true, crowned });
+        if (crowned) w.zones.push({ kind: 'blizzard', pos: at, radius: 2, t: 3, team: u.team, speed: 1, attack: 1, dps: dmg * 0.15, sourceId: u.id, tick: 0.5 }); // lava pool
       } else {
-        areaDamage(w, u.team, at, a.radius ?? 2, dmg, { ...common, knockback: a.knockback, stun: a.stun, slow: a.slow, slowT: a.slowT });
+        areaDamage(w, u.team, at, (a.radius ?? 2) + radiusBonus, dmg, { ...common, knockback: a.knockback, stun: a.stun, slow: a.slow, slowT: a.slowT });
         w.addEffect({ type: a.stun ? 'lightning' : 'volley', pos: at, to: a.stun ? { x: at.x, y: at.y - 6 } : undefined, dur: 0.5, radius: a.radius ?? 2, color });
         w.addEffect({ type: 'shockwave', pos: { ...at }, dur: 0.5, radius: a.radius ?? 2, color });
       }
       break;
     }
     case 'lineShot':
-      fireProjectile(w, { team: u.team, from: u.pos, style: u.def.projectile ?? 'bolt', speed: 22, damage: dmg, type, sourceId: u.id, mode: 'linear', dir, maxDist: a.range ?? 8, pierce: true, hero: true, radius: 0.3, stun: a.stun, slow: a.slow, slowT: a.slowT });
+      fireProjectile(w, { team: u.team, from: u.pos, style: u.def.projectile ?? 'bolt', speed: 22, damage: dmg, type, sourceId: u.id, mode: 'linear', dir, maxDist: (a.range ?? 8) + radiusBonus * 3, pierce: true, hero: true, radius: 0.3 + radiusBonus * 0.3, stun: a.stun, slow: a.slow, slowT: a.slowT, skill: true, crowned });
       w.addEffect({ type: 'beam', pos: { ...u.pos }, to: add(u.pos, scale(dir, a.range ?? 8)), dur: 0.25, radius: 0.12, color });
       break;
     case 'spreadShot': {
-      const n = a.count ?? 3, spread = a.spread ?? 0.6;
+      const n = (a.count ?? 3) + (crowned ? 2 : 0), spread = a.spread ?? 0.6;
       const base = angleOf(dir);
       for (let k = 0; k < n; k++) {
         const ang = base + (n === 1 ? 0 : (k / (n - 1) - 0.5) * spread);
-        fireProjectile(w, { team: u.team, from: u.pos, style: u.def.projectile ?? 'spear', speed: 13, damage: dmg, type, sourceId: u.id, mode: 'linear', dir: fromAngle(ang), maxDist: a.range ?? 6, hero: true, radius: 0.2 });
+        fireProjectile(w, { team: u.team, from: u.pos, style: u.def.projectile ?? 'spear', speed: 13, damage: dmg, type, sourceId: u.id, mode: 'linear', dir: fromAngle(ang), maxDist: a.range ?? 6, hero: true, radius: 0.2, skill: true, crowned });
       }
       break;
     }
@@ -160,7 +164,7 @@ export function useSkill(w: World, u: Unit, i: number, aim: Vec): boolean {
     case 'chain': {
       let last: Entity = u;
       const hit = new Set<number>();
-      for (let k = 0; k < (a.count ?? 4); k++) {
+      for (let k = 0; k < (a.count ?? 4) + (crowned ? 2 : 0); k++) {
         let best: Entity | null = null, bd = Infinity;
         for (const e of w.enemiesOf(u.team)) {
           if (hit.has(e.id) || e.kind !== 'unit') continue;
@@ -179,7 +183,9 @@ export function useSkill(w: World, u: Unit, i: number, aim: Vec): boolean {
     }
   }
   u.mana -= a.mana;
-  u.skillCd[i] = a.cooldown * (1 - w.stats(u).cooldown);
+  if (crowned) { u.crowned = false; u.crown = 0; w.addEffect({ type: 'crown', pos: { ...u.pos }, dur: 0.8, radius: 1.2, color: '#ffd700', team: u.team }); }
+  (u as never as { activeCrowned: boolean }).activeCrowned = crowned;
+  u.skillCd[i] = a.cooldown * (1 - w.stats(u).cooldown) * (crowned ? 0.6 : 1);
   u.abilityCd = u.skillCd[0];
   u.attackAnim = 1;
   u.lastAttackT = w.time;
@@ -209,7 +215,7 @@ export function updateAbilityMotion(w: World, u: Unit, dt: number): boolean {
         if (u.dashHits.has(e.id) || e.kind !== 'unit') continue;
         if (dist(e.pos, u.pos) <= e.radius + u.radius + 0.15) {
           u.dashHits.add(e.id);
-          damage(w, e, u.dashDamage, { source: u, hero: u.isHero, type: u.dashType, stun: u.dashStun, knockback: u.dashKnockback, from: u.pos, buildingMult: u.dashBuildingMult, execute: u.dashExecute, slow: ds.dashSlow, slowT: ds.dashSlowT });
+          damage(w, e, u.dashDamage, { source: u, hero: u.isHero, type: u.dashType, stun: u.dashStun, knockback: u.dashKnockback, from: u.pos, buildingMult: u.dashBuildingMult, execute: u.dashExecute, slow: ds.dashSlow, slowT: ds.dashSlowT, skill: true });
         }
       }
     }
@@ -234,12 +240,12 @@ export function updateAbilityMotion(w: World, u: Unit, dt: number): boolean {
           if (d > range) continue;
           const ang = angleOf(sub(e.pos, u.pos));
           const tol = datan2(e.radius, Math.max(0.3, d));
-          if (Math.abs(angleDiff(base, ang)) <= half + tol) damage(w, e, dmg, { source: u, hero: u.isHero, type: a.type, burn: a.burn, knockback: a.knockback, from: u.pos });
+          if (Math.abs(angleDiff(base, ang)) <= half + tol) damage(w, e, dmg, { source: u, hero: u.isHero, type: a.type, burn: a.burn, knockback: a.knockback, from: u.pos, skill: true, crowned: (u as never as { activeCrowned?: boolean }).activeCrowned });
         }
         w.addEffect({ type: 'cone', pos: { ...u.pos }, dur: 0.3, radius: range, color: a.color ?? '#ffb347', angle: base, arc: half * 2 });
         u.facing = base;
       } else if (a.kind === 'spin') {
-        for (const e of w.within(u.pos, a.radius ?? 1.5, (x) => x.team !== u.team && x.kind === 'unit' && canTarget('both', x))) damage(w, e, dmg, { source: u, hero: u.isHero, type: a.type });
+        for (const e of w.within(u.pos, a.radius ?? 1.5, (x) => x.team !== u.team && x.kind === 'unit' && canTarget('both', x))) damage(w, e, dmg, { source: u, hero: u.isHero, type: a.type, skill: true, crowned: (u as never as { activeCrowned?: boolean }).activeCrowned });
         w.addEffect({ type: 'slash', pos: { ...u.pos }, dur: 0.3, radius: (a.radius ?? 1.5) + 0.2, color: a.color ?? '#fff', angle: w.time * 12, arc: Math.PI * 2 });
       }
     }
@@ -256,7 +262,7 @@ function finishDash(w: World, u: Unit): void {
     const a = u.def.skills[ext.leapSkill];
     u.flying = u.def.flying;
     u.pos = resolveGround(u.pos, u.radius);
-    areaDamage(w, u.team, u.pos, a.radius ?? 1.5, ext.leapDamage ?? 0, { source: u, hero: u.isHero, type: a.type, knockback: a.knockback ?? 0.6, from: u.pos, stun: a.stun });
+    areaDamage(w, u.team, u.pos, a.radius ?? 1.5, ext.leapDamage ?? 0, { source: u, hero: u.isHero, type: a.type, knockback: a.knockback ?? 0.6, from: u.pos, stun: a.stun, skill: true, crowned: (u as never as { activeCrowned?: boolean }).activeCrowned });
     w.addEffect({ type: 'shockwave', pos: { ...u.pos }, dur: 0.45, radius: a.radius ?? 1.5, color: a.color ?? '#fff' });
     w.emit({ type: 'hit', pos: u.pos, style: 'rock' });
     ext.leapSkill = undefined;
@@ -280,7 +286,7 @@ export function updateZones(w: World, dt: number): void {
       for (const e of w.within(z.pos, z.radius, (x) => x.team !== z.team && x.kind === 'unit')) { e.status.slow = Math.max(e.status.slow, z.slow ?? 0.3); e.status.slowT = Math.max(e.status.slowT, 0.6); }
       w.addEffect({ type: 'heal', pos: { ...z.pos }, dur: 0.5, radius: z.radius, color: '#fff8dc' });
     } else if (z.kind === 'blizzard') {
-      for (const e of w.within(z.pos, z.radius, (x) => x.team !== z.team && x.kind === 'unit')) damage(w, e, (z.dps ?? 0) * (z.tick ?? 0.5), { source: src, hero: true, type: 'magic', slow: z.slow, slowT: 1 });
+      for (const e of w.within(z.pos, z.radius, (x) => x.team !== z.team && x.kind === 'unit')) damage(w, e, (z.dps ?? 0) * (z.tick ?? 0.5), { source: src, hero: true, type: 'magic', slow: z.slow, slowT: 1, skill: true });
       w.addEffect({ type: 'frost', pos: { x: z.pos.x + (w.rng.next() - 0.5) * z.radius, y: z.pos.y + (w.rng.next() - 0.5) * z.radius }, dur: 0.5, radius: z.radius * 0.6, color: '#bfe8ff' });
     }
   }
@@ -289,7 +295,7 @@ export function updateZones(w: World, dt: number): void {
     if (e.type !== 'meteor' || e.t + dt < e.dur || (e as never as { done?: boolean }).done) continue;
     (e as never as { done?: boolean }).done = true;
     const src = w.get(Number(e.text));
-    areaDamage(w, e.team ?? 0, e.pos, e.radius, e.size ?? 0, { source: src, hero: true, type: 'magic', burn: 60, stun: e.angle, from: e.pos, knockback: 0.8 });
+    areaDamage(w, e.team ?? 0, e.pos, e.radius, e.size ?? 0, { source: src, hero: true, type: 'magic', burn: 60, stun: e.angle, from: e.pos, knockback: 0.8, skill: true });
     w.addEffect({ type: 'burst', pos: { ...e.pos }, dur: 0.7, radius: e.radius, color: e.color });
     w.addEffect({ type: 'crater', pos: { ...e.pos }, dur: 8, radius: e.radius * 0.5, color: '#4a3a2a' });
     w.emit({ type: 'spell', pos: e.pos, team: e.team, text: 'meteor' });

@@ -76,6 +76,7 @@ export class Hud {
       const need = World.xpToNext(seat.level);
       ($('xpFill')).style.width = `${need === Infinity ? 100 : (100 * seat.xp) / need}%`;
       $('gold').textContent = String(Math.floor(seat.gold));
+      ($('crownFill')).style.width = `${h.crown}%`; $('crownBar').classList.toggle('full', h.crowned);
       // skills
       for (let i = 0; i < 3; i++) {
         const el = this.skillEls[i], a = h.def.skills[i], cd = h.skillCd[i], rank = h.skillRank[i];
@@ -84,6 +85,7 @@ export class Hud {
         el.classList.toggle('nomana', rank > 0 && h.mana < a.mana);
         el.classList.toggle('ready', rank > 0 && cd <= 0 && h.mana >= a.mana);
         el.classList.toggle('active', h.activeSkill === i && h.abilityT > 0);
+        el.classList.toggle('crowned', h.crowned && rank > 0);
         const cdEl = el.querySelector('.sk-cd') as HTMLElement;
         cdEl.style.setProperty('--p', String(cd > 0 ? Math.min(1, cd / Math.max(0.1, maxCd)) : 0));
         cdEl.textContent = cd > 0.05 ? (cd >= 10 ? String(Math.ceil(cd)) : cd.toFixed(1)) : '';

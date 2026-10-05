@@ -28,6 +28,7 @@ export function updateTowers(w: World, dt: number): void {
     const t: Tower = e;
     tickStatus(w, t, dt);
     if (t.aggroT > 0) t.aggroT -= dt;
+    if (t.crownT > 0) t.crownT -= dt;
     // towers regenerate slowly when nothing is around
     if (t.hp < t.maxHp && t.targetId < 0) t.hp = Math.min(t.maxHp, t.hp + t.maxHp * 0.004 * dt);
     if (!t.active) continue;
@@ -37,7 +38,7 @@ export function updateTowers(w: World, dt: number): void {
     if (!target) { t.heat = 0; continue; }
     t.facing = angleOf(sub(target.pos, t.pos));
     if (t.attackCd <= 0) {
-      t.attackCd = t.hitSpeed / attackSpeedMult(t);
+      t.attackCd = t.hitSpeed / attackSpeedMult(t) / (t.crownT > 0 ? 1.4 : 1);
       t.attackAnim = 1;
       const heroShot = target.kind === 'unit' && target.isHero;
       const ramp = heroShot ? 1 + Math.min(1.5, t.heat * 0.35) : 1;

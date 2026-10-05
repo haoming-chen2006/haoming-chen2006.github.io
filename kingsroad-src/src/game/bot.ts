@@ -65,11 +65,15 @@ export class BotHero {
     const retreatHp = this.spec.retreatHp + (enemies.length ? 0.1 : 0);
 
     if (inFountain(u.pos, team) && hpFrac < 0.97) { b.mode = 'fountain'; return; }
-    if (hpFrac < retreatHp || (enemies.length >= 2 && threat > strength * 1.4 && !underEnemyTower && hpFrac < 0.7)) {
-      b.mode = enemies.length === 0 && hpFrac < 0.55 ? 'recall' : 'retreat';
+    // hysteresis: once retreating, keep going until healthy again or safely home
+    if ((b.mode === 'retreat' || b.mode === 'recall') && hpFrac < retreatHp + 0.25 && !(enemies.length === 1 && enemies[0].hp / enemies[0].maxHp < 0.25 && hpFrac > 0.3)) {
+      if (b.mode === 'retreat' && enemies.length === 0 && hpFrac < 0.5 && w.time - u.lastAttackT > 3 && u.damageTaken < 50) b.mode = 'recall';
       return;
     }
-    if (b.mode === 'recall' && u.recallT > 0) return; // keep channelling
+    if (hpFrac < retreatHp || (enemies.length >= 2 && threat > strength * 1.4 && !underEnemyTower && hpFrac < 0.7)) {
+      b.mode = 'retreat';
+      return;
+    }
     // fight when an enemy hero is close and we are not clearly losing
     const target = this.pickFightTarget(w, u, enemies);
     if (target && (threat <= strength * (1.2 * this.spec.aggression) || hpFrac > 0.8)) {

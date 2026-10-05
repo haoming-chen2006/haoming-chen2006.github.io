@@ -21,6 +21,9 @@ export interface DamageOpts {
   crit?: boolean;
   execute?: number;
   noVamp?: boolean;
+  /** Damage came from a skill (charges the crown). */
+  skill?: boolean;
+  crowned?: boolean;
 }
 
 const isHeroUnit = (e?: Entity): e is Unit => !!e && e.kind === 'unit' && e.isHero;
@@ -39,6 +42,7 @@ export function damage(w: World, target: Entity, amount: number, opts: DamageOpt
   if (target.kind !== 'unit' && opts.buildingMult) amt *= opts.buildingMult;
   if (target.kind === 'tower' && opts.towerMult !== undefined) amt *= opts.towerMult;
   if (opts.execute && target.kind === 'unit') amt += (target.maxHp - target.hp) * opts.execute;
+  if (opts.crowned) amt *= 1.5;
   if (target.shield > 0) {
     const absorbed = Math.min(target.shield, amt);
     target.shield -= absorbed;
@@ -65,7 +69,15 @@ export function damage(w: World, target: Entity, amount: number, opts: DamageOpt
     const stats = w.players[src.team as Team].stats;
     const seat = w.seatOf(src);
     if (target.kind === 'tower') { stats.towerDamage += amt; if (seat) seat.stats.towerDamage += amt; w.emit({ type: 'towerHit', pos: target.pos, team: target.team }); }
-    if (isHeroUnit(target)) { stats.heroDamage += amt; if (seat) seat.stats.heroDamage += amt; if (src.isHero) towerAggro(w, src, target); }
+    if (isHeroUnit(target)) {
+      stats.heroDamage += amt; if (seat) seat.stats.heroDamage += amt; if (src.isHero) towerAggro(w, src, target);
+      // resonance: skill hits on enemy heroes charge the crown
+      if (src.isHero && opts.skill && !opts.crowned && amt > 0) {
+        src.crown = Math.min(100, src.crown + 25);
+        if (src.crown >= 100 && !src.crowned) { src.crowned = true; w.addEffect({ type: 'crown', pos: { ...src.pos }, dur: 1.0, radius: 1, color: '#ffd700', team: src.team }); w.emit({ type: 'crown', team: src.team, pos: src.pos, hero: src.possessed }); }
+      }
+      if (opts.crowned) { target.status.stun = Math.max(target.status.stun, 0.5); }
+    }
     if (src.isHero && !opts.noVamp && target.kind === 'unit') {
       const d = w.stats(src);
       const vamp = type === 'physical' ? d.lifesteal : type === 'magic' ? d.spellvamp : 0;
@@ -234,10 +246,15 @@ function heroKilled(w: World, target: Unit, killer: Unit | undefined, killerSeat
   if (target.possessed) { vp.heroId = -1; vp.possessCd = 0; w.emit({ type: 'heroDeath', pos: target.pos, team: target.team }); }
   target.possessed = false;
   // rewards
+  if (killer === undefined && w.get(0) === undefined) { /* no-op */ }
   if (killerTeam !== NEUTRAL) {
     const team = killerTeam as Team;
     const kp = w.players[team];
     kp.kills += 1; kp.stats.heroKills += 1;
+    // phoenix feather: the fallen hero explodes
+    if (seat && seat.items.includes('phoenix_feather')) { areaDamage(w, victimTeam, target.pos, 3, 400 + target.level * 40, { source: target, hero: true, type: 'magic', from: target.pos, knockback: 0.8 }); w.addEffect({ type: 'burst', pos: { ...target.pos }, dur: 0.7, radius: 3, color: '#ffb15e' }); }
+    // bloodthirst blade: the killer's nearby allies are healed
+    if (killer?.isHero && killer.items.includes('bloodthirst')) for (const a of w.heroes(team)) if (dist(a.pos, killer.pos) < 6) heal(w, a, a.maxHp * 0.15);
     const bounty = HERO_KILL_GOLD + Math.min(300, (seat?.streak ?? 0) * 60) + Math.min(200, target.level * 10);
     const assisters: Seat[] = [];
     for (const r of target.lastHurtBy) {
@@ -258,8 +275,10 @@ function heroKilled(w: World, target: Unit, killer: Unit | undefined, killerSeat
       if (multi) w.emit({ type: 'streak', team, pos: target.pos, text: multi, big: true, killer: killerSeat.name });
       else if (killerSeat.streak >= 3) w.emit({ type: 'streak', team, pos: target.pos, text: killerSeat.streak >= 7 ? '@streak.legendary' : killerSeat.streak >= 5 ? '@streak.unstoppable' : '@streak.killingSpree', big: killerSeat.streak >= 5, killer: killerSeat.name });
     } else {
-      // killed by a tower or minion: gold goes to nearby allies
+      // killed by a tower or minion: gold goes to nearby allies; a tower that kills a hero is crowned
       for (const s of assisters) giveGold(w, s, bounty * 0.5);
+      const tower = target.lastHurtBy.length ? undefined : undefined; void tower;
+      for (const t of w.towers(team)) if (dist(t.pos, target.pos) - target.radius <= t.range + 0.5 && t.active) { t.crownT = 30; w.addEffect({ type: 'crown', pos: { ...t.pos }, dur: 1.2, radius: 1.4, color: '#ffd700', team }); }
     }
     for (const s of assisters) { s.assists += 1; s.stats.assists += 1; giveGold(w, s, ASSIST_GOLD); giveXp(w, s, HERO_KILL_XP * 0.5); }
     w.emit({ type: 'kill', team, pos: target.pos, killer: killerSeat?.name ?? (killer?.def.name ?? '@unit.tower'), victim: seat?.name ?? target.def.name, killerTeam: team, hero: true });
@@ -329,6 +348,8 @@ export interface FireOpts {
   chain?: { count: number; range: number; stun: number };
   lobTo?: Vec;
   radius?: number;
+  skill?: boolean;
+  crowned?: boolean;
 }
 
 export function fireProjectile(w: World, o: FireOpts): Projectile {
@@ -340,7 +361,7 @@ export function fireProjectile(w: World, o: FireOpts): Projectile {
     splash: o.splash ?? 0, splashAir: o.splashAir ?? true, hitsAir: o.hitsAir ?? true, hitsGround: o.hitsGround ?? true,
     pierce: o.pierce ?? false, hitIds: new Set(), sourceId: o.sourceId, stun: o.stun ?? 0, slow: o.slow ?? 0, slowT: o.slowT ?? 0, knockback: o.knockback ?? 0,
     buildingMult: o.buildingMult ?? 1, burn: o.burn ?? 0, chain: o.chain, lobFrom: { ...o.from }, lobTo: { ...lobTo }, lobT: 0,
-    lobDur: Math.max(0.35, lobDist / o.speed), height: 0, dead: false, hero: o.hero ?? false, radius: o.radius ?? 0.18,
+    lobDur: Math.max(0.35, lobDist / o.speed), height: 0, dead: false, hero: o.hero ?? false, radius: o.radius ?? 0.18, skill: o.skill ?? false, crowned: o.crowned ?? false,
   };
   w.projectiles.push(p);
   return p;
@@ -355,7 +376,7 @@ const projectileCanHit = (p: Projectile, e: Entity): boolean => {
 
 function impact(w: World, p: Projectile, primary: Entity | null, at: Vec): void {
   const src = w.get(p.sourceId);
-  const opts: DamageOpts = { source: src, hero: p.hero, type: p.type, stun: p.stun, slow: p.slow, slowT: p.slowT, knockback: p.knockback, from: at, buildingMult: p.buildingMult, burn: p.burn };
+  const opts: DamageOpts = { source: src, hero: p.hero, type: p.type, stun: p.stun, slow: p.slow, slowT: p.slowT, knockback: p.knockback, from: at, buildingMult: p.buildingMult, burn: p.burn, skill: p.skill, crowned: p.crowned };
   if (p.splash > 0) {
     for (const e of w.within(at, p.splash, (x) => projectileCanHit(p, x) && (p.splashAir || !x.flying || x === primary))) damage(w, e, p.damage, opts);
     w.addEffect({ type: 'burst', pos: { ...at }, dur: 0.35, radius: p.splash, color: styleColor(p.style) });

@@ -228,6 +228,9 @@ export interface Unit extends EntityBase {
   autoBuy: boolean;
   skillPoints: number;
   lastAttackT: number;
+  /** Resonance: skill hits on enemy heroes charge the crown (0..100); at 100 the next skill is crowned. */
+  crown: number;
+  crowned: boolean;
 }
 
 export interface Tower extends EntityBase {
@@ -241,6 +244,7 @@ export interface Tower extends EntityBase {
   hitSpeed: number;
   range: number;
   heat: number; // consecutive shots on the same target ramp damage
+  crownT: number; // seconds of 'crowned' fire rate after a hero kill
   aggroId: number; // hero that attacked an allied hero under the tower
   aggroT: number;
 }
@@ -291,6 +295,8 @@ export interface Projectile {
   dead: boolean;
   hero: boolean;
   radius: number;
+  skill: boolean;
+  crowned: boolean;
 }
 
 export type EffectType =
@@ -391,7 +397,7 @@ export interface PlayerState {
 export type GameEventType =
   | 'deploy' | 'hit' | 'ranged' | 'death' | 'towerDestroyed' | 'towerHit' | 'spell' | 'possess' | 'release' | 'heroDeath'
   | 'ability' | 'dash' | 'end' | 'invalid' | 'lowHp' | 'crit' | 'summon' | 'streak' | 'countdown' | 'wave' | 'levelup'
-  | 'recall' | 'respawn' | 'buy' | 'objective' | 'buff' | 'firstBlood' | 'ace' | 'kill' | 'towerWarning' | 'flash' | 'heal';
+  | 'recall' | 'respawn' | 'buy' | 'objective' | 'buff' | 'firstBlood' | 'ace' | 'kill' | 'towerWarning' | 'flash' | 'heal' | 'crown';
 
 export interface GameEvent {
   type: GameEventType;

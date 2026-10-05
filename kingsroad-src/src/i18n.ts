@@ -17,6 +17,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     'common.back': 'Back', 'common.done': 'Done', 'common.you': 'You', 'common.bot': 'Bot', 'common.human': 'Player',
     'loading.forging': 'Raising the towers…', 'loading.raising': 'Raising the towers…',
     'menu.tagline': 'Three lanes. Ten heroes. One crystal. Seen through your own eyes.',
+    'online.soonGone': '',
     'menu.play': 'Play', 'menu.online': 'Online Lobby', 'menu.onlineSub': 'friends and bots, up to 5v5', 'menu.heroes': 'Heroes', 'menu.howToPlay': 'How to Play', 'menu.settings': 'Settings',
     'menu.record': '{w}W · {l}L',
     'mode.5v5': 'Full Kingsroad: three lanes, jungle, Tyrant and Overlord. Five heroes a side.',
@@ -30,7 +31,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     'team.blue': 'Blue', 'team.red': 'Red',
     'help.title': 'How to play',
     'help.body': `<div><h3>Goal</h3><p>Push down the three lanes with your minion waves, destroy the towers in order, and break the enemy <b>crystal</b>. Lose yours and it's over.</p>
-      <h3>Controls</h3><ul><li><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> move, mouse looks</li><li><b>Left click</b> basic attack toward the crosshair</li><li><kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> (or <kbd>Q</kbd> <kbd>W</kbd> <kbd>E</kbd>) skills, aimed at the crosshair</li><li><kbd>Space</kbd> dash · <kbd>F</kbd> flash · <kbd>B</kbd> recall · <kbd>I</kbd> shop · <kbd>Tab</kbd> scoreboard · <kbd>M</kbd> big map · <kbd>V</kbd> view</li></ul></div>
+      <h3>Controls</h3><ul><li><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> move, mouse looks</li><li><b>Left click</b> basic attack toward the crosshair</li><li><kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> (or <kbd>Q</kbd> <kbd>E</kbd> <kbd>R</kbd>) skills, aimed at the crosshair</li><li><kbd>Space</kbd> dash · <kbd>F</kbd> flash · <kbd>B</kbd> recall · <kbd>I</kbd> shop · <kbd>Tab</kbd> scoreboard · <kbd>M</kbd> big map · <kbd>V</kbd> view</li></ul></div>
       <div><h3>Growing</h3><p>Last-hit minions for gold, share XP with nearby allies, buy items anywhere (auto-buy follows the recommended build). Skills rank up automatically; the ultimate unlocks at level 4.</p>
       <h3>Jungle</h3><p>Blue buff: mana and cooldowns. Red buff: burn and slow on hit. The <b>Tyrant</b> (bottom-right pit, 2:00) empowers the whole team; the <b>Overlord</b> (top-left, 8:00) supercharges your next waves.</p>
       <h3>Bushes and towers</h3><p>Bushes hide you until an enemy walks in. Towers shoot minions first, but turn on any hero that attacks a hero under them.</p></div>`,
@@ -50,13 +51,18 @@ export const translations: Record<Lang, Record<string, string>> = {
     'tier.outer': 'outer', 'tier.inner': 'inner', 'tier.base': 'base', 'tier.crystal': 'crystal',
     'objective.tyrant': 'Tyrant slain!', 'objective.overlord': 'Overlord slain!', 'objective.tyrantSpawned': 'The Tyrant has risen', 'objective.overlordSpawned': 'The Overlord has risen',
     'buff.blue': 'Blue buff', 'buff.red': 'Red buff', 'buff.tyrant': 'Tyrant', 'buff.overlord': 'Overlord',
-    'countdown.fight': 'Fight!', 'toast.recallInterrupted': 'Recall interrupted', 'toast.skillLocked': 'Skill not learned yet', 'toast.noMana': 'Not enough mana', 'toast.immortal': 'Immortal Shield!', 'toast.levelup': 'Level {l}!',
+    'countdown.fight': 'Fight!', 'toast.recallInterrupted': 'Recall interrupted', 'toast.skillLocked': 'Skill not learned yet', 'toast.noMana': 'Not enough mana', 'toast.immortal': 'Immortal Shield!', 'toast.crowned': 'Crowned! Your next skill is empowered', 'toast.levelup': 'Level {l}!',
     'unit.tower': 'Tower', 'unit.minions': 'Minions',
     'bot.easy': 'Rookie', 'bot.normal': 'Veteran', 'bot.hard': 'Champion',
     'fx.noTargets': 'no targets',
     'settings.title': 'Settings', 'settings.sfx': 'Sound volume', 'settings.music': 'Music volume', 'settings.sensitivity': 'Mouse sensitivity', 'settings.fov': 'Field of view',
     'settings.invert': 'Invert mouse Y', 'settings.firstPerson': 'Start in first person', 'settings.quality': 'Graphics', 'settings.high': 'High', 'settings.low': 'Low', 'settings.language': 'Language', 'settings.reset': 'Reset record',
     'online.title': 'Online Lobby', 'online.soon': 'Online rooms are being wired up. Play against bots meanwhile.',
+    'online.name': 'Your name', 'online.namePh': 'Tarnished', 'online.create': 'Create Room', 'online.join': 'Join', 'online.codePh': 'ROOM CODE', 'online.openRooms': 'Open rooms', 'online.noRooms': 'No open rooms right now. Create one and send the link.',
+    'online.hubHint': 'The host picks the mode. Empty seats are played by bots, so two friends can run a 5v5.', 'online.room': 'Room', 'online.copy': 'Copy link', 'online.copied': 'Link copied', 'online.emptySeat': 'empty · bot', 'online.ready': 'Ready', 'online.notReady': 'Not ready',
+    'online.pickHero': 'Your hero:', 'online.chatPh': 'Say something…', 'online.send': 'Send', 'online.leave': 'Leave', 'online.start': 'Start Match', 'online.readyUp': 'Ready', 'online.unready': 'Not ready', 'online.playing': 'playing', 'online.creating': 'Creating room…', 'online.joining': 'Joining…',
+    'net.waiting': 'Waiting for players… {s}s', 'net.outOfSync': 'Out of sync with the other players', 'net.rtt': 'online · {ms} ms', 'net.dropped': 'Seat {seat} stopped responding: a bot takes over', 'net.left': 'Seat {seat} left: a bot takes over',
+    'err.noFreeCode': 'Could not find a free room code', 'err.notRoomCode': 'That is not a room code', 'err.noHost': 'No room {0} is open', 'err.roomFull': 'Room {0} is full', 'err.serverSilent': 'The server did not answer', 'err.network': 'Network error',
   },
   zh: {
     'common.back': '返回', 'common.done': '完成', 'common.you': '你', 'common.bot': '电脑', 'common.human': '玩家',
@@ -75,7 +81,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     'team.blue': '蓝方', 'team.red': '红方',
     'help.title': '玩法说明',
     'help.body': `<div><h3>目标</h3><p>跟随小兵推进三路，依次摧毁防御塔，击碎敌方<b>水晶</b>。己方水晶被毁则落败。</p>
-      <h3>操作</h3><ul><li><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> 移动，鼠标转视角</li><li><b>左键</b> 朝准星普攻</li><li><kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd>（或 <kbd>Q</kbd> <kbd>W</kbd> <kbd>E</kbd>）释放技能，瞄准准星</li><li><kbd>空格</kbd> 冲刺 · <kbd>F</kbd> 闪现 · <kbd>B</kbd> 回城 · <kbd>I</kbd> 商店 · <kbd>Tab</kbd> 战绩 · <kbd>M</kbd> 大地图 · <kbd>V</kbd> 视角</li></ul></div>
+      <h3>操作</h3><ul><li><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> 移动，鼠标转视角</li><li><b>左键</b> 朝准星普攻</li><li><kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd>（或 <kbd>Q</kbd> <kbd>E</kbd> <kbd>R</kbd>）释放技能，瞄准准星</li><li><kbd>空格</kbd> 冲刺 · <kbd>F</kbd> 闪现 · <kbd>B</kbd> 回城 · <kbd>I</kbd> 商店 · <kbd>Tab</kbd> 战绩 · <kbd>M</kbd> 大地图 · <kbd>V</kbd> 视角</li></ul></div>
       <div><h3>成长</h3><p>补刀小兵获得金币，附近队友共享经验，随时随地购买装备（自动购买按推荐出装）。技能自动升级，4 级解锁大招。</p>
       <h3>野区</h3><p>蓝 buff：回蓝与冷却。红 buff：攻击灼烧减速。<b>暴君</b>（右下坑，2:00）强化全队；<b>主宰</b>（左上坑，8:00）强化接下来的兵线。</p>
       <h3>草丛与防御塔</h3><p>草丛会隐藏你，直到敌人走进来。防御塔优先攻击小兵，但会立即转向在塔下攻击英雄的敌方英雄。</p></div>`,
@@ -95,13 +101,18 @@ export const translations: Record<Lang, Record<string, string>> = {
     'tier.outer': '一', 'tier.inner': '二', 'tier.base': '高地', 'tier.crystal': '水晶',
     'objective.tyrant': '暴君已被击杀！', 'objective.overlord': '主宰已被击杀！', 'objective.tyrantSpawned': '暴君已出现', 'objective.overlordSpawned': '主宰已出现',
     'buff.blue': '蓝 buff', 'buff.red': '红 buff', 'buff.tyrant': '暴君', 'buff.overlord': '主宰',
-    'countdown.fight': '开战！', 'toast.recallInterrupted': '回城被打断', 'toast.skillLocked': '技能尚未学习', 'toast.noMana': '法力不足', 'toast.immortal': '复活甲！', 'toast.levelup': '升到 {l} 级！',
+    'countdown.fight': '开战！', 'toast.recallInterrupted': '回城被打断', 'toast.skillLocked': '技能尚未学习', 'toast.noMana': '法力不足', 'toast.immortal': '复活甲！', 'toast.crowned': '加冕！下一个技能强化', 'toast.levelup': '升到 {l} 级！',
     'unit.tower': '防御塔', 'unit.minions': '小兵',
     'bot.easy': '新兵', 'bot.normal': '老兵', 'bot.hard': '王者',
     'fx.noTargets': '没有目标',
     'settings.title': '设置', 'settings.sfx': '音效音量', 'settings.music': '音乐音量', 'settings.sensitivity': '鼠标灵敏度', 'settings.fov': '视野',
     'settings.invert': '反转鼠标 Y 轴', 'settings.firstPerson': '默认第一人称', 'settings.quality': '画质', 'settings.high': '高', 'settings.low': '低', 'settings.language': '语言', 'settings.reset': '重置战绩',
     'online.title': '在线大厅', 'online.soon': '在线房间正在接入中，先和电脑来一局吧。',
+    'online.name': '你的名字', 'online.namePh': '褪色者', 'online.create': '创建房间', 'online.join': '加入', 'online.codePh': '房间码', 'online.openRooms': '开放房间', 'online.noRooms': '暂时没有开放房间。创建一个并发送链接吧。',
+    'online.hubHint': '房主选择模式。空位由电脑补上，两个朋友也能打 5v5。', 'online.room': '房间', 'online.copy': '复制链接', 'online.copied': '链接已复制', 'online.emptySeat': '空位 · 电脑', 'online.ready': '已准备', 'online.notReady': '未准备',
+    'online.pickHero': '你的英雄：', 'online.chatPh': '说点什么…', 'online.send': '发送', 'online.leave': '离开', 'online.start': '开始对局', 'online.readyUp': '准备', 'online.unready': '取消准备', 'online.playing': '对局中', 'online.creating': '正在创建房间…', 'online.joining': '正在加入…',
+    'net.waiting': '等待玩家… {s} 秒', 'net.outOfSync': '与其他玩家失去同步', 'net.rtt': '在线 · {ms} 毫秒', 'net.dropped': '座位 {seat} 无响应，电脑接管', 'net.left': '座位 {seat} 已离开，电脑接管',
+    'err.noFreeCode': '找不到空闲房间码', 'err.notRoomCode': '这不是房间码', 'err.noHost': '房间 {0} 未开放', 'err.roomFull': '房间 {0} 已满', 'err.serverSilent': '服务器没有响应', 'err.network': '网络错误',
     // heroes
     'hero.xuanwu.name': '玄武', 'hero.xuanwu.title': '磐石', 'hero.qinglong.name': '青龙', 'hero.qinglong.title': '风雷枪骑', 'hero.yingren.name': '影刃', 'hero.yingren.title': '暗影之刃',
     'hero.wukong.name': '悟空', 'hero.wukong.title': '石猴', 'hero.huofeng.name': '火凤', 'hero.huofeng.title': '烈焰先知', 'hero.bingji.name': '冰姬', 'hero.bingji.title': '霜织者',

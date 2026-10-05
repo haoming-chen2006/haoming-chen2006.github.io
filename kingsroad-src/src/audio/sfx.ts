@@ -292,6 +292,7 @@ export class Sfx {
       case 'lowHp': this.play('lowHp'); break;
       case 'crit': this.play('crit', p); break;
       case 'heal': this.play('sanctuary', p); break;
+      case 'crown': if (ev.team === this.viewTeam) this.play('elixirFull'); break;
       case 'end': break; // the screen plays victory/defeat explicitly
       default: break;
     }

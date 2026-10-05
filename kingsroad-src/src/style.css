@@ -357,3 +357,42 @@ body.in-game #viewport { right: var(--panel-w); }
 .result-crest span { font-size: 40px; color: var(--gold); }
 #countdown.pop, #banner.pop, #streak.pop { animation-name: countPop; }
 @media (max-width: 900px) { .select-body { grid-template-columns: 1fr; } .hero-detail { display: none; } #hudBottom { right: 14px; flex-wrap: wrap; } #heroCard { width: 240px; } .help-cols { grid-template-columns: 1fr; } }
+
+.bar.crown { height: 6px; background: #2a2010; } .bar.crown .fill { background: linear-gradient(90deg, #c98a1e, #ffd700); } .bar.crown span { font-size: 8px; justify-content: flex-end; padding-right: 2px; color: #ffd700; }
+.bar.crown.full { box-shadow: 0 0 10px #ffd700; animation: pulse 0.6s infinite alternate; }
+.skill.crowned { border-color: #ffd700; box-shadow: 0 0 18px #ffd700; }
+
+/* ---------- online lobby ---------- */
+.online-card { width: min(980px, 94vw); max-height: 94vh; overflow: auto; }
+.online-card h4 { margin: 8px 0 4px; font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--gold); }
+.field { display: flex; flex-direction: column; gap: 4px; text-align: left; font-size: 12px; color: var(--muted); font-weight: 800; }
+.field input, .join-row input, .chat-form input { background: #0b1119; border: 1px solid #2c3d50; color: #fff; border-radius: 10px; padding: 10px 12px; font: inherit; font-weight: 700; }
+.join-row input { text-transform: uppercase; letter-spacing: 0.2em; width: 150px; }
+.online-actions { display: flex; gap: 10px; justify-content: center; align-items: center; flex-wrap: wrap; }
+.join-row { display: flex; gap: 6px; }
+.open-rooms { text-align: left; }
+.room-row { display: grid; grid-template-columns: 1fr auto auto; gap: 10px; width: 100%; background: #0b1119; border: 1px solid #253141; border-radius: 10px; padding: 8px 12px; color: #fff; margin-bottom: 6px; align-items: center; }
+.room-row span { color: var(--muted); font-size: 12px; } .room-row i { font-style: normal; color: var(--gold); font-weight: 800; }
+.status { min-height: 18px; color: #ffb37a; font-weight: 700; font-size: 13px; margin: 0; }
+.room-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.room-code { color: #fff; letter-spacing: 0.2em; }
+.sharebar { display: flex; gap: 6px; align-items: center; } .sharebar code { background: #0b1119; padding: 6px 10px; border-radius: 8px; font-size: 11px; color: var(--muted); max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.room-cfg { display: flex; gap: 10px; justify-content: center; }
+.teams { display: grid; grid-template-columns: 1fr auto 1fr; gap: 14px; align-items: start; }
+.team-col { display: flex; flex-direction: column; gap: 6px; }
+.seat { display: grid; grid-template-columns: 48px 1fr auto; grid-template-areas: "port name state" "port hero state"; gap: 0 10px; align-items: center; background: #0b1119; border: 1px solid #253141; border-radius: 12px; padding: 6px 10px; text-align: left; min-height: 64px; color: #fff; }
+.seat.empty { grid-template-columns: 1fr; grid-template-areas: "role" "name"; border-style: dashed; cursor: pointer; }
+.seat.empty:hover { border-color: var(--gold); }
+.seat.mine { border-color: var(--gold); } .seat.host .seat-name { color: var(--gold); }
+.t1 .seat { border-left: 3px solid var(--red); } .t0 .seat { border-left: 3px solid var(--blue); }
+.seat-port { grid-area: port; } .seat-port canvas { width: 48px; height: 54px; border-radius: 8px; display: block; }
+.seat-name { grid-area: name; font-weight: 900; } .seat-hero { grid-area: hero; font-size: 11px; color: var(--muted); }
+.seat-state { grid-area: state; font-size: 11px; font-weight: 800; color: var(--muted); } .seat-state.ready { color: var(--green); }
+.seat-role { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); font-weight: 800; }
+.pick-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.hero-picks { display: flex; gap: 4px; flex-wrap: wrap; }
+.hero-pick { width: 44px; height: 50px; padding: 0; border: 2px solid #253141; border-radius: 8px; background: #000; overflow: hidden; cursor: pointer; }
+.hero-pick canvas { width: 100%; height: 100%; display: block; } .hero-pick.selected { border-color: var(--gold); box-shadow: 0 0 10px rgba(240,196,90,0.5); }
+.room-chat { text-align: left; } .chat-log { height: 90px; overflow: auto; background: #0b1119; border: 1px solid #253141; border-radius: 10px; padding: 6px 10px; font-size: 12px; }
+.chat-form { display: flex; gap: 6px; margin-top: 6px; } .chat-form input { flex: 1; }
+.room-foot { display: flex; justify-content: space-between; align-items: center; }

@@ -44,8 +44,17 @@ export function bushAt(p: Vec): { pos: Vec; r: number } | null {
   return null;
 }
 
+/** Solid circles that block walking in addition to the walls (standing towers and the crystals). */
+let obstacles: { x: number; y: number; r: number }[] = [];
+export function setObstacles(list: { x: number; y: number; r: number }[]): void {
+  obstacles = list;
+  rebuildGrid();
+  pathCache.clear();
+}
+
 export function inWall(p: Vec, r = 0): boolean {
   for (const b of WALLS) if (p.x + r > b.x && p.x - r < b.x + b.w && p.y + r > b.y && p.y - r < b.y + b.h) return true;
+  for (const o of obstacles) { const dx = p.x - o.x, dy = p.y - o.y; if (dx * dx + dy * dy < (o.r + r) * (o.r + r)) return true; }
   return false;
 }
 
@@ -83,12 +92,13 @@ export function clearLine(a: Vec, b: Vec, r = 0.3): boolean {
 
 const GW = MAP_W, GH = MAP_H;
 const blocked = new Uint8Array(GW * GH);
-for (let y = 0; y < GH; y++) for (let x = 0; x < GW; x++) blocked[y * GW + x] = inWall({ x: x + 0.5, y: y + 0.5 }, 0.45) ? 1 : 0;
+function rebuildGrid(): void { for (let y = 0; y < GH; y++) for (let x = 0; x < GW; x++) blocked[y * GW + x] = inWall({ x: x + 0.5, y: y + 0.5 }, 0.1) ? 1 : 0; }
+rebuildGrid();
 const cellOf = (p: Vec): [number, number] => [Math.min(GW - 1, Math.max(0, Math.floor(p.x))), Math.min(GH - 1, Math.max(0, Math.floor(p.y)))];
 const isBlocked = (x: number, y: number): boolean => x < 0 || y < 0 || x >= GW || y >= GH || blocked[y * GW + x] === 1;
 
 /** Nearest unblocked cell centre to a point. */
-function nearestFree(p: Vec): Vec {
+export function nearestFree(p: Vec): Vec {
   const [cx, cy] = cellOf(p);
   if (!isBlocked(cx, cy)) return p;
   for (let r = 1; r < 6; r++) {
@@ -192,6 +202,26 @@ export function lanePoint(path: Vec[], prog: number): Vec {
   const t = Math.min(1, Math.max(0, prog - i));
   const a = path[i], b = path[i + 1];
   return { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t };
+}
+
+/** Move `delta` tiles along a lane polyline from fractional progress `prog` (negative = back toward the start). */
+export function laneAdvance(path: Vec[], prog: number, delta: number): number {
+  let i = Math.min(path.length - 2, Math.max(0, Math.floor(prog)));
+  let t = Math.min(1, Math.max(0, prog - i));
+  let rem = delta;
+  while (Math.abs(rem) > 1e-6) {
+    const segLen = dist(path[i], path[i + 1]) || 1e-6;
+    if (rem > 0) {
+      const can = (1 - t) * segLen;
+      if (rem <= can) { t += rem / segLen; rem = 0; }
+      else { rem -= can; if (i >= path.length - 2) { t = 1; break; } i++; t = 0; }
+    } else {
+      const can = t * segLen;
+      if (-rem <= can) { t += rem / segLen; rem = 0; }
+      else { rem += can; if (i <= 0) { t = 0; break; } i--; t = 1; }
+    }
+  }
+  return i + t;
 }
 
 export function laneLength(path: Vec[]): number { let l = 0; for (let i = 0; i < path.length - 1; i++) l += dist(path[i], path[i + 1]); return l; }

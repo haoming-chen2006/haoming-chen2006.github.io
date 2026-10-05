@@ -4,7 +4,7 @@ import { dist } from '../engine/math.ts';
 import { COUNTDOWN_TIME, LEVEL_XP, MAX_LEVEL, START_GOLD, TOWER_LAYOUT, TOWER_STATS, mirrorPos, type LaneId } from './constants.ts';
 import { ROLE_LANE, heroDef } from './heroes.ts';
 import { sumItems } from './items.ts';
-import { crystalPos, inBush, lanePath, spawnPoint } from './map.ts';
+import { crystalPos, inBush, lanePath, setObstacles, spawnPoint } from './map.ts';
 import {
   NEUTRAL, newStats, type Effect, type Entity, type GameEvent, type MatchPhase, type MatchResult, type PlayerState, type Projectile,
   type Seat, type Side, type Status, type Team, type Tower, type Unit, type UnitDef, type Zone,
@@ -53,7 +53,11 @@ export class World {
       }
     }
     for (const p of this.players) for (const s of p.seats) this.spawnHero(s);
+    this.refreshObstacles();
   }
+
+  /** Tell the pathfinder where the standing structures are. */
+  refreshObstacles(): void { setObstacles(this.entities.filter((e): e is Tower => e.kind === 'tower' && !e.dead).map((t) => ({ x: t.pos.x, y: t.pos.y, r: t.radius }))); }
 
   private makeTeam(team: Team, cfg: TeamConfig): PlayerState {
     const seats: Seat[] = cfg.seats.map((s, index) => {
@@ -86,6 +90,7 @@ export class World {
     this.lanesOpen = [1];
     for (const e of this.entities) if (e.kind === 'tower' && (e.lane === 0 || e.lane === 2)) { e.dead = true; }
     this.sweep();
+    this.refreshObstacles();
   }
 
   emit(ev: GameEvent): void { this.events.push(ev); }

@@ -221,6 +221,7 @@ export function kill(w: World, target: Entity, source?: Entity): void {
       }
     }
     for (const e of w.alive()) if (e.targetId === target.id) e.targetId = -1;
+    w.refreshObstacles();
   }
 }
 

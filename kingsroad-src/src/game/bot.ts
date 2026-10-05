@@ -2,7 +2,7 @@ import { dist, norm, sub, type Vec } from '../engine/math.ts';
 import { skillReady } from './abilities.ts';
 import { CAMPS, OBJECTIVES, mirrorPos, type LaneId } from './constants.ts';
 import { idleCommand, type HeroCommand } from './hero.ts';
-import { clearLine, findPath, inFountain, lanePath, lanePoint, laneProgress, spawnPoint } from './map.ts';
+import { clearLine, findPath, inFountain, laneAdvance, lanePath, lanePoint, laneProgress, nearestFree, spawnPoint } from './map.ts';
 import { NEUTRAL, type Entity, type Seat, type Team, type Unit } from './types.ts';
 import type { World } from './world.ts';
 
@@ -211,15 +211,15 @@ export class BotHero {
     const foe = (team === 0 ? 1 : 0) as Team;
     const enemyTowers = w.towers(foe).filter((t) => t.lane === lane && t.active);
     let cap = path.length - 1;
-    for (const t of enemyTowers) { const tp = laneProgress(path, t.pos); cap = Math.min(cap, tp - 0.6); }
+    for (const t of enemyTowers) { const tp = laneProgress(path, t.pos); cap = Math.min(cap, laneAdvance(path, tp, -9)); }
     if (best < 0) {
-      // no wave: hold near our most advanced tower on this lane
+      // no wave: hold a little ahead of our most advanced tower on this lane
       const own = w.towers(team).filter((t) => t.lane === lane);
-      let prog = 0.4;
-      for (const t of own) prog = Math.max(prog, laneProgress(path, t.pos) + 0.25);
+      let prog = laneAdvance(path, 0, 6);
+      for (const t of own) prog = Math.max(prog, laneAdvance(path, laneProgress(path, t.pos), 3));
       return lanePoint(path, Math.min(prog, cap));
     }
-    return lanePoint(path, Math.max(0.2, Math.min(best - 0.15, cap)));
+    return lanePoint(path, Math.max(laneAdvance(path, 0, 3), Math.min(laneAdvance(path, best, -1.5), cap)));
   }
 
   private laneBehaviour(w: World, u: Unit, b: Brain, lane: LaneId, front: Vec, cmd: HeroCommand, dt: number): void {
@@ -257,10 +257,7 @@ export class BotHero {
   private behind(_w: World, p: Vec, lane: LaneId, d: number): Vec {
     const path = lanePath(lane, this.team);
     const prog = laneProgress(path, p);
-    const len = path.length - 1;
-    const back = Math.max(0, prog - d / 8); // roughly d tiles back along the lane
-    void len;
-    return lanePoint(path, back);
+    return lanePoint(path, laneAdvance(path, prog, -d));
   }
 
   private towerTargetsMe(_w: World, tower: Entity, u: Unit): boolean { return tower.targetId === u.id; }
@@ -389,6 +386,8 @@ export class BotHero {
       if (!b.path.length || b.pathT <= 0 || !b.dest || dist(b.dest, dest) > 1.0) { b.path = findPath(u.pos, dest, u.radius); b.pathT = 0.7; b.dest = { ...dest }; }
       while (b.path.length > 1 && dist(u.pos, b.path[0]) < 0.4) b.path.shift();
       wp = b.path[0] ?? dest;
+      // wedged against a wall: the first leg itself is blocked, so slide out to open ground first
+      if (!clearLine(u.pos, wp, u.radius * 0.8)) { const free = nearestFree(u.pos); if (dist(free, u.pos) > 0.2) wp = free; }
     } else { b.path = []; b.dest = { ...dest }; }
     cmd.move = norm(sub(wp, u.pos));
     if (!cmd.attack && cmd.skill < 0) cmd.aim = { x: u.pos.x + cmd.move.x * 4, y: u.pos.y + cmd.move.y * 4 };

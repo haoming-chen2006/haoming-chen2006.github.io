@@ -93,7 +93,7 @@ export const CAMPS: readonly CampSpec[] = [
   { id: 'gromp', monster: 'toad', count: 1, pos: { x: 10, y: 16 }, respawn: 70, firstSpawn: 30 },
   { id: 'red', monster: 'redSentinel', count: 1, pos: { x: 29, y: 44 }, respawn: 90, firstSpawn: 30 },
   { id: 'raptors', monster: 'raptor', count: 3, pos: { x: 36, y: 46 }, respawn: 70, firstSpawn: 30 },
-  { id: 'krug', monster: 'golem', count: 2, pos: { x: 40, y: 50.5 }, respawn: 70, firstSpawn: 30 },
+  { id: 'krug', monster: 'golem', count: 2, pos: { x: 41, y: 53.5 }, respawn: 70, firstSpawn: 30 },
   { id: 'stag', monster: 'stag', count: 1, pos: { x: 21, y: 31 }, respawn: 70, firstSpawn: 30 },
 ];
 export interface ObjectiveSpec { id: string; monster: string; pos: Vec; firstSpawn: number; respawn: number }
@@ -107,17 +107,17 @@ export interface Box { x: number; y: number; w: number; h: number }
 export const WALLS_HALF: readonly Box[] = [
   { x: 9, y: 23, w: 5, h: 2.2 }, // above blue buff
   { x: 9.5, y: 30.5, w: 4.5, h: 2 }, // below blue buff
-  { x: 13, y: 12, w: 2, h: 6 }, // gromp pocket
+  { x: 11.5, y: 10, w: 1.8, h: 4.5 }, // gromp pocket (clear of the Overlord pit)
   { x: 18, y: 16.5, w: 5, h: 2 }, // wolves pocket
   { x: 19, y: 24, w: 2, h: 5 }, // between wolves and mid
-  { x: 24, y: 27, w: 5, h: 2 }, // stag pocket
+  { x: 21, y: 28, w: 2.4, h: 1.5 }, // stag pocket (kept clear of the mid lane)
   { x: 25, y: 40, w: 2.2, h: 5.5 }, // red buff west wall
   { x: 32, y: 40, w: 2.2, h: 4 }, // red buff east wall
-  { x: 31, y: 46.5, w: 6, h: 1.8 }, // raptors south-west
+  { x: 30, y: 47.3, w: 4.5, h: 1.4 }, // raptors south-west
   { x: 38, y: 44.5, w: 1.8, h: 4 }, // raptors east
-  { x: 43, y: 48, w: 2, h: 3 }, // krug side
+  { x: 38, y: 52.5, w: 1.4, h: 3.5 }, // krug side (south of the bot lane)
   { x: 36.5, y: 37.5, w: 2, h: 6 }, // tyrant pit west wall
-  { x: 42, y: 36, w: 5, h: 1.8 }, // tyrant pit north wall
+  { x: 43, y: 35.5, w: 4, h: 1.6 }, // tyrant pit north wall
 ];
 export const BUSHES_HALF: readonly { pos: Vec; r: number }[] = [
   { pos: { x: 8.5, y: 27 }, r: 1.6 },

@@ -9,13 +9,13 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   const page = await browser.newPage({ viewport: { width: 1280, height: 760 } });
   page.on('pageerror', (e) => { console.log('PAGE ERROR', String(e)); process.exitCode = 1; });
   await page.goto(BASE); await sleep(1500);
-  await page.evaluate(() => { const k = window.__kr; k.settings.hero = process_hero; }).catch(() => {});
-  await page.evaluate((h) => { window.__kr.settings.hero = h; }, process.env.HERO || 'huofeng');
+  await page.evaluate((h) => { const k = 'kingsroad.settings.v1'; const s = JSON.parse(localStorage.getItem(k) || '{}'); s.hero = h; localStorage.setItem(k, JSON.stringify(s)); }, process.env.HERO || 'huofeng');
+  await page.reload(); await sleep(1500);
   await page.click('#btnPlay'); await sleep(600); await page.mouse.move(640, 380); await page.click('#btnStart'); await sleep(4000);
   await page.mouse.click(640, 380);
   // skip ahead: run the sim 40 s so the first waves meet mid, then teleport next to our wave
   await page.evaluate(() => { const k = window.__kr; const sim = k.game.simulation; for (let i = 0; i < 60 * 40; i++) sim.step(1 / 60, new Map()); sim.w.events.length = 0; });
-  await page.evaluate(() => { const k = window.__kr; const w = k.world(); const h = k.hero(); const ours = [...w.units(0)].filter((m) => !m.isHero && m.lane === 1); const front = ours.reduce((a, m) => (m.pos.x > a.pos.x ? m : a), ours[0]); h.pos = { x: front.pos.x - 2, y: front.pos.y + 2 }; k.view.rig.yaw = -Math.PI / 4; });
+  await page.evaluate(() => { const k = window.__kr; const w = k.world(); const h = k.hero(); const ours = [...w.units(0)].filter((m) => !m.isHero && m.lane === 1); const path = k.map.lanePath(1, 0); const front = ours.reduce((a, m) => (k.map.laneProgress(path, m.pos) > k.map.laneProgress(path, a.pos) ? m : a), ours[0]); const back = k.map.lanePoint(path, k.map.laneAdvance(path, k.map.laneProgress(path, front.pos), -2.5)); h.pos = k.map.nearestFree(back); const nxt = k.map.lanePoint(path, k.map.laneAdvance(path, k.map.laneProgress(path, h.pos), 3)); k.view.rig.yaw = Math.atan2(nxt.y - h.pos.y, nxt.x - h.pos.x); });
   await sleep(800);
   await page.screenshot({ path: path.join(OUT, '01-lane.png') });
   await page.mouse.down(); await sleep(1200); await page.mouse.up();

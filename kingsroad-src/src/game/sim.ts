@@ -35,15 +35,18 @@ export type SeatCommands = ReadonlyMap<string, HeroCommand>;
 export interface SimInternals { acc: number; countdownStep: number }
 
 /** Fill a side up to the mode's size with bots, avoiding duplicate heroes. */
-export function completeTeam(seats: SeatSetup[], size: number, rng: Rng, taken: Set<string>, teamIndex: number): SeatSetup[] {
+export function completeTeam(seats: SeatSetup[], size: number, rng: Rng, taken: Set<string>, teamIndex: number, takenNames = new Set<string>()): SeatSetup[] {
   const out = seats.slice(0, size).map((s) => ({ ...s }));
-  for (const s of out) taken.add(s.heroId);
+  for (const s of out) { taken.add(s.heroId); takenNames.add(s.name); }
   const wanted = pickTeam(out[0]?.heroId ?? null, rng).filter((id) => !taken.has(id));
   let n = 0;
   while (out.length < size) {
     const id = wanted.shift() ?? HEROES.map((h) => h.id).find((h) => !taken.has(h)) ?? HEROES[0].id;
     taken.add(id);
-    out.push({ heroId: id, isBot: true, name: BOT_NAMES[(teamIndex * 7 + n + Math.floor(rng.next() * 3)) % BOT_NAMES.length] + (n ? ` ${n + 1}` : '') });
+    let name = BOT_NAMES[(teamIndex * 7 + n * 2 + Math.floor(rng.next() * 3)) % BOT_NAMES.length];
+    while (out.some((o) => o.name === name) || takenNames.has(name)) name = BOT_NAMES[(BOT_NAMES.indexOf(name) + 1) % BOT_NAMES.length];
+    takenNames.add(name);
+    out.push({ heroId: id, isBot: true, name });
     n++;
   }
   return out;
@@ -66,8 +69,9 @@ export class Simulation {
     const size = MODE_SIZE[cfg.mode];
     const rng = new Rng(cfg.seed ^ 0x9e3779b9);
     const taken = new Set<string>();
+    const takenNames = new Set<string>();
     const teams: [TeamConfig, TeamConfig] = [0, 1].map((t) => {
-      const seats = completeTeam(cfg.teams[t], size, rng, taken, t).map((s) => ({ ...s, isBot: cfg.botVsBot ? true : s.isBot }));
+      const seats = completeTeam(cfg.teams[t], size, rng, taken, t, takenNames).map((s) => ({ ...s, isBot: cfg.botVsBot ? true : s.isBot }));
       return { name: cfg.teamNames?.[t] ?? (t === 0 ? '@team.blue' : '@team.red'), seats };
     }) as [TeamConfig, TeamConfig];
     this.w = new World(teams, cfg.seed);

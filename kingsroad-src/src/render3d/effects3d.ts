@@ -526,6 +526,8 @@ export class Effects3D {
   private shotTick(s: Shot, dt: number): void {
     const p = s.p;
     const y = p.mode === 'lob' ? 0.55 + p.height : SHOT_Y;
+    // hero shots leave the muzzle at the camera: no sparks until they are clear of the viewmodel
+    if (p.hero && p.mode === 'linear' && p.traveled < 1.6) return;
     const c = new THREE.Color(styleColor(p.style));
     if (p.style === 'fireball' || p.style === 'flame') {
       for (let i = 0; i < 2; i++) this.sparks.emit({ x: p.pos.x + (Math.random() - 0.5) * 0.2, y: y + (Math.random() - 0.5) * 0.2, z: p.pos.y + (Math.random() - 0.5) * 0.2, vx: -p.dir.x * 2 + (Math.random() - 0.5), vy: 1 + Math.random(), vz: -p.dir.y * 2 + (Math.random() - 0.5), life: 0.4, size: 0.5, sizeEnd: 0.1, color: i ? 0xfff0a0 : c, colorEnd: 0x400800, gravity: -2 });

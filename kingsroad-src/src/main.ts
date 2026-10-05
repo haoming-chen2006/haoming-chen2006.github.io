@@ -6,6 +6,7 @@ import { GameScreen, type MatchConfig } from './game_screen.ts';
 import { applyStaticDom, t } from './i18n.ts';
 import { GameView } from './render3d/scene.ts';
 import { hashWorld } from './game/hash.ts';
+import { inWall, lanePath, laneProgress, lanePoint, laneAdvance, nearestFree } from './game/map.ts';
 import { Menus, loadSettings, saveSettings, showLoading, type ScreenName } from './ui/menu.ts';
 import { Online } from './ui/online.ts';
 
@@ -137,6 +138,7 @@ handleRoute();
   hero: () => game.hero(),
   hash: () => (game.world ? hashWorld(game.world) : 0),
   net: () => online.stats,
+  map: { inWall, lanePath, laneProgress, lanePoint, laneAdvance, nearestFree },
   start: startBattle,
   toScreen(x: number, z: number, y = 0.05): { x: number; y: number } {
     const r = canvas.getBoundingClientRect();

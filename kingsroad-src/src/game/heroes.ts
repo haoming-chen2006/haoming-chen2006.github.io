@@ -4,9 +4,9 @@ type HeroSpec = Omit<UnitDef, 'kind' | 'desc' | 'splash' | 'flying' | 'targets' 
 
 const base = (role: Role): Pick<UnitDef, 'hpRegen' | 'manaRegen' | 'attackSpeedGrowth' | 'resistGrowth' | 'armorGrowth' | 'powerGrowth' | 'damageGrowth' | 'hpGrowth'> => {
   switch (role) {
-    case 'tank': return { hpGrowth: 310, damageGrowth: 12, powerGrowth: 0, armorGrowth: 22, resistGrowth: 8, attackSpeedGrowth: 0.012, hpRegen: 9, manaRegen: 2.5 } as never;
-    case 'warrior': return { hpGrowth: 265, damageGrowth: 15, powerGrowth: 0, armorGrowth: 18, resistGrowth: 7, attackSpeedGrowth: 0.02, hpRegen: 7, manaRegen: 2.2 } as never;
-    case 'assassin': return { hpGrowth: 265, damageGrowth: 18, powerGrowth: 0, armorGrowth: 15, resistGrowth: 6, attackSpeedGrowth: 0.025, hpRegen: 6, manaRegen: 2.5 } as never;
+    case 'tank': return { hpGrowth: 310, damageGrowth: 12, powerGrowth: 0, armorGrowth: 22, resistGrowth: 14, attackSpeedGrowth: 0.012, hpRegen: 9, manaRegen: 2.5 } as never;
+    case 'warrior': return { hpGrowth: 265, damageGrowth: 15, powerGrowth: 0, armorGrowth: 18, resistGrowth: 11, attackSpeedGrowth: 0.02, hpRegen: 7, manaRegen: 2.2 } as never;
+    case 'assassin': return { hpGrowth: 265, damageGrowth: 18, powerGrowth: 0, armorGrowth: 15, resistGrowth: 9, attackSpeedGrowth: 0.025, hpRegen: 6, manaRegen: 2.5 } as never;
     case 'mage': return { hpGrowth: 200, damageGrowth: 8, powerGrowth: 24, armorGrowth: 12, resistGrowth: 9, attackSpeedGrowth: 0.012, hpRegen: 5, manaRegen: 4.5 } as never;
     case 'marksman': return { hpGrowth: 215, damageGrowth: 20, powerGrowth: 0, armorGrowth: 13, resistGrowth: 5, attackSpeedGrowth: 0.03, hpRegen: 5, manaRegen: 2.2 } as never;
     case 'support': return { hpGrowth: 250, damageGrowth: 10, powerGrowth: 16, armorGrowth: 17, resistGrowth: 9, attackSpeedGrowth: 0.012, hpRegen: 8, manaRegen: 4 } as never;

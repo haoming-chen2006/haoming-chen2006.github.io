@@ -72,9 +72,11 @@ export class ParticleSystem {
         attribute float size; attribute float alpha; attribute float angle; attribute vec3 color;
         varying float vAlpha; varying vec3 vColor; varying float vAngle; uniform float scale;
         void main() {
-          vAlpha = alpha; vColor = color; vAngle = angle;
+          vColor = color; vAngle = angle;
           vec4 mv = modelViewMatrix * vec4(position, 1.0);
-          gl_PointSize = min(alpha <= 0.0 ? 0.0 : size * scale / max(1.0, -mv.z), 420.0);
+          // particles right in front of the first-person camera fade out instead of filling the screen
+          vAlpha = alpha * smoothstep(0.35, 1.6, -mv.z);
+          gl_PointSize = min(alpha <= 0.0 ? 0.0 : size * scale / max(1.0, -mv.z), 220.0);
           gl_Position = projectionMatrix * mv;
         }`,
       fragmentShader: `

@@ -26,6 +26,8 @@ interface Brain {
   campIndex: number;
   wander: number;
   lastSkillT: number;
+  /** Seconds spent chasing a fight target without landing a hit. */
+  chaseT: number;
 }
 
 /** One brain per seat. */
@@ -37,7 +39,7 @@ export class BotHero {
 
   private brain(seat: Seat): Brain {
     let b = this.brains.get(seat.index);
-    if (!b) { b = { mode: 'lane', decideT: 0, dest: null, targetId: -1, path: [], pathT: 0, campIndex: 0, wander: 0, lastSkillT: -10 }; this.brains.set(seat.index, b); }
+    if (!b) { b = { mode: 'lane', decideT: 0, dest: null, targetId: -1, path: [], pathT: 0, campIndex: 0, wander: 0, lastSkillT: -10, chaseT: 0 }; this.brains.set(seat.index, b); }
     return b;
   }
 
@@ -62,7 +64,7 @@ export class BotHero {
     const threat = enemies.reduce((s, e) => s + e.hp / Math.max(1, e.maxHp) * (1 + e.level * 0.05), 0);
     const strength = (hpFrac * (1 + u.level * 0.05)) + allies.reduce((s, a) => s + a.hp / a.maxHp * (1 + a.level * 0.05), 0);
     const underEnemyTower = this.enemyTowerNear(w, u, 7.5);
-    const retreatHp = this.spec.retreatHp + (enemies.length ? 0.1 : 0) + (u.def.range <= 3 ? 0.05 : 0);
+    const retreatHp = this.spec.retreatHp + (enemies.length ? 0.1 : 0) + (u.def.range <= 3 ? 0.1 : 0);
 
     if (inFountain(u.pos, team) && hpFrac < 0.97) { b.mode = 'fountain'; return; }
     // hysteresis: once retreating, keep going until healthy again or safely home
@@ -78,10 +80,12 @@ export class BotHero {
     const target = this.pickFightTarget(w, u, enemies);
     const melee = u.def.range <= 3;
     const outnumbered = enemies.length >= 2 && allies.length === 0;
-    if (target && !(melee && outnumbered && target.hp / target.maxHp > 0.35) && (threat <= strength * (1.2 * this.spec.aggression) || hpFrac > 0.8)) {
+    // tanks front-line for someone: they only start fights with an ally close by (or a kill to finish)
+    const tankAlone = u.def.role === 'tank' && allies.length === 0 && !!target && target.hp / target.maxHp > 0.3;
+    if (target && !tankAlone && !(melee && outnumbered && target.hp / target.maxHp > 0.35) && (threat <= strength * (1.2 * this.spec.aggression) || hpFrac > 0.8)) {
       const victimUnderTower = this.enemyTowerNear(w, target, 7.5);
       const diveOk = target.hp / target.maxHp < 0.3 && hpFrac > 0.6;
-      if (!victimUnderTower || diveOk || this.alliedMinionsNear(w, u, 6) >= 3) { b.mode = 'fight'; b.targetId = target.id; return; }
+      if (!victimUnderTower || diveOk || this.alliedMinionsNear(w, u, 6) >= 3) { if (b.mode !== 'fight' || b.targetId !== target.id) b.chaseT = 0; b.mode = 'fight'; b.targetId = target.id; return; }
     }
     // help an ally in trouble nearby
     const inTrouble = [...w.heroes(team)].find((h) => h !== u && h.damageTaken > 150 && dist(h.pos, u.pos) < 16);
@@ -362,6 +366,11 @@ export class BotHero {
     cmd.aim = this.lead(w, u, t);
     const range = u.def.range;
     if (d <= range + 0.2) cmd.attack = u.attackCd <= 0;
+    // melee that keeps getting kited gives up instead of eating free hits all the way to the enemy tower
+    if (range <= 3) {
+      b.chaseT = w.time - u.lastAttackT < 1 ? 0 : b.chaseT + dt;
+      if (b.chaseT > 2.5 && t.hp / t.maxHp > 0.3) { b.mode = 'lane'; b.decideT = 0.6; b.chaseT = 0; this.moveTo(w, u, b, this.retreatPoint(w, u), cmd, dt); return; }
+    }
     this.useSkills(w, u, t, cmd);
     // spacing: melee chase, ranged kite at ~80% range
     if (d > range + 0.2) this.moveTo(w, u, b, t.pos, cmd, dt);

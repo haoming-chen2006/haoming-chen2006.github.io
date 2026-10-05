@@ -185,6 +185,8 @@ export function kill(w: World, target: Entity, source?: Entity): void {
         } else if (m.buff === 'tyrant' || m.buff === 'overlord') {
           for (const h of w.heroes(team)) { if (m.buff === 'tyrant') h.status.tyrantT = 90; else h.status.overlordT = 90; w.refreshDerived(h); }
           for (const s of w.players[team].seats) giveGold(w, s, m.buff === 'tyrant' ? 100 : 150);
+          // the twist: whoever lands the last hit on the Tyrant rides its fury for 20 s
+          if (m.buff === 'tyrant' && killerUnit?.isHero) { killerUnit.status.rage = 20; killerUnit.status.rageSpeed = 1.45; killerUnit.status.rageAttack = 1.25; killerUnit.status.redT = Math.max(killerUnit.status.redT, 20); w.refreshDerived(killerUnit); w.text(killerUnit.pos, '@fx.tyrantRide', '#ffb347', 0.7); }
           w.players[team].stats.objectives += 1;
           if (killerSeat) killerSeat.stats.objectives += 1;
           w.emit({ type: 'objective', team, pos: target.pos, text: m.buff === 'tyrant' ? '@objective.tyrant' : '@objective.overlord', big: true });

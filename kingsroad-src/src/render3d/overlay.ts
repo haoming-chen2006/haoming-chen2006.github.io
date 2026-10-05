@@ -72,7 +72,8 @@ export class Overlay {
       if (myHero) { const far = dist(myHero.pos, e.pos); if (far > (e.kind === 'tower' ? 26 : isHero ? 30 : 18)) continue; }
       const scale = Math.max(0.5, Math.min(1.4, 1.6 - p.depth * 0.7));
       const barW = (e.kind === 'tower' ? 76 : isHero ? 64 : 30 + e.radius * 20) * scale;
-      const hpText = e.kind === 'tower' || isHero ? Math.round(e.hp) : null;
+      const nearMe = myHero ? dist(myHero.pos, e.pos) < 13 : true;
+      const hpText = (e.kind === 'tower' && nearMe) || isHero ? Math.round(e.hp) : null;
       this.bar(p.x, p.y, barW, (isHero ? 7 : 5.5) * scale, e.hp / e.maxHp, e.team, e.shield / e.maxHp, hpText, e.id === st.heroId, isHero ? e.mana / Math.max(1, e.maxMana) : -1);
       if (isHero) {
         const seat = world.seatOf(e);

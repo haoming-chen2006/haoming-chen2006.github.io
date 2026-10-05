@@ -6,7 +6,7 @@ const base = (role: Role): Pick<UnitDef, 'hpRegen' | 'manaRegen' | 'attackSpeedG
   switch (role) {
     case 'tank': return { hpGrowth: 310, damageGrowth: 12, powerGrowth: 0, armorGrowth: 22, resistGrowth: 8, attackSpeedGrowth: 0.012, hpRegen: 9, manaRegen: 2.5 } as never;
     case 'warrior': return { hpGrowth: 265, damageGrowth: 15, powerGrowth: 0, armorGrowth: 18, resistGrowth: 7, attackSpeedGrowth: 0.02, hpRegen: 7, manaRegen: 2.2 } as never;
-    case 'assassin': return { hpGrowth: 230, damageGrowth: 18, powerGrowth: 0, armorGrowth: 15, resistGrowth: 6, attackSpeedGrowth: 0.025, hpRegen: 6, manaRegen: 2.5 } as never;
+    case 'assassin': return { hpGrowth: 265, damageGrowth: 18, powerGrowth: 0, armorGrowth: 15, resistGrowth: 6, attackSpeedGrowth: 0.025, hpRegen: 6, manaRegen: 2.5 } as never;
     case 'mage': return { hpGrowth: 200, damageGrowth: 8, powerGrowth: 24, armorGrowth: 12, resistGrowth: 9, attackSpeedGrowth: 0.012, hpRegen: 5, manaRegen: 4.5 } as never;
     case 'marksman': return { hpGrowth: 215, damageGrowth: 20, powerGrowth: 0, armorGrowth: 13, resistGrowth: 5, attackSpeedGrowth: 0.03, hpRegen: 5, manaRegen: 2.2 } as never;
     case 'support': return { hpGrowth: 250, damageGrowth: 10, powerGrowth: 16, armorGrowth: 17, resistGrowth: 9, attackSpeedGrowth: 0.012, hpRegen: 8, manaRegen: 4 } as never;
@@ -105,7 +105,7 @@ const HERO_SPECS: HeroSpec[] = [
   {
     id: 'shenshe', name: 'Shenshe', title: 'Divine Archer', role: 'marksman', ...base('marksman'),
     look: look('#2e7a4a', '#ffe9a8', 'bow', 0.4),
-    hp: 2800, damage: 195, power: 0, armor: 64, resist: 42, hitSpeed: 1.0, range: 6.8, speed: 3.9, radius: 0.4, mana: 400, attackType: 'physical', projectile: 'arrow', projectileSpeed: 14,
+    hp: 2800, damage: 182, power: 0, armor: 64, resist: 42, hitSpeed: 1.0, range: 6.6, speed: 3.9, radius: 0.4, mana: 400, attackType: 'physical', projectile: 'arrow', projectileSpeed: 14,
     lore: 'Shenshe once shot down nine suns. The tenth surrendered.',
     tips: 'Stay behind your tank and keep shooting. Rapid Fire shreds towers. Arrow Storm wins team fights from range.',
     skills: [

@@ -97,7 +97,7 @@ export class BotHero {
     const late = w.time > 600 || w.players[team === 0 ? 1 : 0].towersLost >= 3;
     const enemyAlive = [...w.heroes(team === 0 ? 1 : 0)].length;
     const allyAlive = [...w.heroes(team)].length;
-    if ((late || w.time > 300) && (enemyAlive <= allyAlive - 2 || (late && w.players[team].kills > w.players[team === 0 ? 1 : 0].kills + 5)) && hpFrac > 0.45) { b.mode = 'push'; return; }
+    if ((late || w.time > 300) && (enemyAlive <= allyAlive - 2 || (late && w.players[team].kills > w.players[team === 0 ? 1 : 0].kills + 5) || (w.time > 1080 && hpFrac > 0.6)) && hpFrac > 0.45) { b.mode = 'push'; return; }
     if (late && seat.lane !== 3 && w.rng.chance(0.6)) { b.mode = 'group'; return; }
     b.mode = seat.lane === 3 && !late ? 'jungle' : 'lane';
   }

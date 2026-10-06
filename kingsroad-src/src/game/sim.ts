@@ -156,15 +156,30 @@ export class Simulation {
     const w = this.w;
     if (w.phase === 'ended') return;
     w.phase = 'ended';
-    w.result = { winner, reason, crowns: [w.players[0].kills, w.players[1].kills], awards: computeAwards(w), duration: w.time };
+    w.result = { winner, reason, crowns: [w.players[0].kills, w.players[1].kills], awards: [], duration: w.time };
+    w.result.awards = computeAwards(w);
     w.emit({ type: 'end', team: winner === -1 ? undefined : winner, text: reason, big: true });
   }
 }
 
-/** Post-match awards: the best seat for each category. */
+/** 结算: MVP for each side (王者荣耀 score: kills, assists, damage, tanking, economy, objectives) plus 金牌/银牌/铜牌 awards. */
+export function matchScore(s: Seat, w: World): number {
+  const p = w.players[s.team];
+  const teamDmg = Math.max(1, p.seats.reduce((a, x) => a + x.stats.heroDamage, 0));
+  const teamTaken = Math.max(1, p.seats.reduce((a, x) => a + x.stats.damageTaken, 0));
+  const kda = (s.kills + s.assists * 0.6) / Math.max(1, s.deaths);
+  return kda * 1.6 + (s.stats.heroDamage / teamDmg) * 4 + (s.stats.damageTaken / teamTaken) * 2.5 + (s.stats.towerDamage / 2000) + s.stats.goldEarned / 4000 + s.stats.objectives * 0.5 + s.stats.healing / 1500;
+}
+
 export function computeAwards(w: World): Award[] {
   const seats: Seat[] = [...w.players[0].seats, ...w.players[1].seats];
   const out: Award[] = [];
+  const winner = w.result?.winner ?? -1;
+  for (const team of [0, 1] as Team[]) {
+    let best: Seat | undefined, bv = -Infinity;
+    for (const s of w.players[team].seats) { const v = matchScore(s, w); if (v > bv) { bv = v; best = s; } }
+    if (best) out.push({ title: winner === team ? '@award.mvp' : winner === -1 ? '@award.mvp' : '@award.svp', team, value: Math.round(bv * 10) / 10, seat: best.name });
+  }
   const top = (title: string, key: keyof Stats, min = 1) => {
     let best: Seat | undefined, bv = -Infinity;
     for (const s of seats) { const v = s.stats[key]; if (v > bv) { bv = v; best = s; } }
@@ -172,12 +187,12 @@ export function computeAwards(w: World): Award[] {
     out.push({ title, team: best.team, value: Math.round(bv), seat: best.name });
   };
   top('@award.champion', 'heroDamage');
-  top('@award.warlord', 'towerDamage');
+  top('@award.tank', 'damageTaken', 1000);
   top('@award.executioner', 'heroKills', 2);
+  top('@award.assist', 'assists', 3);
+  top('@award.warlord', 'towerDamage');
   top('@award.farmer', 'minionKills', 20);
   top('@award.guardian', 'healing', 500);
-  top('@award.rampage', 'bestStreak', 3);
-  top('@award.bigSpender', 'goldEarned');
   top('@award.objectives', 'objectives', 1);
-  return out.slice(0, 8);
+  return out.slice(0, 10);
 }

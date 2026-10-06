@@ -63,6 +63,7 @@ export function damage(w: World, target: Entity, amount: number, opts: DamageOpt
   target.hitFlash = 0.12;
   if (target.kind === 'unit') {
     target.damageTaken += amt;
+    if (target.isHero && srcUnit && srcUnit.team !== target.team) { const ts = w.seatOf(target); if (ts) ts.stats.damageTaken += amt; }
     if (opts.source && opts.source.kind === 'unit' && opts.source.isHero && opts.source.team !== target.team) {
       const rec = target.lastHurtBy.find((r) => r.id === opts.source!.id);
       if (rec) rec.t = w.time; else target.lastHurtBy.push({ id: opts.source.id, t: w.time });

@@ -1,7 +1,7 @@
 import { skillDamage } from '../game/abilities.ts';
 import { CATEGORY_ORDER, ITEMS, ITEM_LIST, isBoots, itemDef } from '../game/items.ts';
 import { SPELLS, isSpell } from '../game/spells.ts';
-import type { Seat, Team, Unit } from '../game/types.ts';
+import type { Award, Seat, Team, Unit } from '../game/types.ts';
 import { World } from '../game/world.ts';
 import { cardName, itemName, skillDesc, skillName, t, tCard, tSim } from '../i18n.ts';
 import { cardThumbnail } from '../render3d/thumbnails.ts';
@@ -264,10 +264,16 @@ export class Hud {
     $('resultScore').textContent = t('results.duration', { m, s, k0: w.players[me].kills, k1: w.players[me === 0 ? 1 : 0].kills });
     $('resultReason').textContent = tSim(reason);
     const awards = w.result?.awards ?? [];
-    $('resultAwards').innerHTML = awards.map((a) => `<div class="award ${a.team === me ? 'mine' : 'foe'}"><b>${tSim(a.title)}</b><span>${a.seat ?? ''} · ${a.value}</span></div>`).join('');
     const { heroDef } = heroLookup();
-    const rows = (team: Team) => w.players[team].seats.map((s) => `<tr style="color:${teamCss(team)}"><td>${cardName(heroDef(s.heroDefId))} <small>${s.name}</small></td><td>${s.level}</td><td>${s.kills}/${s.deaths}/${s.assists}</td><td>${Math.floor(s.stats.goldEarned)}</td></tr>`).join('');
-    $('resultStats').innerHTML = `<tr><th>${t('score.hero')}</th><th>${t('score.level')}</th><th>${t('score.kda')}</th><th>${t('score.gold')}</th></tr>${rows(me)}${rows((me === 0 ? 1 : 0) as Team)}`;
+    const mvps = awards.filter((a) => a.title === '@award.mvp' || a.title === '@award.svp');
+    const medals = awards.filter((a) => a.title !== '@award.mvp' && a.title !== '@award.svp');
+    const seatOf = (name: string | undefined) => [...w.players[0].seats, ...w.players[1].seats].find((s) => s.name === name);
+    const mvpCard = (a: Award) => { const s = seatOf(a.seat); const port = s ? cardThumbnail(heroDef(s.heroDefId), 72, 84, a.team) : null; const id = `mvp-${a.team}`; queueMicrotask(() => { const slot = document.getElementById(id); if (slot && port) slot.appendChild(port); }); return `<div class="mvp ${a.team === me ? 'mine' : 'foe'}"><div class="mvp-port" id="${id}"></div><div><b>${tSim(a.title)}</b><div class="mvp-name">${s ? cardName(heroDef(s.heroDefId)) : ''} · ${a.seat ?? ''}</div><div class="mvp-score">${t('results.score', { v: a.value })}</div></div></div>`; };
+    $('resultAwards').innerHTML = `<div class="mvp-row">${mvps.map(mvpCard).join('')}</div><div class="medals">${medals.map((a, i) => `<div class="award ${a.team === me ? 'mine' : 'foe'} ${i === 0 ? 'gold' : i < 3 ? 'silver' : 'bronze'}"><i>${i === 0 ? '🥇' : i < 3 ? '🥈' : '🥉'}</i><b>${tSim(a.title)}</b><span>${a.seat ?? ''} · ${a.value}</span></div>`).join('')}</div>`;
+    const teamTop = (team: Team, key: 'heroDamage' | 'damageTaken' | 'goldEarned') => Math.max(1, ...w.players[team].seats.map((s) => s.stats[key]));
+    const bar = (v: number, max: number, color: string) => `<div class="rbar"><div style="width:${Math.round((v / max) * 100)}%;background:${color}"></div><span>${Math.round(v)}</span></div>`;
+    const rows = (team: Team) => w.players[team].seats.map((s) => `<tr style="color:${teamCss(team)}"><td>${cardName(heroDef(s.heroDefId))} <small>${s.name}</small></td><td>${s.level}</td><td>${s.kills}/${s.deaths}/${s.assists}</td><td>${bar(s.stats.heroDamage, teamTop(team, 'heroDamage'), '#ff8f4a')}</td><td>${bar(s.stats.damageTaken, teamTop(team, 'damageTaken'), '#7cc8ff')}</td><td>${bar(s.stats.goldEarned, teamTop(team, 'goldEarned'), '#ffd166')}</td></tr>`).join('');
+    $('resultStats').innerHTML = `<tr><th>${t('score.hero')}</th><th>${t('score.level')}</th><th>${t('score.kda')}</th><th>${t('score.damage')}</th><th>${t('score.taken')}</th><th>${t('score.gold')}</th></tr>${rows(me)}${rows((me === 0 ? 1 : 0) as Team)}`;
   }
   hideResults(): void { $('results').classList.add('hidden'); }
 }

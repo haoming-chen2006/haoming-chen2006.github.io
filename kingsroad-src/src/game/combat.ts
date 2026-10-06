@@ -446,6 +446,7 @@ export function styleColor(style: ProjectileStyle): string {
     case 'holy': return '#fff2b0';
     case 'rock': return '#c8b08a';
     case 'ice': return '#bfefff';
+    case 'sun': return '#ffb020';
   }
 }
 

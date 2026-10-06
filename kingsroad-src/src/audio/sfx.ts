@@ -275,10 +275,10 @@ export class Sfx {
     switch (ev.type) {
       case 'wave': break;
       case 'spell': this.play(ev.text === 'storm' ? 'shock' : ev.text === 'void' ? 'hitShadow' : 'meteor', p); break;
-      case 'ranged': this.play((ev.style ?? 'arrow') as SoundName, p); break;
+      case 'ranged': this.play((ev.style === 'sun' ? 'meteorIncoming' : ev.style ?? 'arrow') as SoundName, p); break;
       case 'hit': {
         const s = ev.style;
-        const n: SoundName = s === 'rock' ? 'meleeHit' : s === 'arrow' || s === 'spear' ? 'hitArrow' : s === 'bolt' ? 'hitBolt' : s === 'fireball' || s === 'flame' ? 'hitFire' : s === 'bomb' ? 'hitBomb' : s === 'cannonball' ? 'hitCannon' : s === 'shadow' ? 'hitShadow' : s === 'holy' ? 'hitHoly' : s === 'ice' ? 'hitIce' : 'meleeHit';
+        const n: SoundName = s === 'sun' ? 'meteor' : s === 'rock' ? 'meleeHit' : s === 'arrow' || s === 'spear' ? 'hitArrow' : s === 'bolt' ? 'hitBolt' : s === 'fireball' || s === 'flame' ? 'hitFire' : s === 'bomb' ? 'hitBomb' : s === 'cannonball' ? 'hitCannon' : s === 'shadow' ? 'hitShadow' : s === 'holy' ? 'hitHoly' : s === 'ice' ? 'hitIce' : 'meleeHit';
         this.play(n, p);
         if (ev.hero && ev.team === this.viewTeam) this.play('hitmarker');
         break;

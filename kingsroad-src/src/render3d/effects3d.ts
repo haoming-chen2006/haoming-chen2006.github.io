@@ -19,7 +19,7 @@ interface Shot { obj: THREE.Object3D; p: Projectile; trail: Trail | null; spin: 
 
 const STYLE_TRAIL: Record<ProjectileStyle, { width: number; n: number; color: number } | null> = {
   arrow: { width: 0.05, n: 7, color: 0xfff2c8 }, spear: { width: 0.06, n: 7, color: 0xffe0a0 }, fireball: { width: 0.28, n: 12, color: 0xff7a1a }, bolt: { width: 0.14, n: 10, color: 0x9fd3ff },
-  bomb: null, cannonball: null, flame: { width: 0.22, n: 10, color: 0xffa040 }, shadow: { width: 0.16, n: 12, color: 0xb67cff }, holy: { width: 0.16, n: 12, color: 0xfff2b0 }, rock: null, ice: { width: 0.16, n: 12, color: 0xbfefff },
+  bomb: null, cannonball: null, flame: { width: 0.22, n: 10, color: 0xffa040 }, shadow: { width: 0.16, n: 12, color: 0xb67cff }, holy: { width: 0.16, n: 12, color: 0xfff2b0 }, sun: { width: 0.9, n: 22, color: 0xffb020 }, rock: null, ice: { width: 0.16, n: 12, color: 0xbfefff },
 };
 
 /** Turns simulation effects and projectiles into meshes, particles, trails, decals and debris. */
@@ -508,6 +508,14 @@ export class Effects3D {
         obj = m;
         break;
       }
+      case 'sun': {
+        const g = new THREE.Group();
+        const core = new THREE.Mesh(this.geo.sphere, new THREE.MeshBasicMaterial({ color: 0xfff4c0, transparent: true, opacity: 1, depthWrite: false, blending: THREE.AdditiveBlending })); core.scale.setScalar(0.55); g.add(core);
+        const corona = new THREE.Mesh(this.geo.sphere, new THREE.MeshBasicMaterial({ color: 0xff9a20, transparent: true, opacity: 0.45, depthWrite: false, blending: THREE.AdditiveBlending })); corona.scale.setScalar(1.0); g.add(corona);
+        const halo = new THREE.Mesh(this.geo.sphere, new THREE.MeshBasicMaterial({ color: 0xff5a10, transparent: true, opacity: 0.18, depthWrite: false, blending: THREE.AdditiveBlending })); halo.scale.setScalar(1.6); g.add(halo);
+        obj = g;
+        break;
+      }
       default: {
         const g = new THREE.Group();
         const core = new THREE.Mesh(this.geo.sphere, new THREE.MeshBasicMaterial({ color: c.clone().multiplyScalar(4), transparent: true, opacity: 0.95, depthWrite: false, blending: THREE.AdditiveBlending }));
@@ -529,7 +537,10 @@ export class Effects3D {
     // hero shots leave the muzzle at the camera: no sparks until they are clear of the viewmodel
     if (p.hero && p.mode === 'linear' && p.traveled < 1.6) return;
     const c = new THREE.Color(styleColor(p.style));
-    if (p.style === 'fireball' || p.style === 'flame') {
+    if (p.style === 'sun') {
+      for (let i = 0; i < 6; i++) this.sparks.emit({ x: p.pos.x + (Math.random() - 0.5) * 0.8, y: y + (Math.random() - 0.5) * 0.8, z: p.pos.y + (Math.random() - 0.5) * 0.8, vx: -p.dir.x * 4 + (Math.random() - 0.5) * 2, vy: 1 + Math.random() * 2, vz: -p.dir.y * 4 + (Math.random() - 0.5) * 2, life: 0.7, size: 0.9, sizeEnd: 0.1, color: i % 2 ? 0xfff0a0 : 0xff7a1a, colorEnd: 0x401000, gravity: -1.5, drag: 1.5 });
+      this.smoke.emit({ x: p.pos.x, y: y + 0.2, z: p.pos.y, vx: -p.dir.x * 2, vy: 1.2, vz: -p.dir.y * 2, life: 1.4, size: 0.8, sizeEnd: 3, color: 0x3a2a1a, colorEnd: 0x777777, alpha: 0.4, drag: 1.5 });
+    } else if (p.style === 'fireball' || p.style === 'flame') {
       for (let i = 0; i < 2; i++) this.sparks.emit({ x: p.pos.x + (Math.random() - 0.5) * 0.2, y: y + (Math.random() - 0.5) * 0.2, z: p.pos.y + (Math.random() - 0.5) * 0.2, vx: -p.dir.x * 2 + (Math.random() - 0.5), vy: 1 + Math.random(), vz: -p.dir.y * 2 + (Math.random() - 0.5), life: 0.4, size: 0.5, sizeEnd: 0.1, color: i ? 0xfff0a0 : c, colorEnd: 0x400800, gravity: -2 });
       this.smoke.emit({ x: p.pos.x, y: y + 0.1, z: p.pos.y, vx: -p.dir.x, vy: 0.8, vz: -p.dir.y, life: 0.9, size: 0.35, sizeEnd: 1.8, color: 0x333333, colorEnd: 0x666666, alpha: 0.4, drag: 2 });
     } else if (p.style === 'bolt') {
@@ -550,6 +561,7 @@ export class Effects3D {
     const x = s.lastX, y = s.lastY, z = s.lastZ;
     switch (p.style) {
       case 'arrow': case 'spear': this.sparks.burst(x, y, z, 5, { color: 0xffffff, speed: 2.5, up: 1, life: 0.25, size: 0.16, gravity: 6 }); break;
+      case 'sun': this.sparks.burst(x, y, z, 80, { color: 0xfff0a0, colorEnd: 0xff5a1a, speed: 7, up: 1.5, life: 0.9, size: 0.6, sizeEnd: 0.2, gravity: 4, bounce: 0.3 }); this.decals.spawn('scorch', x, z, 2.2, 8); break;
       case 'fireball': case 'flame': if (p.splash <= 0) { this.sparks.burst(x, y, z, 14, { color: 0xfff0a0, colorEnd: 0xff5a1a, speed: 3, up: 1, life: 0.4, size: 0.35, gravity: 2 }); } break;
       case 'ice': this.sparks.burst(x, y, z, 14, { color: 0xe8fbff, colorEnd: 0x9fd9ff, speed: 3, up: 1, life: 0.5, size: 0.24, gravity: 6, bounce: 0.4, spin: 10 }); break;
       case 'cannonball': case 'rock': this.smoke.burst(x, 0.2, z, 8, { color: 0x8a7a62, colorEnd: 0x5c5044, speed: 2.5, up: 0.8, life: 0.8, size: 0.5, sizeEnd: 2, gravity: -0.3, alpha: 0.45 }); this.sparks.burst(x, y, z, 6, { color: 0xffffff, speed: 3, up: 1, life: 0.25, size: 0.18, gravity: 8 }); break;

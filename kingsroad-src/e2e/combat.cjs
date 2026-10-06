@@ -24,7 +24,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   await page.screenshot({ path: path.join(OUT, '03-skill1.png') });
   await page.evaluate(() => { const h = window.__kr.hero(); const s = window.__kr.world().seatOf(h); s.level = 6; s.skillPoints = 5; });
   await sleep(300);
-  await page.keyboard.press('Digit3'); await sleep(900);
+  await page.keyboard.press('Digit3'); await sleep(process.env.HERO === 'houyi' ? 350 : 900);
   await page.screenshot({ path: path.join(OUT, '04-ult.png') });
   await page.keyboard.press('Digit2'); await sleep(500);
   await page.screenshot({ path: path.join(OUT, '05-skill2.png') });

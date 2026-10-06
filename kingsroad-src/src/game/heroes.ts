@@ -43,10 +43,10 @@ const HERO_SPECS: HeroSpec[] = [
   {
     id: 'luban', name: '鲁班七号', title: '机关造物', role: 'marksman', ...base('marksman'),
     look: look('#4e9c5a', '#ffe36b', 'rifle', 0.34, { gear: 'cap', armor: 'leather', hair: { color: '#2d6b3a', style: 'short' } }),
-    hp: 3000, damage: 160, power: 0, armor: 82, resist: 48, hitSpeed: 1.0, range: 6.6, speed: 3.85, radius: 0.38, mana: 420, attackType: 'physical', projectile: 'bolt', projectileSpeed: 17,
+    hp: 3000, damage: 152, power: 0, armor: 82, resist: 48, hitSpeed: 1.0, range: 6.4, speed: 3.8, radius: 0.38, mana: 420, attackType: 'physical', projectile: 'bolt', projectileSpeed: 17,
     lore: '鲁班大师的第七号作品，一台会碎碎念的全自动火炮。',
     tips: '四次普攻后触发扫射；河豚手雷减速敌人，空中支援可以隔墙轰炸。',
-    passive: { name: '火力压制', desc: '每 4 次普攻后，下一次普攻变为扫射，发射 3 发弹药。', kind: 'nthBurst', n: 4, value: 0.55 },
+    passive: { name: '火力压制', desc: '每 4 次普攻后，下一次普攻变为扫射，发射 3 发弹药。', kind: 'nthBurst', n: 4, value: 0.35 },
     skills: [
       S({ kind: 'aoeAim', name: '河豚手雷', desc: '投掷一枚河豚手雷，爆炸造成伤害并减速。', cooldown: 8, mana: 55, damage: 220, damageGrowth: 55, ratio: 0.7, type: 'physical', range: 7, radius: 1.8, slow: 0.4, slowT: 1.5, color: '#9be36b', sfx: 'clusterBomb' }),
       S({ kind: 'lineShot', name: '无敌鲨嘴炮', desc: '发射一枚鲨嘴炮弹，贯穿并伤害直线上的敌人。', cooldown: 10, mana: 60, damage: 300, damageGrowth: 70, ratio: 1.0, type: 'physical', range: 9, color: '#ffe36b', sfx: 'cannon' }),
@@ -149,10 +149,10 @@ const HERO_SPECS: HeroSpec[] = [
   {
     id: 'diaochan', name: '貂蝉', title: '绝世舞姬', role: 'mage', ...base('mage'),
     look: look('#9b5de5', '#ffe6f7', 'orb', 0.38, { gear: 'cap', armor: 'robe', cape: true, hair: { color: '#5a2d8a', style: 'bun' }, skirt: true }),
-    hp: 3000, damage: 150, power: 0, armor: 82, resist: 54, hitSpeed: 1.0, range: 4.5, speed: 4.0, radius: 0.38, mana: 500, attackType: 'magic', projectile: 'holy', projectileSpeed: 14,
+    hp: 3200, damage: 150, power: 0, armor: 86, resist: 58, hitSpeed: 1.0, range: 4.5, speed: 4.05, radius: 0.38, mana: 500, attackType: 'magic', projectile: 'holy', projectileSpeed: 14,
     lore: '一舞倾城，花瓣落处皆是刀锋。',
     tips: '缘·心结穿梭叠印记，第四次技能命中引爆回血；大招开启后在人群中跳舞。',
-    passive: { name: '绽·风华', desc: '技能命中叠加印记，第 4 层引爆造成额外伤害并治疗自己。', kind: 'markDetonateHeal', n: 4, value: 220 },
+    passive: { name: '绽·风华', desc: '技能命中叠加印记，第 3 层引爆造成额外伤害并治疗自己。', kind: 'markDetonateHeal', n: 3, value: 260 },
     skills: [
       S({ kind: 'lineShot', name: '落·红雨', desc: '抛出花瓣法球，对直线上的敌人造成法术伤害并减速。', cooldown: 5, mana: 45, damage: 210, damageGrowth: 50, ratio: 0.55, type: 'magic', range: 6.5, slow: 0.3, slowT: 1, color: '#ff8ad0', sfx: 'holy' }),
       S({ kind: 'dashStrike', name: '缘·心结', desc: '向指定方向穿梭，对路径上的敌人造成伤害。', cooldown: 7, mana: 50, damage: 230, damageGrowth: 55, ratio: 0.5, type: 'magic', range: 4.5, radius: 1.0, color: '#d9a8ff', sfx: 'shadowstep' }),
@@ -211,7 +211,7 @@ const HERO_SPECS: HeroSpec[] = [
   {
     id: 'yase', name: '亚瑟', title: '圣骑之力', role: 'warrior', ...base('warrior'),
     look: look('#2f5ea8', '#f3c969', 'sword', 0.45, { armor: 'plate', cape: true, hair: { color: '#e8d8a8', style: 'short' } }),
-    hp: 3500, damage: 178, power: 0, armor: 94, resist: 56, hitSpeed: 0.95, range: 1.5, speed: 4.0, radius: 0.46, mana: 0, attackType: 'physical',
+    hp: 3700, damage: 182, power: 0, armor: 100, resist: 62, hitSpeed: 0.95, range: 1.5, speed: 4.05, radius: 0.46, mana: 0, attackType: 'physical',
     lore: '圆桌骑士之王，以圣剑裁决一切不义。',
     tips: '誓约之盾加速接近并沉默，回旋打击持续输出，圣剑裁决压制脆皮。',
     passive: { name: '圣光庇护', desc: '脱离战斗 5 秒后，每秒恢复 2% 最大生命值。', kind: 'oocRegen', value: 0.02 },
@@ -226,7 +226,7 @@ const HERO_SPECS: HeroSpec[] = [
   {
     id: 'dianwei', name: '典韦', title: '狂战士', role: 'warrior', ...base('warrior'),
     look: look('#8b2d2d', '#e07a2a', 'axe', 0.47, { gear: 'bandana', armor: 'leather', hair: { color: '#1b1b24', style: 'short' }, beard: true }),
-    hp: 3600, damage: 182, power: 0, armor: 92, resist: 54, hitSpeed: 0.95, range: 1.5, speed: 4.0, radius: 0.47, mana: 0, attackType: 'physical',
+    hp: 3800, damage: 188, power: 0, armor: 98, resist: 60, hitSpeed: 0.95, range: 1.5, speed: 4.05, radius: 0.47, mana: 0, attackType: 'physical',
     lore: '古之恶来，一柄双戟荡平千军。',
     tips: '狂战士之心叠攻速，怒气爆发击飞，亡命之徒扑向敌人大杀四方。',
     passive: { name: '狂战', desc: '每次普攻叠加一层狂战，每层提升攻速 6%（最多 5 层）。', kind: 'frenzyStacks', n: 5, value: 0.06 },

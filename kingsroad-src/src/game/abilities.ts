@@ -148,7 +148,7 @@ export function useSkill(w: World, u: Unit, i: number, aim: Vec): boolean {
       break;
     case 'globalShot':
       // a slow, thick arrow that crosses the whole map and stops at the first enemy hero
-      fireProjectile(w, { team: u.team, from: u.pos, style: u.def.projectile ?? 'arrow', speed: 16, damage: dmg, type, sourceId: u.id, mode: 'linear', dir, maxDist: a.range ?? 60, pierce: false, hero: true, radius: a.radius ?? 0.7, stun: a.stun, skill: true, heroOnly: true });
+      fireProjectile(w, { team: u.team, from: u.pos, style: 'sun', speed: 16, damage: dmg, type, sourceId: u.id, mode: 'linear', dir, maxDist: a.range ?? 60, pierce: false, hero: true, radius: a.radius ?? 0.7, stun: a.stun, skill: true, heroOnly: true });
       w.addEffect({ type: 'beam', pos: { ...u.pos }, to: add(u.pos, scale(dir, 12)), dur: 0.5, radius: 0.25, color });
       break;
     case 'multiStrike':

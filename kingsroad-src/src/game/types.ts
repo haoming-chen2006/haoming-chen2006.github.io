@@ -8,7 +8,7 @@ export const NEUTRAL = 2 as const;
 export type Side = Team | typeof NEUTRAL;
 
 export type TargetType = 'ground' | 'air' | 'both' | 'buildings';
-export type ProjectileStyle = 'arrow' | 'spear' | 'fireball' | 'bolt' | 'bomb' | 'cannonball' | 'flame' | 'shadow' | 'holy' | 'rock' | 'ice';
+export type ProjectileStyle = 'arrow' | 'spear' | 'fireball' | 'bolt' | 'bomb' | 'cannonball' | 'flame' | 'shadow' | 'holy' | 'rock' | 'ice' | 'sun';
 export type ShapeKind = 'humanoid' | 'brute' | 'flyer' | 'skeleton' | 'beast' | 'wraith' | 'dragon' | 'building';
 export type WeaponKind = 'sword' | 'bow' | 'spear' | 'staff' | 'axe' | 'hammer' | 'dagger' | 'lance' | 'scythe' | 'none' | 'orb' | 'bomb' | 'book' | 'shield' | 'rifle';
 export type Role = 'tank' | 'warrior' | 'assassin' | 'mage' | 'marksman' | 'support';

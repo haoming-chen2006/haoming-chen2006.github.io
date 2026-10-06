@@ -171,12 +171,16 @@ export function buildWeapon(kind: WeaponKind, s: number, accent: number, mats: U
       add(mesh(coneGeo(s * 0.13, s * 0.5, 4), steel, 0, s * 2.1, 0)).rotation.y = Math.PI / 4;
       for (let i = 0; i < 2; i++) add(mesh(boxGeo(s * 0.03, s * 0.25, s * 0.03), toon(0xd94a4a), s * 0.06 * (i ? 1 : -1), s * 1.72, 0));
       break;
-    case 'lance':
-      add(mesh(cylGeo(s * 0.035, s * 0.16, s * 2.8, 10), toon(0xe9dfbf), 0, s * 1.1, 0));
-      add(mesh(cylGeo(s * 0.34, s * 0.34, s * 0.06, 12), acc, 0, s * 0.15, 0));
-      add(mesh(coneGeo(s * 0.05, s * 0.3, 6), steel, 0, s * 2.6, 0));
-      for (let i = 0; i < 3; i++) add(mesh(cylGeo(s * 0.1 - i * s * 0.02, s * 0.1 - i * s * 0.02, s * 0.12, 10), i % 2 ? acc : toon(0x2f3e5c), 0, s * 0.55 + i * s * 0.5, 0));
+    case 'lance': {
+      // 长枪: lacquered red shaft, leaf-shaped steel head, red tassel below it
+      const lacq = toon(0x8a1f1f, { roughness: 0.3 }); const tassel = toon(0xd62e2e, { roughness: 0.9 }); mats.push(lacq, tassel);
+      add(mesh(cylGeo(s * 0.04, s * 0.05, s * 2.6, 12), lacq, 0, s * 1.0, 0));
+      for (let i = 0; i < 4; i++) attach(grp, mesh(torusGeo(s * 0.06, s * 0.012, 6, 12), gold, 0, s * 0.2 + i * s * 0.55, 0)).rotation.x = Math.PI / 2;
+      const head = mesh(new THREE.LatheGeometry([new THREE.Vector2(0, 0), new THREE.Vector2(s * 0.11, s * 0.12), new THREE.Vector2(s * 0.06, s * 0.45), new THREE.Vector2(0, s * 0.62)], 4), steel, 0, s * 2.3, 0); head.scale.z = 0.3; head.rotation.y = Math.PI / 4; add(head);
+      add(mesh(sphereGeo(s * 0.07, 10), gold, 0, s * 2.28, 0));
+      for (let i = 0; i < 6; i++) { const a = (i / 6) * Math.PI * 2; const t = mesh(new THREE.CapsuleGeometry(s * 0.02, s * 0.3, 4, 6), tassel, Math.cos(a) * s * 0.08, s * 2.05, Math.sin(a) * s * 0.08); t.rotation.x = Math.sin(a) * 0.5; t.rotation.z = Math.cos(a) * 0.5; add(t); }
       break;
+    }
     case 'bow': {
       const lacq = toon(0x8a2a1a, { roughness: 0.3 }); mats.push(lacq);
       const bow = add(mesh(torusGeo(s * 0.75, s * 0.04, Math.PI * 1.25, 20), lacq, 0, s * 0.4, 0));
@@ -248,11 +252,14 @@ export function buildWeapon(kind: WeaponKind, s: number, accent: number, mats: U
       add(mesh(cylGeo(s * 0.025, s * 0.025, s * 0.28, 5), toon(0xb08a52), s * 0.06, s * 0.88, 0)).rotation.z = -0.4;
       add(mesh(sphereGeo(s * 0.06, 6), mat(0xffb347, { emissive: 0xff8c00, emissiveIntensity: 3.5 }), s * 0.12, s * 1.0, 0));
       break;
-    case 'book':
-      add(mesh(rboxGeo(s * 0.62, s * 0.78, s * 0.16, s * 0.02), acc, 0, s * 0.38, 0));
-      add(mesh(boxGeo(s * 0.5, s * 0.66, s * 0.18), toon(0xfff8e0), 0, s * 0.38, 0));
-      add(mesh(boxGeo(s * 0.2, s * 0.24, s * 0.02), gold, 0, s * 0.42, s * 0.09));
+    case 'book': {
+      // 羽扇 (feather fan) for 诸葛亮 / a lacquered tome for 蔡文姬's 古琴 stand-in: a folding fan of white feathers on a gold handle
+      const feather = toon(0xfff8e8, { roughness: 0.8 }); mats.push(feather);
+      add(mesh(cylGeo(s * 0.04, s * 0.05, s * 0.5, 10), gold, 0, s * 0.1, 0));
+      for (let i = 0; i < 9; i++) { const a = -0.9 + (i / 8) * 1.8; const f = mesh(new THREE.CapsuleGeometry(s * 0.07, s * 0.8, 4, 8), feather, Math.sin(a) * s * 0.42, s * 0.35 + Math.cos(a) * s * 0.42, (i % 2) * s * 0.01); f.rotation.z = -a; add(f); }
+      attach(grp, mesh(torusGeo(s * 0.1, s * 0.02, 6, 12), gold, 0, s * 0.33, 0)).rotation.x = Math.PI / 2;
       break;
+    }
     case 'shield':
       add(mesh(cylGeo(s * 0.55, s * 0.55, s * 0.07, 8), acc, 0, s * 0.4, 0));
       add(mesh(cylGeo(s * 0.44, s * 0.44, s * 0.03, 8), toon(0xdde3ea), 0, s * 0.4, s * 0.05));

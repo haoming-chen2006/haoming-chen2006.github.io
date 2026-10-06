@@ -216,7 +216,12 @@ function flourishes(look: Look, s: number, grp: THREE.Group, torso: THREE.Group,
     for (const side of [-1, 1]) { const ear = mesh(new THREE.ConeGeometry(s * 0.13, s * 0.42, 12), earM, -s * 0.05, s * 0.98, side * s * 0.28); ear.rotation.x = side * -0.3; headG.add(ear); const inner = mesh(new THREE.ConeGeometry(s * 0.06, s * 0.24, 10), toon(0xffe6f0), s * 0.02, s * 0.95, side * s * 0.28); inner.rotation.x = side * -0.3; headG.add(inner); }
   }
   if (look.horns) { const hornM = toon(0xf1e7d0, { roughness: 0.5 }); mats.push(hornM); for (const side of [-1, 1]) { const horn = mesh(new THREE.ConeGeometry(s * 0.11, s * 0.6, 12), hornM, 0, s * 0.85, side * s * 0.46); horn.rotation.x = side * -1.0; horn.rotation.z = 0.25; headG.add(horn); } }
-  if (look.beard) { const beardM = toon(look.hair ? hex(look.hair.color) : 0x2a1e14, { roughness: 0.5 }); mats.push(beardM); headG.add(mesh(lathe([[0, -s * 0.35], [s * 0.22, -s * 0.15], [s * 0.3, s * 0.15], [s * 0.1, s * 0.3]], 12), beardM, s * 0.26, 0, 0)); }
+  if (look.beard) {
+    // a goatee under the chin plus a thin moustache, so the mouth stays visible
+    const beardM = toon(look.hair ? hex(look.hair.color) : 0x2a1e14, { roughness: 0.5 }); mats.push(beardM);
+    const goatee = mesh(new THREE.ConeGeometry(s * 0.12, s * 0.42, 10), beardM, s * 0.3, -s * 0.1, 0); goatee.rotation.x = Math.PI; goatee.rotation.z = -0.25; headG.add(goatee);
+    for (const side of [-1, 1]) { const m = mesh(capsule(s * 0.025, s * 0.14, 6), beardM, s * 0.4, s * 0.22, side * s * 0.1); m.rotation.x = Math.PI / 2; m.rotation.z = side * 0.2; headG.add(m); }
+  }
   if (look.tails === 'fox') {
     const tailM = toon(hex(look.accent), { roughness: 0.55 }), tipM = toon(0xfff4f8); mats.push(tailM, tipM);
     for (let i = 0; i < 5; i++) {

@@ -30,6 +30,11 @@ export function updateSpawns(w: World, dt: number): void {
     w.emit({ type: 'wave', text: String(w.waveNo) });
     if (w.time >= 1080 && w.time - WAVE_EVERY < 1080) w.emit({ type: 'objective', text: '@objective.siegeHour' });
     if (w.time >= 1260 && w.time - WAVE_EVERY < 1260) w.emit({ type: 'objective', text: '@objective.superHour' });
+    // past 22 minutes the walls themselves start to crumble: every wave strips 5% from every standing structure
+    if (w.time >= 1320) {
+      if (w.time - WAVE_EVERY < 1320) w.emit({ type: 'objective', text: '@objective.crumble' });
+      for (const e of w.entities) if (e.kind === 'tower' && !e.dead && e.active) e.hp = Math.max(1, e.hp - e.maxHp * 0.05);
+    }
   }
   // jungle camps
   for (const team of [0, 1] as Team[]) {
@@ -75,7 +80,21 @@ export function updateSpawns(w: World, dt: number): void {
   void dt;
 }
 
-function scaleMinion(w: World, u: import('./types.ts').Unit, level: number): void {
+/** A crystal under 40% health calls three guardians once: super minions that march every open lane. */
+export function callGuardians(w: World, team: Team, at: { x: number; y: number }): void {
+  const level = 1 + Math.floor(w.time / 90);
+  const lanes = w.lanesOpen as LaneId[];
+  for (let i = 0; i < 3; i++) {
+    const lane = lanes[i % lanes.length];
+    const a = (i / 3) * Math.PI * 2;
+    const u = w.spawnUnit(MINIONS.super, team, { x: at.x + Math.cos(a) * 2.6, y: at.y + Math.sin(a) * 2.6 }, { lane, level });
+    scaleMinion(w, u, level);
+    w.addEffect({ type: 'spawn', pos: { ...u.pos }, dur: 0.8, radius: 1.2, color: '#ffb0e8', team });
+  }
+  w.emit({ type: 'objective', text: '@objective.guardians', pos: at });
+}
+
+export function scaleMinion(w: World, u: import('./types.ts').Unit, level: number): void {
   const L = level - 1;
   u.maxHp = Math.round(u.def.hp * (1 + 0.12 * L));
   u.hp = u.maxHp;

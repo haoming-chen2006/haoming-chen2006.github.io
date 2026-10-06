@@ -35,13 +35,13 @@ export const translations: Record<Lang, Record<string, string>> = {
       <div><h3>Growing</h3><p>Last-hit minions for gold, share XP with nearby allies, buy items anywhere (auto-buy follows the recommended build). Skills rank up automatically; the ultimate unlocks at level 4.</p>
       <h3>Jungle</h3><p>Blue buff: mana and cooldowns. Red buff: burn and slow on hit. The <b>Tyrant</b> (bottom-right pit, 2:00) empowers the whole team; the <b>Overlord</b> (top-left, 8:00) supercharges your next waves.</p>
       <h3>Bushes and towers</h3><p>Bushes hide you until an enemy walks in. Towers shoot minions first, but turn on any hero that attacks a hero under them.</p>
-      <h3>Twists</h3><ul><li><b>Resonance crown</b>: every skill that hits an enemy hero charges your crown (the gold bar). At full charge your next skill is <b>crowned</b>: bigger, 1.5× damage and a short stun.</li><li><b>Item moods</b>: Storm Lance forks lightning every 4th hit, Void Staff detonates on the 3rd skill mark, Frost Heart chills attackers, Phoenix Feather explodes on death, Immortal Shield revives.</li><li><b>Crowned towers</b>: a tower that sees a hero kill fires faster for 30 s. The Tyrant's slayer gets 20 s of fury.</li><li><b>Siege Hour</b>: from 18:00 every wave brings a siege engine, from 21:00 a super minion.</li></ul></div>`,
+      <h3>Twists</h3><ul><li><b>Resonance crown</b>: every skill that hits an enemy hero charges your crown (the gold bar). At full charge your next skill is <b>crowned</b>: bigger, 1.5× damage and a short stun.</li><li><b>Item moods</b>: Storm Lance forks lightning every 4th hit, Void Staff detonates on the 3rd skill mark, Frost Heart chills attackers, Phoenix Feather explodes on death, Immortal Shield revives.</li><li><b>Crowned towers</b>: a tower that sees a hero kill fires faster for 30 s. The Tyrant's slayer gets 20 s of fury.</li><li><b>Siege Hour</b>: from 18:00 every wave brings a siege engine, from 21:00 a super minion.</li><li><b>Guardians</b>: a crystal that drops under 40% calls three super minions to its defence, once.</li><li><b>Hero twists</b>: every hero has a signature passive — read it on the hero card.</li></ul></div>`,
     'hud.shop': 'Shop (I)', 'hud.shopTitle': 'Shop', 'hud.autoBuy': 'Auto buy', 'hud.slain': 'You were slain', 'hud.respawnHint': 'Watching your team…', 'hud.buy': 'Buy', 'hud.owned': 'Owned', 'hud.full': 'Full',
     'hud.gold': '{g} gold', 'hud.level': 'Lv {l}', 'hud.wave': 'Wave {n}', 'hud.recalling': 'Recalling…', 'hud.tab': 'Hold Tab for the scoreboard',
     'hud.tipStart': 'Walk to your lane. Minions arrive at 0:25.', 'hud.controls': 'WASD move · left click attack · 1 2 3 skills · Space dash · F flash · B recall · I shop · Tab score · V view', 'hud.tipRecall': 'Low health? Press B to recall and heal.',
     'score.hero': 'Hero', 'score.kda': 'K / D / A', 'score.gold': 'Gold', 'score.level': 'Lv', 'score.items': 'Items',
     'overlay.captureMouse': 'Click to capture the mouse', 'overlay.towerAggro': 'TOWER!',
-    'pause.paused': 'Paused', 'pause.sub': 'The lanes keep moving without you.', 'pause.resume': 'Resume', 'pause.settings': 'Settings', 'pause.quit': 'Surrender & Quit', 'pause.online': 'The match continues while this is open.',
+    'pause.paused': 'Paused', 'pause.sub': 'The match is paused. Take a breath.', 'pause.resume': 'Resume', 'pause.settings': 'Settings', 'pause.quit': 'Surrender & Quit', 'pause.online': 'The match continues while this is open.',
     'results.victory': 'Victory', 'results.defeat': 'Defeat', 'results.draw': 'Draw', 'results.again': 'Play Again', 'results.menu': 'Main Menu', 'results.duration': '{m}:{s} · {k0} – {k1} kills',
     'result.crystal': 'The crystal has fallen', 'result.surrender': 'Surrender', 'result.forfeit': 'The other side left',
     'award.champion': 'Champion · most hero damage', 'award.warlord': 'Siegebreaker · most tower damage', 'award.executioner': 'Executioner · most kills', 'award.farmer': 'Harvester · most minions',
@@ -50,7 +50,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     'streak.killingSpree': 'Killing Spree', 'streak.unstoppable': 'Unstoppable!', 'streak.legendary': 'LEGENDARY!', 'streak.ace': 'ACE!',
     'feed.kill': '{killer} slew {victim}', 'feed.tower': '{team} destroyed a {tier} tower', 'feed.crystal': '{team} broke the crystal!', 'feed.objective': '{team} took the {obj}',
     'tier.outer': 'outer', 'tier.inner': 'inner', 'tier.base': 'base', 'tier.crystal': 'crystal',
-    'objective.tyrant': 'Tyrant slain!', 'objective.overlord': 'Overlord slain!', 'objective.tyrantSpawned': 'The Tyrant has risen', 'objective.overlordSpawned': 'The Overlord has risen', 'objective.siegeHour': 'Siege Hour: siege engines march every wave', 'objective.superHour': 'Super minions join every wave',
+    'objective.tyrant': 'Tyrant slain!', 'objective.overlord': 'Overlord slain!', 'objective.tyrantSpawned': 'The Tyrant has risen', 'objective.overlordSpawned': 'The Overlord has risen', 'objective.siegeHour': 'Siege Hour: siege engines march every wave', 'objective.guardians': 'A wounded crystal calls its guardians!', 'objective.crumble': 'The walls are crumbling: every wave wears down every tower', 'objective.superHour': 'Super minions join every wave',
     'buff.blue': 'Blue buff', 'buff.red': 'Red buff', 'buff.tyrant': 'Tyrant', 'buff.overlord': 'Overlord',
     'countdown.fight': 'Fight!', 'toast.recallInterrupted': 'Recall interrupted', 'toast.skillLocked': 'Skill not learned yet', 'toast.noMana': 'Not enough mana', 'toast.immortal': 'Immortal Shield!', 'toast.crowned': 'Crowned! Your next skill is empowered', 'toast.levelup': 'Level {l}!',
     'unit.tower': 'Tower', 'unit.minions': 'Minions',
@@ -86,13 +86,13 @@ export const translations: Record<Lang, Record<string, string>> = {
       <div><h3>成长</h3><p>补刀小兵获得金币，附近队友共享经验，随时随地购买装备（自动购买按推荐出装）。技能自动升级，4 级解锁大招。</p>
       <h3>野区</h3><p>蓝 buff：回蓝与冷却。红 buff：攻击灼烧减速。<b>暴君</b>（右下坑，2:00）强化全队；<b>主宰</b>（左上坑，8:00）强化接下来的兵线。</p>
       <h3>草丛与防御塔</h3><p>草丛会隐藏你，直到敌人走进来。防御塔优先攻击小兵，但会立即转向在塔下攻击英雄的敌方英雄。</p>
-      <h3>特色机制</h3><ul><li><b>共鸣王冠</b>：技能命中敌方英雄会积攒王冠（金色条）。充满后下一个技能<b>加冕</b>：范围更大、1.5 倍伤害并附带短暂眩晕。</li><li><b>装备个性</b>：风暴之枪每第 4 次普攻引下分叉闪电；虚空法杖第 3 层印记引爆；冰霜之心减速攻击者；凤凰之羽死亡时爆炸；不死之盾复活一次。</li><li><b>加冕防御塔</b>：目睹英雄击杀的防御塔 30 秒内攻速提升；击杀暴君者获得 20 秒狂暴。</li><li><b>攻城时刻</b>：18:00 起每波兵线带攻城车，21:00 起带超级兵。</li></ul></div>`,
+      <h3>特色机制</h3><ul><li><b>共鸣王冠</b>：技能命中敌方英雄会积攒王冠（金色条）。充满后下一个技能<b>加冕</b>：范围更大、1.5 倍伤害并附带短暂眩晕。</li><li><b>装备个性</b>：风暴之枪每第 4 次普攻引下分叉闪电；虚空法杖第 3 层印记引爆；冰霜之心减速攻击者；凤凰之羽死亡时爆炸；不死之盾复活一次。</li><li><b>加冕防御塔</b>：目睹英雄击杀的防御塔 30 秒内攻速提升；击杀暴君者获得 20 秒狂暴。</li><li><b>攻城时刻</b>：18:00 起每波兵线带攻城车，21:00 起带超级兵。</li><li><b>守护者</b>：水晶血量低于 40% 时会召唤三名超级兵守卫（仅一次）。</li><li><b>英雄彩蛋</b>：每位英雄都有专属被动，见英雄卡片。</li></ul></div>`,
     'hud.shop': '商店 (I)', 'hud.shopTitle': '商店', 'hud.autoBuy': '自动购买', 'hud.slain': '你被击败了', 'hud.respawnHint': '观战队友中…', 'hud.buy': '购买', 'hud.owned': '已拥有', 'hud.full': '已满',
     'hud.gold': '{g} 金币', 'hud.level': '{l} 级', 'hud.wave': '第 {n} 波', 'hud.recalling': '回城中…', 'hud.tab': '按住 Tab 查看战绩',
     'hud.tipStart': '走向你的分路。小兵将在 0:25 出发。', 'hud.controls': 'WASD 移动 · 左键普攻 · 1 2 3 技能 · 空格冲刺 · F 闪现 · B 回城 · I 商店 · Tab 战绩 · V 视角', 'hud.tipRecall': '血量低了？按 B 回城回复。',
     'score.hero': '英雄', 'score.kda': '击杀 / 死亡 / 助攻', 'score.gold': '金币', 'score.level': '等级', 'score.items': '装备',
     'overlay.captureMouse': '点击以捕获鼠标', 'overlay.towerAggro': '塔在打你！',
-    'pause.paused': '已暂停', 'pause.sub': '兵线不会等你。', 'pause.resume': '继续', 'pause.settings': '设置', 'pause.quit': '投降并退出', 'pause.online': '对局仍在进行。',
+    'pause.paused': '已暂停', 'pause.sub': '对局已暂停，喘口气。', 'pause.resume': '继续', 'pause.settings': '设置', 'pause.quit': '投降并退出', 'pause.online': '对局仍在进行。',
     'results.victory': '胜利', 'results.defeat': '失败', 'results.draw': '平局', 'results.again': '再来一局', 'results.menu': '主菜单', 'results.duration': '{m}:{s} · 击杀 {k0} – {k1}',
     'result.crystal': '水晶已被摧毁', 'result.surrender': '投降', 'result.forfeit': '对方已离开',
     'award.champion': '冠军 · 对英雄伤害最高', 'award.warlord': '破城者 · 对塔伤害最高', 'award.executioner': '处刑者 · 击杀最多', 'award.farmer': '收割者 · 补刀最多',
@@ -101,7 +101,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     'streak.killingSpree': '大杀特杀', 'streak.unstoppable': '无人能挡！', 'streak.legendary': '超神！', 'streak.ace': '团灭！',
     'feed.kill': '{killer} 击杀了 {victim}', 'feed.tower': '{team} 摧毁了{tier}塔', 'feed.crystal': '{team} 摧毁了水晶！', 'feed.objective': '{team} 击杀了{obj}',
     'tier.outer': '一', 'tier.inner': '二', 'tier.base': '高地', 'tier.crystal': '水晶',
-    'objective.tyrant': '暴君已被击杀！', 'objective.overlord': '主宰已被击杀！', 'objective.tyrantSpawned': '暴君已出现', 'objective.overlordSpawned': '主宰已出现', 'objective.siegeHour': '攻城时刻：每波兵线都带攻城车', 'objective.superHour': '每波兵线都带超级兵',
+    'objective.tyrant': '暴君已被击杀！', 'objective.overlord': '主宰已被击杀！', 'objective.tyrantSpawned': '暴君已出现', 'objective.overlordSpawned': '主宰已出现', 'objective.siegeHour': '攻城时刻：每波兵线都带攻城车', 'objective.guardians': '受创的水晶召唤了守护者！', 'objective.crumble': '城墙开始崩塌：每波兵线都会削弱所有防御塔', 'objective.superHour': '每波兵线都带超级兵',
     'buff.blue': '蓝 buff', 'buff.red': '红 buff', 'buff.tyrant': '暴君', 'buff.overlord': '主宰',
     'countdown.fight': '开战！', 'toast.recallInterrupted': '回城被打断', 'toast.skillLocked': '技能尚未学习', 'toast.noMana': '法力不足', 'toast.immortal': '复活甲！', 'toast.crowned': '加冕！下一个技能强化', 'toast.levelup': '升到 {l} 级！',
     'unit.tower': '防御塔', 'unit.minions': '小兵',

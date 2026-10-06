@@ -4,6 +4,7 @@ import { ASSIST_GOLD, HERO_KILL_GOLD, HERO_KILL_XP, MAP_H, MAP_W, MINION_GOLD, M
 import { NEUTRAL, other, type DamageType, type Entity, type Projectile, type ProjectileStyle, type Seat, type Side, type Team, type Unit } from './types.ts';
 import { World, canTarget } from './world.ts';
 import { towerAggro } from './structures.ts';
+import { callGuardians } from './waves.ts';
 
 export interface DamageOpts {
   source?: Entity;
@@ -76,7 +77,11 @@ export function damage(w: World, target: Entity, amount: number, opts: DamageOpt
   if (src && src.kind === 'unit' && src.team !== NEUTRAL) {
     const stats = w.players[src.team as Team].stats;
     const seat = w.seatOf(src);
-    if (target.kind === 'tower') { stats.towerDamage += amt; if (seat) seat.stats.towerDamage += amt; w.emit({ type: 'towerHit', pos: target.pos, team: target.team }); }
+    if (target.kind === 'tower') {
+      stats.towerDamage += amt; if (seat) seat.stats.towerDamage += amt; w.emit({ type: 'towerHit', pos: target.pos, team: target.team });
+      // a wounded crystal calls its guardians (once)
+      if (target.tier === 'crystal' && !target.guardians && target.hp > 0 && target.hp < target.maxHp * 0.4) { target.guardians = true; callGuardians(w, target.team as Team, target.pos); }
+    }
     if (isHeroUnit(target)) {
       stats.heroDamage += amt; if (seat) seat.stats.heroDamage += amt; if (src.isHero) towerAggro(w, src, target);
       // resonance: skill hits on enemy heroes charge the crown

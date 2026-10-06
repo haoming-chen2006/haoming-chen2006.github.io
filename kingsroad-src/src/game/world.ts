@@ -153,7 +153,7 @@ export class World {
     const spec = TOWER_STATS[tier];
     const t: Tower = {
       ...this.base(team, pos, spec.radius, spec.hp, false, spec.armor, spec.armor), kind: 'tower', towerType: tier, tier, lane, side: 'center',
-      active: tier === 'outer' || tier === 'crystal', damage: spec.damage, hitSpeed: spec.hitSpeed, range: spec.range, heat: 0, crownT: 0, aggroId: -1, aggroT: 0,
+      active: tier === 'outer' || tier === 'crystal', damage: spec.damage, hitSpeed: spec.hitSpeed, range: spec.range, heat: 0, crownT: 0, aggroId: -1, aggroT: 0, guardians: false,
     };
     this.add(t);
     return t;

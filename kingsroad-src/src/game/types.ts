@@ -261,6 +261,8 @@ export interface Tower extends EntityBase {
   range: number;
   heat: number; // consecutive shots on the same target ramp damage
   crownT: number; // seconds of 'crowned' fire rate after a hero kill
+  /** Crystal only: the guardians have already answered its call. */
+  guardians: boolean;
   aggroId: number; // hero that attacked an allied hero under the tower
   aggroT: number;
 }

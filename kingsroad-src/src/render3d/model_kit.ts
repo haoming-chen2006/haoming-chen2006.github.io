@@ -148,13 +148,16 @@ export function buildWeapon(kind: WeaponKind, s: number, accent: number, mats: U
   mats.push(steel, dark, wood, acc, gold);
   const add = (m: THREE.Mesh) => { grp.add(m); return m; };
   switch (kind) {
-    case 'sword':
-      add(mesh(cylGeo(s * 0.06, s * 0.07, s * 0.36, 8), wood, 0, s * 0.12, 0));
-      add(mesh(sphereGeo(s * 0.08, 8), gold, 0, -s * 0.05, 0));
-      add(mesh(rboxGeo(s * 0.5, s * 0.09, s * 0.14, s * 0.03), gold, 0, s * 0.32, 0));
-      add(mesh(boxGeo(s * 0.15, s * 1.25, s * 0.04), steel, 0, s * 0.95, 0));
-      add(mesh(coneGeo(s * 0.075, s * 0.2, 4), steel, 0, s * 1.65, 0)).rotation.y = Math.PI / 4;
-      add(mesh(boxGeo(s * 0.03, s * 1.1, s * 0.05), toon(0xb9c2cc), 0, s * 0.9, 0));
+    case 'sword': {
+      const lacquer = toon(0x7a1b1b, { roughness: 0.3 }); mats.push(lacquer);
+      add(mesh(cylGeo(s * 0.05, s * 0.06, s * 0.36, 12), lacquer, 0, s * 0.12, 0));
+      for (let i = 0; i < 4; i++) attach(grp, mesh(torusGeo(s * 0.06, s * 0.012, 6, 12), gold, 0, s * 0.02 + i * s * 0.08, 0)).rotation.x = Math.PI / 2;
+      add(mesh(sphereGeo(s * 0.07, 12), gold, 0, -s * 0.06, 0));
+      const guard = mesh(new THREE.LatheGeometry([new THREE.Vector2(0, 0), new THREE.Vector2(s * 0.28, s * 0.03), new THREE.Vector2(s * 0.22, s * 0.09), new THREE.Vector2(0, s * 0.1)], 14), gold, 0, s * 0.3, 0); guard.scale.z = 0.35; add(guard);
+      const bl = mesh(new THREE.LatheGeometry([new THREE.Vector2(0, 0), new THREE.Vector2(s * 0.11, 0), new THREE.Vector2(s * 0.09, s * 1.1), new THREE.Vector2(0, s * 1.45)], 4), steel, 0, s * 0.38, 0); bl.scale.z = 0.25; bl.rotation.y = Math.PI / 4; add(bl);
+      add(mesh(boxGeo(s * 0.02, s * 1.0, s * 0.06), toon(0x9aa5b1, { metalness: 0.9, roughness: 0.2 }), 0, s * 0.95, 0));
+      break;
+    }
       break;
     case 'dagger':
       add(mesh(cylGeo(s * 0.05, s * 0.06, s * 0.3, 8), wood, 0, s * 0.08, 0));
@@ -175,24 +178,33 @@ export function buildWeapon(kind: WeaponKind, s: number, accent: number, mats: U
       for (let i = 0; i < 3; i++) add(mesh(cylGeo(s * 0.1 - i * s * 0.02, s * 0.1 - i * s * 0.02, s * 0.12, 10), i % 2 ? acc : toon(0x2f3e5c), 0, s * 0.55 + i * s * 0.5, 0));
       break;
     case 'bow': {
-      const bow = add(mesh(torusGeo(s * 0.75, s * 0.045, Math.PI * 1.25, 14), wood, 0, s * 0.4, 0));
+      const lacq = toon(0x8a2a1a, { roughness: 0.3 }); mats.push(lacq);
+      const bow = add(mesh(torusGeo(s * 0.75, s * 0.04, Math.PI * 1.25, 20), lacq, 0, s * 0.4, 0));
       bow.rotation.z = -Math.PI * 0.625 + Math.PI / 2;
-      add(mesh(cylGeo(s * 0.07, s * 0.07, s * 0.3, 8), toon(0x5a3a1a), 0, s * 0.4, 0)).rotation.z = 0;
-      add(mesh(boxGeo(s * 0.015, s * 1.35, s * 0.015), toon(0xf5f5f5), s * 0.33, s * 0.4, 0));
+      add(mesh(cylGeo(s * 0.06, s * 0.06, s * 0.3, 12), toon(0x3a2a1e), 0, s * 0.4, 0));
+      add(mesh(cylGeo(s * 0.008, s * 0.008, s * 1.4, 4), toon(0xf5f5f5), s * 0.33, s * 0.4, 0));
+      add(mesh(sphereGeo(s * 0.05, 8), gold, 0, s * 0.4, 0));
       break;
     }
-    case 'rifle':
-      add(mesh(rboxGeo(s * 0.2, s * 0.65, s * 0.12, s * 0.03), wood, 0, s * 0.2, 0));
-      add(mesh(rboxGeo(s * 0.16, s * 0.5, s * 0.12, s * 0.03), wood, 0, s * 0.7, 0));
-      add(mesh(cylGeo(s * 0.05, s * 0.05, s * 1.6, 8), toon(0x3a3f46), 0, s * 1.15, 0));
-      add(mesh(cylGeo(s * 0.07, s * 0.07, s * 0.14, 8), dark, 0, s * 1.9, 0));
-      add(mesh(boxGeo(s * 0.06, s * 0.12, s * 0.03), gold, 0, s * 1.95, s * 0.06));
+    case 'rifle': {
+      const bronze = toon(0xb9842e, { metalness: 0.85, roughness: 0.3 }); mats.push(bronze);
+      add(mesh(new THREE.CapsuleGeometry(s * 0.09, s * 0.5, 4, 12), wood, 0, s * 0.25, 0));
+      add(mesh(cylGeo(s * 0.11, s * 0.13, s * 0.5, 14), dark, 0, s * 0.75, 0));
+      add(mesh(cylGeo(s * 0.08, s * 0.1, s * 1.3, 14), bronze, 0, s * 1.4, 0));
+      for (let i = 0; i < 3; i++) attach(grp, mesh(torusGeo(s * 0.11, s * 0.02, 6, 16), gold, 0, s * 0.9 + i * s * 0.4, 0)).rotation.x = Math.PI / 2;
+      add(mesh(cylGeo(s * 0.13, s * 0.1, s * 0.16, 14), bronze, 0, s * 2.08, 0));
+      add(mesh(sphereGeo(s * 0.06, 10), mat(accent, { emissive: accent, emissiveIntensity: 2.5, flat: false }), 0, s * 2.12, 0));
       break;
-    case 'staff':
-      add(mesh(cylGeo(s * 0.055, s * 0.07, s * 2.1, 7), wood, 0, s * 0.85, 0));
-      for (let i = 0; i < 3; i++) { const claw = mesh(coneGeo(s * 0.05, s * 0.32, 5), wood, Math.cos(i * 2.1) * s * 0.13, s * 1.95, Math.sin(i * 2.1) * s * 0.13); claw.rotation.z = -Math.cos(i * 2.1) * 0.5; claw.rotation.x = Math.sin(i * 2.1) * 0.5; add(claw); }
-      add(mesh(sphereGeo(s * 0.22, 10), mat(accent, { emissive: accent, emissiveIntensity: 3.2, flat: false }), 0, s * 2.05, 0));
+    }
+    case 'staff': {
+      const lacq = toon(0x3b2a5a, { roughness: 0.35 }); mats.push(lacq);
+      add(mesh(cylGeo(s * 0.05, s * 0.065, s * 2.1, 14), lacq, 0, s * 0.85, 0));
+      for (let i = 0; i < 3; i++) attach(grp, mesh(torusGeo(s * 0.07, s * 0.015, 6, 14), gold, 0, s * 0.3 + i * s * 0.7, 0)).rotation.x = Math.PI / 2;
+      for (let i = 0; i < 3; i++) { const claw = mesh(new THREE.CapsuleGeometry(s * 0.025, s * 0.3, 4, 8), gold, Math.cos(i * 2.1) * s * 0.14, s * 1.98, Math.sin(i * 2.1) * s * 0.14); claw.rotation.z = -Math.cos(i * 2.1) * 0.45; claw.rotation.x = Math.sin(i * 2.1) * 0.45; add(claw); }
+      add(mesh(sphereGeo(s * 0.2, 18), mat(accent, { emissive: accent, emissiveIntensity: 2.4, flat: false, roughness: 0.2, metalness: 0.1 }), 0, s * 2.1, 0));
+      attach(grp, mesh(torusGeo(s * 0.26, s * 0.015, 6, 24), gold, 0, s * 2.1, 0)).rotation.x = Math.PI / 2;
       break;
+    }
     case 'axe':
       add(mesh(cylGeo(s * 0.06, s * 0.07, s * 1.7, 7), wood, 0, s * 0.65, 0));
       for (const side of [-1, 1]) { const blade = add(mesh(cylGeo(s * 0.42, s * 0.42, s * 0.07, 12), steel, side * s * 0.32, s * 1.25, 0)); blade.rotation.x = Math.PI / 2; blade.scale.y = 0.8; }

@@ -288,7 +288,7 @@ body.in-game #viewport { right: var(--panel-w); }
 .tb-hero.dead .tb-port canvas { filter: grayscale(1) brightness(0.5); }
 .tb-rs { position: absolute; left: 0; width: 36px; top: 10px; text-align: center; font-weight: 900; color: #fff; text-shadow: 0 1px 3px #000; }
 
-#hudBottom { position: absolute; left: 14px; right: 220px; bottom: 14px; display: flex; align-items: flex-end; gap: 14px; pointer-events: none; }
+#hudBottom { position: absolute; left: 14px; right: calc(28px + min(190px, 16vw)); bottom: 14px; display: flex; align-items: flex-end; gap: 14px; pointer-events: none; }
 #heroCard { display: flex; gap: 10px; background: rgba(8,12,18,0.78); border: 1px solid rgba(255,255,255,0.1); border-radius: 14px; padding: 8px; width: 300px; backdrop-filter: blur(6px); transition: opacity .3s; }
 #heroCard.dead { opacity: 0.4; filter: grayscale(1); }
 .hc-portrait canvas { width: 72px; height: 72px; border-radius: 10px; border: 2px solid var(--gold); display: block; }
@@ -362,6 +362,18 @@ body.in-game #viewport { right: var(--panel-w); }
 .dialog.results { min-width: 420px; max-width: 560px; }
 .result-crest span { font-size: 40px; color: var(--gold); }
 #countdown.pop, #banner.pop, #streak.pop { animation-name: countPop; }
+@media (max-width: 1200px) {
+  #heroCard { width: 230px; }
+  .skill { width: 50px; height: 50px; }
+  .skill .sk-name { font-size: 9px; }
+  .skill.passive { width: 34px; height: 34px; }
+  #items { grid-template-columns: repeat(6, 30px); }
+  .item-slot { width: 30px; height: 30px; }
+  #hudBottom { gap: 8px; }
+  #goldRow { white-space: nowrap; gap: 6px; font-size: 13px; }
+  #goldRow .btn.small { padding: 4px 8px; font-size: 12px; }
+  #goldRow label { white-space: nowrap; font-size: 11px; }
+}
 @media (max-width: 900px) { .select-body { grid-template-columns: 1fr; } .hero-detail { display: none; } #hudBottom { right: 14px; flex-wrap: wrap; } #heroCard { width: 240px; } .help-cols { grid-template-columns: 1fr; } }
 
 .bar.crown { height: 6px; background: #2a2010; } .bar.crown .fill { background: linear-gradient(90deg, #c98a1e, #ffd700); } .bar.crown span { font-size: 8px; justify-content: flex-end; padding-right: 2px; color: #ffd700; }

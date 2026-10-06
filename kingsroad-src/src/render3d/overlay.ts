@@ -134,17 +134,25 @@ export class Overlay {
   }
 
   private bar(x: number, y: number, w: number, h: number, frac: number, team: Side, shield: number, text: number | null, hero: boolean, mana: number): void {
+    // 王者荣耀-style bars: rounded dark frame, health segmented every 1000 (heroes) / 25% (others), slim mana strip, gold shield overlay
     const ctx = this.ctx;
-    const mh = mana >= 0 ? h * 0.45 : 0;
-    ctx.fillStyle = 'rgba(0,0,0,0.65)'; ctx.fillRect(x - w / 2 - 1.5, y - 1.5, w + 3, h + mh + 3);
-    ctx.fillStyle = '#2a2a2a'; ctx.fillRect(x - w / 2, y, w, h);
-    ctx.fillStyle = hero ? '#7cff8a' : team === NEUTRAL ? '#d6b26b' : teamCss(team); ctx.fillRect(x - w / 2, y, w * Math.max(0, Math.min(1, frac)), h);
-    // tick marks every 25%
-    ctx.fillStyle = 'rgba(0,0,0,0.35)'; for (let i = 1; i < 4; i++) ctx.fillRect(x - w / 2 + (w * i) / 4, y, 1, h);
-    if (mana >= 0) { ctx.fillStyle = '#20304a'; ctx.fillRect(x - w / 2, y + h, w, mh); ctx.fillStyle = '#5fb0ff'; ctx.fillRect(x - w / 2, y + h, w * Math.max(0, Math.min(1, mana)), mh); }
-    if (shield > 0) { ctx.fillStyle = 'rgba(255,240,180,0.95)'; ctx.fillRect(x - w / 2, y - 3, w * Math.min(1, shield), 2.5); }
+    const mh = mana >= 0 ? h * 0.42 : 0;
+    const x0 = x - w / 2, r = Math.min(3, h / 2);
+    ctx.fillStyle = 'rgba(0,0,0,0.72)';
+    ctx.beginPath(); ctx.roundRect(x0 - 2, y - 2, w + 4, h + mh + 4, r + 1.5); ctx.fill();
+    ctx.fillStyle = '#1b2029'; ctx.beginPath(); ctx.roundRect(x0, y, w, h, r); ctx.fill();
+    const f = Math.max(0, Math.min(1, frac));
+    const col = hero ? (team === 0 ? ['#58d36a', '#2f9a44'] : ['#ff6b6b', '#c23b3b']) : team === NEUTRAL ? ['#e0c070', '#a3843a'] : team === 0 ? ['#6fb4ff', '#2f7fd6'] : ['#ff8a7a', '#d63b3b'];
+    const grad = ctx.createLinearGradient(0, y, 0, y + h); grad.addColorStop(0, col[0]); grad.addColorStop(1, col[1]);
+    ctx.fillStyle = grad; ctx.beginPath(); ctx.roundRect(x0, y, w * f, h, r); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.22)'; ctx.fillRect(x0, y, w * f, Math.max(1, h * 0.3));
+    ctx.fillStyle = 'rgba(0,0,0,0.4)';
+    if (hero && text !== null) { const max = text / Math.max(0.001, f); for (let v = 1000; v < max; v += 1000) ctx.fillRect(x0 + (w * v) / max, y, 1, h); }
+    else for (let i = 1; i < 4; i++) ctx.fillRect(x0 + (w * i) / 4, y, 1, h);
+    if (mana >= 0) { ctx.fillStyle = '#152238'; ctx.fillRect(x0, y + h + 1, w, mh - 1); ctx.fillStyle = '#5fb0ff'; ctx.fillRect(x0, y + h + 1, w * Math.max(0, Math.min(1, mana)), mh - 1); }
+    if (shield > 0) { ctx.fillStyle = 'rgba(255,230,150,0.95)'; ctx.beginPath(); ctx.roundRect(x0, y - 3.5, w * Math.min(1, shield), 2.5, 1); ctx.fill(); }
     if (text !== null) {
-      ctx.font = `700 ${Math.max(8, h * 1.3)}px ${CANVAS_FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.font = `800 ${Math.max(8, h * 1.3)}px ${CANVAS_FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.lineWidth = 2.5; ctx.strokeStyle = 'rgba(0,0,0,0.8)'; ctx.strokeText(String(text), x, y + h / 2); ctx.fillStyle = '#fff'; ctx.fillText(String(text), x, y + h / 2);
     }
   }

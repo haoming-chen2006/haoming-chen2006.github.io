@@ -450,7 +450,7 @@ export class Arena3D {
       const placements: THREE.Matrix4[] = [];
       const put = (x: number, z: number, w: number, h: number, rot: number) => { const m = new THREE.Matrix4(); m.makeRotationY(rot).setPosition(x, 0, z); m.scale(new THREE.Vector3(w, h, w)); placements.push(m); };
       for (const s of spots(340, 260, 2.2, false)) put(s.x, s.z, 0.7 + s.r * 0.5, 0.5 + s.r * 0.4, s.r * 6);
-      for (const b of BUSHES) for (let k = 0; k < Math.round(b.r * 12); k++) { const a = hash(k, b.pos.x) * Math.PI * 2, rr = Math.sqrt(hash(k, b.pos.y)) * b.r * 0.92; put(b.pos.x + Math.cos(a) * rr, b.pos.y + Math.sin(a) * rr, 1.1 + hash(k, 3) * 0.5, 1.5 + hash(k, 7) * 0.6, hash(k, 8) * 6); }
+      for (const b of BUSHES) for (let k = 0; k < Math.round(b.r * 12); k++) { const a = hash(k, b.pos.x) * Math.PI * 2, rr = Math.sqrt(hash(k, b.pos.y)) * b.r * 0.92; put(b.pos.x + Math.cos(a) * rr, b.pos.y + Math.sin(a) * rr, 1.0 + hash(k, 3) * 0.4, 1.05 + hash(k, 7) * 0.3, hash(k, 8) * 6); }
       const inst = new THREE.InstancedMesh(bladeGeo, bladeM, placements.length);
       placements.forEach((m, i) => inst.setMatrixAt(i, m));
       inst.castShadow = false; inst.receiveShadow = true; g.add(inst);

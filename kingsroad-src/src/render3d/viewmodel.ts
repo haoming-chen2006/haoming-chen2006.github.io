@@ -93,7 +93,7 @@ function gripWeapon(kind: WeaponKind, w: THREE.Group): void {
     case 'staff': w.rotation.set(-0.12, 0, -0.08); w.position.y -= 0.12; break;
     case 'spear': w.rotation.set(-1.18, 0.08, 0.02); w.position.y += 0.01; break;
     case 'lance': w.rotation.set(1.1, 0, 0.3); w.position.y += 0.02; break;
-    case 'rifle': w.rotation.set(-1.42, 0, 0); w.position.set(0.0, 0.015, 0.02); break;
+    case 'rifle': w.rotation.set(0.9, 0.1, 0.3); w.position.set(0.0, 0.015, 0.02); break;
     case 'bow': w.rotation.set(0.05, Math.PI / 2, 0); w.position.y -= 0.35; break;
     case 'orb': w.rotation.set(0, 0, 0); w.position.y += 0.02; break;
     case 'book': w.rotation.set(-1.0, 0.3, 0.2); w.position.y += 0.0; break;
@@ -137,7 +137,7 @@ export function buildViewmodel(look: Look, team: Team): Viewmodel {
   const armWeapon = (hand: THREE.Group, kind: WeaponKind, s = 0.3): THREE.Group => {
     const wm: UnitMat[] = [];
     const w = buildWeapon(kind, s, accent, wm); tameGlow(wm); mats.push(...wm);
-    gripWeapon(kind, w); hand.add(w); rig.glow.push(...findGlow(w));
+    gripWeapon(kind, w); w.name = 'weapon'; hand.add(w); rig.glow.push(...findGlow(w));
     return w;
   };
 

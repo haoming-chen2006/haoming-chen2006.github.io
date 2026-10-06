@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import type { Role, UnitDef } from '../game/types.ts';
 import { buildUnitModel } from './models.ts';
+import { packImage } from './hokpack.ts';
 
 const ROLE_BG: Record<Role, [string, string]> = {
   tank: ['#4f6f8f', '#1f2d3a'], warrior: ['#3f8f6a', '#163a2b'], assassin: ['#6b3fa0', '#241446'], mage: ['#c9412a', '#4a150c'], marksman: ['#b8742a', '#432a0c'], support: ['#8e7fd6', '#2e2a5a'],
@@ -73,5 +74,13 @@ export function cardThumbnail(def: UnitDef, w = 128, h = 170, team: 0 | 1 = 0): 
     console.warn('thumbnail failed', def.id, err);
   }
   cache.set(key, out);
+  // official portrait from the sponsor pack replaces the render once it loads (same canvas, so every holder updates)
+  if (def.kind === 'hero') void packImage(`heroes/${def.id}/portrait.png`).then((img) => {
+    if (!img) return;
+    const g = out.getContext('2d')!;
+    const scale = Math.max(out.width / img.width, out.height / img.height);
+    const dw = img.width * scale, dh = img.height * scale;
+    g.drawImage(img, (out.width - dw) / 2, (out.height - dh) / 2, dw, dh);
+  });
   return out;
 }

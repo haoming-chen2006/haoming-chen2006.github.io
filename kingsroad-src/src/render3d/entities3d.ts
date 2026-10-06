@@ -4,9 +4,10 @@ import type { Building, Entity, Tower, Unit } from '../game/types.ts';
 import type { World } from '../game/world.ts';
 import { activeFx } from './effects3d.ts';
 import { animateUnit, buildBuildingModel, buildTowerModel, buildUnitModel, disposeModel, disposeObject, setTint, type BuildingModel, type TowerModel, type UnitModel, animateTowerFlags } from './models.ts';
+import { packModel } from './hokpack.ts';
 
 interface StatusFx { ice?: THREE.Mesh; stars?: THREE.Group; bubble?: THREE.Mesh; aura?: THREE.Mesh; champ?: THREE.Mesh }
-interface UnitRec { model: UnitModel; unit: Unit; squash: number; lastFlash: number; lastHp: number; fx: StatusFx; wasDashing: boolean; emberT: number; heroLook: boolean }
+interface UnitRec { model: UnitModel; unit: Unit; squash: number; lastFlash: number; lastHp: number; fx: StatusFx; wasDashing: boolean; emberT: number; heroLook: boolean; packBody?: THREE.Object3D }
 interface TowerRec { model: TowerModel; tower: Tower; lastHp: number }
 interface BuildingRec { model: BuildingModel; building: Building }
 type DeathMode = 'fall' | 'collapse' | 'spiral' | 'dissolve' | 'tower' | 'building';
@@ -143,12 +144,15 @@ export class Entities3D {
       this.scene.add(model.root);
       r = { model, unit: u, squash: 0, lastFlash: 0, lastHp: u.hp, fx: {}, wasDashing: false, emberT: 0, heroLook: false };
       this.units.set(u.id, r);
+      // sponsor pack: swap in the official hero model (keeps the ring/aura, hides the stand-in body)
+      if (u.isHero) { const id = u.id; void packModel(u.def.id).then((m) => { const rec = this.units.get(id); if (!m || !rec || rec.model !== model) return; const clone = m.clone(); rec.model.body.visible = false; rec.model.root.add(clone); rec.packBody = clone; }); }
     }
     r.unit = u;
     const m = r.model;
     const fx = activeFx;
     m.root.position.set(u.pos.x, 0, u.pos.y);
     m.body.rotation.y = -u.facing;
+    if (r.packBody) r.packBody.rotation.y = -u.facing + Math.PI / 2;
     const moving = Math.hypot(u.pos.x - u.lastPos.x, u.pos.y - u.lastPos.y) > 0.003 || !!u.dashVel;
     animateUnit(m, {
       moving, speed: u.def.speed, attackAnim: u.attackAnim, time: time + u.bobT, stunned: u.status.stun > 0, frozen: u.status.freeze > 0,

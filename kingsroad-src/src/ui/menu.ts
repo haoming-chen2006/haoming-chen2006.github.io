@@ -1,6 +1,7 @@
 import type { Difficulty } from '../game/bot.ts';
 import { HEROES, heroDef, pickTeam } from '../game/heroes.ts';
 import { SPELL_LIST, isSpell } from '../game/spells.ts';
+import { packVoice, packImage } from '../render3d/hokpack.ts';
 import { ITEMS } from '../game/items.ts';
 import { MODE_SIZE, type MatchMode } from '../game/sim.ts';
 import type { Role, UnitDef } from '../game/types.ts';
@@ -193,12 +194,13 @@ export class Menus {
     const def = heroDef(selected);
     detail.innerHTML = heroDetailHtml(def);
     (detail.querySelector('.hd-port') as HTMLElement).appendChild(cardThumbnail(def, 220, 300));
+    void packImage(`heroes/${def.id}/splash.jpg`).then((img) => { if (img && detail.querySelector('.hd-port')) { (detail as HTMLElement).style.backgroundImage = `linear-gradient(180deg, rgba(8,12,18,0.2), rgba(8,12,18,0.9) 70%), url(${img.src})`; (detail as HTMLElement).style.backgroundSize = 'cover'; } });
   }
 
   private renderSelect(): void {
     const s = this.settings;
     $('selectMode').textContent = t('select.mode', { mode: s.mode, diff: t(`diff.${s.difficulty}`) });
-    this.renderGrid($('heroGrid'), $('heroDetail'), s.hero, (id) => { s.hero = id; saveSettings(s); this.renderSelect(); });
+    this.renderGrid($('heroGrid'), $('heroDetail'), s.hero, (id) => { s.hero = id; saveSettings(s); packVoice(id, 'pick'); this.renderSelect(); });
     const row = $('spellRow'); row.innerHTML = '';
     for (const sp of SPELL_LIST) {
       const b = document.createElement('button'); b.className = `spell-btn ${s.spell === sp.id ? 'selected' : ''}`;

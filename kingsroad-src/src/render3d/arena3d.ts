@@ -6,6 +6,7 @@ import type { World } from '../game/world.ts';
 import { bannerTexture } from './textures.ts';
 import { mergeByMaterial } from './model_kit.ts';
 import { loadModel, pbrMaterial } from './pbr.ts';
+import { packTexture } from './hokpack.ts';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { grassBladeTexture } from './textures.ts';
 import { isMine } from './perspective.ts';
@@ -403,6 +404,13 @@ export class Arena3D {
     mergeByMaterial(decor);
     mergeByMaterial(this.statics);
     void this.placeModels();
+    void this.applyPack(floor, outer);
+  }
+
+  /** Sponsor pack ground textures replace the CC0 set when present. */
+  private async applyPack(floor: THREE.Mesh, outer: THREE.Mesh): Promise<void> {
+    const g = await packTexture('grass', ARENA_W / 5.5);
+    if (g) { for (const m of [floor, outer]) { const mat = m.material as THREE.MeshStandardMaterial; mat.map = g; mat.normalMap = null; mat.aoMap = null; mat.roughnessMap = null; mat.metalnessMap = null; mat.metalness = 0; mat.color.set(0xffffff); mat.needsUpdate = true; } }
   }
 
   /** CC0 props (Poly Haven): mossy boulders in the jungle, ferns at the cliff feet, wooden lanterns by the lanes. */

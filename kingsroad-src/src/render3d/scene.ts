@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
@@ -52,11 +53,16 @@ export class GameView {
   constructor(canvas: HTMLCanvasElement, overlayCanvas: HTMLCanvasElement) {
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
     this.renderer.shadowMap.enabled = true;
-    this.renderer.shadowMap.type = THREE.PCFShadowMap;
+    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.05;
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.rig = new CameraRig(1);
+    // image-based lighting so PBR metals and lacquer pick up reflections
+    const pmrem = new THREE.PMREMGenerator(this.renderer);
+    this.scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+    this.scene.environmentIntensity = 0.55;
+    pmrem.dispose();
     this.arena = new Arena3D(this.scene);
     this.ents = new Entities3D(this.scene);
     this.fx = new Effects3D(this.scene);
@@ -68,7 +74,7 @@ export class GameView {
     this.sun.position.set(ARENA_W / 2 + 22, 42, ARENA_H / 2 + 14);
     this.sun.target.position.set(ARENA_W / 2, 0, ARENA_H / 2);
     this.sun.castShadow = true;
-    this.sun.shadow.mapSize.set(1536, 1536);
+    this.sun.shadow.mapSize.set(2048, 2048);
     const sc = this.sun.shadow.camera;
     sc.left = -26; sc.right = 26; sc.top = 30; sc.bottom = -30; sc.near = 5; sc.far = 120;
     this.sun.shadow.bias = -0.0004;

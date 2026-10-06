@@ -10,6 +10,8 @@ import { hashWorld } from './game/hash.ts';
 import { inWall, lanePath, laneProgress, lanePoint, laneAdvance, nearestFree } from './game/map.ts';
 import { Menus, loadSettings, saveSettings, showLoading, type ScreenName } from './ui/menu.ts';
 import { Online } from './ui/online.ts';
+import { cardThumbnail } from './render3d/thumbnails.ts';
+import { heroDef } from './game/heroes.ts';
 
 const $ = (id: string): HTMLElement => { const el = document.getElementById(id); if (!el) throw new Error(`missing #${id}`); return el; };
 
@@ -141,6 +143,7 @@ handleRoute();
   hash: () => (game.world ? hashWorld(game.world) : 0),
   net: () => online.stats,
   map: { inWall, lanePath, laneProgress, lanePoint, laneAdvance, nearestFree },
+  thumb: cardThumbnail, heroDef,
   start: startBattle,
   toScreen(x: number, z: number, y = 0.05): { x: number; y: number } {
     const r = canvas.getBoundingClientRect();

@@ -203,7 +203,8 @@ export class Overlay {
   private minimap(world: World, rig: CameraRig, st: OverlayState, big: boolean): void {
     const ctx = this.ctx;
     const size = big ? Math.min(this.w, this.h) * 0.7 : Math.min(190, this.w * 0.16);
-    const x0 = big ? (this.w - size) / 2 : this.w - size - 14, y0 = big ? (this.h - size) / 2 : this.h - size - 14;
+    // 王者荣耀 keeps the 小地图 top-left
+    const x0 = big ? (this.w - size) / 2 : 14, y0 = big ? (this.h - size) / 2 : 14;
     this.minimapRect = { x: x0, y: y0, w: size, h: size };
     const s = size / ARENA_W;
     const me = getViewTeam();

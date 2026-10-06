@@ -139,15 +139,15 @@ function heroFlourishes(look: Look, s: number, grp: THREE.Group, torso: THREE.Gr
     switch (look.hair.style) {
       case 'long': { const back = mesh(rboxGeo(s * 0.3, s * 1.1, s * 0.6, s * 0.08), hairM, -s * 0.34, -s * 0.05, 0); headG.add(back); break; }
       case 'pony': { const tail = mesh(cylGeo(s * 0.12, s * 0.07, s * 0.9, 7), hairM, -s * 0.45, s * 0.25, 0); tail.rotation.z = 0.5; headG.add(tail); headG.add(mesh(torusGeo(s * 0.14, s * 0.04, Math.PI * 2, 10), toon(0xe9c46a), -s * 0.36, s * 0.6, 0)); break; }
-      case 'bun': { headG.add(mesh(sphereGeo(s * 0.2, 9), hairM, -s * 0.1, s * 1.0, 0)); headG.add(mesh(cylGeo(s * 0.02, s * 0.02, s * 0.6, 4), toon(0xe9c46a), -s * 0.1, s * 1.05, 0)).rotation.x = 1.2; break; }
+      case 'bun': { headG.add(mesh(sphereGeo(s * 0.2, 9), hairM, -s * 0.1, s * 1.0, 0)); attach(headG, mesh(cylGeo(s * 0.02, s * 0.02, s * 0.6, 4), toon(0xe9c46a), -s * 0.1, s * 1.05, 0)).rotation.x = 1.2; break; }
       case 'twin': { for (const side of [-1, 1]) { const t = mesh(cylGeo(s * 0.11, s * 0.06, s * 0.85, 7), hairM, -s * 0.1, s * 0.2, side * s * 0.52); t.rotation.x = side * 0.35; headG.add(t); headG.add(mesh(sphereGeo(s * 0.09, 7), toon(hex(look.accent)), -s * 0.1, s * 0.62, side * s * 0.52)); } break; }
-      case 'topknot': { headG.add(mesh(cylGeo(s * 0.13, s * 0.16, s * 0.3, 8), hairM, -s * 0.05, s * 1.0, 0)); headG.add(mesh(torusGeo(s * 0.15, s * 0.035, Math.PI * 2, 10), toon(0xe9c46a), -s * 0.05, s * 0.88, 0)).rotation.x = Math.PI / 2; break; }
+      case 'topknot': { headG.add(mesh(cylGeo(s * 0.13, s * 0.16, s * 0.3, 8), hairM, -s * 0.05, s * 1.0, 0)); attach(headG, mesh(torusGeo(s * 0.15, s * 0.035, Math.PI * 2, 10), toon(0xe9c46a), -s * 0.05, s * 0.88, 0)).rotation.x = Math.PI / 2; break; }
       case 'short': default: break;
     }
   }
   if (look.ears === 'fox' || look.ears === 'cat') {
     const earM = toon(look.hair ? hex(look.hair.color) : hex(look.accent)); mats.push(earM);
-    for (const side of [-1, 1]) { const ear = mesh(coneGeo(s * 0.14, s * 0.42, 5), earM, -s * 0.05, s * 0.95, side * s * 0.3); ear.rotation.x = side * -0.35; headG.add(ear); headG.add(mesh(coneGeo(s * 0.07, s * 0.26, 5), toon(0xffe6f0), -s * 0.0, s * 0.92, side * s * 0.3)).rotation.x = side * -0.35; }
+    for (const side of [-1, 1]) { const ear = mesh(coneGeo(s * 0.14, s * 0.42, 5), earM, -s * 0.05, s * 0.95, side * s * 0.3); ear.rotation.x = side * -0.35; headG.add(ear); attach(headG, mesh(coneGeo(s * 0.07, s * 0.26, 5), toon(0xffe6f0), -s * 0.0, s * 0.92, side * s * 0.3)).rotation.x = side * -0.35; }
   }
   if (look.horns) {
     const hornM = toon(0xf1e7d0); mats.push(hornM);

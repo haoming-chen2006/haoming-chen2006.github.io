@@ -79,7 +79,7 @@ export class Hud {
       const need = World.xpToNext(seat.level);
       ($('xpFill')).style.width = `${need === Infinity ? 100 : (100 * seat.xp) / need}%`;
       $('gold').textContent = String(Math.floor(seat.gold));
-      ($('crownFill')).style.width = `${h.crown}%`; $('crownBar').classList.toggle('full', h.crowned);
+      ($('crownFill')).style.width = `${h.crown}%`; $('crownBar').classList.toggle('full', h.crowned); document.body.classList.toggle('festival', w.twists);
       // passive badge: name + rules text on hover, lit while the hero's twist is in effect
       const pv = $('skPassive');
       if (h.def.passive) {

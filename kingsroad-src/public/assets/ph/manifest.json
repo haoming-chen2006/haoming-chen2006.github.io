@@ -1,0 +1,108 @@
+{
+ "license": "CC0 1.0 (Poly Haven)",
+ "res": "1k",
+ "textures": {
+  "leafy_grass": {
+   "Diffuse": "textures/leafy_grass/Diffuse.jpg",
+   "nor_gl": "textures/leafy_grass/nor_gl.jpg",
+   "arm": "textures/leafy_grass/arm.jpg"
+  },
+  "grass_ground": {
+   "Diffuse": "textures/grass_ground/Diffuse.jpg",
+   "nor_gl": "textures/grass_ground/nor_gl.jpg",
+   "arm": "textures/grass_ground/arm.jpg"
+  },
+  "forest_floor": {
+   "Diffuse": "textures/forest_floor/Diffuse.jpg",
+   "nor_gl": "textures/forest_floor/nor_gl.jpg",
+   "arm": "textures/forest_floor/arm.jpg"
+  },
+  "patterned_paving": {
+   "Diffuse": "textures/patterned_paving/Diffuse.jpg",
+   "nor_gl": "textures/patterned_paving/nor_gl.jpg",
+   "arm": "textures/patterned_paving/arm.jpg"
+  },
+  "stone_pathway_02": {
+   "Diffuse": "textures/stone_pathway_02/Diffuse.jpg",
+   "nor_gl": "textures/stone_pathway_02/nor_gl.jpg",
+   "arm": "textures/stone_pathway_02/arm.jpg"
+  },
+  "mossy_rock": {
+   "Diffuse": "textures/mossy_rock/Diffuse.jpg",
+   "nor_gl": "textures/mossy_rock/nor_gl.jpg",
+   "arm": "textures/mossy_rock/arm.jpg"
+  },
+  "rock_face": {
+   "Diffuse": "textures/rock_face/Diffuse.jpg",
+   "nor_gl": "textures/rock_face/nor_gl.jpg",
+   "arm": "textures/rock_face/arm.jpg"
+  },
+  "japanese_stone_wall": {
+   "Diffuse": "textures/japanese_stone_wall/Diffuse.jpg",
+   "nor_gl": "textures/japanese_stone_wall/nor_gl.jpg",
+   "arm": "textures/japanese_stone_wall/arm.jpg"
+  },
+  "white_sandstone_bricks": {
+   "Diffuse": "textures/white_sandstone_bricks/Diffuse.jpg",
+   "nor_gl": "textures/white_sandstone_bricks/nor_gl.jpg",
+   "arm": "textures/white_sandstone_bricks/arm.jpg"
+  },
+  "grey_roof_tiles": {
+   "Diffuse": "textures/grey_roof_tiles/Diffuse.jpg",
+   "nor_gl": "textures/grey_roof_tiles/nor_gl.jpg",
+   "arm": "textures/grey_roof_tiles/arm.jpg"
+  },
+  "clay_roof_tiles_03": {
+   "Diffuse": "textures/clay_roof_tiles_03/Diffuse.jpg",
+   "nor_gl": "textures/clay_roof_tiles_03/nor_gl.jpg",
+   "arm": "textures/clay_roof_tiles_03/arm.jpg"
+  },
+  "japanese_cedar_planks": {
+   "Diffuse": "textures/japanese_cedar_planks/Diffuse.jpg",
+   "nor_gl": "textures/japanese_cedar_planks/nor_gl.jpg",
+   "arm": "textures/japanese_cedar_planks/arm.jpg"
+  },
+  "bamboo_wall": {
+   "Diffuse": "textures/bamboo_wall/Diffuse.jpg",
+   "nor_gl": "textures/bamboo_wall/nor_gl.jpg",
+   "arm": "textures/bamboo_wall/arm.jpg"
+  },
+  "sakura_bark": {
+   "Diffuse": "textures/sakura_bark/Diffuse.jpg",
+   "nor_gl": "textures/sakura_bark/nor_gl.jpg",
+   "arm": "textures/sakura_bark/arm.jpg"
+  },
+  "river_small_rocks": {
+   "Diffuse": "textures/river_small_rocks/Diffuse.jpg",
+   "nor_gl": "textures/river_small_rocks/nor_gl.jpg",
+   "arm": "textures/river_small_rocks/arm.jpg"
+  },
+  "dirt": {
+   "Diffuse": "textures/dirt/Diffuse.jpg",
+   "nor_gl": "textures/dirt/nor_gl.jpg",
+   "arm": "textures/dirt/arm.jpg"
+  },
+  "marble_tiles": {
+   "Diffuse": "textures/marble_tiles/Diffuse.jpg",
+   "nor_gl": "textures/marble_tiles/nor_gl.jpg",
+   "arm": "textures/marble_tiles/arm.jpg"
+  },
+  "coast_sand_01": {
+   "Diffuse": "textures/coast_sand_01/Diffuse.jpg",
+   "nor_gl": "textures/coast_sand_01/nor_gl.jpg",
+   "arm": "textures/coast_sand_01/arm.jpg"
+  }
+ },
+ "models": {
+  "jacaranda_tree": "models/jacaranda_tree/jacaranda_tree.gltf",
+  "island_tree_02": "models/island_tree_02/island_tree_02.gltf",
+  "pine_tree_01": "models/pine_tree_01/pine_tree_01.gltf",
+  "rock_moss_set_01": "models/rock_moss_set_01/rock_moss_set_01.gltf",
+  "rock_moss_set_02": "models/rock_moss_set_02/rock_moss_set_02.gltf",
+  "boulder_01": "models/boulder_01/boulder_01.gltf",
+  "namaqualand_boulder_02": "models/namaqualand_boulder_02/namaqualand_boulder_02.gltf",
+  "fern_02": "models/fern_02/fern_02.gltf",
+  "grass_medium_01": "models/grass_medium_01/grass_medium_01.gltf",
+  "wooden_lantern_01": "models/wooden_lantern_01/wooden_lantern_01.gltf"
+ }
+}

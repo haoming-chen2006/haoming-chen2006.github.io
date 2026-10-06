@@ -284,6 +284,7 @@ body.in-game #viewport { right: var(--panel-w); }
 .net-pill { font-size: 11px; padding: 2px 8px; border-radius: 999px; background: rgba(60,120,60,0.6); margin-top: 2px; } .net-pill.warn { background: rgba(140,110,30,0.7); } .net-pill.bad { background: rgba(150,40,40,0.8); }
 
 #teamBars { position: absolute; top: 70px; left: 12px; right: 12px; display: flex; justify-content: space-between; pointer-events: none; }
+#teamBars .teambar:not(.enemy) { margin-top: calc(min(190px, 16vw) + 10px); }
 .teambar { display: flex; flex-direction: column; gap: 6px; }
 .teambar.enemy { align-items: flex-end; }
 .tb-hero { position: relative; width: 44px; height: 44px; }
@@ -296,7 +297,7 @@ body.in-game #viewport { right: var(--panel-w); }
 .tb-hero.dead .tb-port canvas { filter: grayscale(1) brightness(0.5); }
 .tb-rs { position: absolute; left: 0; width: 36px; top: 10px; text-align: center; font-weight: 900; color: #fff; text-shadow: 0 1px 3px #000; }
 
-#hudBottom { position: absolute; left: 14px; right: calc(28px + min(190px, 16vw)); bottom: 14px; display: flex; align-items: flex-end; gap: 14px; pointer-events: none; }
+#hudBottom { position: absolute; left: 14px; right: 14px; bottom: 14px; display: flex; align-items: flex-end; gap: 14px; pointer-events: none; }
 #heroCard { display: flex; gap: 10px; background: rgba(8,12,18,0.78); border: 1px solid rgba(255,255,255,0.1); border-radius: 14px; padding: 8px; width: 300px; backdrop-filter: blur(6px); transition: opacity .3s; }
 #heroCard.dead { opacity: 0.4; filter: grayscale(1); }
 .hc-portrait canvas { width: 72px; height: 72px; border-radius: 10px; border: 2px solid var(--gold); display: block; }
@@ -385,7 +386,8 @@ body.in-game #viewport { right: var(--panel-w); }
 }
 @media (max-width: 900px) { .select-body { grid-template-columns: 1fr; } .hero-detail { display: none; } #hudBottom { right: 14px; flex-wrap: wrap; } #heroCard { width: 240px; } .help-cols { grid-template-columns: 1fr; } }
 
-.bar.crown { height: 6px; background: #2a2010; } .bar.crown .fill { background: linear-gradient(90deg, #c98a1e, #ffd700); } .bar.crown span { font-size: 8px; justify-content: flex-end; padding-right: 2px; color: #ffd700; }
+.bar.crown { display: none; }
+.festival .bar.crown { display: block; height: 6px; background: #2a2010; } .bar.crown .fill { background: linear-gradient(90deg, #c98a1e, #ffd700); } .bar.crown span { font-size: 8px; justify-content: flex-end; padding-right: 2px; color: #ffd700; }
 .bar.crown.full { box-shadow: 0 0 10px #ffd700; animation: pulse 0.6s infinite alternate; }
 .skill.crowned { border-color: #ffd700; box-shadow: 0 0 18px #ffd700; }
 

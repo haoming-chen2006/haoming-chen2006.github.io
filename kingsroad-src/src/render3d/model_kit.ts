@@ -8,7 +8,7 @@ export type UnitMat = THREE.MeshStandardMaterial | THREE.MeshToonMaterial;
 /** Resolved against the viewer's side: blue is always "mine". See perspective.ts. */
 export const TEAM_HEX: Record<number, number> = { get 0() { return teamHex(0); }, get 1() { return teamHex(1); }, get 2() { return teamHex(2); } };
 export const SKIN = 0xf1c9a5;
-export const OUTLINES = true;
+export const OUTLINES = false;
 
 let gradientMap: THREE.DataTexture | null = null;
 /** Three-band gradient for cel shading. */
@@ -52,17 +52,18 @@ export function wingGeo(key: string, pts: [number, number][]): THREE.BufferGeome
 
 export function mat(color: number | string, opts: { emissive?: number; emissiveIntensity?: number; roughness?: number; metalness?: number; transparent?: boolean; opacity?: number; flat?: boolean; side?: THREE.Side } = {}): THREE.MeshStandardMaterial {
   return new THREE.MeshStandardMaterial({
-    color, roughness: opts.roughness ?? 0.7, metalness: opts.metalness ?? 0.05, flatShading: opts.flat ?? true,
+    color, roughness: opts.roughness ?? 0.7, metalness: opts.metalness ?? 0.05, flatShading: false,
     emissive: opts.emissive ?? 0x000000, emissiveIntensity: opts.emissiveIntensity ?? 1, transparent: opts.transparent ?? false, opacity: opts.opacity ?? 1,
     side: opts.side ?? THREE.FrontSide,
   });
 }
 
 /** Cel-shaded material used for characters so they read clearly against the environment. */
-export function toon(color: number | string, opts: { emissive?: number; emissiveIntensity?: number; transparent?: boolean; opacity?: number; side?: THREE.Side } = {}): THREE.MeshToonMaterial {
-  return new THREE.MeshToonMaterial({
-    color, gradientMap: toonGradient(), emissive: opts.emissive ?? 0x000000, emissiveIntensity: opts.emissiveIntensity ?? 1,
-    transparent: opts.transparent ?? false, opacity: opts.opacity ?? 1, side: opts.side ?? THREE.FrontSide,
+export function toon(color: number | string, opts: { emissive?: number; emissiveIntensity?: number; transparent?: boolean; opacity?: number; side?: THREE.Side; roughness?: number; metalness?: number } = {}): THREE.MeshStandardMaterial {
+  // smooth, softly lit stylised shading (王者荣耀 look) — the cel gradient and outlines are gone
+  return new THREE.MeshStandardMaterial({
+    color, roughness: opts.roughness ?? 0.62, metalness: opts.metalness ?? 0.0, emissive: opts.emissive ?? 0x000000, emissiveIntensity: opts.emissiveIntensity ?? 1,
+    transparent: opts.transparent ?? false, opacity: opts.opacity ?? 1, side: opts.side ?? THREE.FrontSide, envMapIntensity: 0.5,
   });
 }
 

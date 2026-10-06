@@ -4,6 +4,7 @@ import type { UnitDef, Look, Team } from '../game/types.ts';
 import type { TowerTier } from '../game/constants.ts';
 import { TEAM_HEX, boxGeo, buildWeapon, coneGeo, cylGeo, mat, attach, mergeByMaterial, mesh, rboxGeo, sphereGeo, toon, torusGeo, type UnitMat } from './model_kit.ts';
 import { buildBeast, buildBrute, buildDragon, buildFlyer, buildHumanoid, buildWraith, type UnitParts } from './models_units.ts';
+import { buildAnimeHumanoid } from './models_anime.ts';
 import { stoneTexture } from './textures.ts';
 
 export { TEAM_HEX, buildWeapon, mat, toon };
@@ -44,7 +45,7 @@ export function buildUnitModel(look: Look, team: Team, seed = 0): UnitModel {
   root.add(body);
   let built;
   switch (look.shape) {
-    case 'humanoid': built = buildHumanoid(look, team); break;
+    case 'humanoid': built = buildAnimeHumanoid(look, team); break;
     case 'skeleton': built = buildHumanoid(look, team, { bone: true }); break;
     case 'brute': built = buildBrute(look, team); break;
     case 'flyer': built = buildFlyer(look, team); break;

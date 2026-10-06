@@ -43,6 +43,7 @@ export type NetMsg =
   | { k: 'in'; seat: string; f: WireFrame[] }
   | { k: 'hash'; seat: string; t: number; h: number }
   | { k: 'drop'; seat: string; t: number }
+  | { k: 'need'; seat: string; from: number }
   | { k: 'chat'; name: string; text: string }
   | { k: 'leave'; seat: string; reason?: string; t?: number }
   | { k: 'ping'; n: number; s: number }

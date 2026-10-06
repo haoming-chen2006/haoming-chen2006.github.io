@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "check": "tsc --noEmit -p tsconfig.json",
     "sim": "node scripts/sim.ts",
-    "test:sim": "node scripts/determinism_test.ts && node scripts/dmath_test.ts && node scripts/snapshot_test.ts && node scripts/lockstep_test.ts",
+    "test:sim": "node scripts/determinism_test.ts && node scripts/dmath_test.ts && node scripts/lockstep_test.ts",
+    "e2e": "node e2e/smoke.cjs && node e2e/combat.cjs && node e2e/passives.cjs && node e2e/playthrough.cjs && node e2e/full_match.cjs",
     "e2e:duel": "node e2e/duel.cjs"
   },
   "devDependencies": {

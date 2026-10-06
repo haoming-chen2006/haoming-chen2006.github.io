@@ -29,19 +29,24 @@ export class Lockstep {
   private lastPingT = 0;
   private unsub: () => void;
   advanceStats: LockstepStats | null = null;
+  private lastNeedT = 0;
+  /** Wall clock in ms; tests substitute a simulated one. */
+  clock: () => number = () => performance.now();
   onDesync: () => void = () => {};
   onDrop: (seat: string) => void = () => {};
   onLeave: (seat: string) => void = () => {};
   onChat: (name: string, text: string) => void = () => {};
 
-  constructor(
-    private sim: Simulation,
-    private room: Room,
-    readonly mySeat: string,
-    readonly humanSeats: string[],
-    readonly delay: number,
-    readonly sendEvery: number,
-  ) {
+  private sim: Simulation;
+  private room: Room;
+  readonly mySeat: string;
+  readonly humanSeats: string[];
+  readonly delay: number;
+  readonly sendEvery: number;
+
+  // plain fields (not parameter properties) so the headless node tests can import this file
+  constructor(sim: Simulation, room: Room, mySeat: string, humanSeats: string[], delay: number, sendEvery: number) {
+    this.sim = sim; this.room = room; this.mySeat = mySeat; this.humanSeats = humanSeats; this.delay = delay; this.sendEvery = sendEvery;
     for (const s of humanSeats) this.frames.set(s, new Map());
     this.unsub = room.onEvent((e) => {
       if (e.type === 'chat') this.onChat(e.name, e.text);
@@ -69,9 +74,18 @@ export class Lockstep {
         break;
       }
       case 'drop': this.dropped.set(m.seat, Math.max(m.t, this.dropped.get(m.seat) ?? 0)); this.onDrop(m.seat); break;
+      case 'need': {
+        // a peer is missing some of my frames (lost packet / late join): resend everything from that tick on
+        if (m.seat !== this.mySeat) break;
+        const my = this.frames.get(this.mySeat)!;
+        const f: WireFrame[] = [];
+        for (let t = m.from; t <= this.lastSentTick; t++) { const c = my.get(t); if (c) f.push({ t, c: encodeCmd(c) }); }
+        if (f.length) void this.room.sendMsg({ k: 'in', seat: this.mySeat, f });
+        break;
+      }
       case 'leave': { const at = (m as { t?: number }).t ?? this.tick; this.dropped.set(m.seat, Math.max(at, this.dropped.get(m.seat) ?? 0)); this.onLeave(m.seat); break; }
       case 'ping': void this.room.sendMsg({ k: 'pong', n: m.n, s: m.s, to: '' }); break;
-      case 'pong': { const s = this.pingSent.get(m.n); if (s !== undefined) { this.rtt = performance.now() - s; this.pingSent.delete(m.n); } break; }
+      case 'pong': { const s = this.pingSent.get(m.n); if (s !== undefined) { this.rtt = this.clock() - s; this.pingSent.delete(m.n); } break; }
       default: break;
     }
   }
@@ -142,9 +156,11 @@ export class Lockstep {
         for (const map of this.frames.values()) for (const k of [...map.keys()]) if (k < this.tick - 120) map.delete(k);
       }
     }
-    const now = performance.now();
+    const now = this.clock();
     if (waitingFor) {
       if (!this.waitSince) this.waitSince = now;
+      // ask for the missing frames instead of hoping the next batch covers them
+      if (now - this.waitSince > 120 && now - this.lastNeedT > 120) { this.lastNeedT = now; void this.room.sendMsg({ k: 'need', seat: waitingFor, from: this.tick }); }
       // the host drops a seat that has been silent for a long time
       if (this.room.isHost && now - this.waitSince > 8000) { this.dropped.set(waitingFor, this.tick); void this.room.sendMsg({ k: 'drop', seat: waitingFor, t: this.tick }); this.onDrop(waitingFor); this.waitSince = 0; }
     } else this.waitSince = 0;

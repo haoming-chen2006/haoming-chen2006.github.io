@@ -24,6 +24,7 @@ export interface Settings {
   invertY: boolean;
   announcer: boolean;
   spell: string;
+  festival: boolean;
   fov: number;
   name: string;
 }
@@ -34,7 +35,7 @@ const clamp = (v: number, lo: number, hi: number, fallback: number): number => (
 export function loadSettings(): Settings {
   const def: Settings = {
     hero: 'houyi', mode: '5v5', difficulty: 'normal', sound: true, music: true, firstPerson: true, quality: 'high', record: { wins: 0, losses: 0, draws: 0 },
-    sfxVolume: 0.55, musicVolume: 0.5, sensitivity: 1, invertY: false, announcer: true, spell: 'flash', fov: 78, name: '',
+    sfxVolume: 0.55, musicVolume: 0.5, sensitivity: 1, invertY: false, announcer: true, spell: 'flash', festival: false, fov: 78, name: '',
   };
   try {
     const raw = localStorage.getItem(KEY);
@@ -123,6 +124,7 @@ export class Menus {
     bindRange('setSens', 'setSensOut', () => s.sensitivity, (v) => { s.sensitivity = v; }, (v) => `${v.toFixed(1)}×`);
     bindRange('setFov', 'setFovOut', () => s.fov, (v) => { s.fov = v; }, (v) => `${v}°`);
     const inv = $('setInvert') as HTMLInputElement; inv.checked = s.invertY; inv.addEventListener('change', () => { s.invertY = inv.checked; saveSettings(s); this.applyAudio(); });
+    const fest = $('setFestival') as HTMLInputElement; fest.checked = s.festival; fest.addEventListener('change', () => { s.festival = fest.checked; saveSettings(s); });
     const ann = $('setAnnouncer') as HTMLInputElement; ann.checked = s.announcer; ann.addEventListener('change', () => { s.announcer = ann.checked; saveSettings(s); this.applyAudio(); });
     const fp = $('setFirst') as HTMLInputElement; fp.checked = s.firstPerson; fp.addEventListener('change', () => { s.firstPerson = fp.checked; saveSettings(s); this.applyAudio(); });
     $('setQuality').querySelectorAll<HTMLButtonElement>('button').forEach((b) => b.addEventListener('click', () => { s.quality = b.dataset.q as 'high' | 'low'; saveSettings(s); this.applyAudio(); this.refreshMenu(); }));

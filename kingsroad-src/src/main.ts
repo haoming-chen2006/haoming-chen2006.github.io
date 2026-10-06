@@ -72,7 +72,7 @@ function startBattle(): void {
   menus.show('game');
   applyAudioSettings();
   const mine: SeatSetup[] = [{ heroId: settings.hero, isBot: false, name: settings.name || t('common.you'), spell: settings.spell }];
-  const cfg: MatchConfig = { mode: settings.mode, difficulty: settings.difficulty, teams: [mine, []] };
+  const cfg: MatchConfig = { mode: settings.mode, difficulty: settings.difficulty, teams: [mine, []], twists: settings.festival };
   game.start(cfg);
 }
 

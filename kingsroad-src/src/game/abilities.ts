@@ -79,7 +79,17 @@ export function useSkill(w: World, u: Unit, i: number, aim: Vec): boolean {
         w.addEffect({ type: 'ring', pos: { ...u.pos }, dur: 0.8, radius: a.radius ?? 3, color });
       } else {
         areaDamage(w, u.team, u.pos, (a.radius ?? 2) + radiusBonus, dmg, { ...common, stun: a.stun, knockback: a.knockback, from: u.pos, slow: a.slow, slowT: a.slowT });
-        w.addEffect({ type: 'shockwave', pos: { ...u.pos }, dur: 0.5, radius: (a.radius ?? 2) + radiusBonus, color });
+        if (a.invuln) {
+          // 青莲剑歌-style sword burst: a ring of blades and a column of light instead of a ground slam
+          w.addEffect({ type: 'slash', pos: { ...u.pos }, dur: 0.45, radius: (a.radius ?? 2) + 0.3, color, angle: w.time * 9, arc: Math.PI * 2 });
+          w.addEffect({ type: 'ring', pos: { ...u.pos }, dur: 0.7, radius: (a.radius ?? 2) + radiusBonus, color });
+          w.addEffect({ type: 'beam', pos: { ...u.pos }, to: { x: u.pos.x, y: u.pos.y - 0.01 }, dur: 0.5, radius: 0.6, color });
+          for (let k = 0; k < 8; k++) { const ang = (k / 8) * Math.PI * 2; w.addEffect({ type: 'beam', pos: { ...u.pos }, to: { x: u.pos.x + Math.cos(ang) * (a.radius ?? 2), y: u.pos.y + Math.sin(ang) * (a.radius ?? 2) }, dur: 0.35, radius: 0.08, color }); }
+        } else if (a.shield) {
+          // 神来之笔: a drawn circle of sword energy
+          w.addEffect({ type: 'ring', pos: { ...u.pos }, dur: 1.0, radius: (a.radius ?? 2) + radiusBonus, color });
+          w.addEffect({ type: 'slash', pos: { ...u.pos }, dur: 0.5, radius: (a.radius ?? 2) + 0.2, color, angle: 0, arc: Math.PI * 2 });
+        } else w.addEffect({ type: 'shockwave', pos: { ...u.pos }, dur: 0.5, radius: (a.radius ?? 2) + radiusBonus, color });
         if (a.stun && a.stun >= 1.2 && !a.slow) w.addEffect({ type: 'crater', pos: { ...u.pos }, dur: 4, radius: 0.9, color: '#5a4a3a' });
         if (a.slow) w.addEffect({ type: 'frost', pos: { ...u.pos }, dur: 0.8, radius: a.radius ?? 2, color });
       }

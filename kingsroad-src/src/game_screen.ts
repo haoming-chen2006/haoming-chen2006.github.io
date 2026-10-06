@@ -23,7 +23,7 @@ export interface OnlineConfig {
   status?: () => { text: string; kind: 'ok' | 'warn' | 'bad' } | null;
 }
 
-export interface MatchConfig { mode: MatchMode; difficulty: Difficulty; teams: [SeatSetup[], SeatSetup[]]; seed?: number; me?: Team; mySeat?: number; online?: OnlineConfig }
+export interface MatchConfig { mode: MatchMode; difficulty: Difficulty; teams: [SeatSetup[], SeatSetup[]]; seed?: number; me?: Team; mySeat?: number; online?: OnlineConfig; twists?: boolean }
 
 const $ = (id: string): HTMLElement => { const el = document.getElementById(id); if (!el) throw new Error(`missing #${id}`); return el; };
 
@@ -90,7 +90,7 @@ export class GameScreen {
     this.cfg = cfg;
     this.me = cfg.me ?? 0; this.mySeat = cfg.mySeat ?? 0;
     this.foe = other(this.me);
-    this.sim = new Simulation({ mode: cfg.mode, difficulty: cfg.difficulty, seed: cfg.seed ?? (Date.now() % 100000), teams: cfg.teams });
+    this.sim = new Simulation({ mode: cfg.mode, difficulty: cfg.difficulty, seed: cfg.seed ?? (Date.now() % 100000), teams: cfg.teams, twists: cfg.twists });
     this.view.setViewTeam(this.me);
     sfx.viewTeam = this.me;
     this.paused = false; this.menuOpen = false; this.shopOpen = false; this.bigMap = false; this.endTimer = -1; this.resultsShown = false; this.time = 0;

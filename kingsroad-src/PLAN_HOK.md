@@ -102,6 +102,15 @@ Bots learn the new kits (per-kind usage rules, combos like 妲己 2→1→3). Mo
 only) and online rooms unchanged. Every phase: `npm run check`, `npm run test:sim`, headless balance batches,
 Playwright screenshots of every screen, deploy to /kingsroad.
 
+## Status (2026-10-05, evening)
+Done and live: phases 1, 2, 5 (roster/kits/passives, 装备 + passives, 召唤师技能, 播报 ladder + 中文 announcer,
+结算 with MVP/SVP and medals, 中文 default, HoK HUD chrome, 小地图 top-left, settlement bars); phase 3 rules
+(暴君/主宰/炮车/超级兵, crumbling walls late); phase 4 as stand-ins (smooth anime-style hero bodies with painted
+faces/hair/tails, stone golem minions, serpent 暴君/主宰, lacquered weapons) and the asset-pack loader; phase 6
+tests (determinism, lockstep, Playwright e2e). Art is on CC0 PBR textures + models (`scripts/fetch_assets.mjs`).
+Open: official assets (needs the sponsor pack in `public/assets-hok/`), balance pass on the new roster, more skill
+VFX per hero, hero-specific animations.
+
 ## Order of work
 1. Roster data + kits + new ability kinds (sim) — then bots for them.
 2. Items + passives + builds.

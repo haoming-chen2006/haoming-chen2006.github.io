@@ -122,11 +122,11 @@ const HERO_SPECS: HeroSpec[] = [
     hp: 2900, damage: 136, power: 0, armor: 78, resist: 55, hitSpeed: 1.0, range: 6.4, speed: 3.75, radius: 0.38, mana: 580, attackType: 'magic', projectile: 'ice', projectileSpeed: 12,
     lore: '出塞的琵琶声中，风雪为她停步。',
     tips: '凛冬之息减速，再次命中即可冰冻；冰雪风暴控住整片战场。',
-    passive: { name: '冰封之心', desc: '技能命中会减速敌人；对已减速的敌人再次减速会将其冰冻 1 秒。', kind: 'freezeOnSlow', value: 1.0 },
+    passive: { name: '冰封之心', desc: '技能命中会减速敌人；对已减速的敌人再次减速会将其冰冻 0.8 秒。', kind: 'freezeOnSlow', value: 0.8 },
     skills: [
       S({ kind: 'lineShot', name: '凛冬之息', desc: '射出一道冰刃，贯穿敌人并减速。', cooldown: 6, mana: 55, damage: 240, damageGrowth: 60, ratio: 0.6, type: 'magic', range: 8, slow: 0.5, slowT: 2, color: '#9fe3ff', sfx: 'ice' }),
-      S({ kind: 'aoeAim', name: '冰封雪域', desc: '冰封指定区域，造成伤害并大幅减速。', cooldown: 11, mana: 75, damage: 300, damageGrowth: 70, ratio: 0.6, type: 'magic', range: 7, radius: 2.2, slow: 0.6, slowT: 2, color: '#c7f0ff', sfx: 'frost' }),
-      S({ kind: 'aoeAim', name: '冰雪风暴', desc: '召唤持续 4 秒的暴风雪，对范围内敌人持续造成伤害并减速。', cooldown: 42, mana: 140, damage: 150, damageGrowth: 50, ratio: 0.45, type: 'magic', range: 8, radius: 3.6, duration: 4, tick: 0.5, slow: 0.5, slowT: 1, color: '#bfe8ff', sfx: 'frost' }),
+      S({ kind: 'aoeAim', name: '冰封雪域', desc: '冰封指定区域，造成伤害并大幅减速。', cooldown: 11, mana: 75, damage: 270, damageGrowth: 70, ratio: 0.6, type: 'magic', range: 7, radius: 2.2, slow: 0.6, slowT: 2, color: '#c7f0ff', sfx: 'frost' }),
+      S({ kind: 'aoeAim', name: '冰雪风暴', desc: '召唤持续 4 秒的暴风雪，对范围内敌人持续造成伤害并减速。', cooldown: 42, mana: 140, damage: 130, damageGrowth: 50, ratio: 0.45, type: 'magic', range: 8, radius: 3.6, duration: 4, tick: 0.5, slow: 0.5, slowT: 1, color: '#bfe8ff', sfx: 'frost' }),
     ],
     skillOrder: ORDER_1,
     build: ['lengjing_zhixue', 'huixiang_zhizhang', 'bingshuang_fazhang', 'tongku_mianju', 'xuwu_fazhang', 'xianzhe_bihu'],
@@ -180,7 +180,7 @@ const HERO_SPECS: HeroSpec[] = [
   {
     id: 'libai', name: '李白', title: '青莲剑仙', role: 'assassin', ...base('assassin'),
     look: look('#e9eef5', '#4f8fd6', 'sword', 0.4, { gear: 'cap', armor: 'robe', cape: true, hair: { color: '#f4f6fa', style: 'long' } }),
-    hp: 3150, damage: 180, power: 0, armor: 82, resist: 50, hitSpeed: 0.85, range: 1.5, speed: 4.35, radius: 0.42, mana: 400, attackType: 'physical',
+    hp: 3350, damage: 186, power: 0, armor: 88, resist: 54, hitSpeed: 0.85, range: 1.5, speed: 4.4, radius: 0.42, mana: 400, attackType: 'physical',
     lore: '十步杀一人，千里不留行。',
     tips: '先用 4 次普攻解除剑意封印，再将进酒切入、神来之笔减伤、青莲剑歌斩杀。',
     passive: { name: '侠客行', desc: '4 次普攻后解除剑意封印，5 秒内可以释放青莲剑歌。', kind: 'ultGate', n: 4, value: 5 },

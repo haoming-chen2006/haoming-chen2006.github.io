@@ -31,9 +31,9 @@ export function updateSpawns(w: World, dt: number): void {
     if (w.time >= 1080 && w.time - WAVE_EVERY < 1080) w.emit({ type: 'objective', text: '@objective.siegeHour' });
     if (w.time >= 1260 && w.time - WAVE_EVERY < 1260) w.emit({ type: 'objective', text: '@objective.superHour' });
     // past 22 minutes the walls themselves start to crumble: every wave strips 5% from every standing structure
-    if (w.time >= 1320) {
-      if (w.time - WAVE_EVERY < 1320) w.emit({ type: 'objective', text: '@objective.crumble' });
-      for (const e of w.entities) if (e.kind === 'tower' && !e.dead && e.active) e.hp = Math.max(1, e.hp - e.maxHp * 0.05);
+    if (w.time >= 1200) {
+      if (w.time - WAVE_EVERY < 1200) w.emit({ type: 'objective', text: '@objective.crumble' });
+      for (const e of w.entities) if (e.kind === 'tower' && !e.dead && e.active) e.hp = Math.max(1, e.hp - e.maxHp * 0.08);
     }
   }
   // jungle camps

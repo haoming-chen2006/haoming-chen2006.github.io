@@ -30,7 +30,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   await B.goto(`${BASE}#/join/${code}`); await sleep(1000);
   await B.waitForSelector('.room-code', { timeout: 25000 });
   await B.evaluate(() => { window.__kr.settings.hero = 'daji'; });
-  await B.click('.hero-pick[data-hero="huofeng"]'); await sleep(800);
+  await B.click('.hero-pick[data-hero="daji"]'); await sleep(800);
   await B.click('#btnRoomReady'); await sleep(1200);
   await B.screenshot({ path: out('02-guest-room.png') });
   await A.waitForSelector('#btnRoomStart:not([disabled])', { timeout: 15000 });
@@ -52,7 +52,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     if (ha[0] === hb[0]) { same = ha[1] === hb[1]; console.log('tick', ha[0], 'hashes', ha[1], hb[1], same ? 'MATCH' : 'MISMATCH'); break; }
     await sleep(50);
   }
-  const guestMoved = b.heroes.some((h) => h.startsWith('1:huofeng') && !h.includes('@51.5') );
+  const guestMoved = b.heroes.some((h) => h.startsWith('1:daji') && !h.includes('@51.5') );
   console.log('desynced', a.desynced || b.desynced, 'guest hero seen identically', a.heroes.join() === b.heroes.join() ? 'maybe (snapshot differs by tick)' : 'n/a', 'guestMoved', guestMoved);
   await browser.close();
   if (a.desynced || b.desynced) { console.log('DESYNC'); process.exit(1); }

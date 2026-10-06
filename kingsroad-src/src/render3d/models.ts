@@ -4,7 +4,7 @@ import type { UnitDef, Look, Team } from '../game/types.ts';
 import type { TowerTier } from '../game/constants.ts';
 import { TEAM_HEX, boxGeo, buildWeapon, coneGeo, cylGeo, mat, attach, mergeByMaterial, mesh, rboxGeo, sphereGeo, toon, torusGeo, type UnitMat } from './model_kit.ts';
 import { buildBeast, buildBrute, buildDragon, buildFlyer, buildHumanoid, buildWraith, type UnitParts } from './models_units.ts';
-import { buildAnimeHumanoid, buildGolem } from './models_anime.ts';
+import { buildAnimeHumanoid, buildGolem, buildQuadruped, buildSerpentDragon } from './models_anime.ts';
 import { stoneTexture } from './textures.ts';
 
 export { TEAM_HEX, buildWeapon, mat, toon };
@@ -49,8 +49,8 @@ export function buildUnitModel(look: Look, team: Team, seed = 0): UnitModel {
     case 'skeleton': built = buildHumanoid(look, team, { bone: true }); break;
     case 'brute': built = buildGolem(look, team, { cannon: look.weapon === 'bomb' }); void buildBrute; break;
     case 'flyer': built = buildFlyer(look, team); break;
-    case 'dragon': built = buildDragon(look, team); break;
-    case 'beast': built = buildBeast(look, team); break;
+    case 'dragon': built = buildSerpentDragon(look, team); void buildDragon; break;
+    case 'beast': built = buildQuadruped(look, team, look.weapon === 'hammer' ? 'boar' : look.color === '#5f8a3a' ? 'hedgehog' : look.color === '#8a6a4a' ? 'boar' : 'wolf'); void buildBeast; break;
     case 'wraith': built = buildWraith(look, team); break;
     case 'building': built = buildHumanoid(look, team); break;
   }

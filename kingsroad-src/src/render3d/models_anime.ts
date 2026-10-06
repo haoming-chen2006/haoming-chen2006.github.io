@@ -292,3 +292,101 @@ export function buildGolem(look: Look, team: Team, opts: { cannon?: boolean } = 
   parts.ranged = !!opts.cannon; parts.twoHanded = false;
   return { grp, parts, mats, height: hip + s * 0.1 + s * 2.3, eye: hip + s * 1.9, hover: 0 };
 }
+
+/** Smooth quadruped for the jungle camps: 野狼 (lean, pointed ears), 野猪 (stocky, tusks), 刺猬 (round, spines). */
+export function buildQuadruped(look: Look, team: Team, kind: 'wolf' | 'boar' | 'hedgehog' | 'stag'): BuiltUnit {
+  const s = look.size * 1.1;
+  const mats: UnitMat[] = [];
+  const grp = new THREE.Group();
+  const parts: UnitParts = {};
+  const furM = toon(hex(look.color), { roughness: 0.85 }), bellyM = toon(hex(look.accent), { roughness: 0.85 }), darkM = toon(shade(hex(look.color), 0.55), { roughness: 0.9 });
+  const tuskM = toon(0xf1e7d0, { roughness: 0.4 }), eyeM = toon(0xffd166, { emissive: 0xffb300, emissiveIntensity: 1.6 });
+  mats.push(furM, bellyM, darkM, tuskM, eyeM);
+  void team;
+  const stocky = kind === 'boar' || kind === 'hedgehog';
+  const bodyLen = s * (kind === 'wolf' ? 2.2 : 1.9), bodyR = s * (stocky ? 0.75 : 0.55), legH = s * (kind === 'wolf' ? 0.95 : 0.7);
+  const torso = new THREE.Group(); torso.position.y = legH + bodyR * 0.7;
+  const body = mesh(capsule(bodyR, bodyLen - bodyR * 2, 16), furM, 0, 0, 0); body.rotation.z = Math.PI / 2; torso.add(body);
+  const belly = mesh(capsule(bodyR * 0.8, bodyLen * 0.5, 14), bellyM, 0, -bodyR * 0.3, 0); belly.rotation.z = Math.PI / 2; torso.add(belly);
+  if (kind === 'hedgehog') { const spineM = toon(0x3a2a1e, { roughness: 0.6 }); mats.push(spineM); for (let i = 0; i < 34; i++) { const a = (i % 7) / 7 * Math.PI - Math.PI / 2, t = (Math.floor(i / 7) / 4 - 0.5) * bodyLen * 0.8; const sp = mesh(new THREE.ConeGeometry(s * 0.05, s * 0.45, 6), spineM, t, Math.cos(a) * bodyR * 0.9, Math.sin(a) * bodyR * 0.9); sp.rotation.x = -a; torso.add(sp); } }
+  if (kind === 'wolf' || kind === 'stag') { const mane = mesh(sphereGeo(bodyR * 1.05, 14), darkM, bodyLen * 0.3, bodyR * 0.15, 0); mane.scale.set(0.8, 1, 1); torso.add(mane); }
+  // head
+  const headG = new THREE.Group(); headG.position.set(bodyLen * 0.55, bodyR * 0.45, 0);
+  const head = mesh(sphereGeo(s * (stocky ? 0.5 : 0.42), 16), furM, 0, 0, 0); head.scale.set(1.15, 0.95, 1); headG.add(head);
+  const snout = mesh(capsule(s * 0.2, s * 0.3, 12), kind === 'boar' ? darkM : bellyM, s * 0.45, -s * 0.08, 0); snout.rotation.z = Math.PI / 2; headG.add(snout);
+  headG.add(mesh(sphereGeo(s * 0.08, 8), toon(0x151515), s * 0.72, -s * 0.05, 0)); // nose
+  parts.eyes = [];
+  for (const side of [-1, 1]) {
+    const e = mesh(sphereGeo(s * 0.07, 8), eyeM, s * 0.3, s * 0.12, side * s * 0.22); parts.eyes.push(e); headG.add(e);
+    const ear = mesh(new THREE.ConeGeometry(s * 0.1, s * (kind === 'wolf' ? 0.38 : 0.22), 10), furM, -s * 0.1, s * 0.4, side * s * 0.25); ear.rotation.x = side * -0.35; headG.add(ear);
+    if (kind === 'boar') { const tusk = mesh(new THREE.ConeGeometry(s * 0.05, s * 0.3, 8), tuskM, s * 0.55, -s * 0.2, side * s * 0.18); tusk.rotation.x = side * -0.8; tusk.rotation.z = -0.4; headG.add(tusk); }
+    if (kind === 'stag') { for (let k = 0; k < 3; k++) { const tine = mesh(capsule(s * 0.03, s * 0.35, 6), tuskM, -s * 0.1 - k * s * 0.08, s * 0.55 + k * s * 0.2, side * (s * 0.2 + k * s * 0.1)); tine.rotation.x = side * -0.6; headG.add(tine); } }
+  }
+  torso.add(headG); parts.head = headG; parts.jaw = snout;
+  // legs: capsules with paws
+  const legs: THREE.Object3D[] = [];
+  for (const [fx, side] of [[0.65, -1], [0.65, 1], [-0.65, -1], [-0.65, 1]] as const) {
+    const piv = new THREE.Group(); piv.position.set(bodyLen * 0.5 * fx, -bodyR * 0.5, side * bodyR * 0.55);
+    piv.add(mesh(capsule(s * 0.13, legH * 0.7, 10), kind === 'wolf' ? darkM : furM, 0, -legH * 0.4, 0));
+    const paw = mesh(sphereGeo(s * 0.16, 10), darkM, s * 0.05, -legH * 0.8, 0); paw.scale.set(1.3, 0.6, 1); piv.add(paw);
+    torso.add(piv); legs.push(piv);
+  }
+  parts.legs = legs; parts.legL = legs[0]; parts.legR = legs[1];
+  // tail
+  const tail = mesh(capsule(s * 0.08, s * (kind === 'wolf' ? 0.9 : 0.35), 8), furM, -bodyLen * 0.55, bodyR * 0.3, 0); tail.rotation.z = kind === 'wolf' ? 1.0 : 0.6; torso.add(tail); parts.tail = tail;
+  grp.add(torso); parts.torso = torso;
+  return { grp, parts, mats, height: legH + bodyR * 1.9, eye: legH + bodyR * 1.3, hover: 0 };
+}
+
+/** 暴君 / 主宰: a Chinese serpent-dragon — coiled capsule body, horned head with whiskers, dorsal fins, four clawed legs. */
+export function buildSerpentDragon(look: Look, team: Team): BuiltUnit {
+  const s = look.size;
+  const mats: UnitMat[] = [];
+  const grp = new THREE.Group();
+  const parts: UnitParts = {};
+  void team;
+  const scaleM = toon(hex(look.color), { roughness: 0.45, metalness: 0.2 }), bellyM = toon(hex(look.accent), { roughness: 0.5 }), hornM = toon(0xe9c46a, { roughness: 0.3, metalness: 0.8 });
+  const finM = toon(hex(look.accent), { roughness: 0.6, side: THREE.DoubleSide, transparent: true, opacity: 0.9 }), eyeM = toon(0xffe27a, { emissive: 0xffb300, emissiveIntensity: 2.0 });
+  mats.push(scaleM, bellyM, hornM, finM, eyeM);
+  const torso = new THREE.Group(); torso.position.y = s * 0.9;
+  // body: a sine-curved chain of spheres, thickest at the chest
+  const segs: THREE.Object3D[] = [];
+  const n = 14;
+  for (let i = 0; i < n; i++) {
+    const t = i / (n - 1);
+    const r = s * (0.68 - t * 0.42);
+    // rearing pose: the chest rises toward the head, the tail coils low behind
+    const seg = mesh(sphereGeo(r, 16), scaleM, s * 1.1 - t * s * 3.2, Math.pow(1 - t, 1.6) * s * 1.5 + Math.sin(t * 4) * s * 0.25, Math.sin(t * 2.6) * s * 0.8);
+    torso.add(seg); segs.push(seg);
+    if (i % 2 === 0 && i < n - 2) { const fin = mesh(new THREE.ConeGeometry(r * 0.5, r * 2.0, 4), finM, seg.position.x, seg.position.y + r * 1.1, seg.position.z); fin.rotation.z = -0.3; torso.add(fin); }
+    if (i > 0 && i < n - 1) { const b = mesh(sphereGeo(r * 0.8, 12), bellyM, seg.position.x, seg.position.y - r * 0.35, seg.position.z); b.scale.set(1, 0.6, 1); torso.add(b); }
+  }
+  parts.tailSegs = segs;
+  // head
+  const headG = new THREE.Group(); headG.position.set(s * 1.75, s * 1.75, 0);
+  headG.add(mesh(sphereGeo(s * 0.6, 18), scaleM, 0, 0, 0));
+  const snout = mesh(capsule(s * 0.28, s * 0.5, 14), scaleM, s * 0.55, -s * 0.05, 0); snout.rotation.z = Math.PI / 2; headG.add(snout);
+  const jaw = mesh(capsule(s * 0.2, s * 0.45, 12), bellyM, s * 0.5, -s * 0.3, 0); jaw.rotation.z = Math.PI / 2; headG.add(jaw); parts.jaw = jaw;
+  parts.eyes = [];
+  for (const side of [-1, 1]) {
+    const e = mesh(sphereGeo(s * 0.1, 10), eyeM, s * 0.3, s * 0.18, side * s * 0.3); parts.eyes.push(e); headG.add(e);
+    const horn = mesh(capsule(s * 0.06, s * 0.6, 8), hornM, -s * 0.25, s * 0.45, side * s * 0.25); horn.rotation.z = 0.9; horn.rotation.x = side * 0.3; headG.add(horn);
+    const whisker = mesh(capsule(s * 0.02, s * 1.0, 6), hornM, s * 0.75, -s * 0.05, side * s * 0.22); whisker.rotation.z = -0.4; whisker.rotation.x = side * 0.9; headG.add(whisker);
+    const fang = mesh(new THREE.ConeGeometry(s * 0.04, s * 0.18, 8), toon(0xf1e7d0), s * 0.78, -s * 0.2, side * s * 0.12); fang.rotation.x = Math.PI; headG.add(fang);
+  }
+  const mane = mesh(sphereGeo(s * 0.62, 14), finM, -s * 0.55, s * 0.15, 0); mane.scale.set(0.3, 1.25, 1.25); headG.add(mane);
+  torso.add(headG); parts.head = headG;
+  // legs with claws
+  const legs: THREE.Object3D[] = [];
+  for (const [i, side] of [[1, -1], [1, 1], [6, -1], [6, 1]] as const) {
+    const base = segs[i].position;
+    const piv = new THREE.Group(); piv.position.set(base.x, base.y - s * 0.2, base.z + side * s * 0.45);
+    piv.add(mesh(capsule(s * 0.12, s * 0.5, 10), scaleM, 0, -s * 0.3, 0));
+    const foot = mesh(sphereGeo(s * 0.16, 10), bellyM, s * 0.08, -s * 0.62, 0); foot.scale.set(1.4, 0.5, 1.1); piv.add(foot);
+    for (let c = -1; c <= 1; c++) { const claw = mesh(new THREE.ConeGeometry(s * 0.035, s * 0.18, 8), hornM, s * 0.3, -s * 0.62, c * s * 0.1); claw.rotation.z = -Math.PI / 2; piv.add(claw); }
+    piv.rotation.z = 0.3; torso.add(piv); legs.push(piv);
+  }
+  parts.legs = legs; parts.legL = legs[0]; parts.legR = legs[1];
+  grp.add(torso); parts.torso = torso;
+  return { grp, parts, mats, height: s * 3.4, eye: s * 2.6, hover: 0 };
+}

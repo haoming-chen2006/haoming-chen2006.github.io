@@ -1,4 +1,5 @@
 import type { AbilityDef, AbilityKind } from '../game/types.ts';
+import type { ItemDef } from '../game/items.ts';
 import { packHas, packUrl } from '../render3d/hokpack.ts';
 
 /**
@@ -76,4 +77,39 @@ function shade(hex: string, k: number): string {
   const n = parseInt(hex.replace('#', ''), 16);
   const r = Math.round(((n >> 16) & 255) * k), g = Math.round(((n >> 8) & 255) * k), b = Math.round((n & 255) * k);
   return `rgb(${r},${g},${b})`;
+}
+
+const itemCache = new Map<string, string>();
+/** Painted 装备 icon: diamond plate in the item's colour with a category glyph (sword / staff / shield / wing / boot). */
+export function itemIcon(it: ItemDef, size = 72): string {
+  const key = `${it.id}:${size}`;
+  const hit = itemCache.get(key); if (hit) return hit;
+  const c = document.createElement('canvas'); c.width = c.height = size;
+  const g = c.getContext('2d')!;
+  const r = size / 2;
+  const bg = g.createLinearGradient(0, 0, size, size); bg.addColorStop(0, it.color); bg.addColorStop(1, shade(it.color, 0.35));
+  g.fillStyle = bg; g.beginPath(); g.roundRect(size * 0.06, size * 0.06, size * 0.88, size * 0.88, size * 0.16); g.fill();
+  g.fillStyle = 'rgba(0,0,0,0.35)'; g.beginPath(); g.roundRect(size * 0.14, size * 0.14, size * 0.72, size * 0.72, size * 0.12); g.fill();
+  g.translate(r, r);
+  g.strokeStyle = 'rgba(255,255,255,0.95)'; g.fillStyle = 'rgba(255,255,255,0.95)'; g.lineWidth = size * 0.07; g.lineCap = 'round'; g.lineJoin = 'round';
+  g.shadowColor = 'rgba(0,0,0,0.7)'; g.shadowBlur = size * 0.05;
+  const s2 = r * 0.5;
+  switch (it.category) {
+    case 'attack': // sword
+      g.beginPath(); g.moveTo(-s2 * 0.9, s2 * 0.9); g.lineTo(s2 * 0.8, -s2 * 0.8); g.moveTo(-s2 * 0.25, s2 * 0.25); g.lineTo(-s2 * 0.75, -s2 * 0.25); g.moveTo(-s2 * 0.25, s2 * 0.25); g.lineTo(s2 * 0.25, s2 * 0.75); g.stroke(); break;
+    case 'magic': // orb on a staff
+      g.beginPath(); g.moveTo(-s2 * 0.7, s2 * 1.0); g.lineTo(s2 * 0.3, -s2 * 0.3); g.stroke(); g.beginPath(); g.arc(s2 * 0.5, -s2 * 0.55, s2 * 0.42, 0, Math.PI * 2); g.fill(); break;
+    case 'defense': // shield
+      g.beginPath(); g.moveTo(0, -s2 * 1.0); g.lineTo(s2 * 0.9, -s2 * 0.6); g.lineTo(s2 * 0.75, s2 * 0.4); g.lineTo(0, s2 * 1.05); g.lineTo(-s2 * 0.75, s2 * 0.4); g.lineTo(-s2 * 0.9, -s2 * 0.6); g.closePath(); g.fill(); break;
+    case 'support': // wings
+      for (const sd of [-1, 1]) { g.beginPath(); g.moveTo(0, s2 * 0.6); g.quadraticCurveTo(sd * s2 * 0.9, s2 * 0.2, sd * s2 * 1.0, -s2 * 0.9); g.quadraticCurveTo(sd * s2 * 0.4, -s2 * 0.3, 0, -s2 * 0.1); g.closePath(); g.fill(); }
+      break;
+    case 'boots': // boot
+      g.beginPath(); g.moveTo(-s2 * 0.4, -s2 * 1.0); g.lineTo(s2 * 0.3, -s2 * 1.0); g.lineTo(s2 * 0.3, s2 * 0.2); g.lineTo(s2 * 1.0, s2 * 0.7); g.lineTo(s2 * 1.0, s2 * 1.0); g.lineTo(-s2 * 0.4, s2 * 1.0); g.closePath(); g.fill(); break;
+  }
+  g.setTransform(1, 0, 0, 1, 0, 0); g.shadowBlur = 0;
+  g.strokeStyle = 'rgba(255,255,255,0.3)'; g.lineWidth = size * 0.035; g.beginPath(); g.roundRect(size * 0.06, size * 0.06, size * 0.88, size * 0.88, size * 0.16); g.stroke();
+  const url = c.toDataURL('image/png');
+  itemCache.set(key, url);
+  return url;
 }

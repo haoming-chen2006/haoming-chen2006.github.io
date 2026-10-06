@@ -2,7 +2,7 @@ import type { Difficulty } from '../game/bot.ts';
 import { HEROES, heroDef, pickTeam } from '../game/heroes.ts';
 import { SPELL_LIST, isSpell } from '../game/spells.ts';
 import { packVoice, packImage } from '../render3d/hokpack.ts';
-import { skillIcon } from './skill_icons.ts';
+import { itemIcon, skillIcon } from './skill_icons.ts';
 import { ITEMS } from '../game/items.ts';
 import { MODE_SIZE, type MatchMode } from '../game/sim.ts';
 import type { Role, UnitDef } from '../game/types.ts';
@@ -73,7 +73,7 @@ export type ScreenName = 'menu' | 'select' | 'codex' | 'help' | 'game' | 'online
 /** Skill and hero detail markup shared by hero select and the codex. */
 export function heroDetailHtml(def: UnitDef): string {
   const skills = def.skills.map((a, i) => `<div class="hd-skill"><div class="hd-skill-icon" style="background:url(${skillIcon(a)}) center / cover"><span class="hd-skill-n">${i + 1}</span></div><div><b>${skillName(a)}</b><span class="muted"> · ${t('select.cooldown', { s: a.cooldown })} · ${t('select.mana', { m: a.mana })}</span><p>${skillDesc(a)}</p></div></div>`).join('');
-  const build = (def.build ?? []).map((id) => `<span class="build-item" style="--c:${ITEMS[id].color}">${ITEMS[id].icon} ${itemName(id, ITEMS[id].name)}</span>`).join('');
+  const build = (def.build ?? []).map((id) => `<span class="build-item" style="--c:${ITEMS[id].color}"><img src="${itemIcon(ITEMS[id])}" alt=""> ${itemName(id, ITEMS[id].name)}</span>`).join('');
   const stat = (label: string, v: number) => `<div class="hd-stat"><span>${label}</span><b>${v}</b></div>`;
   return `<div class="hd-head"><div class="hd-port"></div><div><h3>${cardName(def)}</h3><div class="hd-title">${heroTitle(def)} · <span class="role ${def.role}">${roleName(def.role)}</span></div></div></div>
     <p class="hd-lore">${def.lore ?? ''}</p>

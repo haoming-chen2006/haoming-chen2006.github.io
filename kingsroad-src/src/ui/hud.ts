@@ -1,7 +1,7 @@
 import { skillDamage } from '../game/abilities.ts';
 import { CATEGORY_ORDER, ITEMS, ITEM_LIST, isBoots, itemDef } from '../game/items.ts';
 import { SPELLS, isSpell } from '../game/spells.ts';
-import { skillIcon, skillIconFor } from './skill_icons.ts';
+import { itemIcon, skillIcon, skillIconFor } from './skill_icons.ts';
 import type { Award, Seat, Team, Unit } from '../game/types.ts';
 import { World } from '../game/world.ts';
 import { cardName, itemName, skillDesc, skillName, t, tCard, tSim } from '../i18n.ts';
@@ -122,7 +122,7 @@ export class Hud {
         const el = this.itemEls[i], id = seat.items[i];
         if (!id) { el.className = 'item-slot'; el.innerHTML = ''; el.title = ''; continue; }
         const it = itemDef(id);
-        el.className = 'item-slot filled'; el.style.setProperty('--c', it.color); el.innerHTML = `<span>${it.icon}</span>`; el.title = `${itemName(id, it.name)} · ${it.desc}`;
+        el.className = 'item-slot filled'; el.style.setProperty('--c', it.color); el.innerHTML = `<img src="${itemIcon(it)}" alt="">`; el.title = `${itemName(id, it.name)} · ${it.desc}`;
       }
       // buffs
       const buffs: string[] = [];
@@ -175,7 +175,7 @@ export class Hud {
       const head = document.createElement('div'); head.className = 'shop-cat'; head.textContent = t(`shop.cat.${cat}`); grid.appendChild(head);
       for (const it of ITEM_LIST.filter((x) => x.category === cat)) {
       const el = document.createElement('button'); el.className = 'shop-item'; el.dataset.id = it.id;
-      el.innerHTML = `<span class="si-icon" style="--c:${it.color}">${it.icon}</span><span class="si-name">${itemName(it.id, it.name)}</span><span class="si-cost">${it.cost}</span><span class="si-desc">${it.desc}</span>`;
+      el.innerHTML = `<span class="si-icon" style="--c:${it.color}"><img src="${itemIcon(it)}" alt=""></span><span class="si-name">${itemName(it.id, it.name)}</span><span class="si-cost">${it.cost}</span><span class="si-desc">${it.desc}</span>`;
       el.addEventListener('click', () => this.onBuy(it.id));
       grid.appendChild(el);
       }
@@ -199,7 +199,7 @@ export class Hud {
       (el.querySelector('.si-cost') as HTMLElement).textContent = owned ? t('hud.owned') : full ? t('hud.full') : String(it.cost);
     });
     const build = h?.def.build ?? [];
-    $('shopBuild').innerHTML = `<span class="muted">${t('select.build')}:</span> ` + build.map((id) => `<span class="build-item ${seat.items.includes(id) ? 'have' : ''}" style="--c:${ITEMS[id].color}">${ITEMS[id].icon} ${itemName(id, ITEMS[id].name)}</span>`).join('');
+    $('shopBuild').innerHTML = `<span class="muted">${t('select.build')}:</span> ` + build.map((id) => `<span class="build-item ${seat.items.includes(id) ? 'have' : ''}" style="--c:${ITEMS[id].color}"><img src="${itemIcon(ITEMS[id])}" alt=""> ${itemName(id, ITEMS[id].name)}</span>`).join('');
   }
 
   private scoreboard(w: World, me: Team): void {

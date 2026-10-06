@@ -29,7 +29,7 @@ const clamp = (v: number, lo: number, hi: number, fallback: number): number => (
 
 export function loadSettings(): Settings {
   const def: Settings = {
-    hero: 'qinglong', mode: '5v5', difficulty: 'normal', sound: true, music: true, firstPerson: true, quality: 'high', record: { wins: 0, losses: 0, draws: 0 },
+    hero: 'houyi', mode: '5v5', difficulty: 'normal', sound: true, music: true, firstPerson: true, quality: 'high', record: { wins: 0, losses: 0, draws: 0 },
     sfxVolume: 0.55, musicVolume: 0.5, sensitivity: 1, invertY: false, fov: 78, name: '',
   };
   try {

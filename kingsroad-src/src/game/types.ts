@@ -27,7 +27,9 @@ export type AbilityKind =
   | 'selfBuff' // temporary speed/attack buff
   | 'healBurst' // heal allies around self, gain shield
   | 'chain' // chain lightning from self
-  | 'spin'; // sustained whirlwind while moving
+  | 'spin' // sustained whirlwind while moving
+  | 'globalShot' // 灼日之光: a slow, map-long arrow that stuns the first hero it meets
+  | 'multiStrike'; // 如意金箍棒 / 国士无双 style: the next N basic attacks are empowered
 
 export interface AbilityDef {
   kind: AbilityKind;
@@ -60,7 +62,38 @@ export interface AbilityDef {
   execute?: number; // bonus damage fraction of missing health (dashStrike)
   color?: string;
   sfx?: string;
+  /** Extra damage as a fraction of the victim's max health (圣剑裁决, 末世-style ults). */
+  maxHpPct?: number;
+  /** Seconds of damage immunity granted on cast (青莲剑歌, 护身咒法). */
+  invuln?: number;
+  /** Shield given to allies in radius (画地为牢). */
+  allyShield?: number;
+  /** Remove stuns/slows from allies in radius and grant brief control immunity (逍遥游). */
+  cleanse?: boolean;
+  /** Heal applied to self when the skill lands (将进酒-style sustain), fraction of damage dealt. */
+  selfHeal?: number;
 }
+
+/** Signature passives, implemented generically in passives.ts. */
+export type PassiveKind =
+  | 'burnOnHit' // 炽热之箭: basic attacks scorch
+  | 'shredOnSkill' // 女王崇拜: skill hits strip magic resist
+  | 'oocRegen' // 圣光庇护: strong regen out of combat
+  | 'nthCrit' // 强化普攻: every Nth basic attack crits
+  | 'ultGate' // 侠客行 / 狂意: N basic attacks unlock the ultimate for a few seconds
+  | 'markDetonateHeal' // 绽·风华: the 4th skill mark detonates and heals the caster
+  | 'nthBurst' // 火力压制: every Nth attack becomes a burst of shots
+  | 'skillBurnStack' // 失控的魔法: skill hits stack a burn
+  | 'rageAttack' // 怒气勃发: attack rises as health falls
+  | 'periodicHeal' // 回春: heals the most wounded nearby ally every few seconds
+  | 'frenzyStacks' // 狂战: attacks stack attack speed
+  | 'freezeOnSlow' // 冰封之心: slowing a slowed enemy freezes them
+  | 'nthStun' // 背水一战: every 3rd attack hits harder and knocks up
+  | 'missingHpDR' // 龙胆: damage reduction grows as health falls
+  | 'orbs' // 策谋之刻: skill hits stack orbs that fire at 5
+  | 'dreamShield' // 蝴蝶梦: periodic damage reduction window
+  | 'lowHpShield' // 牛魔之心: a shield when dropping low, once per 40 s
+  | 'trueDamage'; // 真实伤害: attacks add true damage
 
 export interface Look {
   color: string;
@@ -72,6 +105,15 @@ export interface Look {
   gear?: 'helm' | 'hornhelm' | 'hood' | 'hat' | 'tricorn' | 'halo' | 'bandana' | 'cap' | 'goblincap';
   armor?: 'plate' | 'leather' | 'robe' | 'cloth';
   cape?: boolean;
+  /** Hero flourishes so each 王者荣耀 hero reads at a glance. */
+  hair?: { color: string; style: 'long' | 'pony' | 'bun' | 'short' | 'twin' | 'topknot' };
+  tails?: 'fox' | 'monkey';
+  ears?: 'fox' | 'cat';
+  horns?: boolean;
+  beard?: boolean;
+  skirt?: boolean;
+  doll?: boolean;
+  skin?: string;
 }
 
 /** Base stats of anything that walks: minions, monsters and heroes. */
@@ -118,8 +160,8 @@ export interface UnitDef {
   title?: string;
   lore?: string;
   tips?: string;
-  /** Hero signature passive (flavour + rules text). */
-  passive?: { name: string; desc: string };
+  /** Hero signature passive (flavour + rules text + generic implementation). */
+  passive?: { name: string; desc: string; kind: PassiveKind; n?: number; value?: number };
   /** A per-hero legacy slot so older code paths that expect `ability` keep working (= skills[0]). */
   ability?: AbilityDef;
 }
@@ -142,6 +184,13 @@ export interface Status {
   tyrantT: number;
   overlordT: number;
   invulnT: number;
+  /** 法术防御 shred (女王崇拜) and its timer. */
+  shred: number;
+  shredT: number;
+  /** Control immunity (逍遥游). */
+  ccImmuneT: number;
+  /** Last time this unit took damage from an enemy (out-of-combat regen). */
+  lastHurtT: number;
 }
 
 export interface EntityBase {
@@ -245,8 +294,13 @@ export interface Unit extends EntityBase {
   passiveN: number;
   passiveStacks: number;
   passiveT: number;
-  /** Damage reduction window (Wukong's Stone Body). */
+  /** Damage reduction window (护身/蝴蝶梦-style passives). */
   wardT: number;
+  wardDR: number;
+  /** Seconds the next basic attack stays empowered by an item (宗师之力 / 冰痕之握) or a skill (如意金箍棒). */
+  empowerT: number;
+  empowerN: number;
+  empowerSkill: number;
 }
 
 export interface Tower extends EntityBase {
@@ -315,6 +369,8 @@ export interface Projectile {
   radius: number;
   skill: boolean;
   crowned: boolean;
+  /** Only enemy heroes stop it (灼日之光). */
+  heroOnly?: boolean;
 }
 
 export type EffectType =
@@ -393,6 +449,8 @@ export interface Seat {
   deaths: number;
   assists: number;
   autoBuy: boolean;
+  /** Item passive cooldowns keyed by item passive id (seconds of world time when usable again). */
+  itemCd: Record<string, number>;
 }
 
 /** Per-team state (the old PlayerState name is kept for the renderer). */

@@ -73,6 +73,48 @@ export function grassTexture(size = 512, base: [number, number, number] = [92, 1
   return finish(c);
 }
 
+
+/** Warm sandstone slabs with carved grout lines and cloud-pattern engravings — 王者峡谷 lane paving. */
+export function slabTexture(size = 256): THREE.CanvasTexture {
+  const [c, ctx] = canvas(size, size);
+  ctx.fillStyle = '#6e6250';
+  ctx.fillRect(0, 0, size, size);
+  const rows = 4, cols = 3;
+  const ch = size / rows, cw = size / cols;
+  for (let r = 0; r < rows; r++) {
+    const off = r % 2 ? cw / 2 : 0;
+    for (let k = -1; k <= cols; k++) {
+      const x = k * cw + off + 3, y = r * ch + 3, w = cw - 6, h = ch - 6;
+      const l = 0.9 + (hash(k, r, 1) - 0.5) * 0.25;
+      ctx.fillStyle = `rgb(${196 * l | 0},${178 * l | 0},${142 * l | 0})`;
+      ctx.beginPath(); ctx.roundRect(x, y, w, h, 5); ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,0.12)'; ctx.fillRect(x, y, w, 3);
+      ctx.fillStyle = 'rgba(0,0,0,0.16)'; ctx.fillRect(x, y + h - 4, w, 4);
+      // light grain + an occasional engraved cloud scroll
+      for (let g = 0; g < 10; g++) { ctx.strokeStyle = `rgba(0,0,0,${0.04 + hash(k, r, 10 + g) * 0.05})`; ctx.beginPath(); const gx = x + hash(k, r, 20 + g) * w, gy = y + hash(k, r, 30 + g) * h; ctx.moveTo(gx, gy); ctx.lineTo(gx + (hash(k, r, 40 + g) - 0.5) * 18, gy + (hash(k, r, 50 + g) - 0.5) * 6); ctx.stroke(); }
+      if (hash(k, r, 7) > 0.72) { ctx.strokeStyle = 'rgba(70,50,30,0.35)'; ctx.lineWidth = 1.5; ctx.beginPath(); for (let a = 0; a < Math.PI * 3; a += 0.2) { const rr = 3 + a * 1.6; ctx.lineTo(x + w / 2 + Math.cos(a) * rr, y + h / 2 + Math.sin(a) * rr * 0.6); } ctx.stroke(); ctx.lineWidth = 1; }
+    }
+  }
+  return finish(c);
+}
+
+/** Layered sedimentary cliff rock, warm grey with ochre bands — the jungle walls of the canyon. */
+export function cliffTexture(size = 256): THREE.CanvasTexture {
+  const [c, ctx] = canvas(size, size);
+  const img = ctx.createImageData(size, size);
+  for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
+    const band = Math.sin(y / 11 + fbm(x / 40, y / 40, 3, 3) * 4) * 0.5 + 0.5;
+    const n = fbm(x / 30, y / 30, 5, 4);
+    const l = 0.72 + band * 0.22 + (n - 0.5) * 0.25;
+    const i = (y * size + x) * 4;
+    img.data[i] = Math.min(255, 196 * l + band * 16); img.data[i + 1] = Math.min(255, 182 * l + band * 8); img.data[i + 2] = Math.min(255, 158 * l); img.data[i + 3] = 255;
+  }
+  ctx.putImageData(img, 0, 0);
+  for (let i = 0; i < 90; i++) { ctx.strokeStyle = `rgba(40,30,20,${0.15 + hash(i, 3) * 0.2})`; ctx.lineWidth = 1 + hash(i, 4) * 1.5; ctx.beginPath(); const x = hash(i, 1) * size, y = hash(i, 2) * size; ctx.moveTo(x, y); ctx.lineTo(x + (hash(i, 5) - 0.5) * 60, y + (hash(i, 6) - 0.3) * 14); ctx.stroke(); }
+  for (let i = 0; i < 40; i++) { ctx.fillStyle = `rgba(90,140,70,${0.25 + hash(i, 8) * 0.3})`; ctx.beginPath(); ctx.ellipse(hash(i, 9) * size, hash(i, 10) * size * 0.4, 6 + hash(i, 11) * 12, 3 + hash(i, 12) * 4, 0, 0, Math.PI * 2); ctx.fill(); }
+  return finish(c);
+}
+
 /** Stone bricks with mortar, chips and moss for towers and walls. */
 export function stoneTexture(size = 256, tint: [number, number, number] = [150, 152, 158]): THREE.CanvasTexture {
   const [c, ctx] = canvas(size, size);

@@ -215,7 +215,7 @@ body.in-game #viewport { right: var(--panel-w); }
 .select-top h2 { font-size: 26px; }
 .select-mode { color: var(--gold); font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; font-size: 13px; }
 .select-body { flex: 1; display: grid; grid-template-columns: 1fr 360px; gap: 18px; min-height: 0; }
-.hero-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 10px; align-content: start; overflow: auto; padding-right: 4px; }
+.hero-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; align-content: start; overflow: auto; padding-right: 4px; }
 .hero-tile { position: relative; background: #0b1119; border: 2px solid #253141; border-radius: 12px; padding: 0; overflow: hidden; cursor: pointer; transition: transform .12s, border-color .15s, box-shadow .15s; aspect-ratio: 110/150; }
 .hero-tile canvas { width: 100%; height: auto; display: block; }
 .hero-tile .ht-cap { position: absolute; left: 0; right: 0; bottom: 0; padding: 6px 6px 5px; background: linear-gradient(180deg, transparent, rgba(0,0,0,0.85)); text-align: left; display: flex; flex-direction: column; }
@@ -344,6 +344,7 @@ body.in-game #viewport { right: var(--panel-w); }
 #shop { position: absolute; right: 14px; top: 70px; bottom: 230px; width: min(560px, 60vw); background: rgba(8,12,18,0.94); border: 1px solid var(--line); border-radius: 16px; padding: 12px; display: flex; flex-direction: column; gap: 10px; backdrop-filter: blur(8px); }
 .shop-head { display: flex; align-items: center; gap: 12px; } .shop-head h3 { font-size: 18px; flex: 1; text-align: left; }
 .shop-grid { flex: 1; overflow: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(165px, 1fr)); gap: 8px; }
+.shop-cat { grid-column: 1 / -1; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gold); font-weight: 900; margin-top: 6px; border-bottom: 1px solid rgba(240,196,90,0.25); padding-bottom: 3px; }
 .shop-item { display: grid; grid-template-columns: 34px 1fr auto; grid-template-areas: "icon name cost" "icon desc desc"; gap: 2px 8px; align-items: center; text-align: left; background: #0b1119; border: 1px solid #253141; border-radius: 10px; padding: 6px 8px; color: #fff; }
 .shop-item:hover:not(:disabled) { border-color: var(--gold); }
 .shop-item:disabled { opacity: 0.45; cursor: default; }

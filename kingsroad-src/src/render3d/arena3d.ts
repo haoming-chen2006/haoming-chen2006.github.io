@@ -3,7 +3,7 @@ import { ARENA_H, ARENA_W, CAMPS, LANE_PATHS, OBJECTIVES, RIVER_HALF, SPAWN_POIN
 import { BUSHES, WALLS, inWall } from '../game/map.ts';
 import type { Team, Unit } from '../game/types.ts';
 import type { World } from '../game/world.ts';
-import { bannerTexture, cobbleTexture, dirtTexture, grassTexture, stoneTexture } from './textures.ts';
+import { bannerTexture, cliffTexture, cobbleTexture, dirtTexture, grassTexture, slabTexture, stoneTexture } from './textures.ts';
 import { mergeByMaterial } from './model_kit.ts';
 import { isMine } from './perspective.ts';
 
@@ -49,17 +49,18 @@ export class Arena3D {
   private windMats: THREE.MeshStandardMaterial[] = [];
   private windTime = { value: 0 };
   private crystalGlows: THREE.Mesh[] = [];
+  private objGlows: THREE.Mesh[] = [];
   private bushMeshes: THREE.Mesh[] = [];
   private statics = new THREE.Group();
 
   constructor(scene: THREE.Scene) {
     scene.add(this.group);
     this.group.add(this.statics);
-    scene.background = new THREE.Color(0xc4dcef);
-    scene.fog = new THREE.Fog(0xc4dcef, 70, 190);
+    scene.background = new THREE.Color(0xd7e6ea);
+    scene.fog = new THREE.Fog(0xd7e6ea, 60, 170);
     this.sky = new THREE.Mesh(new THREE.SphereGeometry(260, 24, 16), new THREE.ShaderMaterial({
       side: THREE.BackSide, depthWrite: false, fog: false,
-      uniforms: { zenith: { value: new THREE.Color(0x2b62b3) }, mid: { value: new THREE.Color(0x6fa8e0) }, horizon: { value: new THREE.Color(0xc4dcef) }, ground: { value: new THREE.Color(0x8fb4a0) }, sunDir: { value: new THREE.Vector3(0.5, 0.6, 0.35).normalize() } },
+      uniforms: { zenith: { value: new THREE.Color(0x3f78b8) }, mid: { value: new THREE.Color(0x8fc0e6) }, horizon: { value: new THREE.Color(0xf1e3c8) }, ground: { value: new THREE.Color(0x9fb89a) }, sunDir: { value: new THREE.Vector3(0.5, 0.45, 0.35).normalize() } },
       vertexShader: `varying vec3 vDir; void main(){ vDir = normalize(position); vec4 mv = modelViewMatrix * vec4(position, 1.0); gl_Position = projectionMatrix * mv; gl_Position.z = gl_Position.w; }`,
       fragmentShader: `uniform vec3 zenith; uniform vec3 mid; uniform vec3 horizon; uniform vec3 ground; uniform vec3 sunDir; varying vec3 vDir;
         void main(){
@@ -75,19 +76,19 @@ export class Arena3D {
     scene.add(this.sky);
 
     // outer ground + map floor
-    const outerTex = grassTexture(512, [64, 112, 56], true);
+    const outerTex = grassTexture(512, [70, 118, 70], true);
     outerTex.repeat.set(40, 40);
     const outer = new THREE.Mesh(new THREE.PlaneGeometry(300, 300), new THREE.MeshStandardMaterial({ map: outerTex, roughness: 1 }));
     outer.rotation.x = -Math.PI / 2; outer.position.set(ARENA_W / 2, -0.06, ARENA_H / 2); outer.receiveShadow = true;
     this.group.add(outer);
-    const grass = grassTexture(512, [90, 156, 72]);
+    const grass = grassTexture(512, [96, 164, 92]);
     grass.repeat.set(ARENA_W / 4.5, ARENA_H / 4.5);
     const floor = new THREE.Mesh(new THREE.PlaneGeometry(ARENA_W, ARENA_H), new THREE.MeshStandardMaterial({ map: grass, roughness: 0.95 }));
     floor.rotation.x = -Math.PI / 2; floor.position.set(ARENA_W / 2, 0, ARENA_H / 2); floor.receiveShadow = true;
     this.group.add(floor);
 
     // lanes: cobbled ribbons with dirt edges along each polyline
-    const cobble = cobbleTexture(); cobble.wrapS = cobble.wrapT = THREE.RepeatWrapping;
+    const cobble = slabTexture(); cobble.wrapS = cobble.wrapT = THREE.RepeatWrapping; cobble.repeat.set(1, 1);
     const dirt = dirtTexture(); dirt.wrapS = dirt.wrapT = THREE.RepeatWrapping;
     const cobbleM = new THREE.MeshStandardMaterial({ map: cobble, roughness: 0.9 });
     const dirtM = new THREE.MeshStandardMaterial({ map: dirt, transparent: true, opacity: 0.45, roughness: 1, depthWrite: false });
@@ -105,7 +106,8 @@ export class Arena3D {
           this.group.add(mesh);
         };
         mk(3.8, dirtM, 0.011);
-        mk(2.6, cobbleM, 0.013);
+        mk(2.8, cobbleM, 0.013);
+        (cobbleM.map as THREE.Texture).repeat.set(len / 2.8, 1);
       }
     }
 
@@ -121,7 +123,7 @@ export class Arena3D {
         void main(){
           float w = sin(vUv.x*90.0 + time*2.0 + sin(vUv.y*14.0+time)*2.0)*0.5+0.5;
           float w2 = sin(vUv.x*60.0 - time*1.3 + vUv.y*22.0)*0.5+0.5;
-          vec3 deep = vec3(0.10,0.36,0.64); vec3 light = vec3(0.34,0.66,0.92);
+          vec3 deep = vec3(0.09,0.42,0.50); vec3 light = vec3(0.40,0.80,0.80);
           vec3 c = mix(deep, light, w*0.45+w2*0.35);
           float foam = smoothstep(0.82, 1.0, w*w2*1.7);
           float edge = smoothstep(0.0,0.12,vUv.y)*smoothstep(1.0,0.88,vUv.y);
@@ -149,29 +151,58 @@ export class Arena3D {
       if (hash(i, 95) > 0.5) { const reed = new THREE.Mesh(new THREE.ConeGeometry(0.06, 0.9, 4), new THREE.MeshStandardMaterial({ color: 0x5e8a3a, roughness: 1 })); const sgn = hash(i, 93) > 0.5 ? 1 : -1; reed.position.set(px + sgn * (RIVER_HALF + 0.35), 0.45, pz - sgn * (RIVER_HALF + 0.35)); this.statics.add(reed); }
     }
 
-    // jungle walls: rock-faced hedges
-    const rockTex = stoneTexture(256, [120, 124, 112]); rockTex.repeat.set(2, 1);
-    const rockM = new THREE.MeshStandardMaterial({ map: rockTex, roughness: 1 });
-    const mossM = new THREE.MeshStandardMaterial({ color: 0x3f7f3a, roughness: 1, flatShading: true });
-    const capM = new THREE.MeshStandardMaterial({ color: 0x6f7a6a, roughness: 1, flatShading: true });
+    // jungle walls: layered cliff rock with mossy tops, blossom trees and bamboo growing from them
+    const cliffTex = cliffTexture(); cliffTex.repeat.set(2, 1);
+    const rockM = new THREE.MeshStandardMaterial({ map: cliffTex, roughness: 1 });
+    const mossM = new THREE.MeshStandardMaterial({ color: 0x4f9a46, roughness: 1, flatShading: true });
+    const capM = new THREE.MeshStandardMaterial({ color: 0x7f8f6e, roughness: 1, flatShading: true });
+    const blossomM = [new THREE.MeshStandardMaterial({ color: 0xffb7d5, roughness: 1, flatShading: true }), new THREE.MeshStandardMaterial({ color: 0xff9ec6, roughness: 1, flatShading: true }), new THREE.MeshStandardMaterial({ color: 0xffd1e3, roughness: 1, flatShading: true })];
+    const bambooM = new THREE.MeshStandardMaterial({ color: 0x7fbf5a, roughness: 0.8, flatShading: true });
+    const bambooLeafM = new THREE.MeshStandardMaterial({ color: 0x5fa842, roughness: 1, flatShading: true, side: THREE.DoubleSide });
+    const trunkM0 = new THREE.MeshStandardMaterial({ color: 0x5a3b26, roughness: 1 });
     WALLS.forEach((b, i) => {
-      const h = 1.7 + hash(i, 10) * 0.6;
-      const body = new THREE.Mesh(new THREE.BoxGeometry(b.w, h, b.h), rockM);
-      body.position.set(b.x + b.w / 2, h / 2, b.y + b.h / 2); body.castShadow = true; body.receiveShadow = true;
-      this.statics.add(body);
-      const cap = new THREE.Mesh(new THREE.BoxGeometry(b.w + 0.2, 0.18, b.h + 0.2), capM);
+      const h = 1.9 + hash(i, 10) * 0.7;
+      // stacked boulders instead of one box: three slabs with jitter
+      for (let k = 0; k < 3; k++) {
+        const sh = h / 3, y = sh * k;
+        const slab = new THREE.Mesh(new THREE.BoxGeometry(b.w + (k === 1 ? 0.25 : 0) + hash(i, 50 + k) * 0.2, sh + 0.05, b.h + (k === 1 ? 0.25 : 0) + hash(i, 60 + k) * 0.2), rockM);
+        slab.position.set(b.x + b.w / 2 + (hash(i, 70 + k) - 0.5) * 0.15, y + sh / 2, b.y + b.h / 2 + (hash(i, 80 + k) - 0.5) * 0.15);
+        slab.rotation.y = (hash(i, 90 + k) - 0.5) * 0.08;
+        slab.castShadow = true; slab.receiveShadow = true;
+        this.statics.add(slab);
+      }
+      const cap = new THREE.Mesh(new THREE.BoxGeometry(b.w + 0.3, 0.2, b.h + 0.3), capM);
       cap.position.set(b.x + b.w / 2, h + 0.05, b.y + b.h / 2); this.statics.add(cap);
-      // mossy crown of shrubs on top
       const n = Math.max(2, Math.round((b.w + b.h) / 1.6));
       for (let k = 0; k < n; k++) {
         const shrub = new THREE.Mesh(new THREE.DodecahedronGeometry(0.45 + hash(i, 20 + k) * 0.35, 0), mossM);
         shrub.position.set(b.x + 0.4 + hash(i, 30 + k) * (b.w - 0.8), h + 0.3, b.y + 0.4 + hash(i, 40 + k) * (b.h - 0.8));
         shrub.scale.y = 0.7; shrub.castShadow = true; this.statics.add(shrub);
       }
+      // a blossom tree or a bamboo clump on every wall
+      const tx = b.x + 0.5 + hash(i, 101) * (b.w - 1), tz = b.y + 0.5 + hash(i, 102) * (b.h - 1);
+      if (hash(i, 103) > 0.45) {
+        const th = 1.6 + hash(i, 104) * 1.2;
+        const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.2, th, 6), trunkM0);
+        trunk.position.set(tx, h + th / 2, tz); trunk.rotation.z = (hash(i, 105) - 0.5) * 0.3; trunk.castShadow = true; this.statics.add(trunk);
+        for (let k = 0; k < 3; k++) {
+          const crown = new THREE.Mesh(new THREE.DodecahedronGeometry(0.8 + hash(i, 110 + k) * 0.5, 0), blossomM[k % 3]);
+          crown.position.set(tx + (hash(i, 120 + k) - 0.5) * 1.4, h + th + 0.2 + hash(i, 130 + k) * 0.5, tz + (hash(i, 140 + k) - 0.5) * 1.4);
+          crown.castShadow = true; this.statics.add(crown);
+        }
+      } else {
+        for (let k = 0; k < 5; k++) {
+          const bh = 2.2 + hash(i, 150 + k) * 1.6;
+          const cane = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.06, bh, 5), bambooM);
+          cane.position.set(tx + (hash(i, 160 + k) - 0.5) * 0.9, h + bh / 2, tz + (hash(i, 170 + k) - 0.5) * 0.9); cane.rotation.z = (hash(i, 180 + k) - 0.5) * 0.12;
+          this.statics.add(cane);
+          for (let l = 0; l < 3; l++) { const leaf = new THREE.Mesh(new THREE.PlaneGeometry(0.5, 0.12), bambooLeafM); leaf.position.set(cane.position.x + (hash(i, 190 + l + k) - 0.5) * 0.4, h + bh * (0.55 + l * 0.15), cane.position.z); leaf.rotation.set(hash(i, 200 + l) * 1.2, hash(i, 210 + l) * 6, 0.3); this.statics.add(leaf); }
+        }
+      }
     });
 
     // bushes: clusters of tall grass, translucent so hiding reads from outside
-    const bushM = new THREE.MeshStandardMaterial({ color: 0x4e9a3e, roughness: 1, flatShading: true, transparent: true, opacity: 0.85, side: THREE.DoubleSide });
+    const bushM = new THREE.MeshStandardMaterial({ color: 0x6fc24f, roughness: 1, flatShading: true, transparent: true, opacity: 0.88, side: THREE.DoubleSide });
     this.windify(bushM, 0.12);
     for (const b of BUSHES) {
       const g = new THREE.Group();
@@ -197,7 +228,7 @@ export class Arena3D {
     for (const team of [0, 1] as const) {
       for (const spec of TOWER_LAYOUT) {
         const p = team === 0 ? spec.pos : mirrorPos(spec.pos);
-        const s = spec.tier === 'crystal' ? 6 : 3.4;
+        const s = spec.tier === 'crystal' ? 4.6 : 3.4;
         const plinth = new THREE.Mesh(new THREE.CylinderGeometry(s / 2, s / 2 + 0.2, 0.18, 10), plinthM);
         plinth.position.set(p.x, 0.07, p.y); plinth.receiveShadow = true; plinth.castShadow = true;
         this.statics.add(plinth);
@@ -207,23 +238,40 @@ export class Arena3D {
       platform.position.set(sp.x, 0.1, sp.y); platform.receiveShadow = true; this.statics.add(platform);
       const pool = new THREE.Mesh(new THREE.CylinderGeometry(1.6, 1.6, 0.2, 20), new THREE.MeshStandardMaterial({ color: isMine(team) ? 0x5fb8ff : 0xff8a7a, emissive: isMine(team) ? 0x2a6fd6 : 0xd63b3b, emissiveIntensity: 1.2, transparent: true, opacity: 0.85 }));
       pool.position.set(sp.x, 0.28, sp.y); this.group.add(pool); this.crystalGlows.push(pool);
-      // banners around the base
+      // 泉水: a two-tier pagoda pavilion on lacquered pillars, team banners hung between them
       this.bannerTex = this.bannerTex ?? { mine: bannerTexture('#2f7fd6'), foe: bannerTexture('#d63b3b') };
-      for (let k = 0; k < 6; k++) {
-        const a = (k / 6) * Math.PI * 2;
-        const x = sp.x + Math.cos(a) * 5.0, z = sp.y + Math.sin(a) * 5.0;
-        if (x < 0.5 || z < 0.5 || x > ARENA_W - 0.5 || z > ARENA_H - 0.5) continue;
-        const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 2.8, 6), new THREE.MeshStandardMaterial({ color: 0x5a3f26 }));
-        pole.position.set(x, 1.4, z); this.statics.add(pole);
-        const flag = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 1.3, 6, 1), new THREE.MeshStandardMaterial({ map: isMine(team) ? this.bannerTex.mine : this.bannerTex.foe, side: THREE.DoubleSide, roughness: 0.9 }));
-        flag.position.set(x, 2.1, z); flag.rotation.y = -a; flag.castShadow = true;
-        this.group.add(flag); this.flags.push(flag); this.wallBanners.push({ flag, team });
+      const lacquerM = new THREE.MeshStandardMaterial({ color: 0x9b2323, roughness: 0.45 });
+      const goldM = new THREE.MeshStandardMaterial({ color: 0xffd54a, metalness: 0.7, roughness: 0.3 });
+      const roofTile = new THREE.MeshStandardMaterial({ color: isMine(team) ? 0x2d5c9b : 0x7a1f1f, roughness: 0.7, flatShading: true });
+      for (let k = 0; k < 8; k++) {
+        const a = (k / 8) * Math.PI * 2 + Math.PI / 8;
+        const x = sp.x + Math.cos(a) * 4.8, z = sp.y + Math.sin(a) * 4.8;
+        const pillar = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.19, 5.6, 10), lacquerM);
+        pillar.position.set(x, 2.8, z); pillar.castShadow = true; this.statics.add(pillar);
+        const capP = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.22, 0.2, 10), goldM); capP.position.set(x, 5.7, z); this.statics.add(capP);
+        if (k % 2 === 0) {
+          const flag = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 1.6, 6, 1), new THREE.MeshStandardMaterial({ map: isMine(team) ? this.bannerTex.mine : this.bannerTex.foe, side: THREE.DoubleSide, roughness: 0.9 }));
+          flag.position.set(x, 4.2, z); flag.rotation.y = -a + Math.PI / 2; flag.castShadow = true;
+          this.group.add(flag); this.flags.push(flag); this.wallBanners.push({ flag, team });
+        }
+        this.lantern(x + Math.cos(a) * 0.6, 1.4, z + Math.sin(a) * 0.6, 1.2);
       }
+      for (let t = 0; t < 2; t++) {
+        const r = 6.2 - t * 1.8, y = 5.8 + t * 1.4;
+        const roof = new THREE.Mesh(new THREE.ConeGeometry(r, 1.1, 8), roofTile); roof.position.set(sp.x, y + 0.55, sp.y); roof.castShadow = true; this.statics.add(roof);
+        const edge = new THREE.Mesh(new THREE.TorusGeometry(r * 0.98, 0.07, 8, 32), goldM); edge.rotation.x = Math.PI / 2; edge.position.set(sp.x, y, sp.y); this.statics.add(edge);
+        if (t === 0) { const ring = new THREE.Mesh(new THREE.CylinderGeometry(r - 1.8 + 0.1, r - 1.8 + 0.1, 1.3, 8), lacquerM); ring.position.set(sp.x, y + 1.15, sp.y); this.statics.add(ring); }
+      }
+      const finial = new THREE.Mesh(new THREE.SphereGeometry(0.35, 10, 8), goldM); finial.position.set(sp.x, 8.9, sp.y); this.statics.add(finial);
+      const spire = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.9, 6), goldM); spire.position.set(sp.x, 9.4, sp.y); this.statics.add(spire);
     }
     // objective pits: dark stone rings
     for (const o of OBJECTIVES) {
+      const tyrant = o.id === 'tyrant';
       const ring = new THREE.Mesh(new THREE.RingGeometry(2.6, 3.4, 24), new THREE.MeshStandardMaterial({ color: 0x4a4440, roughness: 1 }));
       ring.rotation.x = -Math.PI / 2; ring.position.set(o.pos.x, 0.015, o.pos.y); this.group.add(ring);
+      const glow = new THREE.Mesh(new THREE.RingGeometry(2.0, 2.6, 24), new THREE.MeshStandardMaterial({ color: tyrant ? 0xff6a3c : 0x9b6bff, emissive: tyrant ? 0xff3a10 : 0x6a30ff, emissiveIntensity: 1.2, transparent: true, opacity: 0.6 }));
+      glow.rotation.x = -Math.PI / 2; glow.position.set(o.pos.x, 0.02, o.pos.y); this.group.add(glow); this.objGlows.push(glow);
       for (let k = 0; k < 7; k++) { const a = (k / 7) * Math.PI * 2; const spike = new THREE.Mesh(new THREE.ConeGeometry(0.3, 1.4 + hash(k, 3) * 0.8, 5), new THREE.MeshStandardMaterial({ color: 0x5b4a3c, roughness: 1, flatShading: true })); spike.position.set(o.pos.x + Math.cos(a) * 3.2, 0.6, o.pos.y + Math.sin(a) * 3.2); spike.rotation.z = (hash(k, 4) - 0.5) * 0.5; this.statics.add(spike); }
     }
     // camp markers: a few stones
@@ -294,8 +342,11 @@ export class Arena3D {
       const h = 2.6 + hash(i, 202) * 2.2;
       const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.24, h * 0.5, 6), trunkM);
       trunk.position.set(x, 1.5 + h * 0.25, z); trunk.castShadow = true; this.statics.add(trunk);
-      const crown = new THREE.Mesh(new THREE.DodecahedronGeometry(1.0 + hash(i, 203) * 0.6, 0), leafM[Math.floor(hash(i, 204) * 3)]);
+      const blossom = hash(i, 205) > 0.55;
+      const crownM = blossom ? new THREE.MeshStandardMaterial({ color: [0xffb7d5, 0xff9ec6, 0xffd1e3][Math.floor(hash(i, 206) * 3)], roughness: 1, flatShading: true }) : leafM[Math.floor(hash(i, 204) * 3)];
+      const crown = new THREE.Mesh(new THREE.DodecahedronGeometry(1.0 + hash(i, 203) * 0.6, 0), crownM);
       crown.position.set(x, 1.5 + h * 0.5 + 0.6, z); crown.castShadow = true; this.statics.add(crown);
+      if (blossom) { const c2 = new THREE.Mesh(new THREE.DodecahedronGeometry(0.7 + hash(i, 207) * 0.4, 0), crownM); c2.position.set(x + (hash(i, 208) - 0.5) * 1.4, 1.5 + h * 0.5 + 1.1, z + (hash(i, 209) - 0.5) * 1.4); c2.castShadow = true; this.statics.add(c2); }
     }
     // birds, mountains, clouds, forest outside
     const birdM = new THREE.MeshStandardMaterial({ color: 0x2a2f3a, roughness: 1 });
@@ -417,6 +468,7 @@ export class Arena3D {
     }
     this.lanternMats.glow.emissiveIntensity = 2.6 + Math.sin(time * 5) * 0.5;
     for (const g of this.crystalGlows) (g.material as THREE.MeshStandardMaterial).emissiveIntensity = 1.0 + Math.sin(time * 2.5) * 0.4;
+    for (const g of this.objGlows) (g.material as THREE.MeshStandardMaterial).emissiveIntensity = 0.9 + Math.sin(time * 1.8) * 0.5;
     for (let i = 0; i < this.flags.length; i++) {
       const f = this.flags[i];
       const pos = f.geometry.attributes.position as THREE.BufferAttribute;

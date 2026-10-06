@@ -5,6 +5,7 @@ import { NEUTRAL, other, type DamageType, type Entity, type Projectile, type Pro
 import { World, canTarget } from './world.ts';
 import { towerAggro } from './structures.ts';
 import { callGuardians } from './waves.ts';
+import { attackMult, cheatDeath, effectiveDefence, healMult, incomingMult, onAttackHit, onDamaged, onSkillHit, tickPassives } from './passives.ts';
 
 export interface DamageOpts {
   source?: Entity;
@@ -40,13 +41,17 @@ export function damage(w: World, target: Entity, amount: number, opts: DamageOpt
   if (target.status.invulnT > 0) return 0;
   let amt = amount;
   const type = opts.type ?? 'physical';
-  if (type === 'physical') amt = mitigate(amt, target.armor);
-  else if (type === 'magic') amt = mitigate(amt, target.resist);
+  const srcUnit = opts.source && opts.source.kind === 'unit' ? opts.source : undefined;
+  const basicAttack = !opts.skill && !opts.chain && !opts.burn && !!srcUnit;
+  if (type === 'physical') amt = mitigate(amt, effectiveDefence(target, opts.source, 'physical'));
+  else if (type === 'magic') amt = mitigate(amt, effectiveDefence(target, opts.source, 'magic'));
   if (target.kind !== 'unit' && opts.buildingMult) amt *= opts.buildingMult;
   if (target.kind === 'tower' && opts.towerMult !== undefined) amt *= opts.towerMult;
   if (opts.execute && target.kind === 'unit') amt += (target.maxHp - target.hp) * opts.execute;
   if (opts.crowned) amt *= 1.5;
-  if (target.kind === 'unit' && target.wardT > 0) amt *= 0.7; // Stone Body
+  // 破军: bonus against targets under half health
+  if (srcUnit?.isHero && type === 'physical' && !opts.chain && target.kind === 'unit' && target.hp < target.maxHp * 0.5 && srcUnit.items.includes('pojun')) amt *= 1.3;
+  if (target.kind === 'unit' && target.isHero) amt *= incomingMult(target, basicAttack);
   if (target.shield > 0) {
     const absorbed = Math.min(target.shield, amt);
     target.shield -= absorbed;
@@ -64,14 +69,9 @@ export function damage(w: World, target: Entity, amount: number, opts: DamageOpt
       if (target.lastHurtBy.length > 8) target.lastHurtBy.shift();
     }
     if (target.possessed && wasAbove && target.hp > 0 && target.hp / target.maxHp < 0.25) w.emit({ type: 'lowHp', team: target.team, pos: target.pos });
-    // Xuanwu's Mountain: every 500 damage taken hardens him (+14 armour/resist per stack, 5 stacks, 8 s)
-    if (target.isHero && target.def.id === 'xuanwu') {
-      target.passiveN += amt;
-      if (target.passiveN >= 500) { target.passiveN -= 500; target.passiveStacks = Math.min(5, target.passiveStacks + 1); target.passiveT = 8; w.refreshDerived(target); w.addEffect({ type: 'shield', pos: { ...target.pos }, dur: 0.4, radius: target.radius + 0.4, color: '#c9d6e3' }); }
-    }
+    if (srcUnit && srcUnit.team !== target.team) target.status.lastHurtT = w.time;
     if (target.recallT > 0) { target.recallT = 0; if (target.possessed) w.emit({ type: 'invalid', text: '@toast.recallInterrupted', team: target.team }); }
-    // frost heart passive: attackers are slowed
-    if (target.isHero && target.items.includes('frost_heart') && opts.source && opts.source.kind === 'unit') { opts.source.status.slow = Math.max(opts.source.status.slow, 0.3); opts.source.status.slowT = Math.max(opts.source.status.slowT, 1); }
+    if (target.isHero) onDamaged(w, target, opts.source, amt, basicAttack);
   }
   const src = opts.source;
   if (src && src.kind === 'unit' && src.team !== NEUTRAL) {
@@ -80,44 +80,20 @@ export function damage(w: World, target: Entity, amount: number, opts: DamageOpt
     if (target.kind === 'tower') {
       stats.towerDamage += amt; if (seat) seat.stats.towerDamage += amt; w.emit({ type: 'towerHit', pos: target.pos, team: target.team });
       // a wounded crystal calls its guardians (once)
-      if (target.tier === 'crystal' && !target.guardians && target.hp > 0 && target.hp < target.maxHp * 0.4) { target.guardians = true; callGuardians(w, target.team as Team, target.pos); }
+      if (w.twists && target.tier === 'crystal' && !target.guardians && target.hp > 0 && target.hp < target.maxHp * 0.4) { target.guardians = true; callGuardians(w, target.team as Team, target.pos); }
     }
     if (isHeroUnit(target)) {
       stats.heroDamage += amt; if (seat) seat.stats.heroDamage += amt; if (src.isHero) towerAggro(w, src, target);
-      // resonance: skill hits on enemy heroes charge the crown
-      if (src.isHero && opts.skill && !opts.crowned && amt > 0) {
+      // 节日模式 resonance: skill hits on enemy heroes charge the crown
+      if (w.twists && src.isHero && opts.skill && !opts.crowned && amt > 0) {
         src.crown = Math.min(100, src.crown + 25);
         if (src.crown >= 100 && !src.crowned) { src.crowned = true; w.addEffect({ type: 'crown', pos: { ...src.pos }, dur: 1.0, radius: 1, color: '#ffd700', team: src.team }); w.emit({ type: 'crown', team: src.team, pos: src.pos, hero: src.possessed }); }
       }
       if (opts.crowned) { target.status.stun = Math.max(target.status.stun, 0.5); }
     }
     if (src.isHero && target.kind === 'unit' && !opts.chain && amt > 0) {
-      // Storm Lance: every fourth basic attack calls down a bolt that forks to nearby enemies
-      if (!opts.skill && type === 'physical' && src.items.includes('storm_lance')) {
-        src.stormN += 1;
-        if (src.stormN >= 4) {
-          src.stormN = 0;
-          const bolt = w.stats(src).attack * 0.35 + 40;
-          const forks: Unit[] = [];
-          for (const e of w.units(target.team as Team)) if (e !== target && !e.dead && dist(e.pos, target.pos) <= 3.5 && canTarget(src.def.targets, e)) forks.push(e);
-          forks.sort((a, b) => dist(a.pos, target.pos) - dist(b.pos, target.pos));
-          w.addEffect({ type: 'lightning', pos: { ...target.pos }, to: { ...target.pos }, dur: 0.35, radius: 0.4, color: '#e8fbff', team: src.team });
-          for (const e of forks.slice(0, 2)) w.addEffect({ type: 'lightning', pos: { ...target.pos }, to: { ...e.pos }, dur: 0.3, radius: 0.15, color: '#7cf7d5', team: src.team });
-          w.emit({ type: 'spell', pos: target.pos, team: src.team, text: 'storm' });
-          for (const e of [target, ...forks.slice(0, 2)]) damage(w, e, bolt, { source: src, hero: true, type: 'magic', chain: true, noVamp: true, slow: 0.25, slowT: 0.8 });
-        }
-      }
-      // Void Staff: skills mark enemy heroes; the third mark detonates for a slice of their health
-      if (opts.skill && target.isHero && src.items.includes('void_staff')) {
-        target.voidMarks += 1;
-        if (target.voidMarks >= 3) {
-          target.voidMarks = 0;
-          const pop = target.maxHp * 0.07 + w.stats(src).power * 0.4;
-          w.addEffect({ type: 'burst', pos: { ...target.pos }, dur: 0.5, radius: 1.4, color: '#b47cff', team: src.team });
-          w.emit({ type: 'spell', pos: target.pos, team: src.team, text: 'void' });
-          damage(w, target, pop, { source: src, hero: true, type: 'magic', chain: true, noVamp: true });
-        } else w.addEffect({ type: 'ring', pos: { ...target.pos }, dur: 0.35, radius: 0.9, color: '#b47cff', team: src.team });
-      }
+      if (opts.skill) onSkillHit(w, src, target, amt);
+      else if (basicAttack) onAttackHit(w, src, target, amt, amount);
     }
     if (src.isHero && !opts.noVamp && target.kind === 'unit') {
       const d = w.stats(src);
@@ -128,17 +104,19 @@ export function damage(w: World, target: Entity, amount: number, opts: DamageOpt
   } else if (target.kind === 'tower' && src && src.team !== target.team && src.team !== NEUTRAL) {
     w.players[src.team as Team].stats.towerDamage += amt;
   }
-  if (opts.stun && opts.stun > 0) {
-    target.status.stun = Math.max(target.status.stun, opts.stun);
+  const ccImmune = target.kind === 'unit' && target.status.ccImmuneT > 0;
+  if (opts.stun && opts.stun > 0 && !ccImmune) {
+    const tenacity = target.kind === 'unit' && target.isHero && target.items.includes('dikang_zhixue') ? 0.7 : 1;
+    target.status.stun = Math.max(target.status.stun, opts.stun * tenacity);
     if (target.kind === 'unit') { target.charging = false; target.moveT = 0; }
     target.targetId = -1;
   }
-  // Bingji's Deep Freeze: slowing an already-slowed enemy freezes them briefly
-  if (opts.slow && opts.slow > 0 && target.kind === 'unit' && src && src.kind === 'unit' && src.def.id === 'bingji' && target.status.slowT > 0.3 && target.status.stun <= 0 && !target.def.monster?.boss) {
-    target.status.stun = 0.6; target.status.slowT = 0; target.status.slow = 0; target.charging = false; target.moveT = 0; target.targetId = -1;
-    w.addEffect({ type: 'frost', pos: { ...target.pos }, dur: 0.6, radius: 1.0, color: '#c7f0ff' });
+  // 冰封之心: slowing an already-slowed enemy freezes them
+  if (opts.slow && opts.slow > 0 && !ccImmune && target.kind === 'unit' && srcUnit?.isHero && srcUnit.def.passive?.kind === 'freezeOnSlow' && target.status.slowT > 0.3 && target.status.stun <= 0 && !target.def.monster?.boss) {
+    target.status.stun = srcUnit.def.passive.value ?? 1; target.status.slowT = 0; target.status.slow = 0; target.charging = false; target.moveT = 0; target.targetId = -1;
+    w.addEffect({ type: 'frost', pos: { ...target.pos }, dur: 0.8, radius: 1.0, color: '#c7f0ff' });
   }
-  if (opts.slow && opts.slow > 0 && target.kind === 'unit') { target.status.slow = Math.max(target.status.slow, opts.slow); target.status.slowT = Math.max(target.status.slowT, opts.slowT ?? 1.5); }
+  if (opts.slow && opts.slow > 0 && target.kind === 'unit' && !ccImmune) { target.status.slow = Math.max(target.status.slow, opts.slow); target.status.slowT = Math.max(target.status.slowT, opts.slowT ?? 1.5); }
   if (opts.burn && opts.burn > 0) { target.status.burnDps = Math.max(target.status.burnDps, opts.burn); target.status.burnT = 3; }
   if (opts.knockback && target.kind === 'unit' && opts.from && !(target.def.monster?.boss)) {
     const dir = norm(sub(target.pos, opts.from));
@@ -157,6 +135,7 @@ export function damage(w: World, target: Entity, amount: number, opts: DamageOpt
 export function heal(w: World, target: Entity, amount: number, silent = false): number {
   if (target.dead) return 0;
   const before = target.hp;
+  if (target.kind === 'unit' && target.isHero) amount *= healMult(target);
   target.hp = Math.min(target.maxHp, target.hp + amount);
   const healed = target.hp - before;
   if (!silent && healed >= 5) w.text(target.pos, `+${Math.round(healed)}`, '#8dff9a', 0.5);
@@ -203,16 +182,6 @@ export function kill(w: World, target: Entity, source?: Entity): void {
   if (target.dead) return;
   target.dead = true;
   target.hp = 0;
-  if (source && source.kind === 'unit' && source.isHero && target.kind === 'unit') {
-    // Huofeng's Cinders: burning victims burst into flame
-    if (source.def.id === 'huofeng' && target.status.burnT > 0) {
-      const d = w.stats(source);
-      w.addEffect({ type: 'burst', pos: { ...target.pos }, dur: 0.5, radius: 1.6, color: '#ff8a3c', team: source.team });
-      areaDamage(w, target.team, target.pos, 1.6, 90 + source.level * 18 + d.power * 0.25, { source, hero: true, type: 'magic', chain: true, burn: 30 });
-    }
-    // Huochong's Reload: kills shorten Combat Roll
-    if (source.def.id === 'huochong') source.skillCd[1] = Math.max(0, source.skillCd[1] - (target.isHero ? 4 : 1));
-  }
   const killerTeam: Side = source ? source.team : other(target.team as Team);
   const killerUnit = source && source.kind === 'unit' ? source : undefined;
   const killerSeat = killerUnit ? w.seatOf(killerUnit) : undefined;
@@ -242,7 +211,7 @@ export function kill(w: World, target: Entity, source?: Entity): void {
           for (const h of w.heroes(team)) { if (m.buff === 'tyrant') h.status.tyrantT = 90; else h.status.overlordT = 90; w.refreshDerived(h); }
           for (const s of w.players[team].seats) giveGold(w, s, m.buff === 'tyrant' ? 100 : 150);
           // the twist: whoever lands the last hit on the Tyrant rides its fury for 20 s
-          if (m.buff === 'tyrant' && killerUnit?.isHero) { killerUnit.status.rage = 20; killerUnit.status.rageSpeed = 1.45; killerUnit.status.rageAttack = 1.25; killerUnit.status.redT = Math.max(killerUnit.status.redT, 20); w.refreshDerived(killerUnit); w.text(killerUnit.pos, '@fx.tyrantRide', '#ffb347', 0.7); }
+          if (w.twists && m.buff === 'tyrant' && killerUnit?.isHero) { killerUnit.status.rage = 20; killerUnit.status.rageSpeed = 1.45; killerUnit.status.rageAttack = 1.25; killerUnit.status.redT = Math.max(killerUnit.status.redT, 20); w.refreshDerived(killerUnit); w.text(killerUnit.pos, '@fx.tyrantRide', '#ffb347', 0.7); }
           w.players[team].stats.objectives += 1;
           if (killerSeat) killerSeat.stats.objectives += 1;
           w.emit({ type: 'objective', team, pos: target.pos, text: m.buff === 'tyrant' ? '@objective.tyrant' : '@objective.overlord', big: true });
@@ -285,14 +254,8 @@ export function kill(w: World, target: Entity, source?: Entity): void {
 
 function heroKilled(w: World, target: Unit, killer: Unit | undefined, killerSeat: Seat | undefined, killerTeam: Side): void {
   const seat = w.seatOf(target);
-  // Immortal shield / phoenix: cheat death once per long cooldown
-  if (seat && seat.items.includes('immortal_shield') && !(seat as never as { usedImmortal?: number }).usedImmortal) {
-    (seat as never as { usedImmortal?: number }).usedImmortal = 1;
-    target.dead = false; target.hp = target.maxHp * 0.3; target.status.invulnT = 1.2;
-    w.addEffect({ type: 'heal', pos: { ...target.pos }, dur: 0.8, radius: 1.6, color: '#fff4c2' });
-    w.emit({ type: 'heal', team: target.team, pos: target.pos, text: '@toast.immortal' });
-    return;
-  }
+  // 名刀·司命 / 贤者的庇护
+  if (cheatDeath(w, target)) { target.dead = false; return; }
   const victimTeam = target.team as Team;
   if (seat) {
     seat.deaths += 1; seat.stats.heroDeaths += 1; seat.streak = 0;
@@ -310,10 +273,6 @@ function heroKilled(w: World, target: Unit, killer: Unit | undefined, killerSeat
     const team = killerTeam as Team;
     const kp = w.players[team];
     kp.kills += 1; kp.stats.heroKills += 1;
-    // phoenix feather: the fallen hero explodes
-    if (seat && seat.items.includes('phoenix_feather')) { areaDamage(w, victimTeam, target.pos, 3, 400 + target.level * 40, { source: target, hero: true, type: 'magic', from: target.pos, knockback: 0.8 }); w.addEffect({ type: 'burst', pos: { ...target.pos }, dur: 0.7, radius: 3, color: '#ffb15e' }); }
-    // bloodthirst blade: the killer's nearby allies are healed
-    if (killer?.isHero && killer.items.includes('bloodthirst')) for (const a of w.heroes(team)) if (dist(a.pos, killer.pos) < 6) heal(w, a, a.maxHp * 0.15);
     const bounty = HERO_KILL_GOLD + Math.min(300, (seat?.streak ?? 0) * 60) + Math.min(200, target.level * 10);
     const assisters: Seat[] = [];
     for (const r of target.lastHurtBy) {
@@ -337,7 +296,7 @@ function heroKilled(w: World, target: Unit, killer: Unit | undefined, killerSeat
       // killed by a tower or minion: gold goes to nearby allies; a tower that kills a hero is crowned
       for (const s of assisters) giveGold(w, s, bounty * 0.5);
       const tower = target.lastHurtBy.length ? undefined : undefined; void tower;
-      for (const t of w.towers(team)) if (dist(t.pos, target.pos) - target.radius <= t.range + 0.5 && t.active) { t.crownT = 30; w.addEffect({ type: 'crown', pos: { ...t.pos }, dur: 1.2, radius: 1.4, color: '#ffd700', team }); }
+      if (w.twists) for (const t of w.towers(team)) if (dist(t.pos, target.pos) - target.radius <= t.range + 0.5 && t.active) { t.crownT = 30; w.addEffect({ type: 'crown', pos: { ...t.pos }, dur: 1.2, radius: 1.4, color: '#ffd700', team }); }
     }
     for (const s of assisters) { s.assists += 1; s.stats.assists += 1; giveGold(w, s, ASSIST_GOLD); giveXp(w, s, HERO_KILL_XP * 0.5); }
     w.emit({ type: 'kill', team, pos: target.pos, killer: killerSeat?.name ?? (killer?.def.name ?? '@unit.tower'), victim: seat?.name ?? target.def.name, killerTeam: team, hero: true });
@@ -366,7 +325,7 @@ export function tickStatus(w: World, e: Entity, dt: number): void {
   let refresh = false;
   if (e.kind === 'unit') {
     if (e.wardT > 0) e.wardT -= dt;
-    if (e.passiveT > 0) { e.passiveT -= dt; if (e.passiveT <= 0 && e.passiveStacks > 0) { e.passiveStacks = 0; refresh = true; } }
+    if (e.isHero) tickPassives(w, e, dt);
   }
   if (s.blueT > 0) { s.blueT -= dt; if (s.blueT <= 0) refresh = true; }
   if (s.redT > 0) { s.redT -= dt; if (s.redT <= 0) refresh = true; }
@@ -413,6 +372,7 @@ export interface FireOpts {
   radius?: number;
   skill?: boolean;
   crowned?: boolean;
+  heroOnly?: boolean;
 }
 
 export function fireProjectile(w: World, o: FireOpts): Projectile {
@@ -424,7 +384,7 @@ export function fireProjectile(w: World, o: FireOpts): Projectile {
     splash: o.splash ?? 0, splashAir: o.splashAir ?? true, hitsAir: o.hitsAir ?? true, hitsGround: o.hitsGround ?? true,
     pierce: o.pierce ?? false, hitIds: new Set(), sourceId: o.sourceId, stun: o.stun ?? 0, slow: o.slow ?? 0, slowT: o.slowT ?? 0, knockback: o.knockback ?? 0,
     buildingMult: o.buildingMult ?? 1, burn: o.burn ?? 0, chain: o.chain, lobFrom: { ...o.from }, lobTo: { ...lobTo }, lobT: 0,
-    lobDur: Math.max(0.35, lobDist / o.speed), height: 0, dead: false, hero: o.hero ?? false, radius: o.radius ?? 0.18, skill: o.skill ?? false, crowned: o.crowned ?? false,
+    lobDur: Math.max(0.35, lobDist / o.speed), height: 0, dead: false, hero: o.hero ?? false, radius: o.radius ?? 0.18, skill: o.skill ?? false, crowned: o.crowned ?? false, heroOnly: o.heroOnly ?? false,
   };
   w.projectiles.push(p);
   return p;
@@ -504,6 +464,7 @@ export function updateProjectiles(w: World, dt: number): void {
       for (const e of w.enemiesOf(p.team)) {
         if (!projectileCanHit(p, e) || p.hitIds.has(e.id)) continue;
         if (e.kind === 'tower' && !p.hero) continue;
+        if (p.heroOnly && !(e.kind === 'unit' && e.isHero)) continue;
         if (pointSegDist(e.pos, p.prev, p.pos) <= e.radius + p.radius) {
           const t = dist(p.prev, e.pos);
           if (t < bestT) { bestT = t; best = e; }
@@ -557,9 +518,10 @@ export function meleeHit(w: World, u: Unit, target: Entity, dmg: number, extra: 
 export function attackDamage(w: World, u: Unit): { dmg: number; crit: boolean } {
   const d = w.stats(u);
   let dmg = u.def.attackType === 'magic' ? d.attack + d.power * 0.3 : d.attack;
-  dmg *= u.buffAttack * u.status.rageAttack;
+  dmg *= u.buffAttack * u.status.rageAttack * attackMult(u);
   let crit = false;
+  const critDmg = u.items.includes('wujin_zhanren') ? 2.2 : 1.75;
   if (u.critNext > 1) { dmg *= u.critNext; crit = true; u.critNext = 1; }
-  else if (u.isHero && d.crit > 0 && w.rng.chance(d.crit)) { dmg *= 1.75; crit = true; }
+  else if (u.isHero && d.crit > 0 && w.rng.chance(d.crit)) { dmg *= critDmg; crit = true; }
   return { dmg, crit };
 }

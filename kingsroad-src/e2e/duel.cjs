@@ -19,7 +19,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   const A = await mk('A'), B = await mk('B');
   await A.goto(BASE); await sleep(2000);
   // host: 3v3 normal
-  await A.evaluate(() => { const k = window.__kr; k.settings.mode = '3v3'; k.settings.hero = 'shenshe'; });
+  await A.evaluate(() => { const k = window.__kr; k.settings.mode = '3v3'; k.settings.hero = 'houyi'; });
   await A.click('#btnOnline'); await sleep(2500);
   await A.fill('#onlineName', 'Alice');
   await A.click('#btnCreateRoom');
@@ -29,7 +29,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   await A.screenshot({ path: out('01-host-room.png') });
   await B.goto(`${BASE}#/join/${code}`); await sleep(1000);
   await B.waitForSelector('.room-code', { timeout: 25000 });
-  await B.evaluate(() => { window.__kr.settings.hero = 'huofeng'; });
+  await B.evaluate(() => { window.__kr.settings.hero = 'daji'; });
   await B.click('.hero-pick[data-hero="huofeng"]'); await sleep(800);
   await B.click('#btnRoomReady'); await sleep(1200);
   await B.screenshot({ path: out('02-guest-room.png') });

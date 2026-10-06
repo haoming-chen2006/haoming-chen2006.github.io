@@ -237,11 +237,12 @@ export class Entities3D {
     animateTowerFlags(m, time);
     const recoil = t.attackAnim > 0 ? Math.sin(t.attackAnim * Math.PI) * 0.25 : 0;
     m.turret.position.x = -recoil * Math.cos(t.facing); m.turret.position.z = -recoil * Math.sin(t.facing);
-    for (const mm of m.mats) { mm.emissive.setHex(t.hitFlash > 0 ? 0xffffff : t.status.freeze > 0 ? 0x7ec8ff : 0x000000); mm.emissiveIntensity = t.hitFlash > 0 ? 0.5 : t.status.freeze > 0 ? 0.5 : 0; }
+    for (const mm of m.mats) { if (mm.userData.keepEmissive) continue; mm.emissive.setHex(t.hitFlash > 0 ? 0xffffff : t.status.freeze > 0 ? 0x7ec8ff : 0x000000); mm.emissiveIntensity = t.hitFlash > 0 ? 0.5 : t.status.freeze > 0 ? 0.5 : 0; }
     if (m.crown) {
-      const gold = (m.crown.children[0] as THREE.Mesh).material as THREE.MeshStandardMaterial;
-      gold.emissiveIntensity = t.active ? 0.8 + Math.sin(time * 3) * 0.4 : 0.05;
+      const cm = ((m.crown as THREE.Mesh).isMesh ? (m.crown as THREE.Mesh).material : (m.crown.children[0] as THREE.Mesh).material) as THREE.MeshStandardMaterial;
+      cm.emissiveIntensity = t.active ? 1.4 + Math.sin(time * 3) * 0.5 : 0.25;
       m.crown.rotation.y = t.active ? time * 0.6 : 0;
+      if (t.tier === 'crystal') m.crown.position.y = 2.9 + Math.sin(time * 1.3) * 0.15;
     }
     // tower shudder + stone dust when hit hard
     if (t.hp < r.lastHp - 40 && activeFx) {

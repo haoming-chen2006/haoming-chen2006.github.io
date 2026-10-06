@@ -3,6 +3,7 @@ import type { Vec } from '../engine/math.ts';
 import { dist } from '../engine/math.ts';
 import { COUNTDOWN_TIME, LEVEL_XP, MAX_LEVEL, START_GOLD, TOWER_LAYOUT, TOWER_STATS, mirrorPos, type LaneId } from './constants.ts';
 import { ROLE_LANE, heroDef } from './heroes.ts';
+import { attackSpeedBonus } from './passives.ts';
 import { sumItems } from './items.ts';
 import { crystalPos, inBush, lanePath, setObstacles, spawnPoint } from './map.ts';
 import {
@@ -13,7 +14,7 @@ import {
 export interface SeatConfig { heroId: string; isBot: boolean; name: string }
 export interface TeamConfig { name: string; seats: SeatConfig[] }
 
-const freshStatus = (): Status => ({ stun: 0, freeze: 0, rage: 0, rageSpeed: 1, rageAttack: 1, burnT: 0, burnDps: 0, slowT: 0, slow: 0, blueT: 0, redT: 0, tyrantT: 0, overlordT: 0, invulnT: 0 });
+const freshStatus = (): Status => ({ stun: 0, freeze: 0, rage: 0, rageSpeed: 1, rageAttack: 1, burnT: 0, burnDps: 0, slowT: 0, slow: 0, blueT: 0, redT: 0, tyrantT: 0, overlordT: 0, invulnT: 0, shred: 0, shredT: 0, ccImmuneT: 0, lastHurtT: -100 });
 
 /** Effective combat stats of a unit at its level with its items and buffs. */
 export interface Derived { maxHp: number; attack: number; power: number; armor: number; resist: number; hitSpeed: number; speed: number; lifesteal: number; spellvamp: number; cooldown: number; crit: number; maxMana: number; hpRegen: number; manaRegen: number }
@@ -22,6 +23,8 @@ export class World {
   time = 0;
   timeLeft = 99999;
   phase: MatchPhase = 'countdown';
+  /** 节日模式: the invented twist layer (resonance crowns, crowned towers, guardians, Tyrant ride). Off = faithful 王者荣耀. */
+  twists = false;
   countdown = COUNTDOWN_TIME;
   elixirRate = 1;
   result: MatchResult | null = null;
@@ -64,7 +67,7 @@ export class World {
       const def = heroDef(s.heroId);
       return {
         team, index, heroDefId: s.heroId, heroId: -1, isBot: s.isBot, name: s.name, stats: newStats(), respawnT: 0, level: 1, xp: 0, gold: START_GOLD,
-        items: [], skillRank: [0, 0, 0], skillPoints: 1, role: def.role, lane: ROLE_LANE[def.role], streak: 0, kills: 0, deaths: 0, assists: 0, autoBuy: true,
+        items: [], skillRank: [0, 0, 0], skillPoints: 1, role: def.role, lane: ROLE_LANE[def.role], streak: 0, kills: 0, deaths: 0, assists: 0, autoBuy: true, itemCd: {},
       };
     });
     // spread lanes: one jungler, one top, one mid, two bot
@@ -116,7 +119,7 @@ export class World {
       buffT: 0, buffSpeed: 1, buffAttack: 1, critNext: 1, lane: 1, laneIndex: 0, vel: { x: 0, y: 0 }, bobT: this.rng.next() * 10, heroAttackHeld: false,
       lastPos: { ...pos }, stuckT: 0, waypoint: null, path: [], pathT: 0, fromSpawner: false,
       level: 1, xp: 0, mana: def.mana, maxMana: def.mana, items: [], gold: 0, recallT: 0, respawnT: 0, kills: 0, deaths: 0, assists: 0, streak: 0,
-      lastHurtBy: [], damageTaken: 0, inBush: false, camp: null, home: null, leashT: 0, owner: -1, autoBuy: true, skillPoints: 0, lastAttackT: -10, crown: 0, crowned: false, stormN: 0, voidMarks: 0, passiveN: 0, passiveStacks: 0, passiveT: 0, wardT: 0,
+      lastHurtBy: [], damageTaken: 0, inBush: false, camp: null, home: null, leashT: 0, owner: -1, autoBuy: true, skillPoints: 0, lastAttackT: -10, crown: 0, crowned: false, stormN: 0, voidMarks: 0, passiveN: 0, passiveStacks: 0, passiveT: 0, wardT: 0, wardDR: 0.3, empowerT: 0, empowerN: 0, empowerSkill: -1,
     };
   }
 
@@ -170,14 +173,14 @@ export class World {
       maxHp: d.hp + d.hpGrowth * L + it.hp,
       attack: (d.damage + d.damageGrowth * L + it.damage) * (tyrant ? 1.1 : 1),
       power: (d.power + d.powerGrowth * L + it.power) * (tyrant ? 1.1 : 1),
-      armor: d.armor + d.armorGrowth * L + it.armor + (over ? 60 : 0) + u.passiveStacks * 14,
-      resist: d.resist + d.resistGrowth * L + it.resist + (over ? 60 : 0) + u.passiveStacks * 14,
-      hitSpeed: d.hitSpeed / (1 + d.attackSpeedGrowth * L + it.attackSpeed + (red ? 0.15 : 0)),
+      armor: d.armor + d.armorGrowth * L + it.armor + (over ? 60 : 0),
+      resist: d.resist + d.resistGrowth * L + it.resist + (over ? 60 : 0),
+      hitSpeed: d.hitSpeed / (1 + d.attackSpeedGrowth * L + it.attackSpeed + (red ? 0.15 : 0) + attackSpeedBonus(u)),
       speed: d.speed + it.speed + (blue ? 0.3 : 0),
       lifesteal: it.lifesteal, spellvamp: it.spellvamp, cooldown: Math.min(0.4, it.cooldown + (blue ? 0.15 : 0)), crit: it.crit,
-      maxMana: d.mana + (u.isHero ? 60 * L : 0) + (u.items.includes('sage_tome') ? 400 : 0),
-      hpRegen: d.hpRegen + (u.isHero ? 1.2 * L : 0) + (u.items.includes('red_crystal') ? 15 : 0),
-      manaRegen: d.manaRegen * (blue ? 2.5 : 1) + (u.isHero ? 0.4 * L : 0),
+      maxMana: d.mana + (u.isHero && d.mana > 0 ? 60 * L : 0),
+      hpRegen: d.hpRegen + (u.isHero ? 1.2 * L : 0) + it.hpRegen,
+      manaRegen: d.manaRegen * (blue ? 2.5 : 1) + (u.isHero ? 0.4 * L : 0) + it.manaRegen,
     };
     const old = this.derived.get(u.id);
     if (old && old.maxHp !== der.maxHp) { const ratio = u.maxHp > 0 ? u.hp / u.maxHp : 1; u.maxHp = der.maxHp; u.hp = Math.min(der.maxHp, Math.max(u.hp, ratio * der.maxHp)); }

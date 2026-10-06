@@ -46,7 +46,7 @@ class FakeRoom {
 function run(latencyMs: number, loss: number, seed: number, minProgress: number): { ok: boolean; a: number; b: number; ticks: [number, number]; desynced: boolean } {
   const cfg: SimConfig = {
     mode: '3v3', difficulty: 'normal', seed,
-    teams: [[{ heroId: 'shenshe', isBot: false, name: 'A' }], [{ heroId: 'huofeng', isBot: false, name: 'B' }]], botVsBot: false,
+    teams: [[{ heroId: 'houyi', isBot: false, name: 'A' }], [{ heroId: 'daji', isBot: false, name: 'B' }]], botVsBot: false,
   };
   const simA = new Simulation(cfg), simB = new Simulation(cfg);
   simA.skipCountdown(); simB.skipCountdown();

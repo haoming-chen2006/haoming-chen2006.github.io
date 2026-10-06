@@ -5,13 +5,14 @@ import { clearLine, inWall } from './map.ts';
 import { clampArena, resolveGround, resolveObstacles } from './terrain.ts';
 import type { AbilityDef, Entity, Unit } from './types.ts';
 import { canTarget, frozen, World } from './world.ts';
+import { onSkillCast, skillGateOpen } from './passives.ts';
 
 const DASH_SPEED = 14;
 
 export const skillAt = (u: Unit, i: number): AbilityDef | undefined => u.def.skills[i];
 export const skillReady = (u: Unit, i: number): boolean => {
   const a = skillAt(u, i);
-  return !!a && u.skillRank[i] > 0 && u.skillCd[i] <= 0 && u.mana >= a.mana && u.abilityT <= 0 && !u.dashVel && !frozen(u) && u.deployT <= 0 && u.recallT <= 0;
+  return !!a && u.skillRank[i] > 0 && u.skillCd[i] <= 0 && u.mana >= a.mana && u.abilityT <= 0 && !u.dashVel && !frozen(u) && u.deployT <= 0 && u.recallT <= 0 && skillGateOpen(u, i);
 };
 export const canUseAbility = (u: Unit): boolean => skillReady(u, 0);
 
@@ -141,10 +142,19 @@ export function useSkill(w: World, u: Unit, i: number, aim: Vec): boolean {
       (u as never as { leapSkill: number }).leapSkill = i;
       (u as never as { leapDamage: number }).leapDamage = dmg;
       u.flying = true; // pass over walls while airborne
-      if (u.def.id === 'wukong') { u.wardT = 2.5; w.addEffect({ type: 'shield', pos: { ...u.pos }, dur: 0.4, radius: u.radius + 0.4, color: '#ffd86b' }); } // Stone Body
       break;
     }
     case 'summon':
+      break;
+    case 'globalShot':
+      // a slow, thick arrow that crosses the whole map and stops at the first enemy hero
+      fireProjectile(w, { team: u.team, from: u.pos, style: u.def.projectile ?? 'arrow', speed: 16, damage: dmg, type, sourceId: u.id, mode: 'linear', dir, maxDist: a.range ?? 60, pierce: false, hero: true, radius: a.radius ?? 0.7, stun: a.stun, skill: true, heroOnly: true });
+      w.addEffect({ type: 'beam', pos: { ...u.pos }, to: add(u.pos, scale(dir, 12)), dur: 0.5, radius: 0.25, color });
+      break;
+    case 'multiStrike':
+      u.empowerN = a.count ?? 3; u.empowerSkill = i; u.empowerT = a.duration ?? 6;
+      u.buffT = a.duration ?? 6; u.buffSpeed = a.buff?.speed ?? 1; u.buffAttack = 1;
+      w.addEffect({ type: 'ring', pos: { ...u.pos }, dur: 0.5, radius: 1.2, color });
       break;
     case 'selfBuff':
       u.buffT = a.duration ?? 4; u.buffSpeed = a.buff?.speed ?? 1.2; u.buffAttack = a.buff?.attack ?? 1;
@@ -155,10 +165,14 @@ export function useSkill(w: World, u: Unit, i: number, aim: Vec): boolean {
     case 'healBurst': {
       const amount = skillHeal(w, u, a, rank);
       const seat = w.seatOf(u);
-      for (const e of w.within(u.pos, a.radius ?? 3, (x) => x.team === u.team && x.kind === 'unit' && x.isHero)) {
-        const h = heal(w, e, amount); if (seat) seat.stats.healing += h;
-        // Mingyue's Moonlit Steps: her heals quicken allies' feet
-        if (u.def.id === 'mingyue' && e.kind === 'unit' && e.buffT <= 0) { e.buffT = 1.6; e.buffSpeed = 1.3; e.buffAttack = 1; }
+      for (const e of w.within(u.pos, Math.max(0.5, a.radius ?? 3), (x) => x.team === u.team && x.kind === 'unit' && x.isHero)) {
+        if (e.kind !== 'unit') continue;
+        // 赤血狂暴-style self heals scale with missing health
+        const amt = (a.radius ?? 3) < 1 ? amount * (1 + (1 - u.hp / u.maxHp) * 1.5) : amount;
+        const h = heal(w, e, amt); if (seat) seat.stats.healing += h;
+        if (a.allyShield && e !== u) e.shield = Math.max(e.shield, a.allyShield * (1 + 0.3 * (rank - 1)));
+        if (a.cleanse) { e.status.stun = 0; e.status.slow = 0; e.status.slowT = 0; e.status.freeze = 0; e.status.ccImmuneT = 1.5; }
+        if (a.buff && e !== u && e.buffT <= 0) { e.buffT = 1.6; e.buffSpeed = a.buff.speed; e.buffAttack = 1; }
       }
       u.shield = Math.max(u.shield, (a.shield ?? 0) * (1 + 0.3 * (rank - 1)));
       w.addEffect({ type: 'heal', pos: { ...u.pos }, dur: 0.8, radius: a.radius ?? 3, color });
@@ -173,13 +187,14 @@ export function useSkill(w: World, u: Unit, i: number, aim: Vec): boolean {
         let best: Entity | null = null, bd = Infinity;
         for (const e of w.enemiesOf(u.team)) {
           if (hit.has(e.id) || e.kind !== 'unit') continue;
+          if ((a.count ?? 4) === 1 && !e.isHero) continue; // 元气弹 locks onto heroes
           const d = dist(e.pos, last.pos);
           if (d <= (a.range ?? 4) && d < bd) { bd = d; best = e; }
         }
         if (!best) break;
         hit.add(best.id);
         w.addEffect({ type: 'lightning', pos: { ...last.pos }, to: { ...best.pos }, dur: 0.35, radius: 0.15, color });
-        damage(w, best, dmg, { ...common, stun: a.stun });
+        damage(w, best, dmg, { ...common, stun: a.stun, slow: a.slow, slowT: a.slowT, execute: a.execute });
         last = best;
       }
       if (hit.size === 0) { u.skillCd[i] = 0.5; if (u.possessed) w.text(u.pos, '@fx.noTargets', '#ffffff', 0.5); return false; }
@@ -187,6 +202,8 @@ export function useSkill(w: World, u: Unit, i: number, aim: Vec): boolean {
       break;
     }
   }
+  if (a.invuln) { u.status.invulnT = Math.max(u.status.invulnT, a.invuln); w.addEffect({ type: 'shield', pos: { ...u.pos }, dur: a.invuln, radius: u.radius + 0.5, color }); }
+  onSkillCast(w, u, i);
   u.mana -= a.mana;
   if (crowned) { u.crowned = false; u.crown = 0; w.addEffect({ type: 'crown', pos: { ...u.pos }, dur: 0.8, radius: 1.2, color: '#ffd700', team: u.team }); }
   (u as never as { activeCrowned: boolean }).activeCrowned = crowned;
@@ -267,7 +284,8 @@ function finishDash(w: World, u: Unit): void {
     const a = u.def.skills[ext.leapSkill];
     u.flying = u.def.flying;
     u.pos = resolveGround(u.pos, u.radius);
-    areaDamage(w, u.team, u.pos, a.radius ?? 1.5, ext.leapDamage ?? 0, { source: u, hero: u.isHero, type: a.type, knockback: a.knockback ?? 0.6, from: u.pos, stun: a.stun, skill: true, crowned: (u as never as { activeCrowned?: boolean }).activeCrowned });
+    const victims = areaDamage(w, u.team, u.pos, a.radius ?? 1.5, ext.leapDamage ?? 0, { source: u, hero: u.isHero, type: a.type, knockback: a.knockback ?? 0.6, from: u.pos, stun: a.stun, skill: true, crowned: (u as never as { activeCrowned?: boolean }).activeCrowned });
+    if (a.maxHpPct) for (const v of victims) if (v.kind === 'unit' && v.isHero) damage(w, v, v.maxHp * a.maxHpPct, { source: u, hero: true, type: 'true', chain: true, noVamp: true });
     w.addEffect({ type: 'shockwave', pos: { ...u.pos }, dur: 0.45, radius: a.radius ?? 1.5, color: a.color ?? '#fff' });
     w.emit({ type: 'hit', pos: u.pos, style: 'rock' });
     ext.leapSkill = undefined;

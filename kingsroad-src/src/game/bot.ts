@@ -410,9 +410,11 @@ export class BotHero {
         case 'cone': ok = d <= (a.radius ?? 3) - 0.3; break;
         case 'aoeSelf': ok = a.heal ? u.hp / u.maxHp < 0.6 : d <= (a.radius ?? 2.5) - 0.2; break;
         case 'spin': ok = d <= (a.radius ?? 2) + 0.5; break;
-        case 'selfBuff': ok = d <= u.def.range + 2; break;
-        case 'healBurst': ok = u.hp / u.maxHp < 0.7 || [...w.heroes(this.team)].some((h) => dist(h.pos, u.pos) < (a.radius ?? 4) && h.hp / h.maxHp < 0.6); break;
+        case 'selfBuff': ok = a.invuln ? (d <= u.def.range + 3 && (u.hp / u.maxHp < 0.6 || this.nearbyEnemyHeroes(w, u, 6).length >= 2)) : d <= u.def.range + 2; break;
+        case 'healBurst': ok = a.cleanse ? [...w.heroes(this.team)].some((h) => dist(h.pos, u.pos) < (a.radius ?? 4) && (h.status.stun > 0 || h.status.slowT > 0.5)) : a.allyShield ? [...w.heroes(this.team)].some((h) => dist(h.pos, u.pos) < (a.radius ?? 4)) : u.hp / u.maxHp < 0.7 || [...w.heroes(this.team)].some((h) => dist(h.pos, u.pos) < (a.radius ?? 4) && h.hp / h.maxHp < 0.6); break;
         case 'chain': ok = d <= (a.range ?? 5); break;
+        case 'globalShot': ok = t.isHero && d <= 18 && t.hp / t.maxHp < 0.6; break;
+        case 'multiStrike': ok = d <= u.def.range + 2; break;
       }
       if (ok) { cmd.skill = i; cmd.aim = a.kind === 'blink' ? { x: t.pos.x - Math.cos(u.facing) * 0.5, y: t.pos.y - Math.sin(u.facing) * 0.5 } : this.lead(w, u, t); (u as never as { lastBotSkill?: number }).lastBotSkill = w.time; return; }
     }
@@ -472,5 +474,5 @@ export class BotHero {
   }
 }
 
-export const BOT_NAMES = ['Azure', 'Brook', 'Cinder', 'Dusk', 'Ember', 'Frost', 'Gale', 'Haze', 'Iris', 'Jade', 'Kite', 'Lumen', 'Moss', 'Nova', 'Onyx', 'Pike', 'Quill', 'Rune', 'Slate', 'Thorn'];
+export const BOT_NAMES = ['清风', '明月', '流云', '落叶', '孤狼', '星辰', '飞羽', '青山', '霜降', '惊鸿', '云舒', '竹影', '雷鸣', '烈焰', '白露', '朝阳', '夜雨', '长歌', '听风', '望舒'];
 export const mirror = mirrorPos;

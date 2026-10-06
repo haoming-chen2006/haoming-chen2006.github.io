@@ -82,7 +82,7 @@ export class CameraRig {
       for (let i = 1; i <= 24; i++) {
         const t = i / 24;
         const px = center.x + (outPos.x - center.x) * t, py = center.y + (outPos.y - center.y) * t, pz = center.z + (outPos.z - center.z) * t;
-        let blocked = px < -0.2 || px > ARENA_W + 0.2 || pz < -0.2 || pz > ARENA_H + 0.2 ? py < 1.2 : false;
+        let blocked = px < -0.2 || px > ARENA_W + 0.2 || pz < -0.2 || pz > ARENA_H + 0.2 ? py < 2.8 : false;
         if (!blocked) for (const [ox, oz, r, h] of this.obstacles) { if (py < h && (px - ox) ** 2 + (pz - oz) ** 2 < (r + 0.35) ** 2) { blocked = true; break; } }
         if (blocked) { best = Math.max(0.3, t - 1 / 24); break; }
       }

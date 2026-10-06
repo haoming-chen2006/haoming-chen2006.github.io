@@ -25,7 +25,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     'mode.1v1': 'Mid lane only. Just you, your rival, the minions and the jungle.',
     'diff.easy': 'Easy', 'diff.normal': 'Normal', 'diff.hard': 'Hard',
     'select.title': 'Choose your hero', 'select.start': 'To Battle', 'select.mode': '{mode} · {diff}', 'select.yourTeam': 'Your team', 'select.enemyTeam': 'Enemy team',
-    'select.skills': 'Skills', 'select.passive': 'Twist', 'select.cooldown': '{s}s cooldown', 'select.mana': '{m} mana', 'select.build': 'Recommended build',
+    'select.skills': 'Skills', 'select.passive': 'Passive', 'select.cooldown': '{s}s cooldown', 'select.mana': '{m} mana', 'select.build': 'Recommended build',
     'codex.title': 'Heroes',
     'role.tank': 'Tank', 'role.warrior': 'Warrior', 'role.assassin': 'Assassin', 'role.mage': 'Mage', 'role.marksman': 'Marksman', 'role.support': 'Support',
     'team.blue': 'Blue', 'team.red': 'Red',
@@ -64,6 +64,39 @@ export const translations: Record<Lang, Record<string, string>> = {
     'online.pickHero': 'Your hero:', 'online.chatPh': 'Say something…', 'online.send': 'Send', 'online.leave': 'Leave', 'online.start': 'Start Match', 'online.readyUp': 'Ready', 'online.unready': 'Not ready', 'online.playing': 'playing', 'online.creating': 'Creating room…', 'online.joining': 'Joining…',
     'net.waiting': 'Waiting for players… {s}s', 'net.outOfSync': 'Out of sync with the other players', 'net.rtt': 'online · {ms} ms', 'net.dropped': 'Seat {seat} stopped responding: a bot takes over', 'net.left': 'Seat {seat} left: a bot takes over',
     'err.noFreeCode': 'Could not find a free room code', 'err.notRoomCode': 'That is not a room code', 'err.noHost': 'No room {0} is open', 'err.roomFull': 'Room {0} is full', 'err.serverSilent': 'The server did not answer', 'err.network': 'Network error',
+    // 王者荣耀 content: data is 中文; these are the English faces of the same keys
+    'shop.cat.attack': 'Attack', 'shop.cat.magic': 'Magic', 'shop.cat.defense': 'Defense', 'shop.cat.support': 'Support', 'shop.cat.boots': 'Boots',
+    'fx.ultReady': 'Ultimate ready!',
+    'hero.houyi.name': 'Hou Yi', 'hero.houyi.title': 'Bow of the Demigod', 'hero.luban.name': 'Luban No.7', 'hero.luban.title': 'Mechanical Marvel',
+    'hero.sunshangxiang.name': 'Sun Shangxiang', 'hero.sunshangxiang.title': 'Lady of the Bow', 'hero.makeboluo.name': 'Marco Polo', 'hero.makeboluo.title': 'Roving Gunslinger',
+    'hero.daji.name': 'Daji', 'hero.daji.title': 'Enchanting Fox', 'hero.anqila.name': 'Angela', 'hero.anqila.title': 'Midnight Mage',
+    'hero.wangzhaojun.name': 'Wang Zhaojun', 'hero.wangzhaojun.title': 'Snow Blossom', 'hero.zhugeliang.name': 'Zhuge Liang', 'hero.zhugeliang.title': 'Grand Strategist',
+    'hero.diaochan.name': 'Diaochan', 'hero.diaochan.title': 'Peerless Dancer', 'hero.sunwukong.name': 'Sun Wukong', 'hero.sunwukong.title': 'Monkey King',
+    'hero.libai.name': 'Li Bai', 'hero.libai.title': 'Sword Immortal', 'hero.hanxin.name': 'Han Xin', 'hero.hanxin.title': 'Peerless General',
+    'hero.yase.name': 'Arthur', 'hero.yase.title': 'Holy Knight', 'hero.dianwei.name': 'Dian Wei', 'hero.dianwei.title': 'Berserker',
+    'hero.zhaoyun.name': 'Zhao Yun', 'hero.zhaoyun.title': 'Soaring Dragon', 'hero.chengyaojin.name': 'Cheng Yaojin', 'hero.chengyaojin.title': 'Blazing Axe',
+    'hero.zhangfei.name': 'Zhang Fei', 'hero.zhangfei.title': 'Beast Unbound', 'hero.caiwenji.name': 'Cai Wenji', 'hero.caiwenji.title': 'Heavenly Lyre',
+    'hero.zhuangzhou.name': 'Zhuang Zhou', 'hero.zhuangzhou.title': 'Carefree Dreamer', 'hero.niumo.name': 'Niu Mo', 'hero.niumo.title': 'Bull Demon King',
+    'skill.多重箭矢': 'Multi-Arrow', 'skill.落日余晖': 'Sunset Glow', 'skill.灼日之光': 'Blazing Sun', 'skill.河豚手雷': 'Pufferfish Grenade', 'skill.无敌鲨嘴炮': 'Shark Cannon', 'skill.空中支援': 'Air Support',
+    'skill.翻滚突袭': 'Rolling Assault', 'skill.炮弹冲击': 'Cannon Shot', 'skill.红莲爆弹': 'Crimson Bomb', 'skill.华丽左轮': 'Gilded Revolver', 'skill.漫游之枪': 'Roaming Gun', 'skill.狂热交锋': 'Frenzied Fire',
+    'skill.灵魂冲击': 'Soul Shock', 'skill.偶像魅力': 'Idol Charm', 'skill.女王崇拜': 'Queen Worship', 'skill.火球术': 'Fireball', 'skill.混沌火种': 'Chaos Ember', 'skill.炽热光辉': 'Blazing Radiance',
+    'skill.凛冬之息': 'Winter Breath', 'skill.冰封雪域': 'Frozen Field', 'skill.冰雪风暴': 'Blizzard', 'skill.时空穿梭': 'Time Warp', 'skill.东风破袭': 'East Wind', 'skill.元气弹': 'Spirit Bomb',
+    'skill.落·红雨': 'Red Rain', 'skill.缘·心结': 'Heart Knot', 'skill.绽·风华': 'Blossom', 'skill.护身咒法': 'Guardian Spell', 'skill.斗战冲锋': 'Battle Charge', 'skill.如意金箍棒': 'Golden Staff',
+    'skill.将进酒': 'Wine Song', 'skill.神来之笔': 'Divine Stroke', 'skill.青莲剑歌': 'Lotus Sword Song', 'skill.无情冲锋': 'Ruthless Charge', 'skill.背水一战': 'Last Stand', 'skill.国士无双': 'Peerless',
+    'skill.誓约之盾': 'Oath Shield', 'skill.回旋打击': 'Whirling Strike', 'skill.圣剑裁决': 'Holy Judgement', 'skill.狂战士之心': 'Berserker Heart', 'skill.怒气爆发': 'Rage Burst', 'skill.亡命之徒': 'Desperado',
+    'skill.惊雷之龙': 'Thunder Dragon', 'skill.破云之龙': 'Cloud Dragon', 'skill.天翔之龙': 'Sky Dragon', 'skill.刚烈之斧': 'Valiant Axe', 'skill.蛮横撞击': 'Brute Slam', 'skill.赤血狂暴': 'Blood Frenzy',
+    'skill.画地为牢': 'Ground Prison', 'skill.狂兽血性': 'Beast Roar', 'skill.狂意': 'Wild Will', 'skill.胡笳乐': 'Hujia Melody', 'skill.悲歌': 'Elegy', 'skill.绝唱': 'Swan Song',
+    'skill.化蝶': 'Butterflies', 'skill.梦生': 'Dream Life', 'skill.逍遥游': 'Free Wandering', 'skill.碎裂之盾': 'Shattering Shield', 'skill.暴烈冲撞': 'Violent Ram', 'skill.蛮力冲撞': 'Brute Force',
+    'passive.houyi': 'Blazing Arrows', 'passive.luban': 'Suppressive Fire', 'passive.sunshangxiang': 'Rolling Empowerment', 'passive.makeboluo': 'True Damage', 'passive.daji': 'Queen Worship',
+    'passive.anqila': 'Unstable Magic', 'passive.wangzhaojun': 'Frozen Heart', 'passive.zhugeliang': 'Stratagem', 'passive.diaochan': 'Blossom', 'passive.sunwukong': 'Empowered Strike',
+    'passive.libai': 'Wandering Swordsman', 'passive.hanxin': 'Last Stand', 'passive.yase': 'Holy Protection', 'passive.dianwei': 'Berserk', 'passive.zhaoyun': 'Dragon Courage',
+    'passive.chengyaojin': 'Rising Rage', 'passive.zhangfei': 'Wild Will', 'passive.caiwenji': 'Rejuvenation', 'passive.zhuangzhou': 'Butterfly Dream', 'passive.niumo': 'Bull Heart',
+    'item.jibu_zhixue': 'Boots of Swiftness', 'item.yingren_zhizu': 'Ninja Tabi', 'item.dikang_zhixue': 'Boots of Resistance', 'item.lengjing_zhixue': 'Boots of Tranquility', 'item.mifa_zhixue': 'Arcane Boots', 'item.jisu_zhanxue': 'Rapid Boots',
+    'item.wujin_zhanren': 'Endless Blade', 'item.pojun': 'Army Breaker', 'item.qixue_zhiren': 'Bloodweeper', 'item.yingren': 'Shadow Blade', 'item.zongshi_zhili': "Master's Force", 'item.anying_zhanfu': 'Shadow Axe',
+    'item.shandian_bishou': 'Lightning Dagger', 'item.suixing_chui': 'Starshatter Hammer', 'item.mingdao_siming': 'Famed Blade', 'item.moshi': 'Doomsday', 'item.binghen_zhiwo': 'Frost Grip',
+    'item.huixiang_zhizhang': 'Echo Staff', 'item.tongku_mianju': 'Mask of Agony', 'item.boxuezhe_zhinu': "Scholar's Wrath", 'item.xuwu_fazhang': 'Void Staff', 'item.huiyue': 'Moon Radiance', 'item.bingshuang_fazhang': 'Frost Staff',
+    'item.shishen_zhishu': 'Devourer Tome', 'item.shizhi_yuyan': 'Prophecy of Time', 'item.shengbei': 'Holy Grail', 'item.fanshang_cijia': 'Thorn Mail', 'item.honglian_doupeng': 'Crimson Cloak', 'item.monv_doupeng': 'Witch Cloak',
+    'item.businiao_zhiyan': 'Phoenix Eye', 'item.bazhe_zhongzhuang': 'Overlord Plate', 'item.xianzhe_bihu': "Sage's Sanctuary", 'item.jihan_fengbao': 'Frost Storm', 'item.buxiang_zhengzhao': 'Ominous Omen', 'item.jinwei_rongyao': "Guardian's Glory", 'item.jiushu_zhiyi': 'Wings of Redemption',
   },
   zh: {
     'common.back': '返回', 'common.done': '完成', 'common.you': '你', 'common.bot': '电脑', 'common.human': '玩家',
@@ -76,7 +109,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     'mode.1v1': '只开中路。只有你、对手、小兵和野区。',
     'diff.easy': '简单', 'diff.normal': '普通', 'diff.hard': '困难',
     'select.title': '选择英雄', 'select.start': '出征', 'select.mode': '{mode} · {diff}', 'select.yourTeam': '我方', 'select.enemyTeam': '敌方',
-    'select.skills': '技能', 'select.passive': '彩蛋', 'select.cooldown': '冷却 {s} 秒', 'select.mana': '{m} 法力', 'select.build': '推荐出装',
+    'select.skills': '技能', 'select.passive': '被动', 'select.cooldown': '冷却 {s} 秒', 'select.mana': '{m} 法力', 'select.build': '推荐出装',
     'codex.title': '英雄图鉴',
     'role.tank': '坦克', 'role.warrior': '战士', 'role.assassin': '刺客', 'role.mage': '法师', 'role.marksman': '射手', 'role.support': '辅助',
     'team.blue': '蓝方', 'team.red': '红方',
@@ -115,27 +148,8 @@ export const translations: Record<Lang, Record<string, string>> = {
     'online.pickHero': '你的英雄：', 'online.chatPh': '说点什么…', 'online.send': '发送', 'online.leave': '离开', 'online.start': '开始对局', 'online.readyUp': '准备', 'online.unready': '取消准备', 'online.playing': '对局中', 'online.creating': '正在创建房间…', 'online.joining': '正在加入…',
     'net.waiting': '等待玩家… {s} 秒', 'net.outOfSync': '与其他玩家失去同步', 'net.rtt': '在线 · {ms} 毫秒', 'net.dropped': '座位 {seat} 无响应，电脑接管', 'net.left': '座位 {seat} 已离开，电脑接管',
     'err.noFreeCode': '找不到空闲房间码', 'err.notRoomCode': '这不是房间码', 'err.noHost': '房间 {0} 未开放', 'err.roomFull': '房间 {0} 已满', 'err.serverSilent': '服务器没有响应', 'err.network': '网络错误',
-    // heroes
-    'hero.xuanwu.name': '玄武', 'hero.xuanwu.title': '磐石', 'hero.qinglong.name': '青龙', 'hero.qinglong.title': '风雷枪骑', 'hero.yingren.name': '影刃', 'hero.yingren.title': '暗影之刃',
-    'hero.wukong.name': '悟空', 'hero.wukong.title': '石猴', 'hero.huofeng.name': '火凤', 'hero.huofeng.title': '烈焰先知', 'hero.bingji.name': '冰姬', 'hero.bingji.title': '霜织者',
-    'hero.shenshe.name': '神射', 'hero.shenshe.title': '射日者', 'hero.huochong.name': '火铳', 'hero.huochong.title': '炮手', 'hero.mingyue.name': '明月', 'hero.mingyue.title': '月祭司', 'hero.leigong.name': '雷公', 'hero.leigong.title': '雷霆守望',
-    'skill.Shield Bash': '盾击', 'skill.Stone Skin': '石肤', 'skill.Earthquake': '地震', 'skill.Dragon Thrust': '龙枪突刺', 'skill.Whirl': '旋风', 'skill.Sky Dive': '天降',
-    'skill.Shadowstep': '影步', 'skill.Fan of Knives': '飞刀扇', 'skill.Execution': '处决', 'skill.Cloud Leap': '筋斗云', 'skill.Staff Sweep': '横扫', 'skill.Golden Cyclone': '金箍旋风',
-    'skill.Fireball': '火球术', 'skill.Flame Breath': '烈焰吐息', 'skill.Meteor Rain': '陨石雨', 'skill.Ice Lance': '冰矛', 'skill.Frost Nova': '霜冻新星', 'skill.Blizzard': '暴风雪',
-    'skill.Piercing Arrow': '穿云箭', 'skill.Rapid Fire': '连珠箭', 'skill.Arrow Storm': '箭雨', 'skill.Scatter': '霰弹', 'skill.Combat Roll': '翻滚', 'skill.Barrage': '弹幕',
-    'skill.Moonlight': '月华', 'skill.Lunar Bind': '月缚', 'skill.Sanctuary': '圣域', 'skill.Chain Lightning': '连锁闪电', 'skill.Thunder Dash': '雷霆冲锋', 'skill.Storm Call': '呼风唤雷',
-    'item.boots_swift': '疾行靴', 'item.boots_tank': '守护靴', 'item.boots_arcane': '秘法靴', 'item.bloodthirst': '嗜血之刃', 'item.storm_lance': '风暴之枪', 'item.shadow_fang': '暗影獠牙',
-    'passive.xuanwu': '山岳', 'passivedesc.xuanwu': '每承受 500 点伤害便硬化一层：每层 +14 护甲与法抗（最多 5 层），持续 8 秒。',
-    'passive.qinglong': '龙尾', 'passivedesc.qinglong': '每第三次突刺会贯穿，对目标身后的敌人造成 60% 伤害。',
-    'passive.yingren': '背刺', 'passivedesc.yingren': '攻击背对你的敌人时伤害提高 30%。',
-    'passive.wukong': '铜皮铁骨', 'passivedesc.wukong': '筋斗云落地后 2.5 秒内受到的伤害降低 30%。',
-    'passive.huofeng': '余烬', 'passivedesc.huofeng': '处于燃烧状态的敌人死亡时会爆燃，点燃周围所有敌人。',
-    'passive.bingji': '深冻', 'passivedesc.bingji': '对已被减速的敌人再次减速会将其冻结 0.6 秒。',
-    'passive.shenshe': '双矢', 'passivedesc.shenshe': '每第四支箭会额外射出一支，命中最近的另一名敌人（60% 伤害）。',
-    'passive.huochong': '上膛', 'passivedesc.huochong': '击杀会缩短战术翻滚的冷却：小兵 1 秒，英雄 4 秒。',
-    'passive.mingyue': '月下疾行', 'passivedesc.mingyue': '被月光治疗的队友 1.6 秒内移速提高 30%。',
-    'passive.leigong': '雷击', 'passivedesc.leigong': '被眩晕的敌人受到雷公斧击的伤害提高 60%。',
-    'item.sage_tome': '贤者之书', 'item.void_staff': '虚空法杖', 'item.phoenix_feather': '凤凰之羽', 'item.red_crystal': '红莲水晶', 'item.guardian_plate': '守护胸甲', 'item.frost_heart': '冰霜之心', 'item.crimson_crown': '赤红王冠', 'item.immortal_shield': '不死之盾',
+    'shop.cat.attack': '攻击', 'shop.cat.magic': '法术', 'shop.cat.defense': '防御', 'shop.cat.support': '辅助', 'shop.cat.boots': '鞋',
+    'fx.ultReady': '大招已解封！',
   },
 };
 
@@ -145,7 +159,8 @@ const isLang = (v: unknown): v is Lang => v === 'en' || v === 'zh';
 
 export function getLang(): Lang {
   try { const stored = localStorage.getItem(LANG_KEY); if (isLang(stored)) return stored; } catch { /* storage unavailable */ }
-  return typeof navigator !== 'undefined' && navigator.language?.toLowerCase().startsWith('zh') ? 'zh' : 'en';
+  // 王者荣耀 is a Chinese game: 中文 by default, English on request
+  return 'zh';
 }
 export function setLang(lang: Lang): void { try { localStorage.setItem(LANG_KEY, lang); } catch { /* storage unavailable */ } }
 
@@ -184,7 +199,8 @@ export function applyStaticDom(root: ParentNode = document): void {
   root.querySelectorAll<HTMLElement>('[data-i18n-title]').forEach((el) => { el.title = t(el.dataset.i18nTitle!); });
 }
 
-export const tCard = (key: string, fallback: string): string => translations[current][key] ?? translations.en[key] ?? fallback;
+// data strings are 中文; a missing zh key means the data itself is the zh text
+export const tCard = (key: string, fallback: string): string => translations[current][key] ?? (current === 'zh' ? fallback : translations.en[key] ?? fallback);
 export const cardName = (c: UnitDef): string => tCard(`hero.${c.id}.name`, c.name);
 export const heroTitle = (c: UnitDef): string => tCard(`hero.${c.id}.title`, c.title ?? '');
 export const cardDesc = (c: UnitDef): string => tCard(`hero.${c.id}.desc`, c.desc);

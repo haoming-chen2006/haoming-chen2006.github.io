@@ -25,6 +25,8 @@ export interface SimConfig {
   teamNames?: [string, string];
   /** Make everyone a bot (headless tests, menu demo). */
   botVsBot?: boolean;
+  /** 节日模式 twist layer on top of the faithful rules. */
+  twists?: boolean;
 }
 
 export const seatKey = (team: Team, index: number): string => `${team}:${index}`;
@@ -38,7 +40,7 @@ export interface SimInternals { acc: number; countdownStep: number }
 export function completeTeam(seats: SeatSetup[], size: number, rng: Rng, taken: Set<string>, teamIndex: number, takenNames = new Set<string>()): SeatSetup[] {
   const out = seats.slice(0, size).map((s) => ({ ...s }));
   for (const s of out) { taken.add(s.heroId); takenNames.add(s.name); }
-  const wanted = pickTeam(out[0]?.heroId ?? null, rng).filter((id) => !taken.has(id));
+  const wanted = pickTeam(out[0]?.heroId ?? null, rng, taken).filter((id) => !taken.has(id));
   let n = 0;
   while (out.length < size) {
     const id = wanted.shift() ?? HEROES.map((h) => h.id).find((h) => !taken.has(h)) ?? HEROES[0].id;
@@ -75,6 +77,7 @@ export class Simulation {
       return { name: cfg.teamNames?.[t] ?? (t === 0 ? '@team.blue' : '@team.red'), seats };
     }) as [TeamConfig, TeamConfig];
     this.w = new World(teams, cfg.seed);
+    this.w.twists = !!cfg.twists;
     this.w.mode = cfg.mode;
     this.bots.push(new BotHero(0, spec), new BotHero(1, spec));
     if (cfg.mode === '1v1') this.w.closeSideLanes();

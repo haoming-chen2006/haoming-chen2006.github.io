@@ -125,6 +125,68 @@ function headgear(headG: THREE.Group, s: number, gear: HeadGear, pal: Palette, m
   return extra;
 }
 
+
+/** Hair, tails, ears, horns, beards, skirts and dolls: the silhouettes that make 妲己 / 孙悟空 / 安琪拉 recognisable. */
+function heroFlourishes(look: Look, s: number, grp: THREE.Group, torso: THREE.Group, headG: THREE.Group, hip: number, torsoH: number, mats: UnitMat[]): void {
+  if (look.hair) {
+    const hairM = toon(hex(look.hair.color)); mats.push(hairM);
+    const topKnown = look.gear === 'hat' || look.gear === 'helm' || look.gear === 'hornhelm' || look.gear === 'hood' || look.gear === 'tricorn';
+    if (!topKnown || look.gear === 'hat') {
+      // scalp cap (hidden under a hat) so hair colour reads from the sides
+      const cap = mesh(sphereGeo(s * 0.48, 12), hairM, -s * 0.03, s * 0.6, 0); cap.scale.set(1, 0.72, 1); headG.add(cap);
+      headG.add(mesh(boxGeo(s * 0.3, s * 0.12, s * 0.5), hairM, s * 0.33, s * 0.74, 0)); // fringe
+    }
+    switch (look.hair.style) {
+      case 'long': { const back = mesh(rboxGeo(s * 0.3, s * 1.1, s * 0.6, s * 0.08), hairM, -s * 0.34, -s * 0.05, 0); headG.add(back); break; }
+      case 'pony': { const tail = mesh(cylGeo(s * 0.12, s * 0.07, s * 0.9, 7), hairM, -s * 0.45, s * 0.25, 0); tail.rotation.z = 0.5; headG.add(tail); headG.add(mesh(torusGeo(s * 0.14, s * 0.04, Math.PI * 2, 10), toon(0xe9c46a), -s * 0.36, s * 0.6, 0)); break; }
+      case 'bun': { headG.add(mesh(sphereGeo(s * 0.2, 9), hairM, -s * 0.1, s * 1.0, 0)); headG.add(mesh(cylGeo(s * 0.02, s * 0.02, s * 0.6, 4), toon(0xe9c46a), -s * 0.1, s * 1.05, 0)).rotation.x = 1.2; break; }
+      case 'twin': { for (const side of [-1, 1]) { const t = mesh(cylGeo(s * 0.11, s * 0.06, s * 0.85, 7), hairM, -s * 0.1, s * 0.2, side * s * 0.52); t.rotation.x = side * 0.35; headG.add(t); headG.add(mesh(sphereGeo(s * 0.09, 7), toon(hex(look.accent)), -s * 0.1, s * 0.62, side * s * 0.52)); } break; }
+      case 'topknot': { headG.add(mesh(cylGeo(s * 0.13, s * 0.16, s * 0.3, 8), hairM, -s * 0.05, s * 1.0, 0)); headG.add(mesh(torusGeo(s * 0.15, s * 0.035, Math.PI * 2, 10), toon(0xe9c46a), -s * 0.05, s * 0.88, 0)).rotation.x = Math.PI / 2; break; }
+      case 'short': default: break;
+    }
+  }
+  if (look.ears === 'fox' || look.ears === 'cat') {
+    const earM = toon(look.hair ? hex(look.hair.color) : hex(look.accent)); mats.push(earM);
+    for (const side of [-1, 1]) { const ear = mesh(coneGeo(s * 0.14, s * 0.42, 5), earM, -s * 0.05, s * 0.95, side * s * 0.3); ear.rotation.x = side * -0.35; headG.add(ear); headG.add(mesh(coneGeo(s * 0.07, s * 0.26, 5), toon(0xffe6f0), -s * 0.0, s * 0.92, side * s * 0.3)).rotation.x = side * -0.35; }
+  }
+  if (look.horns) {
+    const hornM = toon(0xf1e7d0); mats.push(hornM);
+    for (const side of [-1, 1]) { const horn = mesh(coneGeo(s * 0.12, s * 0.6, 6), hornM, 0, s * 0.85, side * s * 0.5); horn.rotation.x = side * -1.0; horn.rotation.z = 0.25; headG.add(horn); }
+  }
+  if (look.beard) {
+    const beardM = toon(look.hair ? hex(look.hair.color) : 0x2a1e14); mats.push(beardM);
+    const beard = mesh(rboxGeo(s * 0.3, s * 0.45, s * 0.5, s * 0.08), beardM, s * 0.3, s * 0.05, 0); headG.add(beard);
+    headG.add(mesh(boxGeo(s * 0.12, s * 0.07, s * 0.46), beardM, s * 0.42, s * 0.3, 0)); // moustache
+  }
+  if (look.tails === 'fox') {
+    const tailM = toon(hex(look.accent)); const tipM = toon(0xfff4f8); mats.push(tailM, tipM);
+    for (let i = 0; i < 5; i++) {
+      const a = (i - 2) * 0.42;
+      const t = new THREE.Group(); t.position.set(-s * 0.45, hip + s * 0.05, 0); t.rotation.y = a; t.rotation.z = 0.9 + Math.abs(a) * 0.3;
+      t.add(mesh(cylGeo(s * 0.12, s * 0.22, s * 1.0, 7), tailM, -s * 0.0, s * 0.5, 0));
+      t.add(mesh(sphereGeo(s * 0.2, 8), tipM, 0, s * 1.02, 0));
+      grp.add(t);
+    }
+  } else if (look.tails === 'monkey') {
+    const tailM = toon(hex(look.color)); mats.push(tailM);
+    const t = mesh(cylGeo(s * 0.07, s * 0.05, s * 1.3, 6), tailM, -s * 0.6, hip + s * 0.35, 0); t.rotation.z = 1.1; grp.add(t);
+    grp.add(mesh(sphereGeo(s * 0.09, 6), tailM, -s * 1.15, hip + s * 0.95, 0));
+  }
+  if (look.skirt) {
+    const skirtM = toon(hex(look.color)); mats.push(skirtM);
+    const sk = outline(mesh(cylGeo(s * 0.55, s * 1.0, s * 1.0, 12), skirtM, 0, hip - s * 0.42, 0)); grp.add(sk);
+    grp.add(mesh(cylGeo(s * 0.62, s * 0.66, s * 0.1, 12), toon(hex(look.accent)), 0, hip + s * 0.05, 0));
+  }
+  if (look.doll) {
+    const bearM = toon(0xc98a4a); const beM = toon(0x3a2a1e); mats.push(bearM, beM);
+    const d = new THREE.Group(); d.position.set(-s * 0.55, torsoH * 0.5, -s * 0.45);
+    d.add(mesh(sphereGeo(s * 0.22, 8), bearM, 0, 0, 0)); d.add(mesh(sphereGeo(s * 0.16, 8), bearM, 0, s * 0.3, 0));
+    for (const side of [-1, 1]) d.add(mesh(sphereGeo(s * 0.06, 6), bearM, 0, s * 0.42, side * s * 0.12));
+    d.add(mesh(sphereGeo(s * 0.035, 5), beM, s * 0.14, s * 0.3, 0));
+    torso.add(d);
+  }
+}
+
 /** Full humanoid with class kit; used by humanoid/skeleton-like units and mounted riders. */
 export function buildHumanoid(look: Look, team: Team, opts: { scale?: number; rider?: boolean; bone?: boolean; glowEyes?: number } = {}): BuiltUnit {
   const s = look.size * (opts.scale ?? 1);
@@ -132,7 +194,7 @@ export function buildHumanoid(look: Look, team: Team, opts: { scale?: number; ri
   const kit: Kit = { ...KITS[look.weapon], gear: look.gear ?? KITS[look.weapon].gear, armor: look.armor ?? KITS[look.weapon].armor, cape: look.cape ?? KITS[look.weapon].cape };
   const pal: Palette = { body: hex(look.color), accent: hex(look.accent), team: TEAM_HEX[team], dark: shade(hex(look.color), 0.5), metal: 0x9aa5b1, leather: 0x6d4a2b, boot: 0x3a2a1e };
   const bone = !!opts.bone;
-  const bodyM = toon(bone ? 0xe8e4d8 : pal.body), accM = toon(pal.accent), skinM = toon(bone ? 0xe8e4d8 : SKIN), teamM = toon(pal.team, { emissive: pal.team, emissiveIntensity: 0.15 });
+  const bodyM = toon(bone ? 0xe8e4d8 : pal.body), accM = toon(pal.accent), skinM = toon(bone ? 0xe8e4d8 : look.skin ? hex(look.skin) : SKIN), teamM = toon(pal.team, { emissive: pal.team, emissiveIntensity: 0.15 });
   const darkM = toon(bone ? 0xbdb7a8 : pal.dark), bootM = toon(pal.boot), metalM = toon(pal.metal), leatherM = toon(pal.leather), goldM = toon(0xe9c46a);
   mats.push(bodyM, accM, skinM, teamM, darkM, bootM, metalM, leatherM, goldM);
   const grp = new THREE.Group();
@@ -229,6 +291,7 @@ export function buildHumanoid(look: Look, team: Team, opts: { scale?: number; ri
     headG.add(mesh(boxGeo(s * 0.04, s * 0.03, s * 0.2), sockM, s * 0.42, s * 0.24, 0));
   } else parts.eyes = face(headG, s, skinM, { angry: kit.armor === 'plate' || look.weapon === 'axe', glow: opts.glowEyes });
   const gearH = headgear(headG, s, kit.gear, pal, mats);
+  heroFlourishes(look, s, grp, torso, headG, hip, torsoH, mats);
   grp.add(headG);
   parts.head = headG;
   // arms with elbows

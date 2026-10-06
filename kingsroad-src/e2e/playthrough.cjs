@@ -10,7 +10,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   const errors = [];
   page.on('pageerror', (e) => errors.push(String(e)));
   await page.goto(BASE); await sleep(1500);
-  await page.evaluate((h) => { const k = 'kingsroad.settings.v1'; const s = JSON.parse(localStorage.getItem(k) || '{}'); s.hero = h; s.firstPerson = true; localStorage.setItem(k, JSON.stringify(s)); }, process.env.HERO || 'shenshe');
+  await page.evaluate((h) => { const k = 'kingsroad.settings.v1'; const s = JSON.parse(localStorage.getItem(k) || '{}'); s.hero = h; s.firstPerson = true; localStorage.setItem(k, JSON.stringify(s)); }, process.env.HERO || 'houyi');
   await page.reload(); await sleep(1500);
   await page.click('#btnPlay'); await sleep(600); await page.mouse.move(640, 380); await page.click('#btnStart'); await sleep(4500);
   await page.mouse.click(640, 380);

@@ -1,11 +1,12 @@
 import { angleDiff, angleOf, dist, fromAngle, norm, sub, type Vec } from '../engine/math.ts';
 import { skillReady, startDash, useSkill } from './abilities.ts';
-import { areaDamage, attackDamage, fireProjectile, meleeHit } from './combat.ts';
+import { attackDamage, damage, fireProjectile, meleeHit } from './combat.ts';
+import { onAttackFire } from './passives.ts';
 import { POSSESS, RECALL_TIME } from './constants.ts';
-import { ITEMS } from './items.ts';
+import { ITEMS, isBoots } from './items.ts';
 import { inFountain, inWall, spawnPoint } from './map.ts';
 import { clampArena, resolveGround, resolveObstacles } from './terrain.ts';
-import { NEUTRAL, other, type Entity, type Seat, type Team, type Unit } from './types.ts';
+import { NEUTRAL, type Entity, type Seat, type Team, type Unit } from './types.ts';
 import { attackSpeedMult, frozen, speedMult, World } from './world.ts';
 
 /** What a human (or a hero bot) wants its hero to do this tick. */
@@ -56,7 +57,7 @@ export function buyItem(w: World, u: Unit, id: string): boolean {
   const seat = w.seatOf(u);
   const it = ITEMS[id];
   if (!seat || !it || seat.items.length >= 6 || seat.gold < it.cost || seat.items.includes(id)) return false;
-  if (id.startsWith('boots_') && seat.items.some((x) => x.startsWith('boots_'))) return false;
+  if (isBoots(id) && seat.items.some((x) => isBoots(x))) return false;
   seat.gold -= it.cost; seat.items.push(id);
   u.items = [...seat.items]; u.gold = seat.gold;
   w.refreshDerived(u);
@@ -175,23 +176,41 @@ export function heroAttack(w: World, u: Unit, aim: Vec, dir: Vec): void {
   u.attackCd = st.hitSpeed / attackSpeedMult(u);
   u.attackAnim = 1;
   u.lastAttackT = w.time;
-  const { dmg, crit } = attackDamage(w, u);
   const d = u.def;
+  // hero passives that trigger on the swing (每第 N 次普攻 …)
+  const fire = onAttackFire(w, u);
+  if (fire.critMult > 1 && u.critNext <= 1) u.critNext = fire.critMult;
+  let { dmg, crit } = attackDamage(w, u);
+  dmg *= fire.bonus;
+  let stun = fire.stun;
+  let splash = d.splash;
+  // 强化普攻 from a skill (如意金箍棒 / 多重箭矢): the next N attacks are empowered
+  if (u.empowerN > 0 && u.empowerSkill >= 0) {
+    const a = d.skills[u.empowerSkill];
+    dmg *= a.buff?.attack ?? 1.5;
+    if (a.stun) stun = Math.max(stun, a.stun);
+    if (a.radius) splash = Math.max(splash, a.radius);
+    u.empowerN -= 1;
+    if (u.empowerN <= 0) { u.empowerSkill = -1; u.empowerT = 0; }
+    w.addEffect({ type: 'ring', pos: { ...u.pos }, dur: 0.25, radius: 0.9, color: a.color ?? '#fff' });
+  }
+  // 宗师之力 / 冰痕之握: the first attack after a skill
+  let itemSlow = 0;
+  if (u.empowerT > 0 && u.empowerSkill < 0) {
+    if (u.items.includes('zongshi_zhili')) { dmg += 100 + st.attack * 0.4; u.empowerT = 0; }
+    if (u.items.includes('binghen_zhiwo')) { dmg += 60 + st.maxHp * 0.02; itemSlow = 0.3; u.empowerT = 0; }
+  }
   if (d.projectile) {
     const maxDist = Math.min(Math.max(1, dist(u.pos, aim)), d.range + 1.5);
     const from = { x: u.pos.x + dir.x * u.radius * 0.6, y: u.pos.y + dir.y * u.radius * 0.6 };
-    fireProjectile(w, {
-      team: u.team, from, style: d.projectile, speed: (d.projectileSpeed ?? 9) * 1.15, damage: dmg, type: d.attackType, sourceId: u.id, mode: 'linear', dir, maxDist,
-      splash: d.splash, splashAir: true, hero: true, radius: crit ? 0.32 : 0.22,
+    const shoot = (dir2: Vec, mult: number, delayDist = 0) => fireProjectile(w, {
+      team: u.team, from: { x: from.x - dir2.x * delayDist, y: from.y - dir2.y * delayDist }, style: d.projectile!, speed: (d.projectileSpeed ?? 9) * 1.15, damage: dmg * mult, type: d.attackType, sourceId: u.id, mode: 'linear', dir: dir2, maxDist,
+      splash, splashAir: true, hero: true, radius: crit ? 0.32 : 0.22, stun, slow: itemSlow, slowT: itemSlow ? 1 : 0,
     });
+    shoot(dir, 1);
+    // 火力压制-style burst: extra shells trailing the first
+    for (let k = 1; k <= fire.burst; k++) shoot(dir, d.passive?.value ?? 0.5, k * 0.5);
     w.emit({ type: 'ranged', pos: u.pos, style: d.projectile, hero: u.possessed });
-    // Shenshe's Twin Shot: every fourth arrow brings a second one for the nearest other enemy
-    if (d.id === 'shenshe' && ++u.passiveN >= 4) {
-      u.passiveN = 0;
-      let best: Entity | null = null, bd = Infinity;
-      for (const e of w.enemiesOf(u.team)) { if (e.kind === 'tower' && !e.active) continue; const ed = dist(e.pos, u.pos); const ang = Math.abs(angleDiff(u.facing, angleOf(sub(e.pos, u.pos)))); if (ed <= d.range + 1 && ang > 0.15 && ed < bd) { bd = ed; best = e; } }
-      if (best) { const dir2 = norm(sub(best.pos, u.pos)); fireProjectile(w, { team: u.team, from, style: d.projectile, speed: (d.projectileSpeed ?? 9) * 1.15, damage: dmg * 0.6, type: d.attackType, sourceId: u.id, mode: 'linear', dir: dir2, maxDist: bd + 0.5, splash: d.splash, splashAir: true, hero: true, radius: 0.22 }); }
-    }
     return;
   }
   let best: Entity | null = null, bd = Infinity;
@@ -206,19 +225,10 @@ export function heroAttack(w: World, u: Unit, aim: Vec, dir: Vec): void {
     if (ed < bd) { bd = ed; best = e; }
   }
   if (best) {
-    let hit = dmg;
-    // Yingren's Backstab: striking an enemy that faces away hurts 30% more
-    if (d.id === 'yingren' && best.kind === 'unit' && Math.abs(angleDiff(best.facing, angleOf(sub(u.pos, best.pos)))) > 2.0) { hit *= 1.3; w.addEffect({ type: 'spark', pos: { ...best.pos }, dur: 0.2, radius: 0.5, color: '#d4b2ff' }); }
-    // Leigong's Thunderstruck: stunned enemies take 60% more from his axe
-    if (d.id === 'leigong' && best.kind === 'unit' && best.status.stun > 0) { hit *= 1.6; w.addEffect({ type: 'spark', pos: { ...best.pos }, dur: 0.2, radius: 0.5, color: '#9fd0ff' }); }
-    meleeHit(w, u, best, hit, { crit });
-    // Qinglong's Dragon's Wake: every third thrust carries through to whatever stands behind the target
-    if (d.id === 'qinglong' && ++u.passiveN >= 3) {
-      u.passiveN = 0;
-      const at = { x: best.pos.x + dir.x * 1.3, y: best.pos.y + dir.y * 1.3 };
-      w.addEffect({ type: 'beam', pos: { ...u.pos }, to: at, dur: 0.2, radius: 0.1, color: '#7cf7d5' });
-      areaDamage(w, other(u.team as Team), at, 1.2, dmg * 0.6, { source: u, hero: true, type: 'physical', chain: true });
+    if (splash > 0) {
+      for (const e of w.within(best.pos, splash, (x) => x.team !== u.team && x.kind === 'unit')) if (e !== best) damage(w, e, dmg * 0.6, { source: u, type: d.attackType, hero: true });
     }
+    meleeHit(w, u, best, dmg, { crit, stun: stun || undefined, slow: itemSlow || undefined, slowT: itemSlow ? 1 : undefined, from: u.pos, knockback: stun && fire.stun ? 0.4 : undefined });
   } else w.addEffect({ type: 'slash', pos: { ...u.pos }, dur: 0.18, radius: d.range + u.radius + 0.2, color: '#ffffff88', angle: u.facing, arc: 1.4 });
 }
 

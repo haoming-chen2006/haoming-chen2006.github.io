@@ -1,5 +1,5 @@
 import { skillDamage } from '../game/abilities.ts';
-import { ITEMS, ITEM_LIST, itemDef } from '../game/items.ts';
+import { CATEGORY_ORDER, ITEMS, ITEM_LIST, isBoots, itemDef } from '../game/items.ts';
 import type { Seat, Team, Unit } from '../game/types.ts';
 import { World } from '../game/world.ts';
 import { cardName, itemName, skillDesc, skillName, t, tCard, tSim } from '../i18n.ts';
@@ -85,7 +85,7 @@ export class Hud {
         const pname = tCard(`passive.${h.def.id}`, h.def.passive.name);
         (pv.querySelector('.sk-name') as HTMLElement).textContent = pname;
         pv.title = `${pname} · ${tCard(`passivedesc.${h.def.id}`, h.def.passive.desc)}`;
-        pv.classList.toggle('lit', h.wardT > 0 || h.passiveStacks > 0 || (h.def.id === 'shenshe' && h.passiveN === 3) || (h.def.id === 'qinglong' && h.passiveN === 2));
+        pv.classList.toggle('lit', h.wardT > 0 || h.passiveStacks > 0 || h.empowerN > 0 || (h.def.passive?.n !== undefined && h.def.passive.n >= 2 && h.passiveN === h.def.passive.n - 1));
       } else pv.classList.add('hidden');
       // skills
       for (let i = 0; i < 3; i++) {
@@ -165,11 +165,14 @@ export class Hud {
 
   private buildShop(w: World, me: Team): void {
     const grid = $('shopGrid'); grid.innerHTML = '';
-    for (const it of ITEM_LIST) {
+    for (const cat of CATEGORY_ORDER) {
+      const head = document.createElement('div'); head.className = 'shop-cat'; head.textContent = t(`shop.cat.${cat}`); grid.appendChild(head);
+      for (const it of ITEM_LIST.filter((x) => x.category === cat)) {
       const el = document.createElement('button'); el.className = 'shop-item'; el.dataset.id = it.id;
       el.innerHTML = `<span class="si-icon" style="--c:${it.color}">${it.icon}</span><span class="si-name">${itemName(it.id, it.name)}</span><span class="si-cost">${it.cost}</span><span class="si-desc">${it.desc}</span>`;
       el.addEventListener('click', () => this.onBuy(it.id));
       grid.appendChild(el);
+      }
     }
     void w; void me;
   }
@@ -184,7 +187,7 @@ export class Hud {
     $('shopGrid').querySelectorAll<HTMLButtonElement>('.shop-item').forEach((el) => {
       const it = ITEMS[el.dataset.id!];
       const owned = seat.items.includes(it.id);
-      const bootsDup = it.id.startsWith('boots_') && seat.items.some((x) => x.startsWith('boots_'));
+      const bootsDup = isBoots(it.id) && seat.items.some((x) => isBoots(x));
       const full = seat.items.length >= 6;
       el.classList.toggle('owned', owned); el.classList.toggle('poor', !owned && seat.gold < it.cost); el.disabled = owned || bootsDup || (full && !owned);
       (el.querySelector('.si-cost') as HTMLElement).textContent = owned ? t('hud.owned') : full ? t('hud.full') : String(it.cost);

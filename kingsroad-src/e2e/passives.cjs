@@ -12,7 +12,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   await page.evaluate(() => { localStorage.setItem('kingsroad-lang', 'zh'); });
   await page.reload(); await sleep(1500);
   await page.screenshot({ path: path.join(OUT, '01-menu-zh.png') });
-  await page.evaluate(() => { window.__kr.settings.hero = 'shenshe'; });
+  await page.evaluate(() => { window.__kr.settings.hero = 'houyi'; });
   await page.click('#btnPlay'); await sleep(600);
   await page.screenshot({ path: path.join(OUT, '02-select-zh.png') });
   await page.mouse.move(640, 380); await page.click('#btnStart'); await sleep(4000);

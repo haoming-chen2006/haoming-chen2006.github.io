@@ -35,7 +35,7 @@ const HERO_SPECS: HeroSpec[] = [
   },
   {
     id: 'qinglong', name: 'Qinglong', title: 'Storm Lancer', role: 'warrior', ...base('warrior'),
-    look: look('#2f8f6a', '#e0f5d8', 'lance', 0.45),
+    look: look('#2f8f6a', '#e0f5d8', 'lance', 0.45, 'humanoid', { gear: 'hornhelm' }),
     hp: 3500, damage: 215, power: 0, armor: 92, resist: 56, hitSpeed: 0.95, range: 1.7, speed: 4.05, radius: 0.46, mana: 440, attackType: 'physical',
     lore: 'The azure dragon of the east, riding thunderheads into battle with a lance as long as a river.',
     passive: { name: "Dragon's Wake", desc: "Every third thrust carries through, striking whatever stands behind the target for 60% damage." },

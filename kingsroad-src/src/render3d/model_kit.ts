@@ -144,7 +144,7 @@ export const hex = (s: string): number => parseInt(s.slice(1), 16);
 /** Weapons are built along +Y (blade pointing up) with the grip at the origin. */
 export function buildWeapon(kind: WeaponKind, s: number, accent: number, mats: UnitMat[]): THREE.Group {
   const grp = new THREE.Group();
-  const steel = toon(0xdde3ea), dark = toon(0x2a2d33), wood = toon(0x7a5230), acc = toon(accent, { emissive: accent, emissiveIntensity: 0.12 }), gold = toon(0xe9c46a);
+  const steel = toon(0xdde3ea, { metalness: 0.9, roughness: 0.28 }), dark = toon(0x2a2d33, { metalness: 0.6, roughness: 0.4 }), wood = toon(0x7a5230, { roughness: 0.7 }), acc = toon(accent, { emissive: accent, emissiveIntensity: 0.12, roughness: 0.4 }), gold = toon(0xe9c46a, { metalness: 0.9, roughness: 0.3 });
   mats.push(steel, dark, wood, acc, gold);
   const add = (m: THREE.Mesh) => { grp.add(m); return m; };
   switch (kind) {

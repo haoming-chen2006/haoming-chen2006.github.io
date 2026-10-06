@@ -12,6 +12,7 @@ import { Menus, loadSettings, saveSettings, showLoading, type ScreenName } from 
 import { Online } from './ui/online.ts';
 import { cardThumbnail } from './render3d/thumbnails.ts';
 import { heroDef } from './game/heroes.ts';
+import { UNIT_DEFS } from './game/units.ts';
 
 const $ = (id: string): HTMLElement => { const el = document.getElementById(id); if (!el) throw new Error(`missing #${id}`); return el; };
 
@@ -143,7 +144,7 @@ handleRoute();
   hash: () => (game.world ? hashWorld(game.world) : 0),
   net: () => online.stats,
   map: { inWall, lanePath, laneProgress, lanePoint, laneAdvance, nearestFree },
-  thumb: cardThumbnail, heroDef,
+  thumb: cardThumbnail, heroDef, unitDef: (id: string) => UNIT_DEFS[id],
   start: startBattle,
   toScreen(x: number, z: number, y = 0.05): { x: number; y: number } {
     const r = canvas.getBoundingClientRect();

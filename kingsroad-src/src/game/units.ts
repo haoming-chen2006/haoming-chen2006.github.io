@@ -11,8 +11,8 @@ const mk = (s: Spec): UnitDef => ({
 
 /** Minions scale with match time (see minions.ts); these are the 0:00 values. */
 export const MINIONS: Record<string, UnitDef> = {
-  melee: mk({ id: 'melee', name: '近战兵', kind: 'minion', minionType: 'melee', look: look('#9a8f7c', '#e6d8b8', 'sword', 0.3, 'humanoid'), hp: 520, damage: 48, armor: 20, resist: 20, hitSpeed: 1.0, range: 0.9, speed: 3.0, radius: 0.32, sight: 6 }),
-  ranged: mk({ id: 'ranged', name: '远程兵', kind: 'minion', minionType: 'ranged', look: look('#8a8a7a', '#f0e6c8', 'bow', 0.28, 'humanoid'), hp: 380, damage: 62, armor: 10, resist: 10, hitSpeed: 1.2, range: 4.5, speed: 3.0, radius: 0.3, sight: 7, projectile: 'arrow', projectileSpeed: 11 }),
+  melee: mk({ id: 'melee', name: '近战兵', kind: 'minion', minionType: 'melee', look: { ...look('#8d94a0', '#c9a24a', 'sword', 0.3, 'humanoid'), armor: 'plate', skin: '#a9b0b8', cape: false, eyeGlow: true }, hp: 520, damage: 48, armor: 20, resist: 20, hitSpeed: 1.0, range: 0.9, speed: 3.0, radius: 0.32, sight: 6 }),
+  ranged: mk({ id: 'ranged', name: '远程兵', kind: 'minion', minionType: 'ranged', look: { ...look('#8d94a0', '#c9a24a', 'bow', 0.28, 'humanoid'), armor: 'leather', skin: '#a9b0b8', cape: false, eyeGlow: true }, hp: 380, damage: 62, armor: 10, resist: 10, hitSpeed: 1.2, range: 4.5, speed: 3.0, radius: 0.3, sight: 7, projectile: 'arrow', projectileSpeed: 11 }),
   siege: mk({ id: 'siege', name: '炮车', kind: 'minion', minionType: 'siege', look: look('#6e5d4a', '#c9b48f', 'bomb', 0.42, 'brute'), hp: 1100, damage: 130, armor: 40, resist: 40, hitSpeed: 2.0, range: 6.5, speed: 2.6, radius: 0.45, sight: 8, projectile: 'rock', projectileSpeed: 8, splash: 0.8 }),
   super: mk({ id: 'super', name: '超级兵', kind: 'minion', minionType: 'super', look: look('#9a3b7a', '#ffb0e8', 'hammer', 0.5, 'brute'), hp: 2600, damage: 170, armor: 70, resist: 70, hitSpeed: 1.2, range: 1.1, speed: 3.1, radius: 0.5, sight: 7 }),
 };

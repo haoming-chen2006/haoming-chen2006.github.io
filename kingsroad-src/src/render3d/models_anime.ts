@@ -125,7 +125,7 @@ export function buildAnimeHumanoid(look: Look, team: Team, opts: { scale?: numbe
   grp.add(mesh(capsule(s * 0.09, s * 0.12, 8), skinM, 0, hip + s * 0.2 + torsoH + s * 0.04, 0));
   const headG = new THREE.Group(); headG.position.y = hip + s * 0.2 + torsoH + s * 0.1;
   const angry = plate || look.weapon === 'axe' || look.weapon === 'hammer';
-  const faceM = new THREE.MeshStandardMaterial({ map: faceTexture(skinHex, opts.glowEyes ?? (look.hair ? hex(look.hair.color) : 0x3b2a6b), angry), roughness: 0.75 });
+  const faceM = new THREE.MeshStandardMaterial({ map: faceTexture(skinHex, opts.glowEyes ?? (look.eyeGlow ? teamHex : look.hair ? hex(look.hair.color) : 0x3b2a6b), angry || !!look.eyeGlow), roughness: 0.75, emissive: look.eyeGlow ? teamHex : 0x000000, emissiveIntensity: look.eyeGlow ? 0.15 : 1 });
   mats.push(faceM);
   const head = mesh(new THREE.SphereGeometry(s * 0.42, 24, 18), faceM, 0, s * 0.4, 0); head.scale.set(0.95, 1.08, 0.98); headG.add(head);
   parts.eyes = [];
@@ -238,4 +238,57 @@ function flourishes(look: Look, s: number, grp: THREE.Group, torso: THREE.Group,
     for (const side of [-1, 1]) d.add(mesh(sphereGeo(s * 0.06, 8), bearM, 0, s * 0.4, side * s * 0.12));
     torso.add(d);
   }
+}
+
+/** Stone golem for 炮车 / 超级兵 / 野怪 brutes: a boulder torso on stout legs, bronze bands, eyes glowing in team colour. */
+export function buildGolem(look: Look, team: Team, opts: { cannon?: boolean } = {}): BuiltUnit {
+  const s = look.size;
+  const mats: UnitMat[] = [];
+  const grp = new THREE.Group();
+  const parts: UnitParts = {};
+  const base = hex(look.color), accent = hex(look.accent), teamHex = TEAM_HEX[team];
+  const rockM = toon(base, { roughness: 0.95 }), darkM = toon(shade(base, 0.6), { roughness: 0.95 }), accM = toon(accent, { roughness: 0.5, metalness: 0.6 });
+  const glowM = toon(teamHex, { emissive: teamHex, emissiveIntensity: 2.2 }), bronzeM = toon(0xb9842e, { metalness: 0.8, roughness: 0.35 });
+  mats.push(rockM, darkM, accM, glowM, bronzeM);
+  const legH = s * 0.9, hip = legH;
+  for (const side of [-1, 1]) {
+    const piv = new THREE.Group(); piv.position.set(0, hip, side * s * 0.45);
+    piv.add(mesh(capsule(s * 0.26, legH * 0.5, 12), darkM, 0, -legH * 0.45, 0));
+    attach(piv, mesh(sphereGeo(s * 0.34, 14), rockM, s * 0.08, -legH * 0.92, 0)).scale.set(1.2, 0.6, 1.1);
+    grp.add(piv); if (side < 0) parts.legL = piv; else parts.legR = piv;
+  }
+  const torso = new THREE.Group(); torso.position.y = hip + s * 0.1;
+  const body = mesh(sphereGeo(s * 0.95, 20), rockM, 0, s * 0.8, 0); body.scale.set(1.0, 1.05, 1.15); torso.add(body);
+  for (let i = 0; i < 3; i++) attach(torso, mesh(new THREE.TorusGeometry(s * (0.78 + i * 0.1), s * 0.05, 8, 28), bronzeM, 0, s * (0.45 + i * 0.35), 0)).rotation.x = Math.PI / 2;
+  torso.add(mesh(sphereGeo(s * 0.22, 14), glowM, s * 0.85, s * 0.95, 0)); // chest core
+  // head: a smaller boulder with two glowing eyes and a bronze brow
+  const headG = new THREE.Group(); headG.position.y = s * 1.75;
+  headG.add(mesh(sphereGeo(s * 0.42, 18), rockM, s * 0.1, 0, 0));
+  parts.eyes = [];
+  for (const side of [-1, 1]) { const e = mesh(sphereGeo(s * 0.08, 10), glowM, s * 0.45, s * 0.05, side * s * 0.17); parts.eyes.push(e); headG.add(e); }
+  attach(headG, mesh(new THREE.TorusGeometry(s * 0.36, s * 0.04, 8, 20), bronzeM, s * 0.05, s * 0.2, 0)).rotation.x = Math.PI / 2;
+  torso.add(headG); parts.head = headG;
+  // arms: heavy capsules with stone fists
+  for (const side of [-1, 1]) {
+    const piv = new THREE.Group(); piv.position.set(0, s * 1.35, side * s * 1.05);
+    piv.add(mesh(capsule(s * 0.22, s * 0.6, 12), darkM, 0, -s * 0.4, 0));
+    const elbow = new THREE.Group(); elbow.position.y = -s * 0.85;
+    elbow.add(mesh(capsule(s * 0.2, s * 0.5, 12), rockM, 0, -s * 0.3, 0));
+    elbow.add(mesh(sphereGeo(s * 0.32, 14), darkM, 0, -s * 0.75, 0));
+    attach(elbow, mesh(new THREE.TorusGeometry(s * 0.24, s * 0.04, 8, 18), bronzeM, 0, -s * 0.45, 0)).rotation.x = Math.PI / 2;
+    piv.add(elbow); torso.add(piv);
+    if (side < 0) { parts.armL = piv; parts.elbowL = elbow; } else { parts.armR = piv; parts.elbowR = elbow; }
+    piv.rotation.z = 0.25; elbow.rotation.z = 0.4;
+  }
+  if (opts.cannon) {
+    // 炮车: a bronze cannon strapped to the back, team banner on the barrel
+    const cannon = new THREE.Group(); cannon.position.set(-s * 0.3, s * 1.3, s * 0.7); cannon.rotation.z = -1.1;
+    const barrel = mesh(new THREE.CylinderGeometry(s * 0.22, s * 0.28, s * 1.6, 16), bronzeM, 0, s * 0.8, 0); cannon.add(barrel);
+    attach(cannon, mesh(new THREE.TorusGeometry(s * 0.26, s * 0.05, 8, 20), accM, 0, s * 1.5, 0)).rotation.x = 0;
+    cannon.add(mesh(sphereGeo(s * 0.3, 12), darkM, 0, 0, 0));
+    torso.add(cannon); parts.weapon = cannon;
+  }
+  grp.add(torso); parts.torso = torso;
+  parts.ranged = !!opts.cannon; parts.twoHanded = false;
+  return { grp, parts, mats, height: hip + s * 0.1 + s * 2.3, eye: hip + s * 1.9, hover: 0 };
 }

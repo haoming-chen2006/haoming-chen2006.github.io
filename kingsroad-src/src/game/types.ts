@@ -114,6 +114,8 @@ export interface Look {
   skirt?: boolean;
   doll?: boolean;
   skin?: string;
+  /** Eyes glow in the team colour (小兵 golems). */
+  eyeGlow?: boolean;
 }
 
 /** Base stats of anything that walks: minions, monsters and heroes. */

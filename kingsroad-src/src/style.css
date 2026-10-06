@@ -24,7 +24,8 @@
   --panel-w: 0px;
   /* Cinzel/Nunito carry no CJK glyphs, so every stack ends in the usual Chinese faces. */
   --font-cjk: "PingFang SC", "Hiragino Sans GB", "Noto Sans CJK SC", "Source Han Sans SC", "Microsoft YaHei", sans-serif;
-  --font-display: "Cinzel", "Trajan Pro", Georgia, "Times New Roman", var(--font-cjk);
+  --font-display: "Cinzel", "ZCOOL XiaoWei", "Trajan Pro", Georgia, "Times New Roman", var(--font-cjk);
+  --font-brush: "Ma Shan Zheng", "ZCOOL XiaoWei", var(--font-cjk);
   --font-body: "Nunito", "Segoe UI", system-ui, -apple-system, var(--font-cjk);
   --shadow-lg: 0 30px 80px rgba(0,0,0,0.6), 0 2px 0 rgba(255,255,255,0.03) inset;
   --gold-grad: linear-gradient(180deg, #fff0b8 0%, #f0c45a 45%, #c98a1e 100%);
@@ -473,3 +474,5 @@ body.in-game #viewport { right: var(--panel-w); }
 .item-slot img, .si-icon img { width: 100%; height: 100%; display: block; border-radius: 8px; }
 .si-icon { border-left: none !important; padding: 0 !important; width: 34px; height: 34px; }
 .build-item img { width: 18px; height: 18px; vertical-align: middle; border-radius: 4px; margin-right: 2px; }
+.title .title-zh { font-family: var(--font-brush); font-weight: 400; letter-spacing: 0.1em; }
+#resultTitle, .streak-text, .banner-title, .hc-name, .heading { font-family: var(--font-display); }

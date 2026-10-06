@@ -45,6 +45,8 @@ export class GameView {
   private sun: THREE.DirectionalLight;
   private viewmodel = new THREE.Group();
   private viewmodelKey = '';
+  private lastCdSum = 0;
+  private castT = 0;
   private vm: Viewmodel | null = null;
   private width = 1;
   private height = 1;
@@ -145,7 +147,11 @@ export class GameView {
       this.vm.group.traverse((o) => { if (o instanceof THREE.Mesh) { o.castShadow = false; o.receiveShadow = false; } });
       this.viewmodel.add(this.vm.group);
     }
-    this.vm?.animate({ dt, time, moving: st.moving, attackAnim: hero.attackAnim, abilityT: hero.abilityT, dashing: !!hero.dashVel });
+    // a cast happened when a skill cooldown just jumped up
+    const cdSum = hero.skillCd[0] + hero.skillCd[1] + hero.skillCd[2];
+    if (cdSum > this.lastCdSum + 1) this.castT = 0.45;
+    this.lastCdSum = cdSum; this.castT = Math.max(0, this.castT - dt);
+    this.vm?.animate({ dt, time, moving: st.moving, attackAnim: hero.attackAnim, abilityT: hero.abilityT, dashing: !!hero.dashVel, cast: this.castT / 0.45 });
   }
 
   render(world: World, st: ViewState, dt: number, time: number): void {

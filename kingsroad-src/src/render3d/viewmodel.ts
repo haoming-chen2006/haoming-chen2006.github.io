@@ -6,7 +6,7 @@ import { SKIN, TEAM_HEX, buildWeapon, coneGeo, cylGeo, hex, mesh, rboxGeo, shade
  * First-person "viewmodel": the champion's own hands, weapon or snout, built in camera space
  * (+x right, +y up, -z forward) and attached as a child of the camera. Transform hierarchies only.
  */
-export interface ViewmodelState { dt: number; time: number; moving: boolean; attackAnim: number; abilityT: number; dashing: boolean }
+export interface ViewmodelState { dt: number; time: number; moving: boolean; attackAnim: number; abilityT: number; dashing: boolean; /** 0..1, decays after a skill cast: the off hand flourishes */ cast?: number }
 export interface Viewmodel { group: THREE.Group; animate(state: ViewmodelState): void; dispose(): void }
 
 const ZAXIS = new THREE.Vector3(0, 0, 1);
@@ -351,6 +351,9 @@ export function buildViewmodel(look: Look, team: Team): Viewmodel {
         break;
       }
     }
+    // skill cast flourish (after the mode pose so it wins): the off hand sweeps up in a quick arc
+    const cast = st.cast ?? 0;
+    if (cast > 0) { const cf = Math.sin(cast * Math.PI); const arm = L ?? R; if (arm) poseArm(arm, -cf * 0.55, cf * 0.2, cf * 0.3, cf * 0.12, cf * 0.08, -cf * 0.06); }
     rig.wisps.forEach((w, i) => { const a = t * 2 + i * 1.3; w.position.set(0.3 + Math.cos(a) * 0.08, -0.3 + Math.sin(a * 1.3) * 0.06, -0.45 + Math.sin(a) * 0.06); });
   };
   animate({ dt: 1, time: 0, moving: false, attackAnim: 0, abilityT: 0, dashing: false });

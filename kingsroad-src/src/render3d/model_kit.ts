@@ -205,16 +205,28 @@ export function buildWeapon(kind: WeaponKind, s: number, accent: number, mats: U
       attach(grp, mesh(torusGeo(s * 0.26, s * 0.015, 6, 24), gold, 0, s * 2.1, 0)).rotation.x = Math.PI / 2;
       break;
     }
-    case 'axe':
-      add(mesh(cylGeo(s * 0.06, s * 0.07, s * 1.7, 7), wood, 0, s * 0.65, 0));
-      for (const side of [-1, 1]) { const blade = add(mesh(cylGeo(s * 0.42, s * 0.42, s * 0.07, 12), steel, side * s * 0.32, s * 1.25, 0)); blade.rotation.x = Math.PI / 2; blade.scale.y = 0.8; }
-      add(mesh(boxGeo(s * 0.2, s * 0.55, s * 0.12), dark, 0, s * 1.25, 0));
+    case 'axe': {
+      // 程咬金 / 典韦 great axe: lacquered haft, crescent blades with a gold spine
+      const lacq = toon(0x5a1a1a, { roughness: 0.3 }); mats.push(lacq);
+      add(mesh(cylGeo(s * 0.055, s * 0.07, s * 1.7, 14), lacq, 0, s * 0.65, 0));
+      for (let i = 0; i < 3; i++) attach(grp, mesh(torusGeo(s * 0.075, s * 0.014, 6, 14), gold, 0, s * 0.1 + i * s * 0.45, 0)).rotation.x = Math.PI / 2;
+      for (const side of [-1, 1]) {
+        const blade = mesh(new THREE.CylinderGeometry(s * 0.5, s * 0.5, s * 0.05, 24, 1, false, 0, Math.PI * 0.9), steel, side * s * 0.08, s * 1.25, 0);
+        blade.rotation.x = Math.PI / 2; blade.rotation.z = side > 0 ? -Math.PI * 0.45 : Math.PI * 0.55; add(blade);
+      }
+      add(mesh(cylGeo(s * 0.11, s * 0.11, s * 0.5, 12), gold, 0, s * 1.25, 0));
+      add(mesh(new THREE.ConeGeometry(s * 0.05, s * 0.3, 10), gold, 0, s * 1.65, 0));
       break;
-    case 'hammer':
-      add(mesh(cylGeo(s * 0.07, s * 0.08, s * 1.5, 7), wood, 0, s * 0.55, 0));
-      add(mesh(rboxGeo(s * 0.95, s * 0.42, s * 0.42, s * 0.06), toon(0x8f9aa5), 0, s * 1.3, 0));
-      for (const side of [-1, 1]) add(mesh(cylGeo(s * 0.24, s * 0.24, s * 0.08, 8), dark, side * s * 0.5, s * 1.3, 0)).rotation.z = Math.PI / 2;
+    }
+    case 'hammer': {
+      const bronze = toon(0x9a7a3a, { metalness: 0.85, roughness: 0.35 }); mats.push(bronze);
+      add(mesh(cylGeo(s * 0.06, s * 0.075, s * 1.5, 14), toon(0x3a2a1e, { roughness: 0.6 }), 0, s * 0.55, 0));
+      for (let i = 0; i < 3; i++) attach(grp, mesh(torusGeo(s * 0.08, s * 0.015, 6, 14), gold, 0, s * 0.2 + i * s * 0.35, 0)).rotation.x = Math.PI / 2;
+      const head = mesh(cylGeo(s * 0.26, s * 0.26, s * 0.95, 16), bronze, 0, s * 1.3, 0); head.rotation.z = Math.PI / 2; add(head);
+      for (const side of [-1, 1]) { attach(grp, mesh(torusGeo(s * 0.26, s * 0.035, 8, 20), gold, side * s * 0.4, s * 1.3, 0)).rotation.y = Math.PI / 2; add(mesh(sphereGeo(s * 0.12, 10), dark, side * s * 0.52, s * 1.3, 0)); }
+      add(mesh(sphereGeo(s * 0.09, 10), mat(accent, { emissive: accent, emissiveIntensity: 1.8, flat: false }), 0, s * 1.3, s * 0.27));
       break;
+    }
     case 'scythe': {
       add(mesh(cylGeo(s * 0.045, s * 0.05, s * 2.4, 7), toon(0x3a2a2a), 0, s * 0.9, 0));
       const blade = add(mesh(torusGeo(s * 0.7, s * 0.06, Math.PI * 0.75, 12), steel, s * 0.6, s * 2.0, 0));
@@ -222,10 +234,14 @@ export function buildWeapon(kind: WeaponKind, s: number, accent: number, mats: U
       add(mesh(boxGeo(s * 0.9, s * 0.16, s * 0.04), steel, s * 0.5, s * 2.0, 0)).rotation.z = -0.35;
       break;
     }
-    case 'orb':
-      add(mesh(sphereGeo(s * 0.26, 12), mat(accent, { emissive: accent, emissiveIntensity: 3.5, flat: false }), 0, s * 0.5, 0));
-      add(mesh(torusGeo(s * 0.36, s * 0.03, Math.PI * 2, 20), gold, 0, s * 0.5, 0)).rotation.x = Math.PI / 2.5;
+    case 'orb': {
+      add(mesh(sphereGeo(s * 0.24, 20), mat(accent, { emissive: accent, emissiveIntensity: 2.2, flat: false, roughness: 0.15, metalness: 0.05 }), 0, s * 0.5, 0));
+      add(mesh(sphereGeo(s * 0.3, 20), mat(accent, { emissive: accent, emissiveIntensity: 0.8, flat: false, transparent: true, opacity: 0.3 }), 0, s * 0.5, 0));
+      attach(grp, mesh(torusGeo(s * 0.4, s * 0.025, 8, 28), gold, 0, s * 0.5, 0)).rotation.x = Math.PI / 2.5;
+      attach(grp, mesh(torusGeo(s * 0.36, s * 0.02, 8, 28), gold, 0, s * 0.5, 0)).rotation.set(Math.PI / 2, 0.9, 0);
+      for (let i = 0; i < 4; i++) { const a = (i / 4) * Math.PI * 2; add(mesh(new THREE.OctahedronGeometry(s * 0.05, 0), gold, Math.cos(a) * s * 0.42, s * 0.5, Math.sin(a) * s * 0.42)); }
       break;
+    }
     case 'bomb':
       add(mesh(sphereGeo(s * 0.34, 10), toon(0x1e2024), 0, s * 0.34, 0));
       add(mesh(cylGeo(s * 0.09, s * 0.09, s * 0.12, 8), toon(0x555a60), 0, s * 0.7, 0));

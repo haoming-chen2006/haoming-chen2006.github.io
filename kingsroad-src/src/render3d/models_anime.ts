@@ -88,6 +88,8 @@ export function buildAnimeHumanoid(look: Look, team: Team, opts: { scale?: numbe
   // ---- torso: lathe with shoulders / waist / hips, then armour on top
   const torsoH = s * 1.2;
   const torso = new THREE.Group(); torso.position.y = hip + s * 0.2;
+  // body type: plate-armoured bruisers are broad, robed casters slender
+  torso.scale.set(plate ? 1.0 : 0.92, 1, plate ? 1.18 : robe ? 0.9 : 1.0);
   const chestGeo = lathe([[s * 0.36, 0], [s * 0.34, torsoH * 0.35], [s * 0.44, torsoH * 0.72], [s * 0.46, torsoH * 0.9], [s * 0.3, torsoH]]);
   torso.add(mesh(chestGeo, plate ? metalM : robe ? bodyM : bodyM, 0, 0, 0));
   if (plate) {
@@ -106,8 +108,9 @@ export function buildAnimeHumanoid(look: Look, team: Team, opts: { scale?: numbe
   torso.add(mesh(sphereGeo(s * 0.08, 10), goldM, s * 0.4, torsoH * 0.12, 0));
   // pauldrons
   for (const side of [-1, 1]) {
-    const p = mesh(sphereGeo(s * 0.26, 14), plate ? metalM : robe ? accM : leatherM, 0, torsoH - s * 0.02, side * s * 0.55);
+    const p = mesh(sphereGeo(s * (plate ? 0.32 : 0.24), 14), plate ? metalM : robe ? accM : leatherM, 0, torsoH - s * 0.02, side * s * 0.55);
     p.scale.set(1, 0.6, 1.1); torso.add(p);
+    if (plate) { const spike = mesh(new THREE.ConeGeometry(s * 0.06, s * 0.22, 8), goldM, 0, torsoH + s * 0.12, side * s * 0.62); spike.rotation.x = side * 0.5; torso.add(spike); }
     if (plate) attach(torso, mesh(new THREE.TorusGeometry(s * 0.22, s * 0.03, 8, 18), goldM, 0, torsoH - s * 0.02, side * s * 0.55)).rotation.x = Math.PI / 2;
   }
   // cape: a gently curved sheet

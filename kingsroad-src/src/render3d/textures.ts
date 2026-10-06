@@ -115,6 +115,22 @@ export function cliffTexture(size = 256): THREE.CanvasTexture {
   return finish(c);
 }
 
+/** Alpha-cut tuft of grass blades for crossed-plane clumps. */
+export function grassBladeTexture(size = 256): THREE.CanvasTexture {
+  const [c, ctx] = canvas(size, size);
+  ctx.clearRect(0, 0, size, size);
+  for (let i = 0; i < 26; i++) {
+    const x0 = size * (0.12 + hash(i, 1) * 0.76), h = size * (0.45 + hash(i, 2) * 0.5), lean = (hash(i, 3) - 0.5) * size * 0.35;
+    const l = 0.75 + hash(i, 4) * 0.5;
+    const grad = ctx.createLinearGradient(0, size, 0, size - h);
+    grad.addColorStop(0, `rgb(${70 * l | 0},${120 * l | 0},${50 * l | 0})`); grad.addColorStop(1, `rgb(${150 * l | 0},${210 * l | 0},${95 * l | 0})`);
+    ctx.fillStyle = grad;
+    ctx.beginPath(); ctx.moveTo(x0 - 6, size); ctx.quadraticCurveTo(x0 + lean * 0.5, size - h * 0.6, x0 + lean, size - h); ctx.quadraticCurveTo(x0 + lean * 0.5 + 3, size - h * 0.6, x0 + 6, size); ctx.closePath(); ctx.fill();
+  }
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping; t.anisotropy = 4;
+  return t;
+}
+
 /** Stone bricks with mortar, chips and moss for towers and walls. */
 export function stoneTexture(size = 256, tint: [number, number, number] = [150, 152, 158]): THREE.CanvasTexture {
   const [c, ctx] = canvas(size, size);

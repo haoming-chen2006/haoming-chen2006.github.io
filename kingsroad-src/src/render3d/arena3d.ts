@@ -6,6 +6,8 @@ import type { World } from '../game/world.ts';
 import { bannerTexture } from './textures.ts';
 import { mergeByMaterial } from './model_kit.ts';
 import { loadModel, pbrMaterial } from './pbr.ts';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { grassBladeTexture } from './textures.ts';
 import { isMine } from './perspective.ts';
 
 const hash = (x: number, y: number, s = 0): number => { const v = Math.sin(x * 127.1 + y * 311.7 + s * 74.7) * 43758.5453; return v - Math.floor(v); };
@@ -417,17 +419,23 @@ export class Arena3D {
       return out;
     };
     try {
-      const [boulder, mossRocks, fern, grassClump, lantern] = await Promise.all([loadModel('boulder_01'), loadModel('rock_moss_set_01'), loadModel('fern_02'), loadModel('grass_medium_01'), loadModel('wooden_lantern_01')]);
+      // photogrammetry rocks are heavy (~65k tris): a handful, never clones of the 25k-tri grass
+      const [boulder, mossRocks, fern, lantern] = await Promise.all([loadModel('boulder_01'), loadModel('rock_moss_set_01'), loadModel('fern_02'), loadModel('wooden_lantern_01')]);
       const g = new THREE.Group();
-      for (const s of spots(300, 18, 3.4, false)) { const m = (s.r > 0.5 ? boulder : mossRocks).clone(); const sc = 0.7 + s.r * 0.9; m.scale.setScalar(sc); m.position.set(s.x, -0.05, s.z); m.rotation.y = s.r * 6; g.add(m); }
-      for (const s of spots(320, 40, 2.6, false)) { const m = fern.clone(); m.scale.setScalar(0.7 + s.r * 0.6); m.position.set(s.x, 0, s.z); m.rotation.y = s.r * 6; g.add(m); }
-      for (const s of spots(340, 140, 2.2, false)) { const m = grassClump.clone(); m.scale.setScalar(0.9 + s.r * 0.8); m.position.set(s.x, 0, s.z); m.rotation.y = s.r * 6; g.add(m); }
-      // 草丛: dense tall clumps inside every bush circle
-      for (const b of BUSHES) for (let k = 0; k < Math.round(b.r * 7); k++) {
-        const a = hash(k, b.pos.x) * Math.PI * 2, rr = Math.sqrt(hash(k, b.pos.y)) * b.r * 0.9;
-        const m = grassClump.clone(); m.scale.set(1.5 + hash(k, 3) * 0.6, 2.2 + hash(k, 7) * 0.8, 1.5 + hash(k, 5) * 0.6);
-        m.position.set(b.pos.x + Math.cos(a) * rr, 0, b.pos.y + Math.sin(a) * rr); m.rotation.y = hash(k, 8) * 6; g.add(m);
-      }
+      for (const s of spots(300, 8, 3.4, false)) { const m = (s.r > 0.5 ? boulder : mossRocks).clone(); const sc = 0.7 + s.r * 0.9; m.scale.setScalar(sc); m.position.set(s.x, -0.05, s.z); m.rotation.y = s.r * 6; g.add(m); }
+      for (const s of spots(320, 24, 2.6, false)) { const m = fern.clone(); m.scale.setScalar(0.7 + s.r * 0.6); m.position.set(s.x, 0, s.z); m.rotation.y = s.r * 6; g.add(m); }
+      // grass: crossed alpha-cut blades (4 tris a clump) instanced — scattered tufts and the dense 草丛
+      const bladeTex = grassBladeTexture();
+      const bladeM = new THREE.MeshStandardMaterial({ map: bladeTex, alphaTest: 0.45, side: THREE.DoubleSide, roughness: 0.9, color: 0xa8d87a });
+      this.windify(bladeM, 0.08);
+      const bladeGeo = (() => { const a = new THREE.PlaneGeometry(1, 1); a.translate(0, 0.5, 0); const b = a.clone(); b.rotateY(Math.PI / 2); const c = a.clone(); c.rotateY(Math.PI / 4); const d = a.clone(); d.rotateY(-Math.PI / 4); return mergeGeometries([a, b, c, d], false)!; })();
+      const placements: THREE.Matrix4[] = [];
+      const put = (x: number, z: number, w: number, h: number, rot: number) => { const m = new THREE.Matrix4(); m.makeRotationY(rot).setPosition(x, 0, z); m.scale(new THREE.Vector3(w, h, w)); placements.push(m); };
+      for (const s of spots(340, 260, 2.2, false)) put(s.x, s.z, 0.7 + s.r * 0.5, 0.5 + s.r * 0.4, s.r * 6);
+      for (const b of BUSHES) for (let k = 0; k < Math.round(b.r * 12); k++) { const a = hash(k, b.pos.x) * Math.PI * 2, rr = Math.sqrt(hash(k, b.pos.y)) * b.r * 0.92; put(b.pos.x + Math.cos(a) * rr, b.pos.y + Math.sin(a) * rr, 1.1 + hash(k, 3) * 0.5, 1.5 + hash(k, 7) * 0.6, hash(k, 8) * 6); }
+      const inst = new THREE.InstancedMesh(bladeGeo, bladeM, placements.length);
+      placements.forEach((m, i) => inst.setMatrixAt(i, m));
+      inst.castShadow = false; inst.receiveShadow = true; g.add(inst);
       for (const team of [0, 1] as const) for (const spec of TOWER_LAYOUT) {
         if (spec.tier === 'crystal') continue;
         const p = team === 0 ? spec.pos : mirrorPos(spec.pos);

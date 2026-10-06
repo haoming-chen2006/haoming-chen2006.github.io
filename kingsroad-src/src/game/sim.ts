@@ -14,7 +14,7 @@ import { Rng } from '../engine/rng.ts';
 export type MatchMode = '5v5' | '3v3' | '1v1';
 export const MODE_SIZE: Record<MatchMode, number> = { '5v5': 5, '3v3': 3, '1v1': 1 };
 
-export interface SeatSetup { heroId: string; isBot: boolean; name: string }
+export interface SeatSetup { heroId: string; isBot: boolean; name: string; spell?: string }
 
 export interface SimConfig {
   mode: MatchMode;

@@ -4,6 +4,7 @@ import { dist } from '../engine/math.ts';
 import { COUNTDOWN_TIME, LEVEL_XP, MAX_LEVEL, START_GOLD, TOWER_LAYOUT, TOWER_STATS, mirrorPos, type LaneId } from './constants.ts';
 import { ROLE_LANE, heroDef } from './heroes.ts';
 import { attackSpeedBonus } from './passives.ts';
+import { defaultSpell, isSpell } from './spells.ts';
 import { sumItems } from './items.ts';
 import { crystalPos, inBush, lanePath, setObstacles, spawnPoint } from './map.ts';
 import {
@@ -11,7 +12,7 @@ import {
   type Seat, type Side, type Status, type Team, type Tower, type Unit, type UnitDef, type Zone,
 } from './types.ts';
 
-export interface SeatConfig { heroId: string; isBot: boolean; name: string }
+export interface SeatConfig { heroId: string; isBot: boolean; name: string; spell?: string }
 export interface TeamConfig { name: string; seats: SeatConfig[] }
 
 const freshStatus = (): Status => ({ stun: 0, freeze: 0, rage: 0, rageSpeed: 1, rageAttack: 1, burnT: 0, burnDps: 0, slowT: 0, slow: 0, blueT: 0, redT: 0, tyrantT: 0, overlordT: 0, invulnT: 0, shred: 0, shredT: 0, ccImmuneT: 0, lastHurtT: -100 });
@@ -67,7 +68,7 @@ export class World {
       const def = heroDef(s.heroId);
       return {
         team, index, heroDefId: s.heroId, heroId: -1, isBot: s.isBot, name: s.name, stats: newStats(), respawnT: 0, level: 1, xp: 0, gold: START_GOLD,
-        items: [], skillRank: [0, 0, 0], skillPoints: 1, role: def.role, lane: ROLE_LANE[def.role], streak: 0, kills: 0, deaths: 0, assists: 0, autoBuy: true, itemCd: {},
+        items: [], skillRank: [0, 0, 0], skillPoints: 1, role: def.role, lane: ROLE_LANE[def.role], streak: 0, kills: 0, deaths: 0, assists: 0, autoBuy: true, itemCd: {}, spell: s.spell && isSpell(s.spell) ? s.spell : 'flash',
       };
     });
     // spread lanes: one jungler, one top, one mid, two bot
@@ -75,6 +76,8 @@ export class World {
     const taken = new Set<number>();
     for (const s of seats) { const i = want.indexOf(s.lane); if (i >= 0 && !taken.has(i)) taken.add(i); else s.lane = -1 as never; }
     for (const s of seats) if ((s.lane as number) === -1) { const i = want.findIndex((_, k) => !taken.has(k)); taken.add(i); s.lane = want[i]; }
+    // bots pick their 召唤师技能 by role (the jungler takes 惩击)
+    for (const s of seats) if (s.isBot && !cfg.seats[s.index].spell) s.spell = defaultSpell(s.role, s.lane === 3);
     const human = seats.find((s) => !s.isBot);
     return {
       team, name: cfg.name, isBot: !human, heroId: -1, seats, stats: newStats(), towersLost: 0, kills: 0, crowns: 0, possessCd: 0, streak: 0, streakT: -100,

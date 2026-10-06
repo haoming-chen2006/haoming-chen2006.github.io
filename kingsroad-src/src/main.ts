@@ -1,5 +1,6 @@
 import { music } from './audio/music.ts';
 import { sfx } from './audio/sfx.ts';
+import { announcer } from './audio/announcer.ts';
 import { Simulation, type SeatSetup } from './game/sim.ts';
 import { other } from './game/types.ts';
 import { GameScreen, type MatchConfig } from './game_screen.ts';
@@ -43,6 +44,7 @@ const applyAudioSettings = () => {
   if (view.quality !== settings.quality) view.setQuality(settings.quality);
   view.rig.sensitivity = 0.0022 * settings.sensitivity;
   view.rig.invertY = settings.invertY;
+  announcer.enabled = settings.announcer && settings.sound;
   view.rig.fpsFov = settings.fov;
   game.preferFirst = settings.firstPerson;
 };
@@ -66,7 +68,7 @@ function startBattle(): void {
   view.clear();
   menus.show('game');
   applyAudioSettings();
-  const mine: SeatSetup[] = [{ heroId: settings.hero, isBot: false, name: settings.name || t('common.you') }];
+  const mine: SeatSetup[] = [{ heroId: settings.hero, isBot: false, name: settings.name || t('common.you'), spell: settings.spell }];
   const cfg: MatchConfig = { mode: settings.mode, difficulty: settings.difficulty, teams: [mine, []] };
   game.start(cfg);
 }

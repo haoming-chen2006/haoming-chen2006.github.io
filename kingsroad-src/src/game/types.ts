@@ -451,6 +451,8 @@ export interface Seat {
   autoBuy: boolean;
   /** Item passive cooldowns keyed by item passive id (seconds of world time when usable again). */
   itemCd: Record<string, number>;
+  /** 召唤师技能 chosen for this seat. */
+  spell: string;
 }
 
 /** Per-team state (the old PlayerState name is kept for the renderer). */

@@ -154,7 +154,7 @@ export class BotHero {
         const foe = this.nearbyEnemyHeroes(w, u, u.def.range + 0.5)[0];
         if (foe && u.def.range > 3) { cmd.aim = this.lead(w, u, foe); cmd.attack = u.attackCd <= 0; }
         const chaser = this.nearbyEnemyHeroes(w, u, 4)[0];
-        if (chaser && u.hp / u.maxHp < 0.3) { if (u.flashCd <= 0) cmd.flash = true; else if (u.dashCd <= 0) cmd.dash = true; }
+        if (chaser && u.hp / u.maxHp < 0.3 && u.flashCd <= 0) { const sp = w.seatOf(u)?.spell; if (sp === 'flash' || sp === 'sprint' || sp === 'cleanse' || sp === 'heal') cmd.flash = true; }
         this.useEscapeSkill(w, u, cmd, dest);
         return;
       }
@@ -358,7 +358,11 @@ export class BotHero {
   private attackUnit(w: World, u: Unit, b: Brain, m: Unit, cmd: HeroCommand, dt: number): void {
     const d = dist(m.pos, u.pos) - m.radius;
     cmd.aim = { ...m.pos };
-    if (d <= u.def.range) { cmd.attack = u.attackCd <= 0; if (m.def.monster?.boss || m.maxHp > 1500) this.useWaveSkill(w, u, m, cmd); }
+    if (d <= u.def.range) {
+      cmd.attack = u.attackCd <= 0; if (m.def.monster?.boss || m.maxHp > 1500) this.useWaveSkill(w, u, m, cmd);
+      // 惩击 secures buffs and the big objectives
+      if (u.flashCd <= 0 && w.seatOf(u)?.spell === 'smite' && d <= 4 && (m.def.monster?.boss ? m.hp < 520 + u.level * 90 : m.def.monster?.buff ? m.hp < 520 + u.level * 90 : false)) cmd.flash = true;
+    }
     else this.moveTo(w, u, b, m.pos, cmd, dt);
   }
 
@@ -378,7 +382,14 @@ export class BotHero {
     else if (range > 3 && d < range * 0.5) { const away = norm(sub(u.pos, t.pos)); cmd.move = away; }
     else if (range <= 3 && d < range * 0.3) { /* stay */ }
     // gap close
-    if (d > range + 1.5 && d < 6 && u.dashCd <= 0 && w.rng.chance(this.spec.skillUse * 0.5)) cmd.dash = true;
+    // 召唤师技能 in a fight: 闪现 to close on a kill, 终结 to finish, 狂暴 when trading, 治疗 when hurt
+    if (u.flashCd <= 0) {
+      const sp = w.seatOf(u)?.spell;
+      if (sp === 'flash' && d > range + 1.5 && d < 5.5 && t.hp / t.maxHp < 0.45 && w.rng.chance(this.spec.skillUse * 0.5)) cmd.flash = true;
+      else if (sp === 'execute' && d <= 3.4 && t.hp / t.maxHp < 0.3) cmd.flash = true;
+      else if (sp === 'frenzy' && d <= range + 0.5 && t.isHero) cmd.flash = true;
+      else if (sp === 'heal' && u.hp / u.maxHp < 0.4) cmd.flash = true;
+    }
   }
 
   /** Where to aim a projectile at a moving target. */

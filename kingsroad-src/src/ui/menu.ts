@@ -1,5 +1,6 @@
 import type { Difficulty } from '../game/bot.ts';
 import { HEROES, heroDef, pickTeam } from '../game/heroes.ts';
+import { SPELL_LIST, isSpell } from '../game/spells.ts';
 import { ITEMS } from '../game/items.ts';
 import { MODE_SIZE, type MatchMode } from '../game/sim.ts';
 import type { UnitDef } from '../game/types.ts';
@@ -20,6 +21,8 @@ export interface Settings {
   musicVolume: number;
   sensitivity: number;
   invertY: boolean;
+  announcer: boolean;
+  spell: string;
   fov: number;
   name: string;
 }
@@ -30,7 +33,7 @@ const clamp = (v: number, lo: number, hi: number, fallback: number): number => (
 export function loadSettings(): Settings {
   const def: Settings = {
     hero: 'houyi', mode: '5v5', difficulty: 'normal', sound: true, music: true, firstPerson: true, quality: 'high', record: { wins: 0, losses: 0, draws: 0 },
-    sfxVolume: 0.55, musicVolume: 0.5, sensitivity: 1, invertY: false, fov: 78, name: '',
+    sfxVolume: 0.55, musicVolume: 0.5, sensitivity: 1, invertY: false, announcer: true, spell: 'flash', fov: 78, name: '',
   };
   try {
     const raw = localStorage.getItem(KEY);
@@ -38,6 +41,7 @@ export function loadSettings(): Settings {
     const s = JSON.parse(raw) as Partial<Settings>;
     const merged: Settings = { ...def, ...s, record: { ...def.record, ...(s.record ?? {}) } };
     if (!HEROES.some((h) => h.id === merged.hero)) merged.hero = def.hero;
+    if (!isSpell(merged.spell)) merged.spell = 'flash';
     if (!(merged.mode in MODE_SIZE)) merged.mode = '5v5';
     merged.sfxVolume = clamp(Number(merged.sfxVolume), 0, 1, def.sfxVolume);
     merged.musicVolume = clamp(Number(merged.musicVolume), 0, 1, def.musicVolume);
@@ -118,6 +122,7 @@ export class Menus {
     bindRange('setSens', 'setSensOut', () => s.sensitivity, (v) => { s.sensitivity = v; }, (v) => `${v.toFixed(1)}×`);
     bindRange('setFov', 'setFovOut', () => s.fov, (v) => { s.fov = v; }, (v) => `${v}°`);
     const inv = $('setInvert') as HTMLInputElement; inv.checked = s.invertY; inv.addEventListener('change', () => { s.invertY = inv.checked; saveSettings(s); this.applyAudio(); });
+    const ann = $('setAnnouncer') as HTMLInputElement; ann.checked = s.announcer; ann.addEventListener('change', () => { s.announcer = ann.checked; saveSettings(s); this.applyAudio(); });
     const fp = $('setFirst') as HTMLInputElement; fp.checked = s.firstPerson; fp.addEventListener('change', () => { s.firstPerson = fp.checked; saveSettings(s); this.applyAudio(); });
     $('setQuality').querySelectorAll<HTMLButtonElement>('button').forEach((b) => b.addEventListener('click', () => { s.quality = b.dataset.q as 'high' | 'low'; saveSettings(s); this.applyAudio(); this.refreshMenu(); }));
     $('setLangSeg').querySelectorAll<HTMLButtonElement>('button').forEach((b) => b.addEventListener('click', () => setLanguage(b.dataset.lang as Lang)));
@@ -183,6 +188,14 @@ export class Menus {
     const s = this.settings;
     $('selectMode').textContent = t('select.mode', { mode: s.mode, diff: t(`diff.${s.difficulty}`) });
     this.renderGrid($('heroGrid'), $('heroDetail'), s.hero, (id) => { s.hero = id; saveSettings(s); this.renderSelect(); });
+    const row = $('spellRow'); row.innerHTML = '';
+    for (const sp of SPELL_LIST) {
+      const b = document.createElement('button'); b.className = `spell-btn ${s.spell === sp.id ? 'selected' : ''}`;
+      b.innerHTML = `<span class="sp-icon" style="background:radial-gradient(circle at 35% 35%, ${sp.color}, #111 85%)">${sp.icon}</span>${tCard(`spell.${sp.id}`, sp.name)}`;
+      b.title = tCard(`spelldesc.${sp.id}`, sp.desc);
+      b.addEventListener('click', () => { s.spell = sp.id; saveSettings(s); this.renderSelect(); });
+      row.appendChild(b);
+    }
     const [mine, theirs] = this.previewTeams();
     const tile = (id: string, team: 0 | 1) => { const d = document.createElement('div'); d.className = `tp-tile t${team}`; d.appendChild(cardThumbnail(heroDef(id), 40, 46, team)); d.title = cardName(heroDef(id)); return d; };
     const tp = $('teamsPreview'); tp.innerHTML = '';

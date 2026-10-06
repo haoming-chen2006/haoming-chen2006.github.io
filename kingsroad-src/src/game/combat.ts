@@ -291,7 +291,12 @@ function heroKilled(w: World, target: Unit, killer: Unit | undefined, killerSeat
       if (!w.announced.firstBlood) { w.announced.firstBlood = true; w.emit({ type: 'firstBlood', team, pos: target.pos, text: '@streak.firstBlood', big: true, killer: killerSeat.name }); }
       const multi = multiKill(w, killerSeat);
       if (multi) w.emit({ type: 'streak', team, pos: target.pos, text: multi, big: true, killer: killerSeat.name });
-      else if (killerSeat.streak >= 3) w.emit({ type: 'streak', team, pos: target.pos, text: killerSeat.streak >= 7 ? '@streak.legendary' : killerSeat.streak >= 5 ? '@streak.unstoppable' : '@streak.killingSpree', big: killerSeat.streak >= 5, killer: killerSeat.name });
+      else if (killerSeat.streak >= 3) {
+        // 王者荣耀 ladder: 大杀特杀 / 无人能挡 / 横扫千军 / 天下无双 / 主宰比赛 / 超神
+        const st = killerSeat.streak;
+        const key = st >= 8 ? '@streak.legendary' : st === 7 ? '@streak.dominating' : st === 6 ? '@streak.peerless' : st === 5 ? '@streak.rampage' : st === 4 ? '@streak.unstoppable' : '@streak.killingSpree';
+        w.emit({ type: 'streak', team, pos: target.pos, text: key, big: st >= 5, killer: killerSeat.name });
+      }
     } else {
       // killed by a tower or minion: gold goes to nearby allies; a tower that kills a hero is crowned
       for (const s of assisters) giveGold(w, s, bounty * 0.5);
@@ -299,7 +304,7 @@ function heroKilled(w: World, target: Unit, killer: Unit | undefined, killerSeat
       if (w.twists) for (const t of w.towers(team)) if (dist(t.pos, target.pos) - target.radius <= t.range + 0.5 && t.active) { t.crownT = 30; w.addEffect({ type: 'crown', pos: { ...t.pos }, dur: 1.2, radius: 1.4, color: '#ffd700', team }); }
     }
     for (const s of assisters) { s.assists += 1; s.stats.assists += 1; giveGold(w, s, ASSIST_GOLD); giveXp(w, s, HERO_KILL_XP * 0.5); }
-    w.emit({ type: 'kill', team, pos: target.pos, killer: killerSeat?.name ?? (killer?.def.name ?? '@unit.tower'), victim: seat?.name ?? target.def.name, killerTeam: team, hero: true });
+    w.emit({ type: 'kill', team, pos: target.pos, killer: killerSeat?.name ?? (killer ? `@unit.${killer.def.name}` : '@unit.tower'), victim: seat?.name ?? `@unit.${target.def.name}`, killerTeam: team, hero: true });
     // ace?
     if ([...w.heroes(victimTeam)].length === 0 && w.players[victimTeam].seats.every((s) => s.heroId < 0)) w.emit({ type: 'ace', team, pos: target.pos, text: '@streak.ace', big: true });
   }

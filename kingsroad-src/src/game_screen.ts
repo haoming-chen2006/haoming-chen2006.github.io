@@ -1,4 +1,5 @@
 import { music } from './audio/music.ts';
+import { announcer } from './audio/announcer.ts';
 import { sfx } from './audio/sfx.ts';
 import { Input } from './engine/input.ts';
 import { norm, type Vec } from './engine/math.ts';
@@ -326,6 +327,7 @@ export class GameScreen {
         }
         case 'towerDestroyed': {
           rig.addShake(ev.big ? 1.0 : 0.5);
+          if (ev.text !== 'crystal') announcer.say(ev.team === me ? 'tower_mine' : 'tower_foe');
           music.stinger('crown');
           const tier = t(`tier.${ev.text ?? 'outer'}`);
           this.hud.feed(ev.text === 'crystal' ? t('feed.crystal', { team: teamName(ev.team === me ? foe : me) }) : t('feed.tower', { team: teamName(ev.team === me ? foe : me), tier }), ev.team === foe ? '#ffd166' : '#ff6b6b');
@@ -339,9 +341,9 @@ export class GameScreen {
         }
         case 'heroDeath': if (ev.team === me) { rig.addShake(0.6); this.flashT = 0.6; music.stinger('heroDeath'); } break;
         case 'respawn': if (ev.seat && !ev.seat.isBot && ev.team === me) { this.hud.banner(cardName(this.hero()?.def ?? { name: '' } as never), ''); } break;
-        case 'firstBlood': case 'ace': this.hud.streak(ev.text ?? '', ev.team === me ? '#ffd166' : '#ff6b6b'); rig.addShake(0.3); break;
-        case 'streak': if (ev.team === me) { this.hud.streak(ev.text ?? '', '#ff9f5a'); rig.addShake(ev.big ? 0.4 : 0.2); } else this.hud.feed(`${escapeHtml(tSim(ev.killer ?? ''))}: ${tSim(ev.text ?? '')}`, '#ff6b6b'); break;
-        case 'objective': if (ev.big) { this.hud.banner(ev.text ?? '', '', ev.team === me ? '' : '#ff6b6b'); music.stinger('kingAwake'); this.hud.feed(t('feed.objective', { team: teamName(ev.team), obj: tSim(ev.text ?? '') }), ev.team === me ? '#ffd166' : '#ff6b6b'); } else this.hud.toast(ev.text ?? '', 'info'); break;
+        case 'firstBlood': case 'ace': this.hud.streak(ev.text ?? '', ev.team === me ? '#ffd166' : '#ff6b6b'); rig.addShake(0.3); announcer.say(ev.text ?? ''); break;
+        case 'streak': announcer.say(ev.text ?? ''); if (ev.team === me) { this.hud.streak(ev.text ?? '', '#ff9f5a'); rig.addShake(ev.big ? 0.4 : 0.2); } else this.hud.feed(`${escapeHtml(tSim(ev.killer ?? ''))}: ${tSim(ev.text ?? '')}`, '#ff6b6b'); break;
+        case 'objective': announcer.say(ev.text ?? ''); if (ev.big) { this.hud.banner(ev.text ?? '', '', ev.team === me ? '' : '#ff6b6b'); music.stinger('kingAwake'); this.hud.feed(t('feed.objective', { team: teamName(ev.team), obj: tSim(ev.text ?? '') }), ev.team === me ? '#ffd166' : '#ff6b6b'); } else this.hud.toast(ev.text ?? '', 'info'); break;
         case 'buff': if (ev.team === me) this.hud.toast(ev.text ?? '', 'good'); break;
         case 'crown': if (ev.hero && ev.team === me) { this.hud.toast('@toast.crowned', 'good'); rig.kickFov(6); } break;
         case 'invalid': if (ev.team === me && ev.text) this.hud.toast(tSim(ev.text)); break;
@@ -358,6 +360,7 @@ export class GameScreen {
           this.menuOpen = false; this.shopOpen = false;
           this.hud.setPaused(false);
           music.stinger(winner === me ? 'victory' : winner === foe ? 'defeat' : 'crown');
+          announcer.say(winner === me ? 'victory' : 'defeat');
           sfx.play(winner === me ? 'victory' : winner === foe ? 'defeat' : 'fanfare');
           this.hud.banner(winner === me ? t('results.victory') : winner === foe ? t('results.defeat') : t('results.draw'), tSim(ev.text ?? ''), winner === foe ? '#ff6b6b' : '');
           this.input.releaseLock();

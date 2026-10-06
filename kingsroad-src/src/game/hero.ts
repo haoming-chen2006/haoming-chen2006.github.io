@@ -1,7 +1,8 @@
 import { angleDiff, angleOf, dist, fromAngle, norm, sub, type Vec } from '../engine/math.ts';
-import { skillReady, startDash, useSkill } from './abilities.ts';
+import { skillReady, useSkill } from './abilities.ts';
 import { attackDamage, damage, fireProjectile, meleeHit } from './combat.ts';
 import { onAttackFire } from './passives.ts';
+import { SPELLS, castSpell, isSpell } from './spells.ts';
 import { POSSESS, RECALL_TIME } from './constants.ts';
 import { ITEMS, isBoots } from './items.ts';
 import { inFountain, inWall, spawnPoint } from './map.ts';
@@ -143,21 +144,15 @@ export function updateHero(w: World, u: Unit, cmd: HeroCommand, dt: number): voi
     u.moveT += dt;
   } else u.moveT = 0;
   u.facing = angleOf(aimDir);
-  if (cmd.dash && u.dashCd <= 0) {
-    startDash(w, u, moving ? cmd.move : aimDir, POSSESS.dashDist, 0, { kind: 'dash' });
-    u.dashCd = POSSESS.dashCooldown;
-    w.emit({ type: 'dash', pos: u.pos, team: u.team, hero: u.possessed });
-    return;
-  }
-  if (cmd.flash && u.flashCd <= 0) {
-    let to = { x: u.pos.x + aimDir.x * POSSESS.flashDist, y: u.pos.y + aimDir.y * POSSESS.flashDist };
-    if (moving) to = { x: u.pos.x + cmd.move.x * POSSESS.flashDist, y: u.pos.y + cmd.move.y * POSSESS.flashDist };
-    to = clampArena(to, u.radius);
-    if (inWall(to, u.radius)) to = resolveGround(to, u.radius);
-    w.addEffect({ type: 'blink', pos: { ...u.pos }, to: { ...to }, dur: 0.35, radius: u.radius, color: '#ffe27a' });
-    u.pos = to; u.flashCd = POSSESS.flashCooldown;
-    w.emit({ type: 'flash', pos: u.pos, team: u.team, hero: u.possessed });
-    return;
+  // 召唤师技能 on the F / Space keys (both map to the seat's one spell)
+  if ((cmd.flash || cmd.dash) && u.flashCd <= 0) {
+    const seat = w.seatOf(u);
+    const spell = seat && isSpell(seat.spell) ? seat.spell : 'flash';
+    if (castSpell(w, u, spell, aimDir, moving ? cmd.move : null)) {
+      u.flashCd = SPELLS[spell].cooldown;
+      w.emit({ type: 'ability', pos: u.pos, team: u.team, text: SPELLS[spell].name, hero: u.isHero });
+      return;
+    }
   }
   const skill = cmd.skill >= 0 ? cmd.skill : cmd.ability ? 0 : -1;
   if (skill >= 0) {

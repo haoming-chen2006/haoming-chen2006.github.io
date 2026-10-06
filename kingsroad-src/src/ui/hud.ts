@@ -1,5 +1,6 @@
 import { skillDamage } from '../game/abilities.ts';
 import { CATEGORY_ORDER, ITEMS, ITEM_LIST, isBoots, itemDef } from '../game/items.ts';
+import { SPELLS, isSpell } from '../game/spells.ts';
 import type { Seat, Team, Unit } from '../game/types.ts';
 import { World } from '../game/world.ts';
 import { cardName, itemName, skillDesc, skillName, t, tCard, tSim } from '../i18n.ts';
@@ -50,8 +51,8 @@ export class Hud {
       const el = document.createElement('div'); el.className = 'skill'; el.innerHTML = `<div class="sk-icon"></div><div class="sk-cd"></div><div class="sk-key">${keys[i]}</div><div class="sk-rank"></div><div class="sk-name"></div>`;
       skills.appendChild(el); this.skillEls.push(el);
     }
-    for (const [key, cls, label] of [['Space', 'dash', '⇢'], ['F', 'flash', '✦'], ['B', 'recall', '⌂']]) {
-      const el = document.createElement('div'); el.className = `skill util ${cls}`; el.innerHTML = `<div class="sk-icon">${label}</div><div class="sk-cd"></div><div class="sk-key">${key}</div>`;
+    for (const [key, cls, label] of [['F', 'spell', '⚡'], ['B', 'recall', '⌂']]) {
+      const el = document.createElement('div'); el.className = `skill util ${cls}`; el.innerHTML = `<div class="sk-icon">${label}</div><div class="sk-cd"></div><div class="sk-key">${key}</div><div class="sk-name"></div>`;
       skills.appendChild(el); this.skillEls.push(el);
     }
     const items = $('items'); items.innerHTML = ''; this.itemEls = [];
@@ -104,13 +105,17 @@ export class Hud {
         (el.querySelector('.sk-icon') as HTMLElement).style.background = `radial-gradient(circle at 35% 35%, ${a.color ?? '#fff'}, #111 85%)`;
         el.title = `${skillName(a)} · ${skillDesc(a)} · ${t('select.cooldown', { s: a.cooldown })} · ${t('select.mana', { m: a.mana })} · ${Math.round(skillDamage(w, h, a, Math.max(1, rank)))} dmg`;
       }
-      const util = [[h.dashCd, 6], [h.flashCd, 60], [h.recallT > 0 ? h.recallT : 0, 3.2]];
-      for (let i = 0; i < 3; i++) {
+      const spell = SPELLS[isSpell(seat.spell) ? seat.spell : 'flash'];
+      const util = [[h.flashCd, spell.cooldown], [h.recallT > 0 ? h.recallT : 0, 3.2]];
+      for (let i = 0; i < 2; i++) {
         const el = this.skillEls[3 + i]; const [cd, max] = util[i];
         el.classList.toggle('ready', cd <= 0);
         const cdEl = el.querySelector('.sk-cd') as HTMLElement; cdEl.style.setProperty('--p', String(cd > 0 ? Math.min(1, cd / max) : 0)); cdEl.textContent = cd > 0.05 ? (cd >= 10 ? String(Math.ceil(cd)) : cd.toFixed(1)) : '';
       }
-      this.skillEls[5].classList.toggle('active', h.recallT > 0);
+      const spellEl = this.skillEls[3];
+      const icon = spellEl.querySelector('.sk-icon') as HTMLElement;
+      if (icon.textContent !== spell.icon) { icon.textContent = spell.icon; icon.style.background = `radial-gradient(circle at 35% 35%, ${spell.color}, #111 85%)`; (spellEl.querySelector('.sk-name') as HTMLElement).textContent = tCard(`spell.${spell.id}`, spell.name); spellEl.title = `${tCard(`spell.${spell.id}`, spell.name)} · ${tCard(`spelldesc.${spell.id}`, spell.desc)} · ${t('select.cooldown', { s: spell.cooldown })}`; }
+      this.skillEls[4].classList.toggle('active', h.recallT > 0);
       // items
       for (let i = 0; i < 6; i++) {
         const el = this.itemEls[i], id = seat.items[i];

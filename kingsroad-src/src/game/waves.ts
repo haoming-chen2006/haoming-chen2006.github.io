@@ -17,7 +17,10 @@ export function updateSpawns(w: World, dt: number): void {
         const path = lanePath(lane, team);
         const start = path[0];
         // late game escalates so matches close: siege engines every wave from 18 min, super minions from 21 min
-        const list = ['melee', 'melee', 'melee', 'ranged', 'ranged', 'ranged', ...(siege || w.time >= 1080 ? ['siege'] : []), ...(w.time >= 1260 ? ['super'] : [])];
+        // 高地塔 down on this lane → the attacking side's wave gains a 超级兵 every wave (王者荣耀 rule)
+        const foeBase = w.towers((team === 0 ? 1 : 0) as Team).find((t) => t.lane === (2 - lane) && t.tier === 'base');
+        const highGround = !foeBase || foeBase.dead;
+        const list = ['melee', 'melee', 'melee', 'ranged', 'ranged', 'ranged', ...(siege || w.time >= 1080 ? ['siege'] : []), ...(highGround || w.time >= 1260 ? ['super'] : [])];
         list.forEach((id, i) => {
           const jitter = { x: start.x + (w.rng.next() - 0.5) * 1.2 - (i * 0.25) * (team === 0 ? 1 : -1), y: start.y + (w.rng.next() - 0.5) * 1.2 };
           const def = MINIONS[id];

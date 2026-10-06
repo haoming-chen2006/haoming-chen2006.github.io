@@ -467,3 +467,6 @@ body.in-game #viewport { right: var(--panel-w); }
 .title .title-zh { font-size: 1.05em; letter-spacing: 0.22em; padding-left: 0.22em; }
 .title .title-sub { font-size: 0.26em; letter-spacing: 0.3em; margin-top: 10px; color: #f0c45a; -webkit-text-fill-color: #f0c45a; opacity: 0.9; font-weight: 800; }
 .title.small .title-sub { font-size: 0.3em; margin-top: 4px; }
+
+.hd-skill-icon { position: relative; border-radius: 50%; border: 2px solid rgba(240,196,90,0.55); box-shadow: 0 2px 8px rgba(0,0,0,0.5); }
+.hd-skill-n { position: absolute; right: -4px; bottom: -4px; background: #0b0d12; border: 1px solid var(--gold); color: #fff; font-size: 10px; font-weight: 900; border-radius: 999px; width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; }

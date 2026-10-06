@@ -1,6 +1,7 @@
 import { skillDamage } from '../game/abilities.ts';
 import { CATEGORY_ORDER, ITEMS, ITEM_LIST, isBoots, itemDef } from '../game/items.ts';
 import { SPELLS, isSpell } from '../game/spells.ts';
+import { skillIcon, skillIconFor } from './skill_icons.ts';
 import type { Award, Seat, Team, Unit } from '../game/types.ts';
 import { World } from '../game/world.ts';
 import { cardName, itemName, skillDesc, skillName, t, tCard, tSim } from '../i18n.ts';
@@ -102,7 +103,7 @@ export class Hud {
         cdEl.textContent = cd > 0.05 ? (cd >= 10 ? String(Math.ceil(cd)) : cd.toFixed(1)) : '';
         (el.querySelector('.sk-rank') as HTMLElement).innerHTML = '<i></i>'.repeat(rank);
         (el.querySelector('.sk-name') as HTMLElement).textContent = skillName(a);
-        (el.querySelector('.sk-icon') as HTMLElement).style.background = `radial-gradient(circle at 35% 35%, ${a.color ?? '#fff'}, #111 85%)`;
+        const iconEl = el.querySelector('.sk-icon') as HTMLElement; const want = `url(${skillIcon(a)})`; if (iconEl.dataset.icon !== a.name) { iconEl.dataset.icon = a.name; iconEl.style.background = `${want} center / cover`; void skillIconFor(h.def.id, (i + 1) as 1 | 2 | 3, a).then((u) => { if (u && iconEl.dataset.icon === a.name) iconEl.style.background = `url(${u}) center / cover`; }); }
         el.title = `${skillName(a)} · ${skillDesc(a)} · ${t('select.cooldown', { s: a.cooldown })} · ${t('select.mana', { m: a.mana })} · ${Math.round(skillDamage(w, h, a, Math.max(1, rank)))} dmg`;
       }
       const spell = SPELLS[isSpell(seat.spell) ? seat.spell : 'flash'];

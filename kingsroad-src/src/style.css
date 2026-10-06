@@ -216,6 +216,10 @@ body.in-game #viewport { right: var(--panel-w); }
 .select-mode { color: var(--gold); font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; font-size: 13px; }
 .select-body { flex: 1; display: grid; grid-template-columns: 1fr 360px; gap: 18px; min-height: 0; }
 .hero-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; align-content: start; overflow: auto; padding-right: 4px; }
+.role-tabs { grid-column: 1 / -1; display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 2px; }
+.role-tab { background: #0b1119; border: 1px solid #253141; color: var(--muted); border-radius: 999px; padding: 4px 12px; font-weight: 800; font-size: 12px; cursor: pointer; }
+.role-tab.active { color: #1a1206; background: var(--gold-grad); border-color: var(--gold); }
+.hd-port canvas { width: 150px; height: auto; border-radius: 12px; border: 2px solid var(--line-gold); box-shadow: 0 0 0 1px rgba(0,0,0,0.6), 0 10px 30px rgba(0,0,0,0.5); }
 .hero-tile { position: relative; background: #0b1119; border: 2px solid #253141; border-radius: 12px; padding: 0; overflow: hidden; cursor: pointer; transition: transform .12s, border-color .15s, box-shadow .15s; aspect-ratio: 110/150; }
 .hero-tile canvas { width: 100%; height: auto; display: block; }
 .hero-tile .ht-cap { position: absolute; left: 0; right: 0; bottom: 0; padding: 6px 6px 5px; background: linear-gradient(180deg, transparent, rgba(0,0,0,0.85)); text-align: left; display: flex; flex-direction: column; }
@@ -225,7 +229,7 @@ body.in-game #viewport { right: var(--panel-w); }
 .hero-tile.selected { border-color: var(--gold); box-shadow: 0 0 0 2px rgba(240,196,90,0.3), 0 10px 30px rgba(240,196,90,0.25); }
 .hero-detail { background: rgba(8,12,18,0.6); border: 1px solid #253141; border-radius: 16px; padding: 16px; overflow: auto; text-align: left; font-size: 13px; }
 .hd-head { display: flex; gap: 14px; align-items: center; }
-.hd-port canvas { width: 86px; height: auto; border-radius: 10px; border: 1px solid #3c4f66; }
+
 .hd-head h3 { margin: 0; font-family: var(--font-display); font-size: 24px; color: var(--gold); }
 .hd-title { color: var(--muted); font-weight: 700; }
 .role { font-weight: 900; letter-spacing: 0.06em; text-transform: uppercase; font-size: 11px; }

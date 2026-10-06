@@ -3,7 +3,7 @@ import { HEROES, heroDef, pickTeam } from '../game/heroes.ts';
 import { SPELL_LIST, isSpell } from '../game/spells.ts';
 import { ITEMS } from '../game/items.ts';
 import { MODE_SIZE, type MatchMode } from '../game/sim.ts';
-import type { UnitDef } from '../game/types.ts';
+import type { Role, UnitDef } from '../game/types.ts';
 import { Rng } from '../engine/rng.ts';
 import { cardName, heroTitle, itemName, lang, onLanguageChange, roleName, setLanguage, skillDesc, skillName, t, tCard, type Lang } from '../i18n.ts';
 import { cardThumbnail } from '../render3d/thumbnails.ts';
@@ -168,9 +168,20 @@ export class Menus {
     return [mine, theirs];
   }
 
+  private roleFilter: Role | 'all' = 'all';
+
   private renderGrid(grid: HTMLElement, detail: HTMLElement, selected: string, onPick: (id: string) => void): void {
     grid.innerHTML = '';
+    // 定位 tabs like the hero gallery: 全部 / 坦克 / 战士 / 刺客 / 法师 / 射手 / 辅助
+    const tabs = document.createElement('div'); tabs.className = 'role-tabs';
+    for (const r of ['all', 'tank', 'warrior', 'assassin', 'mage', 'marksman', 'support'] as const) {
+      const b = document.createElement('button'); b.className = `role-tab ${r === this.roleFilter ? 'active' : ''} ${r}`; b.textContent = r === 'all' ? t('select.allRoles') : roleName(r);
+      b.addEventListener('click', () => { this.roleFilter = r; this.renderGrid(grid, detail, selected, onPick); });
+      tabs.appendChild(b);
+    }
+    grid.appendChild(tabs);
     for (const def of HEROES) {
+      if (this.roleFilter !== 'all' && def.role !== this.roleFilter) continue;
       const el = document.createElement('button');
       el.className = `hero-tile ${def.role} ${def.id === selected ? 'selected' : ''}`;
       el.appendChild(cardThumbnail(def, 110, 130));
@@ -181,7 +192,7 @@ export class Menus {
     }
     const def = heroDef(selected);
     detail.innerHTML = heroDetailHtml(def);
-    (detail.querySelector('.hd-port') as HTMLElement).appendChild(cardThumbnail(def, 120, 140));
+    (detail.querySelector('.hd-port') as HTMLElement).appendChild(cardThumbnail(def, 220, 300));
   }
 
   private renderSelect(): void {

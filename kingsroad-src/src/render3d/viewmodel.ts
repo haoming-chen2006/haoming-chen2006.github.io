@@ -40,10 +40,10 @@ function buildArm(st: ArmStyle, mats: UnitMat[], len = 0.36): Arm {
     pivot.add(mesh(sphereGeo(0.028 * k, 8), skinM, 0, 0, len * 0.02));
   } else {
     // upper sleeve, elbow pad, forearm, cuff
-    pivot.add(mesh(rboxGeo(0.082 * k, 0.082 * k, len * 0.5, 0.025 * k), sleeveM, 0, 0, len * 0.25));
-    if (st.plate) pivot.add(mesh(sphereGeo(0.052 * k, 10), metalM, 0, 0.01 * k, len * 0.02));
-    pivot.add(mesh(rboxGeo(0.07 * k, 0.07 * k, len * 0.36, 0.02 * k), st.plate ? metalM : sleeveM, 0, 0, len * 0.66));
-    const cuff = mesh(cylGeo(0.05 * k, 0.056 * k, 0.05 * k, 10), teamM, 0, 0, len * 0.5); cuff.rotation.x = Math.PI / 2; pivot.add(cuff);
+    const upper = mesh(new THREE.CapsuleGeometry(0.042 * k, len * 0.42, 4, 12), sleeveM, 0, 0, len * 0.25); upper.rotation.x = Math.PI / 2; pivot.add(upper);
+    if (st.plate) pivot.add(mesh(sphereGeo(0.052 * k, 14), metalM, 0, 0.01 * k, len * 0.02));
+    const fore = mesh(new THREE.CapsuleGeometry(0.036 * k, len * 0.3, 4, 12), st.plate ? metalM : sleeveM, 0, 0, len * 0.66); fore.rotation.x = Math.PI / 2; pivot.add(fore);
+    const cuff = mesh(cylGeo(0.05 * k, 0.056 * k, 0.05 * k, 16), teamM, 0, 0, len * 0.5); cuff.rotation.x = Math.PI / 2; pivot.add(cuff);
   }
   const hand = new THREE.Group();
   hand.position.z = len;
@@ -53,14 +53,14 @@ function buildArm(st: ArmStyle, mats: UnitMat[], len = 0.36): Arm {
     for (let i = -1; i <= 1; i++) { const f = mesh(cylGeo(0.008 * k, 0.01 * k, 0.06 * k, 5), skinM, i * 0.018 * k, -0.01 * k, 0.07 * k); f.rotation.x = Math.PI / 2 - 0.5; hand.add(f); }
     const th = mesh(cylGeo(0.009 * k, 0.011 * k, 0.045 * k, 5), skinM, 0.035 * k, 0.005 * k, 0.035 * k); th.rotation.z = -1.2; th.rotation.x = 1.0; hand.add(th);
   } else {
-    const palm = mesh(rboxGeo(0.078 * k, 0.048 * k, 0.085 * k, 0.014 * k), gloveM, 0, 0, 0.02 * k); hand.add(palm);
+    const palm = mesh(sphereGeo(0.045 * k, 14), gloveM, 0, 0, 0.02 * k); palm.scale.set(1, 0.6, 1.1); hand.add(palm);
     for (let i = -1; i <= 1; i++) {
-      const f = mesh(rboxGeo(0.02 * k, 0.02 * k, 0.062 * k, 0.007 * k), gloveM, i * 0.024 * k, -0.012 * k, 0.075 * k);
-      f.rotation.x = -0.75; hand.add(f);
+      const f = mesh(new THREE.CapsuleGeometry(0.0095 * k, 0.05 * k, 4, 8), gloveM, i * 0.022 * k, -0.012 * k, 0.07 * k);
+      f.rotation.x = Math.PI / 2 - 0.75; hand.add(f);
     }
-    const th = mesh(rboxGeo(0.02 * k, 0.02 * k, 0.05 * k, 0.007 * k), gloveM, 0.045 * k, 0.004 * k, 0.03 * k);
-    th.rotation.z = -1.1; th.rotation.x = 0.9; hand.add(th);
-    if (st.plate) hand.add(mesh(rboxGeo(0.084 * k, 0.03 * k, 0.07 * k, 0.01 * k), metalM, 0, 0.026 * k, 0.015 * k));
+    const th = mesh(new THREE.CapsuleGeometry(0.0095 * k, 0.04 * k, 4, 8), gloveM, 0.042 * k, 0.004 * k, 0.03 * k);
+    th.rotation.z = -1.1; th.rotation.x = 0.9 + Math.PI / 2; hand.add(th);
+    if (st.plate) { const guard = mesh(sphereGeo(0.046 * k, 12), metalM, 0, 0.022 * k, 0.012 * k); guard.scale.set(1, 0.35, 1); hand.add(guard); }
   }
   if (st.shadow) for (let i = 0; i < 4; i++) { const w = mesh(sphereGeo(0.012 * k + i * 0.004, 6), toon(0x6b3fb0, { emissive: 0x9b5cff, emissiveIntensity: 0.8, transparent: true, opacity: 0.6 }), (i - 1.5) * 0.02 * k, 0.03 * k, len * 0.25 + i * 0.06); pivot.add(w); }
   return { pivot, hand, base: new THREE.Quaternion(), rest: new THREE.Vector3(), len };

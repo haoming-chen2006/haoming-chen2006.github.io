@@ -148,26 +148,36 @@ export class Arena3D {
     }
 
     // jungle walls: layered cliff rock with mossy tops, blossom trees and bamboo growing from them
-    const rockM = pbrMaterial('mossy_rock', { repeat: 2, repeatY: 1 });
+    const rockM = pbrMaterial('mossy_rock', { repeat: 1.2, repeatY: 0.8, color: 0xd8dcd0 });
     const mossM = pbrMaterial('leafy_grass', { repeat: 1.5, color: 0x9fd08a });
-    const capM = pbrMaterial('rock_face', { repeat: 2, repeatY: 1, color: 0xb8c4a8 });
+    const capM = pbrMaterial('leafy_grass', { repeat: 1.5, color: 0xb9dc9a });
     const blossomM = [new THREE.MeshStandardMaterial({ color: 0xffb7d5, roughness: 0.85 }), new THREE.MeshStandardMaterial({ color: 0xff9ec6, roughness: 0.85 }), new THREE.MeshStandardMaterial({ color: 0xffd1e3, roughness: 0.85 })];
     const bambooM = pbrMaterial('bamboo_wall', { repeat: 1, repeatY: 3, color: 0xb9e0a0 });
     const bambooLeafM = new THREE.MeshStandardMaterial({ color: 0x5fa842, roughness: 0.9, side: THREE.DoubleSide });
     const trunkM0 = pbrMaterial('sakura_bark', { repeat: 1, repeatY: 2 });
     WALLS.forEach((b, i) => {
       const h = 1.9 + hash(i, 10) * 0.7;
-      // stacked boulders instead of one box: three slabs with jitter
-      for (let k = 0; k < 3; k++) {
-        const sh = h / 3, y = sh * k;
-        const slab = new THREE.Mesh(new THREE.BoxGeometry(b.w + (k === 1 ? 0.25 : 0) + hash(i, 50 + k) * 0.2, sh + 0.05, b.h + (k === 1 ? 0.25 : 0) + hash(i, 60 + k) * 0.2), rockM);
-        slab.position.set(b.x + b.w / 2 + (hash(i, 70 + k) - 0.5) * 0.15, y + sh / 2, b.y + b.h / 2 + (hash(i, 80 + k) - 0.5) * 0.15);
-        slab.rotation.y = (hash(i, 90 + k) - 0.5) * 0.08;
-        slab.castShadow = true; slab.receiveShadow = true;
-        this.statics.add(slab);
+      // a rounded, noise-displaced rock mass: box footprint, bulging sides, cracked ledges
+      const geo = new THREE.BoxGeometry(b.w + 0.3, h, b.h + 0.3, Math.max(4, Math.round(b.w * 3)), 6, Math.max(4, Math.round(b.h * 3)));
+      const pos = geo.attributes.position as THREE.BufferAttribute;
+      for (let v = 0; v < pos.count; v++) {
+        const x = pos.getX(v), y = pos.getY(v), z = pos.getZ(v);
+        const ty = (y + h / 2) / h; // 0 at the foot, 1 at the top
+        const nx = x / (b.w / 2 + 0.15), nz = z / (b.h / 2 + 0.15);
+        const edge = Math.max(Math.abs(nx), Math.abs(nz));
+        // bulge outward around mid-height, pull in at the top, add banded noise
+        const bulge = (1 - Math.abs(ty - 0.45) * 1.6) * 0.22 + (hash(Math.round(x * 3) + i * 13, Math.round(y * 4), Math.round(z * 3)) - 0.5) * 0.22;
+        const band = Math.sin(y * 4.5 + hash(i, 3) * 6) * 0.06;
+        if (edge > 0.6) { pos.setX(v, x + Math.sign(x) * (Math.abs(nx) > Math.abs(nz) ? bulge + band : 0)); pos.setZ(v, z + Math.sign(z) * (Math.abs(nz) >= Math.abs(nx) ? bulge + band : 0)); }
+        if (ty > 0.9) pos.setY(v, y + (hash(Math.round(x * 5), Math.round(z * 5), i) - 0.5) * 0.35);
       }
-      const cap = new THREE.Mesh(new THREE.BoxGeometry(b.w + 0.3, 0.2, b.h + 0.3), capM);
-      cap.position.set(b.x + b.w / 2, h + 0.05, b.y + b.h / 2); this.statics.add(cap);
+      geo.computeVertexNormals();
+      const mass = new THREE.Mesh(geo, rockM);
+      mass.position.set(b.x + b.w / 2, h / 2, b.y + b.h / 2); mass.castShadow = true; mass.receiveShadow = true;
+      this.statics.add(mass);
+      // grassy top cap following the same footprint
+      const cap = new THREE.Mesh(new THREE.BoxGeometry(b.w + 0.15, 0.16, b.h + 0.15, 2, 1, 2), capM);
+      cap.position.set(b.x + b.w / 2, h + 0.06, b.y + b.h / 2); this.statics.add(cap);
       const n = Math.max(2, Math.round((b.w + b.h) / 1.6));
       for (let k = 0; k < n; k++) {
         const shrub = new THREE.Mesh(new THREE.SphereGeometry(0.45 + hash(i, 20 + k) * 0.35, 14, 10), mossM);

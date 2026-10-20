@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Project 3 — Haoming Chen</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main>
+
+<h1>Project 3</h1>
+
+<h2 class="big">Part A: The Power of Flow Models</h2>
+
+<h2>Part 1.1: Constructing noisy training inputs</h2>
+<figure class="wide"><img src="assets/training_inputs.png" alt="original and noisy inputs at t = 0.25, 0.5, 0.75"><figcaption>original and noisy inputs at t = 0.25, 0.5, 0.75</figcaption></figure>
+
+<h2>Part 1.2: Classical denoising</h2>
+<figure class="wide"><img src="assets/blur_0.25.png" alt="t = 0.25: noisy and Gaussian-denoised"><figcaption>t = 0.25: noisy and Gaussian-denoised</figcaption></figure>
+<figure class="wide"><img src="assets/blur_0.5.png" alt="t = 0.5: noisy and Gaussian-denoised"><figcaption>t = 0.5: noisy and Gaussian-denoised</figcaption></figure>
+<figure class="wide"><img src="assets/blur_0.75.png" alt="t = 0.75: noisy and Gaussian-denoised"><figcaption>t = 0.75: noisy and Gaussian-denoised</figcaption></figure>
+
+<h2>Part 1.3: One-step denoising</h2>
+<figure class="wide"><img src="assets/one_step_0.25.png" alt="t = 0.25: original, noisy, one-step estimate"><figcaption>t = 0.25: original, noisy, one-step estimate</figcaption></figure>
+<figure class="wide"><img src="assets/one_step_0.5.png" alt="t = 0.5: original, noisy, one-step estimate"><figcaption>t = 0.5: original, noisy, one-step estimate</figcaption></figure>
+<figure class="wide"><img src="assets/one_step_0.75.png" alt="t = 0.75: original, noisy, one-step estimate"><figcaption>t = 0.75: original, noisy, one-step estimate</figcaption></figure>
+
+<h2>Part 1.4: Visualizing velocity</h2>
+<figure class="single"><img src="assets/velocity_original.png" alt="original"><figcaption>original</figcaption></figure>
+<figure class="wide"><img src="assets/velocity_0.25.png" alt="t = 0.25: noisy, predicted update, ground-truth update, error"><figcaption>t = 0.25: noisy, predicted update, ground-truth update, error</figcaption></figure>
+<figure class="wide"><img src="assets/velocity_0.50.png" alt="t = 0.50: noisy, predicted update, ground-truth update, error"><figcaption>t = 0.50: noisy, predicted update, ground-truth update, error</figcaption></figure>
+<figure class="wide"><img src="assets/velocity_0.75.png" alt="t = 0.75: noisy, predicted update, ground-truth update, error"><figcaption>t = 0.75: noisy, predicted update, ground-truth update, error</figcaption></figure>
+
+<h2>Part 1.5: Iterative denoising with Euler sampling</h2>
+<figure class="wide"><img src="assets/trajectory.png" alt="Euler trajectory from t = 0.5"><figcaption>Euler trajectory from t = 0.5</figcaption></figure>
+<figure class="wide"><img src="assets/comparison.png" alt="original, blur, one step, Euler"><figcaption>original, blur, one step, Euler</figcaption></figure>
+
+<h2>Part 1.6: Generating images from noise</h2>
+<figure class="wide"><img src="assets/conditional_samples.png" alt="five samples, &quot;a high quality photo&quot;"><figcaption>five samples, "a high quality photo"</figcaption></figure>
+
+<h2>Part 2.1: Classifier-free guidance</h2>
+<figure class="wide"><img src="assets/cfg_samples.png" alt="five CFG samples, w = 7, same noises as 1.6"><figcaption>five CFG samples, w = 7, same noises as 1.6</figcaption></figure>
+
+<h2>Part 3.1: Image-to-image editing</h2>
+<h3>Campanile</h3>
+<figure class="wide"><img src="assets/edit_campanile.png" alt="Campanile edits"><figcaption>original, then t_start = 0.02, 0.04, 0.06, 0.10, 0.14, 0.25, 0.50</figcaption></figure>
+<h3>Dog</h3>
+<figure class="wide"><img src="assets/edit_my_image_1.png" alt="dog edits"><figcaption>original, then t_start = 0.02, 0.04, 0.06, 0.10, 0.14, 0.25, 0.50</figcaption></figure>
+<h3>Cat</h3>
+<figure class="wide"><img src="assets/edit_my_image_2.png" alt="cat edits"><figcaption>original, then t_start = 0.02, 0.04, 0.06, 0.10, 0.14, 0.25, 0.50</figcaption></figure>
+<h3>Web image</h3>
+<figure class="wide"><img src="assets/edit_web_image.png" alt="web image edits"><figcaption>original, then t_start = 0.02, 0.04, 0.06, 0.10, 0.14, 0.25, 0.50</figcaption></figure>
+<h3>Drawing 1</h3>
+<figure class="wide"><img src="assets/edit_drawing_1.png" alt="drawing 1 edits"><figcaption>original, then t_start = 0.02, 0.04, 0.06, 0.10, 0.14, 0.25, 0.50</figcaption></figure>
+<h3>Drawing 2</h3>
+<figure class="wide"><img src="assets/edit_drawing_2.png" alt="drawing 2 edits"><figcaption>original, then t_start = 0.02, 0.04, 0.06, 0.10, 0.14, 0.25, 0.50</figcaption></figure>
+
+<h2>Part 3.2: Text-guided image editing</h2>
+<h3>Campanile: "a photograph of a gigantic hot dog in a bun"</h3>
+<figure class="wide"><img src="assets/text_edit_campanile.png" alt="Campanile text edits"><figcaption>original, then t_start = 0.02, 0.04, 0.06, 0.10, 0.14, 0.25, 0.50</figcaption></figure>
+<h3>Dog: "chasing a cat"</h3>
+<figure class="wide"><img src="assets/text_edit_my_image_1.png" alt="dog text edits"><figcaption>original, then t_start = 0.02, 0.04, 0.06, 0.10, 0.14, 0.25, 0.50</figcaption></figure>
+<h3>Cat: "chasing a dog"</h3>
+<figure class="wide"><img src="assets/text_edit_my_image_2.png" alt="cat text edits"><figcaption>original, then t_start = 0.02, 0.04, 0.06, 0.10, 0.14, 0.25, 0.50</figcaption></figure>
+
+<h2>Part 3.3: Visual anagrams</h2>
+<h3>Old man / campfire</h3>
+<figure class="wide"><img src="assets/anagram_views_0.png" alt="upright: an oil painting of an old man; rotated: an oil painting of people around a campfire"><figcaption>upright: "an oil painting of an old man" &middot; rotated: "an oil painting of people around a campfire"</figcaption></figure>
+<h3>Snowy village / horse</h3>
+<figure class="wide"><img src="assets/anagram_views_1.png" alt="upright: a lithograph of a snowy mountain village; rotated: a lithograph of a horse"><figcaption>upright: "a lithograph of a snowy mountain village" &middot; rotated: "a lithograph of a horse"</figcaption></figure>
+
+<h2>Part 3.4: Hybrid images</h2>
+<h3>Skull / waterfall</h3>
+<div class="pair">
+  <figure><img src="assets/hybrid_0.png" alt="hybrid, full size"><figcaption>full size, close: "a lithograph of a waterfall"</figcaption></figure>
+  <figure><img class="tiny" src="assets/hybrid_0.png" alt="hybrid, reduced"><figcaption>reduced, distant: "a lithograph of a skull"</figcaption></figure>
+</div>
+<h3>Cat / forest</h3>
+<div class="pair">
+  <figure><img src="assets/hybrid_1.png" alt="hybrid, full size"><figcaption>full size, close: "a lithograph of a forest"</figcaption></figure>
+  <figure><img class="tiny" src="assets/hybrid_1.png" alt="hybrid, reduced"><figcaption>reduced, distant: "a lithograph of a cat"</figcaption></figure>
+</div>
+
+<h2 class="big">Part B: Flow Matching from Scratch</h2>
+
+<h2>Part 1.2: Noising process</h2>
+<figure class="wide"><img src="assets/noising.png" alt="sigma = 0.0, 0.2, 0.4, 0.5, 0.6, 0.8, 1.0"><figcaption>sigma = 0.0, 0.2, 0.4, 0.5, 0.6, 0.8, 1.0</figcaption></figure>
+
+<h2>Part 1.2.1: Training the denoiser</h2>
+<figure class="wide"><img src="assets/denoiser_loss.png" alt="training loss, sigma = 0.5"><figcaption>training loss, sigma = 0.5</figcaption></figure>
+<figure class="wide"><img src="assets/denoise_epoch1.png" alt="test set after epoch 1"><figcaption>test set after epoch 1: clean / noisy / denoised</figcaption></figure>
+<figure class="wide"><img src="assets/denoise_epoch5.png" alt="test set after epoch 5"><figcaption>test set after epoch 5: clean / noisy / denoised</figcaption></figure>
+
+<h2>Part 1.2.2: Out-of-distribution testing</h2>
+<figure class="wide"><img src="assets/ood.png" alt="out-of-distribution noise levels"><figcaption>sigma = 0.0 to 1.0; rows alternate noisy and denoised</figcaption></figure>
+
+<h2>Part 1.2.3: Denoising pure noise</h2>
+<figure class="wide"><img src="assets/pure_noise_loss.png" alt="training loss, pure noise input"><figcaption>training loss, pure noise input</figcaption></figure>
+<figure class="wide"><img src="assets/pure_noise_epoch1.png" alt="outputs after epoch 1"><figcaption>outputs after epoch 1</figcaption></figure>
+<figure class="wide"><img src="assets/pure_noise_epoch5.png" alt="outputs after epoch 5"><figcaption>outputs after epoch 5</figcaption></figure>
+<figure class="small"><img src="assets/train_mean.png" alt="mean of all training images"><figcaption>mean of all training images</figcaption></figure>
+<p>Every output looks the same: a blurry blob shaped like an overlap of all ten digits, mostly a 0 or 8 with a bright center stroke. Different noise inputs give almost identical outputs (std across samples about 0.006). The input is pure noise, so it carries no information about which digit to produce. Under an MSE loss the best the network can do is predict the expected clean image, which is the mean of the training set. The outputs match that mean almost exactly (MSE about 1e-4 against the mean image above).</p>
+
+<h2>Part 2.2: Training the time-conditioned UNet</h2>
+<figure class="wide"><img src="assets/time_fm_loss.png" alt="training loss, time-conditioned UNet"><figcaption>training loss, time-conditioned UNet</figcaption></figure>
+
+<h2>Part 2.3: Sampling from the time-conditioned UNet</h2>
+<figure class="wide"><img src="assets/time_samples_epoch1.png" alt="epoch 1"><figcaption>epoch 1</figcaption></figure>
+<figure class="wide"><img src="assets/time_samples_epoch5.png" alt="epoch 5"><figcaption>epoch 5</figcaption></figure>
+<figure class="wide"><img src="assets/time_samples_epoch10.png" alt="epoch 10"><figcaption>epoch 10</figcaption></figure>
+
+<h2>Part 2.5: Training the class-conditioned UNet</h2>
+<figure class="wide"><img src="assets/class_fm_loss.png" alt="training loss, class-conditioned UNet"><figcaption>training loss, class-conditioned UNet</figcaption></figure>
+
+<h2>Part 2.6: Sampling from the class-conditioned UNet</h2>
+<figure class="wide"><img src="assets/class_fm_samples_epoch1.png" alt="epoch 1"><figcaption>epoch 1, guidance scale 5</figcaption></figure>
+<figure class="wide"><img src="assets/class_fm_samples_epoch5.png" alt="epoch 5"><figcaption>epoch 5, guidance scale 5</figcaption></figure>
+<figure class="wide"><img src="assets/class_fm_samples_epoch10.png" alt="epoch 10"><figcaption>epoch 10, guidance scale 5</figcaption></figure>
+<h3>Without the learning-rate scheduler</h3>
+<figure class="wide"><img src="assets/class_fm_nosched_loss.png" alt="training loss, constant learning rate"><figcaption>training loss, constant lr = 1e-3</figcaption></figure>
+<figure class="wide"><img src="assets/class_fm_nosched_samples_epoch10.png" alt="epoch 10, no scheduler"><figcaption>epoch 10, no scheduler, constant lr = 1e-3</figcaption></figure>
+<p>To remove the scheduler I trained with a constant learning rate of 1e-3 instead of starting at 1e-2 and decaying. The scheduler mainly guards against the large early steps a 1e-2 rate causes, and 1e-3 is small enough to train stably from the start while still converging within 10 epochs. The samples look as good as the scheduled run, and the final-epoch loss is nearly the same (0.0852 without the scheduler vs. 0.0844 with it).</p>
+
+</main>
+</body>
+</html>

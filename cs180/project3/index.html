@@ -84,7 +84,7 @@
 </div>
 
 <h2 class="big">Part B: Flow Matching from Scratch</h2>
-<p>For Part B, I took the code and trained the actual UNets on compute from the BAIR lab I work with. Instead of Colab, I ran the notebook from the command line on the lab machine, but the results should be mostly the same.</p>
+<p>For Part B, I took the code and trained the actual UNets on compute from the BAIR lab I work with. Instead of Colab, I ran most of the code through Python scripts, but the results should be mostly the same. The submitted code is still the Colab notebook version.</p>
 
 <h2>Part 1.2: Noising process</h2>
 <figure class="wide"><img src="assets/noising.png" alt="sigma = 0.0, 0.2, 0.4, 0.5, 0.6, 0.8, 1.0"><figcaption>sigma = 0.0, 0.2, 0.4, 0.5, 0.6, 0.8, 1.0</figcaption></figure>
@@ -122,7 +122,7 @@
 <h3>Without the learning-rate scheduler</h3>
 <figure class="wide"><img src="assets/class_fm_nosched_loss.png" alt="training loss, constant learning rate"><figcaption>training loss, constant lr = 1e-3</figcaption></figure>
 <figure class="wide"><img src="assets/class_fm_nosched_samples_epoch10.png" alt="epoch 10, no scheduler"><figcaption>epoch 10, no scheduler, constant lr = 1e-3</figcaption></figure>
-<p>To remove the scheduler I trained with a constant learning rate of 1e-3 instead of starting at 1e-2 and decaying. The scheduler mainly guards against the large early steps a 1e-2 rate causes, and 1e-3 is small enough to train stably from the start while still converging within 10 epochs. The samples look as good as the scheduled run, and the final-epoch loss is nearly the same (0.0852 without the scheduler vs. 0.0844 with it).</p>
+<p>I removed the scheduler and decreased the learning rate from 1e-2 to 1e-3. My philosophy is that moving in small steps prevents overshooting the loss. If it moves in small steps for enough steps, even if it oscillates, it will still move toward a lower loss, just like the scheduler does. As a result, my loss curve fluctuates more, but it still generally goes lower.</p>
 
 </main>
 </body>

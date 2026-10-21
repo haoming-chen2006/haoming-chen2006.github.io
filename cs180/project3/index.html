@@ -12,6 +12,7 @@
 <h1>Project 3</h1>
 
 <h2 class="big">Part A: The Power of Flow Models</h2>
+<p>Welcome to my project. Below I list all the parts of Part A, with the images and the labels I used for each one.</p>
 
 <h2>Part 1.1: Constructing noisy training inputs</h2>
 <figure class="wide"><img src="assets/training_inputs.png" alt="original and noisy inputs at t = 0.25, 0.5, 0.75"><figcaption>original and noisy inputs at t = 0.25, 0.5, 0.75</figcaption></figure>
@@ -83,6 +84,7 @@
 </div>
 
 <h2 class="big">Part B: Flow Matching from Scratch</h2>
+<p>For Part B, I took the code and trained the actual UNets on compute from the BAIR lab I work with. Instead of Colab, I ran the notebook from the command line on the lab machine, but the results should be mostly the same.</p>
 
 <h2>Part 1.2: Noising process</h2>
 <figure class="wide"><img src="assets/noising.png" alt="sigma = 0.0, 0.2, 0.4, 0.5, 0.6, 0.8, 1.0"><figcaption>sigma = 0.0, 0.2, 0.4, 0.5, 0.6, 0.8, 1.0</figcaption></figure>
@@ -100,7 +102,7 @@
 <figure class="wide"><img src="assets/pure_noise_epoch1.png" alt="outputs after epoch 1"><figcaption>outputs after epoch 1</figcaption></figure>
 <figure class="wide"><img src="assets/pure_noise_epoch5.png" alt="outputs after epoch 5"><figcaption>outputs after epoch 5</figcaption></figure>
 <figure class="small"><img src="assets/train_mean.png" alt="mean of all training images"><figcaption>mean of all training images</figcaption></figure>
-<p>Every output looks the same: a blurry blob shaped like an overlap of all ten digits, mostly a 0 or 8 with a bright center stroke. Different noise inputs give almost identical outputs (std across samples about 0.006). The input is pure noise, so it carries no information about which digit to produce. Under an MSE loss the best the network can do is predict the expected clean image, which is the mean of the training set. The outputs match that mean almost exactly (MSE about 1e-4 against the mean image above).</p>
+<p>This reminds me of the idea from lecture where the path points to the middle of the distribution. I think this happens because the noise level is 100%, so the input tells the model nothing about which digit it is, and the best it can do is point to the middle of the distribution of all the numbers. Here that middle is this blurry shape, a mix of all the digits together, which matches the average of the training images shown above. Epoch 1 and epoch 5 look the same because they are still pointing in the same direction.</p>
 
 <h2>Part 2.2: Training the time-conditioned UNet</h2>
 <figure class="wide"><img src="assets/time_fm_loss.png" alt="training loss, time-conditioned UNet"><figcaption>training loss, time-conditioned UNet</figcaption></figure>

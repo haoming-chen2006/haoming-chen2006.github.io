@@ -30,7 +30,6 @@
     pre code { font-size: inherit; }
     figure { margin: 0; }
     figure img { display: block; width: 100%; height: auto; border-radius: 3px; background: #f0f0f0; }
-    figcaption { margin-top: .4rem; font-size: .82rem; color: var(--muted); }
     .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin: 0 0 1.5rem; }
     .trio { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin: 0 0 1.5rem; align-items: end; }
     .wide { margin: 0 0 1.5rem; }
@@ -55,25 +54,26 @@
 <p>I decided to pick an indoor scenario, a specific object scenario, and an outdoor scenario. So I picked the kitchen, the gate, and the courtyard.</p>
 <h3>Kitchen</h3>
 <div class="trio">
-  <figure><img src="assets/mosaic1_left.jpg" alt="kitchen, left"><figcaption>left</figcaption></figure>
-  <figure><img src="assets/mosaic1_center.jpg" alt="kitchen, center"><figcaption>center</figcaption></figure>
-  <figure><img src="assets/mosaic1_right.jpg" alt="kitchen, right"><figcaption>right</figcaption></figure>
+  <figure><img src="assets/mosaic1_left.jpg" alt="kitchen, left"></figure>
+  <figure><img src="assets/mosaic1_center.jpg" alt="kitchen, center"></figure>
+  <figure><img src="assets/mosaic1_right.jpg" alt="kitchen, right"></figure>
 </div>
 <h3>Gate</h3>
 <div class="trio">
-  <figure><img src="assets/mosaic2_left.jpg" alt="gate, left"><figcaption>left</figcaption></figure>
-  <figure><img src="assets/mosaic2_center.jpg" alt="gate, center"><figcaption>center</figcaption></figure>
-  <figure><img src="assets/mosaic2_right.jpg" alt="gate, right"><figcaption>right</figcaption></figure>
+  <figure><img src="assets/mosaic2_left.jpg" alt="gate, left"></figure>
+  <figure><img src="assets/mosaic2_center.jpg" alt="gate, center"></figure>
+  <figure><img src="assets/mosaic2_right.jpg" alt="gate, right"></figure>
 </div>
 <h3>Courtyard</h3>
 <div class="trio">
-  <figure><img src="assets/mosaic3_left.jpg" alt="courtyard, left"><figcaption>left</figcaption></figure>
-  <figure><img src="assets/mosaic3_center.jpg" alt="courtyard, center"><figcaption>center</figcaption></figure>
-  <figure><img src="assets/mosaic3_right.jpg" alt="courtyard, right"><figcaption>right</figcaption></figure>
+  <figure><img src="assets/mosaic3_left.jpg" alt="courtyard, left"></figure>
+  <figure><img src="assets/mosaic3_center.jpg" alt="courtyard, center"></figure>
+  <figure><img src="assets/mosaic3_right.jpg" alt="courtyard, right"></figure>
 </div>
 
 <!-- A2 start -->
 <h2>A.2: Recovering homographies</h2>
+<p>One interesting thing I learned when picking points, as shown in the first picture of the appendix, is that you don't need to (in general) pick points all over the image. You can focus on a specific object, and as long as your points are accurate, you achieve the same effect. For instance, in the first appendix image, I tried picking points across the whole image, but it didn't align very well because there isn't much detail there. So I focused on a specific object and got a good result, because there is a lot more detail to align on that object.</p>
 <p>We start from this matrix multiplication equation, which maps \((x, y)\) into \((x', y')\):</p>
 \[ \begin{bmatrix} a & b & c \\ d & e & f \\ g & h & 1 \end{bmatrix} \begin{bmatrix} x \\ y \\ 1 \end{bmatrix} = \begin{bmatrix} wx' \\ wy' \\ w \end{bmatrix} \]
 <p>From the third row, we find \(w\) to be the following:</p>
@@ -85,7 +85,7 @@
 \[ \begin{bmatrix} x & y & 1 & 0 & 0 & 0 & -xx' & -yx' \\ 0 & 0 & 0 & x & y & 1 & -xy' & -yy' \end{bmatrix} \begin{bmatrix} a \\ b \\ c \\ d \\ e \\ f \\ g \\ h \end{bmatrix} = \begin{bmatrix} x' \\ y' \end{bmatrix} \]
 <p>Next, it's just about substituting in the values of the points we found. Each pair of points gives two equations and there are 8 unknowns, so we need at least 4 pairs. With \(n\) pairs, we stack all \(2n\) equations into one system \(Ah = b\):</p>
 \[ \underbrace{\begin{bmatrix} x_1 & y_1 & 1 & 0 & 0 & 0 & -x_1x_1' & -y_1x_1' \\ 0 & 0 & 0 & x_1 & y_1 & 1 & -x_1y_1' & -y_1y_1' \\ & & & & \vdots & & & \\ x_n & y_n & 1 & 0 & 0 & 0 & -x_nx_n' & -y_nx_n' \\ 0 & 0 & 0 & x_n & y_n & 1 & -x_ny_n' & -y_ny_n' \end{bmatrix}}_{A \;(2n \times 8)} \begin{bmatrix} a \\ \vdots \\ h \end{bmatrix} = \underbrace{\begin{bmatrix} x_1' \\ y_1' \\ \vdots \\ x_n' \\ y_n' \end{bmatrix}}_{b} \]
-<figure class="wide"><img src="assets/mosaic2_left_center_points.jpg" alt="correspondences between the gate left and center images"><figcaption>8 correspondences, gate left → center</figcaption></figure>
+<figure class="wide"><img src="assets/mosaic2_left_center_points.jpg" alt="correspondences between the gate left and center images"></figure>
 <p>Next, for the real numbers, this is the full system \([A \mid b]\) for these 8 pairs:</p>
 \[ \left[\begin{array}{rrrrrrrr|r} 850.84 & 475.69 & 1 & 0 & 0 & 0 & -327539.37 & -183121.62 & 384.96 \\ 0 & 0 & 0 & 850.84 & 475.69 & 1 & -409756.04 & -229087.55 & 481.59 \\ 816.56 & 1135.06 & 1 & 0 & 0 & 0 & -250349.13 & -347998.05 & 306.59 \\ 0 & 0 & 0 & 816.56 & 1135.06 & 1 & -889764.60 & -1236818.13 & 1089.65 \\ 516.87 & 862.12 & 1 & 0 & 0 & 0 & -13924.48 & -23225.51 & 26.94 \\ 0 & 0 & 0 & 516.87 & 862.12 & 1 & -447423.35 & -746285.56 & 865.64 \\ 825.18 & 835.76 & 1 & 0 & 0 & 0 & -278803.57 & -282378.23 & 337.87 \\ 0 & 0 & 0 & 825.18 & 835.76 & 1 & -666151.31 & -674692.33 & 807.28 \\ 861.91 & 670.04 & 1 & 0 & 0 & 0 & -327672.32 & -254729.11 & 380.17 \\ 0 & 0 & 0 & 861.91 & 670.04 & 1 & -564275.24 & -438661.79 & 654.68 \\ 752.58 & 998.69 & 1 & 0 & 0 & 0 & -196746.99 & -261087.53 & 261.43 \\ 0 & 0 & 0 & 752.58 & 998.69 & 1 & -731191.68 & -970307.23 & 971.58 \\ 552.19 & 941.05 & 1 & 0 & 0 & 0 & -32485.34 & -55361.97 & 58.83 \\ 0 & 0 & 0 & 552.19 & 941.05 & 1 & -521548.98 & -888831.14 & 944.51 \\ 735.47 & 1074.06 & 1 & 0 & 0 & 0 & -174321.10 & -254573.70 & 237.02 \\ 0 & 0 & 0 & 735.47 & 1074.06 & 1 & -771383.00 & -1126506.35 & 1048.83 \end{array}\right] \]
 <p>We solve this using least squares (<code>np.linalg.lstsq</code>), which finds the best \(h\), the one that makes the total squared error \(\lVert Ah - b \rVert^2\) as small as possible. This gives the homography (mean reprojection error 0.69 px):</p>
@@ -98,18 +98,18 @@
 <p>For rectification I click the four corners of an object I know is rectangular and map them to a rectangle with its real aspect ratio: 85.6 × 54 mm for the ID card and roughly 3.7 × 8.5 in for one panel of the folded flyer. (The ID number and barcode are blurred.)</p>
 <h3>Student ID card</h3>
 <div class="trio">
-  <figure><img src="assets/rectify1_corners.jpg" alt="ID card on a desk with its corners marked"><figcaption>original, corners marked</figcaption></figure>
-  <figure><img src="assets/rectify1_nn.png" alt="rectified with nearest neighbor"><figcaption>nearest neighbor</figcaption></figure>
-  <figure><img src="assets/rectify1_bilinear.jpg" alt="rectified with bilinear"><figcaption>bilinear</figcaption></figure>
+  <figure><img src="assets/rectify1_corners.jpg" alt="ID card on a desk with its corners marked"></figure>
+  <figure><img src="assets/rectify1_nn.png" alt="rectified with nearest neighbor"></figure>
+  <figure><img src="assets/rectify1_bilinear.jpg" alt="rectified with bilinear"></figure>
 </div>
 <h3>Flyer</h3>
 <div class="trio">
-  <figure><img src="assets/rectify2_corners.jpg" alt="flyer on a table with its corners marked"><figcaption>original, corners marked</figcaption></figure>
-  <figure><img src="assets/rectify2_nn.png" alt="rectified with nearest neighbor"><figcaption>nearest neighbor</figcaption></figure>
-  <figure><img src="assets/rectify2_bilinear.jpg" alt="rectified with bilinear"><figcaption>bilinear</figcaption></figure>
+  <figure><img src="assets/rectify2_corners.jpg" alt="flyer on a table with its corners marked"></figure>
+  <figure><img src="assets/rectify2_nn.png" alt="rectified with nearest neighbor"></figure>
+  <figure><img src="assets/rectify2_bilinear.jpg" alt="rectified with bilinear"></figure>
 </div>
 <h3>Nearest neighbor vs. bilinear</h3>
-<figure class="wide pixel"><img src="assets/rectify1_zoom.png" alt="6x zoom, nearest neighbor left, bilinear right"><figcaption>6× zoom: nearest neighbor (left), bilinear (right)</figcaption></figure>
+<figure class="wide pixel"><img src="assets/rectify1_zoom.png" alt="6x zoom, nearest neighbor left, bilinear right"></figure>
 <p>Nearest neighbor took 0.03 s and 0.07 s on the two images; bilinear took 0.06 s and 0.14 s, about twice as long because it reads four pixels and does extra arithmetic per output pixel. Nearest neighbor shows jagged edges on the letters, while bilinear is smooth. Bilinear is slightly blurrier but looks much better, so I use it for the mosaics.</p>
 
 <h2>A.4: Blending into a mosaic</h2>
@@ -126,12 +126,12 @@
 <!-- appendix start -->
 <h2>Appendix: correspondences for every pair</h2>
 <p>All correspondences were found with SIFT feature matching, using RANSAC to throw out bad matches; I then kept 8 well-spread matches per image pair. These are the points used for every mosaic.</p>
-<figure class="wide"><img src="assets/auto_mosaic1_left_center.jpg" alt="automatic matches, kitchen left to center"><figcaption>kitchen: left → center</figcaption></figure>
-<figure class="wide"><img src="assets/auto_mosaic1_right_center.jpg" alt="automatic matches, kitchen right to center"><figcaption>kitchen: right → center</figcaption></figure>
-<figure class="wide"><img src="assets/auto_mosaic2_left_center.jpg" alt="automatic matches, gate left to center"><figcaption>gate: left → center</figcaption></figure>
-<figure class="wide"><img src="assets/auto_mosaic2_right_center.jpg" alt="automatic matches, gate right to center"><figcaption>gate: right → center</figcaption></figure>
-<figure class="wide"><img src="assets/auto_mosaic3_left_center.jpg" alt="automatic matches, courtyard left to center"><figcaption>courtyard: left → center</figcaption></figure>
-<figure class="wide"><img src="assets/auto_mosaic3_right_center.jpg" alt="automatic matches, courtyard right to center"><figcaption>courtyard: right → center</figcaption></figure>
+<figure class="wide"><img src="assets/auto_mosaic1_left_center.jpg" alt="automatic matches, kitchen left to center"></figure>
+<figure class="wide"><img src="assets/auto_mosaic1_right_center.jpg" alt="automatic matches, kitchen right to center"></figure>
+<figure class="wide"><img src="assets/auto_mosaic2_left_center.jpg" alt="automatic matches, gate left to center"></figure>
+<figure class="wide"><img src="assets/auto_mosaic2_right_center.jpg" alt="automatic matches, gate right to center"></figure>
+<figure class="wide"><img src="assets/auto_mosaic3_left_center.jpg" alt="automatic matches, courtyard left to center"></figure>
+<figure class="wide"><img src="assets/auto_mosaic3_right_center.jpg" alt="automatic matches, courtyard right to center"></figure>
 <!-- appendix end -->
 
 </main>

@@ -101,7 +101,7 @@
   <li>Calculate the new image boundary by passing the corners of the old image through our homography matrix.</li>
   <li>Use an inverse homography mapping of every pixel in the new image boundary to find where it comes from in the old image.</li>
   <li>The difference between nearest neighbor and bilinear: nearest neighbor locates the closest pixel to take its value, while bilinear takes a weighted average of the surrounding pixels it lands in.</li>
-  <li>Finally, for rectify, I pick the four corners as points and map them to a rectangle with the relevant dimensions: 85.6 × 54 mm for the ID card and roughly 3.7 × 8.5 in for one panel of the folded flyer. (The ID number and barcode are blurred.)</li>
+  <li>Finally, for rectify, I pick the four corners as points and map them to a rectangle with the relevant dimensions: 85.6 × 54 mm for the ID card and roughly 3.7 × 8.5 in for one panel of the folded flyer.</li>
 </ol>
 <h3>Student ID card</h3>
 <div class="trio">
@@ -120,8 +120,8 @@
 <p>Honestly, from an overall point of view, there is not a huge difference, especially in time. Both finished quickly, under a second. Bilinear might take a little longer: after timing, I found nearest neighbor takes 0.03 s and 0.07 s on the two images while bilinear takes 0.06 s and 0.14 s, so bilinear actually takes twice as long. The real difference is when zooming in: bilinear generally gives a smoother result, thanks to it smoothing over the surrounding pixels instead of picking one.</p>
 
 <h2>A.4: Blending into a mosaic</h2>
-<p>I keep the center image fixed and compute a homography from the left and right images into it. Pushing every image's corners through its homography gives the size of one shared canvas, and I warp all three images into it with bilinear interpolation. Each image also carries a weight that is 1 at its center and falls off linearly to 0 at its edges.</p>
-<p>Plain weighted averaging leaves faint ghosting wherever the alignment is a pixel or two off, so I use a two-band blend. The low frequencies are a weighted average of all images, and the high frequencies come from whichever image has the largest weight at that pixel. This keeps the color transition smooth while edges stay sharp.</p>
+<p>Since we already have the H for these cases, we're basically doing the same as A.3. We still calculate the boundaries, but we have three images, so we take the maximum boundary out of the 12 calculated corner points together. Next, we apply the same inverse mapping and use bilinear interpolation to find the pixel values.</p>
+<p>For the actual blending, I use the suggested alpha idea, where each image's weight is 1 at its center and falls off linearly to 0 at its edges, and take the weighted average of the overlapping images.</p>
 <h3>Kitchen</h3>
 <figure class="wide"><img src="assets/mosaic1.jpg" alt="kitchen mosaic"></figure>
 <h3>Gate</h3>

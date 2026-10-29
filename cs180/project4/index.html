@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Project 4 — Haoming Chen</title>
+  <style>
+    :root { --ink:#111; --muted:#666; --rule:#ddd; --code-bg:#f5f5f5; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; background: #fff; color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+    main { max-width: 900px; margin: 0 auto; padding: 2.5rem 1.5rem 6rem; }
+    h1 { font-size: 2.2rem; font-weight: 700; margin: 0 0 2.5rem; letter-spacing: -0.02em; }
+    h2 {
+      font-size: 1.5rem; font-weight: 700; margin: 3.5rem 0 1.25rem;
+      padding-top: 1.5rem; border-top: 1px solid var(--rule); letter-spacing: -0.01em;
+    }
+    .big { font-size: 1.9rem; }
+    h3 { font-size: 1.05rem; font-weight: 600; margin: 1.75rem 0 .5rem; }
+    p { margin: 0 0 1rem; max-width: 70ch; }
+    code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .9em; }
+    pre {
+      background: var(--code-bg); border: 1px solid var(--rule); border-radius: 4px;
+      padding: 1rem; overflow-x: auto; font-size: .85rem; line-height: 1.5; margin: 0 0 1rem;
+    }
+    pre code { font-size: inherit; }
+    figure { margin: 0; }
+    figure img { display: block; width: 100%; height: auto; border-radius: 3px; background: #f0f0f0; }
+    figcaption { margin-top: .4rem; font-size: .82rem; color: var(--muted); }
+    .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin: 0 0 1.5rem; }
+    .trio { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin: 0 0 1.5rem; align-items: end; }
+    .wide { margin: 0 0 1.5rem; }
+    .pixel { max-width: 600px; }
+    .pixel img { image-rendering: pixelated; }
+    @media (max-width: 640px) {
+      .pair, .trio { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+<main>
+
+<h1>Project 4</h1>
+
+<h2 class="big">Part A: Image Warping and Mosaicing</h2>
+<p>In this part I take photos from a fixed point, recover the homographies between them from point correspondences, warp them with inverse warping, and blend them into mosaics.</p>
+
+<h2>A.1: Shooting the pictures</h2>
+<p>For each set I stood in one place and rotated the phone between shots, keeping a large overlap between neighboring photos.</p>
+<h3>Kitchen</h3>
+<div class="trio">
+  <figure><img src="assets/mosaic1_left.jpg" alt="kitchen, left"><figcaption>left</figcaption></figure>
+  <figure><img src="assets/mosaic1_center.jpg" alt="kitchen, center"><figcaption>center</figcaption></figure>
+  <figure><img src="assets/mosaic1_right.jpg" alt="kitchen, right"><figcaption>right</figcaption></figure>
+</div>
+<h3>Gate</h3>
+<div class="trio">
+  <figure><img src="assets/mosaic2_left.jpg" alt="gate, left"><figcaption>left</figcaption></figure>
+  <figure><img src="assets/mosaic2_center.jpg" alt="gate, center"><figcaption>center</figcaption></figure>
+  <figure><img src="assets/mosaic2_right.jpg" alt="gate, right"><figcaption>right</figcaption></figure>
+</div>
+<h3>Courtyard</h3>
+<div class="trio">
+  <figure><img src="assets/mosaic3_left.jpg" alt="courtyard, left"><figcaption>left</figcaption></figure>
+  <figure><img src="assets/mosaic3_center.jpg" alt="courtyard, center"><figcaption>center</figcaption></figure>
+  <figure><img src="assets/mosaic3_right.jpg" alt="courtyard, right"><figcaption>right</figcaption></figure>
+</div>
+
+<h2>A.2: Recovering homographies</h2>
+<p>A homography maps a point (x, y) to (x', y') with p' = Hp, where H is 3×3 and H[2,2] = 1, leaving 8 unknowns. Each correspondence gives two linear equations, so with n &gt; 4 points I stack them into a 2n × 8 system Ah = b and solve it with least squares.</p>
+<pre><code>[x  y  1  0  0  0  -x·x'  -y·x'] h = x'
+[0  0  0  x  y  1  -x·y'  -y·y'] h = y'</code></pre>
+<figure class="wide"><img src="assets/mosaic2_left_center_points.jpg" alt="correspondences between the gate left and center images"><figcaption>14 correspondences, gate left → center</figcaption></figure>
+<p>The two rows for the first correspondence, (850.84, 475.69) → (384.96, 481.59), with b in the last column:</p>
+<pre><code>[ 850.84  475.69  1     0       0       0   -327539.37  -183121.62 | 384.96 ]
+[   0       0     0   850.84  475.69    1   -409756.04  -229087.55 | 481.59 ]</code></pre>
+<p>Recovered homography (mean reprojection error 0.81 px):</p>
+<pre><code>[[   1.55712   -0.14000  -649.47803]
+ [   0.46290    1.36083  -279.32039]
+ [   0.00073   -0.00007     1.00000]]</code></pre>
+
+<h2>A.3: Warping the images</h2>
+<p>Both warps use inverse warping. I push the four corners of the image through H to get the output bounding box, then map every output pixel back through H⁻¹ to find where it comes from in the source. Nearest neighbor rounds that location to the closest pixel; bilinear takes a weighted average of the four surrounding pixels. Pixels that map outside the source get alpha 0.</p>
+<p>For rectification I click the four corners of an object I know is rectangular and map them to a rectangle with the right aspect ratio.</p>
+<h3>Cabinet door</h3>
+<div class="trio">
+  <figure><img src="assets/rectify1_corners.jpg" alt="kitchen with the cabinet door corners marked"><figcaption>original, corners marked</figcaption></figure>
+  <figure><img src="assets/rectify1_nn.png" alt="rectified with nearest neighbor"><figcaption>nearest neighbor</figcaption></figure>
+  <figure><img src="assets/rectify1_bilinear.jpg" alt="rectified with bilinear"><figcaption>bilinear</figcaption></figure>
+</div>
+<h3>Window</h3>
+<div class="trio">
+  <figure><img src="assets/rectify2_corners.jpg" alt="building with the window corners marked"><figcaption>original, corners marked</figcaption></figure>
+  <figure><img src="assets/rectify2_nn.png" alt="rectified with nearest neighbor"><figcaption>nearest neighbor</figcaption></figure>
+  <figure><img src="assets/rectify2_bilinear.jpg" alt="rectified with bilinear"><figcaption>bilinear</figcaption></figure>
+</div>
+<h3>Nearest neighbor vs. bilinear</h3>
+<figure class="wide pixel"><img src="assets/rectify1_zoom.png" alt="6x zoom, nearest neighbor left, bilinear right"><figcaption>6× zoom: nearest neighbor (left), bilinear (right)</figcaption></figure>
+<p>Nearest neighbor took 0.27 s and 0.21 s on the two images; bilinear took 0.53 s and 0.39 s, about twice as long because it reads four pixels and does extra arithmetic per output pixel. Nearest neighbor shows blocky, jagged edges where the image is stretched, while bilinear is smooth. Bilinear is slightly blurrier but looks much better, so I use it for the mosaics.</p>
+
+<h2>A.4: Blending into a mosaic</h2>
+<p>I keep the center image fixed and compute a homography from the left and right images into it. Pushing every image's corners through its homography gives the size of one shared canvas, and I warp all three images into it with bilinear interpolation. Each image also carries a weight that is 1 at its center and falls off linearly to 0 at its edges.</p>
+<p>Plain weighted averaging leaves faint ghosting wherever the alignment is a pixel or two off, so I use a two-band blend. The low frequencies are a weighted average of all images, and the high frequencies come from whichever image has the largest weight at that pixel. This keeps the color transition smooth while edges stay sharp.</p>
+<h3>Kitchen</h3>
+<figure class="wide"><img src="assets/mosaic1.jpg" alt="kitchen mosaic"></figure>
+<h3>Gate</h3>
+<figure class="wide"><img src="assets/mosaic2.jpg" alt="gate mosaic"></figure>
+<h3>Courtyard</h3>
+<figure class="wide"><img src="assets/mosaic3.jpg" alt="courtyard mosaic"></figure>
+<p>The courtyard was shot with the ultrawide lens, so the three photos cover a very wide angle. Projecting that onto a single plane stretches the left and right images heavily, which gives the bow-tie shape.</p>
+
+</main>
+</body>
+</html>

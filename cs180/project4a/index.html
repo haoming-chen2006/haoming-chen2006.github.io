@@ -49,10 +49,10 @@
 <h1>Project 4</h1>
 
 <h2 class="big">Part A: Image Warping and Mosaicing</h2>
-<p>In this part I take photos from a fixed point, recover the homographies between them from point correspondences, warp them with inverse warping, and blend them into mosaics.</p>
+<p>Welcome to my project. For repetitive content, for example finding all the points and drawing all of them, I kept it in the appendix.</p>
 
 <h2>A.1: Shooting the pictures</h2>
-<p>For each set I stood in one place and rotated the phone between shots, keeping a large overlap between neighboring photos.</p>
+<p>I decided to pick an indoor scenario, a specific object scenario, and an outdoor scenario. So I picked the kitchen, the gate, and the courtyard.</p>
 <h3>Kitchen</h3>
 <div class="trio">
   <figure><img src="assets/mosaic1_left.jpg" alt="kitchen, left"><figcaption>left</figcaption></figure>
@@ -74,21 +74,21 @@
 
 <!-- A2 start -->
 <h2>A.2: Recovering homographies</h2>
-<p>Each correspondence is a point \(p = (x, y)\) in the left image and the point \(p' = (x', y')\) in the center image that shows the same spot. The homography \(H\) maps one to the other in homogeneous coordinates:</p>
+<p>We start from this matrix multiplication equation, which maps \((x, y)\) into \((x', y')\):</p>
 \[ \begin{bmatrix} a & b & c \\ d & e & f \\ g & h & 1 \end{bmatrix} \begin{bmatrix} x \\ y \\ 1 \end{bmatrix} = \begin{bmatrix} wx' \\ wy' \\ w \end{bmatrix} \]
-<p>The last row gives the scale \(w\):</p>
+<p>From the third row, we find \(w\) to be the following:</p>
 \[ gx + hy + 1 = w \]
-<p>Substituting \(w\) into the first two rows:</p>
+<p>Next, we substitute \(w\), and we can not care about the third row, and only the first two. So we get these two equations:</p>
 \[ ax + by + c = (gx + hy + 1)\,x' \qquad dx + ey + f = (gx + hy + 1)\,y' \]
-<p>Moving every term with an unknown to the left makes both equations linear in \(a, \dots, h\):</p>
+<p>We're trying to isolate and find \(x'\) and \(y'\), so we moved everything to the left side. So we finally get:</p>
 \[ ax + by + c - gxx' - hyx' = x' \qquad dx + ey + f - gxy' - hyy' = y' \]
 \[ \begin{bmatrix} x & y & 1 & 0 & 0 & 0 & -xx' & -yx' \\ 0 & 0 & 0 & x & y & 1 & -xy' & -yy' \end{bmatrix} \begin{bmatrix} a \\ b \\ c \\ d \\ e \\ f \\ g \\ h \end{bmatrix} = \begin{bmatrix} x' \\ y' \end{bmatrix} \]
-<p>One correspondence gives 2 equations and there are 8 unknowns, so 4 correspondences is the minimum. With \(n\) correspondences I stack all \(2n\) rows into \(Ah = b\) and solve it with least squares, which finds the \(h\) that minimizes \(\lVert Ah - b \rVert^2\):</p>
+<p>Next, it's just about substituting in the values of the points we found. Each pair of points gives two equations and there are 8 unknowns, so we need at least 4 pairs. With \(n\) pairs, we stack all \(2n\) equations into one system \(Ah = b\):</p>
 \[ \underbrace{\begin{bmatrix} x_1 & y_1 & 1 & 0 & 0 & 0 & -x_1x_1' & -y_1x_1' \\ 0 & 0 & 0 & x_1 & y_1 & 1 & -x_1y_1' & -y_1y_1' \\ & & & & \vdots & & & \\ x_n & y_n & 1 & 0 & 0 & 0 & -x_nx_n' & -y_nx_n' \\ 0 & 0 & 0 & x_n & y_n & 1 & -x_ny_n' & -y_ny_n' \end{bmatrix}}_{A \;(2n \times 8)} \begin{bmatrix} a \\ \vdots \\ h \end{bmatrix} = \underbrace{\begin{bmatrix} x_1' \\ y_1' \\ \vdots \\ x_n' \\ y_n' \end{bmatrix}}_{b} \]
 <figure class="wide"><img src="assets/mosaic2_left_center_points.jpg" alt="correspondences between the gate left and center images"><figcaption>8 correspondences, gate left → center</figcaption></figure>
-<p>For these 8 correspondences the full system \([A \mid b]\) is:</p>
+<p>Next, for the real numbers, this is the full system \([A \mid b]\) for these 8 pairs:</p>
 \[ \left[\begin{array}{rrrrrrrr|r} 850.84 & 475.69 & 1 & 0 & 0 & 0 & -327539.37 & -183121.62 & 384.96 \\ 0 & 0 & 0 & 850.84 & 475.69 & 1 & -409756.04 & -229087.55 & 481.59 \\ 816.56 & 1135.06 & 1 & 0 & 0 & 0 & -250349.13 & -347998.05 & 306.59 \\ 0 & 0 & 0 & 816.56 & 1135.06 & 1 & -889764.60 & -1236818.13 & 1089.65 \\ 516.87 & 862.12 & 1 & 0 & 0 & 0 & -13924.48 & -23225.51 & 26.94 \\ 0 & 0 & 0 & 516.87 & 862.12 & 1 & -447423.35 & -746285.56 & 865.64 \\ 825.18 & 835.76 & 1 & 0 & 0 & 0 & -278803.57 & -282378.23 & 337.87 \\ 0 & 0 & 0 & 825.18 & 835.76 & 1 & -666151.31 & -674692.33 & 807.28 \\ 861.91 & 670.04 & 1 & 0 & 0 & 0 & -327672.32 & -254729.11 & 380.17 \\ 0 & 0 & 0 & 861.91 & 670.04 & 1 & -564275.24 & -438661.79 & 654.68 \\ 752.58 & 998.69 & 1 & 0 & 0 & 0 & -196746.99 & -261087.53 & 261.43 \\ 0 & 0 & 0 & 752.58 & 998.69 & 1 & -731191.68 & -970307.23 & 971.58 \\ 552.19 & 941.05 & 1 & 0 & 0 & 0 & -32485.34 & -55361.97 & 58.83 \\ 0 & 0 & 0 & 552.19 & 941.05 & 1 & -521548.98 & -888831.14 & 944.51 \\ 735.47 & 1074.06 & 1 & 0 & 0 & 0 & -174321.10 & -254573.70 & 237.02 \\ 0 & 0 & 0 & 735.47 & 1074.06 & 1 & -771383.00 & -1126506.35 & 1048.83 \end{array}\right] \]
-<p>Solving it gives the homography (mean reprojection error 0.69 px):</p>
+<p>We solve this using least squares (<code>np.linalg.lstsq</code>), which finds the best \(h\), the one that makes the total squared error \(\lVert Ah - b \rVert^2\) as small as possible. This gives the homography (mean reprojection error 0.69 px):</p>
 \[ H = \begin{bmatrix} 1.55754 & -0.14138 & -648.12329 \\ 0.46293 & 1.36211 & -279.28968 \\ 0.00073 & -0.00008 & 1 \end{bmatrix} \]
 
 <!-- A2 end -->

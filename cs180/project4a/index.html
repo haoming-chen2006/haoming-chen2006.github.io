@@ -39,7 +39,9 @@
     @media (max-width: 640px) {
       .pair, .trio { grid-template-columns: 1fr; }
     }
+    mjx-container[display="true"] { overflow-x: auto; overflow-y: hidden; padding: .25rem 0; }
   </style>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-chtml.js" async></script>
 </head>
 <body>
 <main>
@@ -70,18 +72,26 @@
   <figure><img src="assets/mosaic3_right.jpg" alt="courtyard, right"><figcaption>right</figcaption></figure>
 </div>
 
+<!-- A2 start -->
 <h2>A.2: Recovering homographies</h2>
-<p>A homography maps a point (x, y) to (x', y') with p' = Hp, where H is 3×3 and H[2,2] = 1, leaving 8 unknowns. Each correspondence gives two linear equations, so with n &gt; 4 points I stack them into a 2n × 8 system Ah = b and solve it with least squares.</p>
-<pre><code>[x  y  1  0  0  0  -x·x'  -y·x'] h = x'
-[0  0  0  x  y  1  -x·y'  -y·y'] h = y'</code></pre>
-<figure class="wide"><img src="assets/mosaic2_left_center_points.jpg" alt="correspondences between the gate left and center images"><figcaption>14 correspondences, gate left → center</figcaption></figure>
-<p>The two rows for the first correspondence, (850.84, 475.69) → (384.96, 481.59), with b in the last column:</p>
-<pre><code>[ 850.84  475.69  1     0       0       0   -327539.37  -183121.62 | 384.96 ]
-[   0       0     0   850.84  475.69    1   -409756.04  -229087.55 | 481.59 ]</code></pre>
-<p>Recovered homography (mean reprojection error 0.81 px):</p>
-<pre><code>[[   1.55712   -0.14000  -649.47803]
- [   0.46290    1.36083  -279.32039]
- [   0.00073   -0.00007     1.00000]]</code></pre>
+<p>Each correspondence is a point \(p = (x, y)\) in the left image and the point \(p' = (x', y')\) in the center image that shows the same spot. The homography \(H\) maps one to the other in homogeneous coordinates:</p>
+\[ \begin{bmatrix} a & b & c \\ d & e & f \\ g & h & 1 \end{bmatrix} \begin{bmatrix} x \\ y \\ 1 \end{bmatrix} = \begin{bmatrix} wx' \\ wy' \\ w \end{bmatrix} \]
+<p>The last row gives the scale \(w\):</p>
+\[ gx + hy + 1 = w \]
+<p>Substituting \(w\) into the first two rows:</p>
+\[ ax + by + c = (gx + hy + 1)\,x' \qquad dx + ey + f = (gx + hy + 1)\,y' \]
+<p>Moving every term with an unknown to the left makes both equations linear in \(a, \dots, h\):</p>
+\[ ax + by + c - gxx' - hyx' = x' \qquad dx + ey + f - gxy' - hyy' = y' \]
+\[ \begin{bmatrix} x & y & 1 & 0 & 0 & 0 & -xx' & -yx' \\ 0 & 0 & 0 & x & y & 1 & -xy' & -yy' \end{bmatrix} \begin{bmatrix} a \\ b \\ c \\ d \\ e \\ f \\ g \\ h \end{bmatrix} = \begin{bmatrix} x' \\ y' \end{bmatrix} \]
+<p>One correspondence gives 2 equations and there are 8 unknowns, so 4 correspondences is the minimum. With \(n\) correspondences I stack all \(2n\) rows into \(Ah = b\) and solve it with least squares, which finds the \(h\) that minimizes \(\lVert Ah - b \rVert^2\):</p>
+\[ \underbrace{\begin{bmatrix} x_1 & y_1 & 1 & 0 & 0 & 0 & -x_1x_1' & -y_1x_1' \\ 0 & 0 & 0 & x_1 & y_1 & 1 & -x_1y_1' & -y_1y_1' \\ & & & & \vdots & & & \\ x_n & y_n & 1 & 0 & 0 & 0 & -x_nx_n' & -y_nx_n' \\ 0 & 0 & 0 & x_n & y_n & 1 & -x_ny_n' & -y_ny_n' \end{bmatrix}}_{A \;(2n \times 8)} \begin{bmatrix} a \\ \vdots \\ h \end{bmatrix} = \underbrace{\begin{bmatrix} x_1' \\ y_1' \\ \vdots \\ x_n' \\ y_n' \end{bmatrix}}_{b} \]
+<figure class="wide"><img src="assets/mosaic2_left_center_points.jpg" alt="correspondences between the gate left and center images"><figcaption>8 correspondences, gate left → center</figcaption></figure>
+<p>For these 8 correspondences the full system \([A \mid b]\) is:</p>
+\[ \left[\begin{array}{rrrrrrrr|r} 850.84 & 475.69 & 1 & 0 & 0 & 0 & -327539.37 & -183121.62 & 384.96 \\ 0 & 0 & 0 & 850.84 & 475.69 & 1 & -409756.04 & -229087.55 & 481.59 \\ 816.56 & 1135.06 & 1 & 0 & 0 & 0 & -250349.13 & -347998.05 & 306.59 \\ 0 & 0 & 0 & 816.56 & 1135.06 & 1 & -889764.60 & -1236818.13 & 1089.65 \\ 516.87 & 862.12 & 1 & 0 & 0 & 0 & -13924.48 & -23225.51 & 26.94 \\ 0 & 0 & 0 & 516.87 & 862.12 & 1 & -447423.35 & -746285.56 & 865.64 \\ 825.18 & 835.76 & 1 & 0 & 0 & 0 & -278803.57 & -282378.23 & 337.87 \\ 0 & 0 & 0 & 825.18 & 835.76 & 1 & -666151.31 & -674692.33 & 807.28 \\ 861.91 & 670.04 & 1 & 0 & 0 & 0 & -327672.32 & -254729.11 & 380.17 \\ 0 & 0 & 0 & 861.91 & 670.04 & 1 & -564275.24 & -438661.79 & 654.68 \\ 752.58 & 998.69 & 1 & 0 & 0 & 0 & -196746.99 & -261087.53 & 261.43 \\ 0 & 0 & 0 & 752.58 & 998.69 & 1 & -731191.68 & -970307.23 & 971.58 \\ 552.19 & 941.05 & 1 & 0 & 0 & 0 & -32485.34 & -55361.97 & 58.83 \\ 0 & 0 & 0 & 552.19 & 941.05 & 1 & -521548.98 & -888831.14 & 944.51 \\ 735.47 & 1074.06 & 1 & 0 & 0 & 0 & -174321.10 & -254573.70 & 237.02 \\ 0 & 0 & 0 & 735.47 & 1074.06 & 1 & -771383.00 & -1126506.35 & 1048.83 \end{array}\right] \]
+<p>Solving it gives the homography (mean reprojection error 0.69 px):</p>
+\[ H = \begin{bmatrix} 1.55754 & -0.14138 & -648.12329 \\ 0.46293 & 1.36211 & -279.28968 \\ 0.00073 & -0.00008 & 1 \end{bmatrix} \]
+
+<!-- A2 end -->
 
 <h2>A.3: Warping the images</h2>
 <p>Both warps use inverse warping. I push the four corners of the image through H to get the output bounding box, then map every output pixel back through H⁻¹ to find where it comes from in the source. Nearest neighbor rounds that location to the closest pixel; bilinear takes a weighted average of the four surrounding pixels. Pixels that map outside the source get alpha 0.</p>
@@ -112,6 +122,17 @@
 <h3>Courtyard</h3>
 <figure class="wide"><img src="assets/mosaic3.jpg" alt="courtyard mosaic"></figure>
 <p>The courtyard was shot with the ultrawide lens, so the three photos cover a very wide angle. Projecting that onto a single plane stretches the left and right images heavily, which gives the bow-tie shape.</p>
+
+<!-- appendix start -->
+<h2>Appendix: correspondences for every pair</h2>
+<p>All correspondences were found with SIFT feature matching, using RANSAC to throw out bad matches; I then kept 8 well-spread matches per image pair. These are the points used for every mosaic.</p>
+<figure class="wide"><img src="assets/auto_mosaic1_left_center.jpg" alt="automatic matches, kitchen left to center"><figcaption>kitchen: left → center</figcaption></figure>
+<figure class="wide"><img src="assets/auto_mosaic1_right_center.jpg" alt="automatic matches, kitchen right to center"><figcaption>kitchen: right → center</figcaption></figure>
+<figure class="wide"><img src="assets/auto_mosaic2_left_center.jpg" alt="automatic matches, gate left to center"><figcaption>gate: left → center</figcaption></figure>
+<figure class="wide"><img src="assets/auto_mosaic2_right_center.jpg" alt="automatic matches, gate right to center"><figcaption>gate: right → center</figcaption></figure>
+<figure class="wide"><img src="assets/auto_mosaic3_left_center.jpg" alt="automatic matches, courtyard left to center"><figcaption>courtyard: left → center</figcaption></figure>
+<figure class="wide"><img src="assets/auto_mosaic3_right_center.jpg" alt="automatic matches, courtyard right to center"><figcaption>courtyard: right → center</figcaption></figure>
+<!-- appendix end -->
 
 </main>
 </body>

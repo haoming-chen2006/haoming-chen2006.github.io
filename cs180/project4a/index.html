@@ -21,7 +21,8 @@
     }
     .big { font-size: 1.9rem; }
     h3 { font-size: 1.05rem; font-weight: 600; margin: 1.75rem 0 .5rem; }
-    p { margin: 0 0 1rem; max-width: 70ch; }
+    p, ol { margin: 0 0 1rem; max-width: 70ch; }
+    li { margin-bottom: .3rem; }
     code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .9em; }
     pre {
       background: var(--code-bg); border: 1px solid var(--rule); border-radius: 4px;
@@ -95,8 +96,13 @@
 <!-- A2 end -->
 
 <h2>A.3: Warping the images</h2>
-<p>Both warps use inverse warping. I push the four corners of the image through H to get the output bounding box, then map every output pixel back through H⁻¹ to find where it comes from in the source. Nearest neighbor rounds that location to the closest pixel; bilinear takes a weighted average of the four surrounding pixels. Pixels that map outside the source get alpha 0.</p>
-<p>For rectification I click the four corners of an object I know is rectangular and map them to a rectangle with its real aspect ratio: 85.6 × 54 mm for the ID card and roughly 3.7 × 8.5 in for one panel of the folded flyer. (The ID number and barcode are blurred.)</p>
+<p>My warping is done in four steps.</p>
+<ol>
+  <li>Calculate the new image boundary by passing the corners of the old image through our homography matrix.</li>
+  <li>Use an inverse homography mapping of every pixel in the new image boundary to find where it comes from in the old image.</li>
+  <li>The difference between nearest neighbor and bilinear: nearest neighbor locates the closest pixel to take its value, while bilinear takes a weighted average of the surrounding pixels it lands in.</li>
+  <li>Finally, for rectify, I pick the four corners as points and map them to a rectangle with the relevant dimensions: 85.6 × 54 mm for the ID card and roughly 3.7 × 8.5 in for one panel of the folded flyer. (The ID number and barcode are blurred.)</li>
+</ol>
 <h3>Student ID card</h3>
 <div class="trio">
   <figure><img src="assets/rectify1_corners.jpg" alt="ID card on a desk with its corners marked"></figure>
@@ -111,7 +117,7 @@
 </div>
 <h3>Nearest neighbor vs. bilinear</h3>
 <figure class="wide pixel"><img src="assets/rectify1_zoom.png" alt="6x zoom, nearest neighbor left, bilinear right"><figcaption>nearest neighbor (left), bilinear (right)</figcaption></figure>
-<p>Nearest neighbor took 0.03 s and 0.07 s on the two images; bilinear took 0.06 s and 0.14 s, about twice as long because it reads four pixels and does extra arithmetic per output pixel. Nearest neighbor shows jagged edges on the letters, while bilinear is smooth. Bilinear is slightly blurrier but looks much better, so I use it for the mosaics.</p>
+<p>Honestly, from an overall point of view, there is not a huge difference, especially in time. Both finished quickly, under a second. Bilinear might take a little longer: after timing, I found nearest neighbor takes 0.03 s and 0.07 s on the two images while bilinear takes 0.06 s and 0.14 s, so bilinear actually takes twice as long. The real difference is when zooming in: bilinear generally gives a smoother result, thanks to it smoothing over the surrounding pixels instead of picking one.</p>
 
 <h2>A.4: Blending into a mosaic</h2>
 <p>I keep the center image fixed and compute a homography from the left and right images into it. Pushing every image's corners through its homography gives the size of one shared canvas, and I warp all three images into it with bilinear interpolation. Each image also carries a weight that is 1 at its center and falls off linearly to 0 at its edges.</p>

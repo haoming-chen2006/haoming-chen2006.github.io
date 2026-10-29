@@ -29,6 +29,7 @@
     }
     pre code { font-size: inherit; }
     figure { margin: 0; }
+    figcaption { margin-top: .4rem; font-size: .9rem; color: #444; }
     figure img { display: block; width: 100%; height: auto; border-radius: 3px; background: #f0f0f0; }
     .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin: 0 0 1.5rem; }
     .trio { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin: 0 0 1.5rem; align-items: end; }
@@ -99,17 +100,17 @@
 <h3>Student ID card</h3>
 <div class="trio">
   <figure><img src="assets/rectify1_corners.jpg" alt="ID card on a desk with its corners marked"></figure>
-  <figure><img src="assets/rectify1_nn.png" alt="rectified with nearest neighbor"></figure>
-  <figure><img src="assets/rectify1_bilinear.jpg" alt="rectified with bilinear"></figure>
+  <figure><img src="assets/rectify1_nn.png" alt="rectified with nearest neighbor"><figcaption>nearest neighbor</figcaption></figure>
+  <figure><img src="assets/rectify1_bilinear.jpg" alt="rectified with bilinear"><figcaption>bilinear</figcaption></figure>
 </div>
 <h3>Flyer</h3>
 <div class="trio">
   <figure><img src="assets/rectify2_corners.jpg" alt="flyer on a table with its corners marked"></figure>
-  <figure><img src="assets/rectify2_nn.png" alt="rectified with nearest neighbor"></figure>
-  <figure><img src="assets/rectify2_bilinear.jpg" alt="rectified with bilinear"></figure>
+  <figure><img src="assets/rectify2_nn.png" alt="rectified with nearest neighbor"><figcaption>nearest neighbor</figcaption></figure>
+  <figure><img src="assets/rectify2_bilinear.jpg" alt="rectified with bilinear"><figcaption>bilinear</figcaption></figure>
 </div>
 <h3>Nearest neighbor vs. bilinear</h3>
-<figure class="wide pixel"><img src="assets/rectify1_zoom.png" alt="6x zoom, nearest neighbor left, bilinear right"></figure>
+<figure class="wide pixel"><img src="assets/rectify1_zoom.png" alt="6x zoom, nearest neighbor left, bilinear right"><figcaption>nearest neighbor (left), bilinear (right)</figcaption></figure>
 <p>Nearest neighbor took 0.03 s and 0.07 s on the two images; bilinear took 0.06 s and 0.14 s, about twice as long because it reads four pixels and does extra arithmetic per output pixel. Nearest neighbor shows jagged edges on the letters, while bilinear is smooth. Bilinear is slightly blurrier but looks much better, so I use it for the mosaics.</p>
 
 <h2>A.4: Blending into a mosaic</h2>

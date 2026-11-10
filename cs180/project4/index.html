@@ -177,41 +177,28 @@
 <p>The three sets behave similarly; I don't see anything notably different between them.</p>
 
 <h2>B.2: Feature descriptors</h2>
-<p>For each corner I take the 40×40 window around it and turn it into an 8×8 patch by sampling every 5 pixels. I blur the image first (Gaussian, sigma 2.5) so each sample summarizes its 5×5 block instead of aliasing a single pixel. That's the point of the big window: a blurry descriptor tolerates a few pixels of error in the corner position. Then I bias/gain-normalize each patch (subtract its mean, divide by its standard deviation), so a brighter or darker exposure of the same spot still gives the same vector. Corners whose window runs off the image are dropped.</p>
+<p>We then take 40×40 window patches around all the corners, and we need to pre-process them. The general idea is to normalize, so that local extremes are less influential on the overall feature matching. The normalization happens in two ways. One is a Gaussian blur (sigma 2.5) before sampling the window down to 8×8, which handles it from the absolute, pixel-level perspective. The other is bias/gain normalization (subtract the mean, divide by the standard deviation), which handles brightness and contrast differing by a factor between photos.</p>
 <figure class="wide"><img src="assets/mosaic2_descriptors.jpg" alt="eight random gate features: 40x40 window above, normalized 8x8 descriptor below"></figure>
 <figure class="wide"><img src="assets/mosaic3_descriptors.jpg" alt="eight random courtyard features: 40x40 window above, normalized 8x8 descriptor below"></figure>
-<p>Top row is the 40×40 window in color, bottom row is the normalized 8×8 descriptor that is actually compared. The window edges and grid lines are still clearly visible at 8×8.</p>
 
 <h2>B.3: Feature matching</h2>
-<p>I compute the Euclidean distance between every descriptor in one image and every descriptor in the other (the provided <code>dist2</code>), and find each feature's nearest and second-nearest neighbour. Following Lowe, a match is kept only when the best neighbour is much better than the second best:</p>
+<p>After pre-processing, we try to find feature matches. I went with Lowe's idea and only count a match when the nearest neighbour is much closer than the second nearest:</p>
 \[ \frac{d_{1\text{-NN}}}{d_{2\text{-NN}}} < 0.6 \]
-<p>The idea is that a true match has one clear partner, while a wrong match on a repeated texture (cabinet doors, windows) looks about as good as several others. Figure 6b in the paper shows correct and incorrect matches separating around \(e_{1\text{-NN}}/e_{2\text{-NN}} \approx 0.4\) in squared error, and my distance ratio of 0.6 is 0.36 in squared terms.</p>
-<p>The ratio test isn't perfect. The red lines below are matches that passed it but were rejected by RANSAC in B.4, many of them on repeated windows and cabinet edges.</p>
+<p>This is a very interesting idea, and I'll explain more in the last paragraph. Basically, it gave me a new perspective on seeing images in a relative rather than absolute manner.</p>
 <figure class="wide"><img src="assets/mosaic3_left_matches.jpg" alt="courtyard left to center: ratio-test matches"></figure>
 <figure class="wide"><img src="assets/mosaic1_left_matches.jpg" alt="kitchen left to center: ratio-test matches"></figure>
 
 <h2>B.4: RANSAC and automatic mosaics</h2>
-<p>4-point RANSAC, implemented from scratch:</p>
+<p>After all that, we still have a decent amount of garbage matches, so we follow the idea of RANSAC:</p>
 <ol>
-  <li>Pick 4 random matches and compute the exact homography through them with <code>computeH</code> from Part A.</li>
-  <li>Map every matched point from image 1 through that \(H\) and count the inliers, the matches that land within 2 pixels of their partner in image 2.</li>
-  <li>Repeat 5000 times and keep the largest inlier set.</li>
+  <li>Pick 4 random matches and compute the exact \(H\) (with <code>computeH</code> from Part A).</li>
+  <li>Map every matched point from image 1 through that \(H\) and count the inliers, which here means the matches that land within 2 pixels of their partner in image 2.</li>
+  <li>Repeat this 5000 times and keep the largest inlier set.</li>
   <li>Refit \(H\) with least squares on all the inliers of the best set.</li>
 </ol>
-<p>Even with half the matches wrong, a random sample of 4 is all-correct about 1 time in 16, so 5000 iterations find a clean sample many times over. The final least-squares fit uses every inlier, not just 4 points, so it is less noisy than any single sample.</p>
-<table>
-  <thead><tr><th>pair</th><th>ratio-test matches</th><th>RANSAC inliers</th></tr></thead>
-  <tbody>
-    <tr><td>Kitchen, left → center</td><td>50</td><td>15</td></tr>
-    <tr><td>Kitchen, right → center</td><td>150</td><td>34</td></tr>
-    <tr><td>Gate, left → center</td><td>77</td><td>25</td></tr>
-    <tr><td>Gate, right → center</td><td>64</td><td>20</td></tr>
-    <tr><td>Courtyard, left → center</td><td>53</td><td>41</td></tr>
-    <tr><td>Courtyard, right → center</td><td>48</td><td>36</td></tr>
-  </tbody>
-</table>
-<figure class="wide"><img src="assets/mosaic2_left_inliers.jpg" alt="gate left to center: RANSAC inliers"></figure>
-<p>The homographies then go straight into my Part A mosaic code (bilinear inverse warping, linear-falloff alpha blending). Manual on the left, automatic on the right:</p>
+<p>Basically, we try to find the \(H\) that the most matches agree with, and then fit it on all of those agreeing pairs. A lot of matches get rejected. In the kitchen below, green lines are the RANSAC inliers and red lines are the rejected matches: every match on the repetitive cabinet doors is thrown out, and only the ones on the rice bag agree with a single homography.</p>
+<figure class="wide"><img src="assets/mosaic1_left_ransac.jpg" alt="kitchen left to center: 15 RANSAC inliers in green, 35 rejected matches in red"></figure>
+<p>Then we just proceed with the Part A code using the homographies found, and get the following results. Manual on the left, automatic on the right:</p>
 <h3>Kitchen</h3>
 <div class="pair">
   <figure><img src="../project4a/assets/mosaic1.jpg" alt="kitchen, manual"><figcaption>manual (Part A)</figcaption></figure>
@@ -227,22 +214,18 @@
   <figure><img src="../project4a/assets/mosaic3.jpg" alt="courtyard, manual"><figcaption>manual (Part A)</figcaption></figure>
   <figure><img src="assets/mosaic3_auto.jpg" alt="courtyard, automatic"><figcaption>automatic</figcaption></figure>
 </div>
-<p>TODO (Haoming): write what you notice comparing these. Things I see: the gate and courtyard come out essentially the same as my hand-clicked versions; the courtyard's automatic result uses 41 and 36 inliers against my 8 clicks per pair; the kitchen is the hardest case because the cabinet doors are nearly textureless and repetitive, so its inliers cluster on the rice bag and the counter.</p>
+<p>First of all, I don't think there is a huge change. If anything, the manual version might even be a little better, especially for the kitchen, which is contrary to what I expected. Looking closer, the automatic method did a better job on the gate and courtyard than on the kitchen. I think this is because there are more corners to find in the first place on the gate and courtyard, while the kitchen has big smooth surfaces, which make good features really hard to find. Another thing I learned is that more matches don't automatically make things better: the automatic version uses 15 to 41 inliers per pair against only 8 hand-clicked pairs, and the hand-clicked ones often work just as well or better.</p>
 
 <h2>What I learned</h2>
-<p>TODO (Haoming): the spec asks what the coolest thing you learned was. One sentence in your own words.</p>
+<p>What I find coolest about this project is that it taught me to look at things relatively. This shows up in both B.3 and B.4. In B.3, it is using the ratio between the first and second nearest-neighbour distances as the threshold, instead of an absolute distance. In B.4, it is RANSAC: a homography is not judged on its own, but by how many of the other matches agree with it. Both taught me not to look at the absolute but at the relative, which often works better, because that's how we find features and differences in the first place. I think this idea will generalize well beyond these specific cases.</p>
 
 <details>
-<summary>Appendix B: all matches and inliers</summary>
-<figure class="wide"><img src="assets/mosaic1_right_matches.jpg" alt="kitchen right to center: matches"></figure>
-<figure class="wide"><img src="assets/mosaic2_left_matches.jpg" alt="gate left to center: matches"></figure>
-<figure class="wide"><img src="assets/mosaic2_right_matches.jpg" alt="gate right to center: matches"></figure>
-<figure class="wide"><img src="assets/mosaic3_right_matches.jpg" alt="courtyard right to center: matches"></figure>
-<figure class="wide"><img src="assets/mosaic1_left_inliers.jpg" alt="kitchen left to center: inliers"></figure>
-<figure class="wide"><img src="assets/mosaic1_right_inliers.jpg" alt="kitchen right to center: inliers"></figure>
-<figure class="wide"><img src="assets/mosaic2_right_inliers.jpg" alt="gate right to center: inliers"></figure>
-<figure class="wide"><img src="assets/mosaic3_left_inliers.jpg" alt="courtyard left to center: inliers"></figure>
-<figure class="wide"><img src="assets/mosaic3_right_inliers.jpg" alt="courtyard right to center: inliers"></figure>
+<summary>Appendix B: all matches and RANSAC inliers</summary>
+<figure class="wide"><img src="assets/mosaic1_right_ransac.jpg" alt="kitchen right to center: inliers green, rejected red"></figure>
+<figure class="wide"><img src="assets/mosaic2_left_ransac.jpg" alt="gate left to center: inliers green, rejected red"></figure>
+<figure class="wide"><img src="assets/mosaic2_right_ransac.jpg" alt="gate right to center: inliers green, rejected red"></figure>
+<figure class="wide"><img src="assets/mosaic3_left_ransac.jpg" alt="courtyard left to center: inliers green, rejected red"></figure>
+<figure class="wide"><img src="assets/mosaic3_right_ransac.jpg" alt="courtyard right to center: inliers green, rejected red"></figure>
 <figure class="wide"><img src="assets/mosaic1_descriptors.jpg" alt="kitchen descriptors"></figure>
 </details>
 

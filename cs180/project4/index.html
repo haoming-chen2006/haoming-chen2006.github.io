@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Project 4 — Haoming Chen</title>
+  <style>
+    :root { --ink:#111; --muted:#666; --rule:#ddd; --code-bg:#f5f5f5; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; background: #fff; color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+    main { max-width: 900px; margin: 0 auto; padding: 2.5rem 1.5rem 6rem; }
+    h1 { font-size: 2.2rem; font-weight: 700; margin: 0 0 2.5rem; letter-spacing: -0.02em; }
+    h2 {
+      font-size: 1.5rem; font-weight: 700; margin: 3.5rem 0 1.25rem;
+      padding-top: 1.5rem; border-top: 1px solid var(--rule); letter-spacing: -0.01em;
+    }
+    .big { font-size: 1.9rem; }
+    h3 { font-size: 1.05rem; font-weight: 600; margin: 1.75rem 0 .5rem; }
+    p, ol { margin: 0 0 1rem; max-width: 70ch; }
+    li { margin-bottom: .3rem; }
+    code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .9em; }
+    pre {
+      background: var(--code-bg); border: 1px solid var(--rule); border-radius: 4px;
+      padding: 1rem; overflow-x: auto; font-size: .85rem; line-height: 1.5; margin: 0 0 1rem;
+    }
+    pre code { font-size: inherit; }
+    figure { margin: 0; }
+    figcaption { margin-top: .4rem; font-size: .9rem; color: #444; }
+    figure img { display: block; width: 100%; height: auto; border-radius: 3px; background: #f0f0f0; }
+    .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin: 0 0 1.5rem; }
+    .trio { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin: 0 0 1.5rem; align-items: end; }
+    .wide { margin: 0 0 1.5rem; }
+    .pixel { max-width: 600px; }
+    .pixel img { image-rendering: pixelated; }
+    @media (max-width: 640px) {
+      .pair, .trio { grid-template-columns: 1fr; }
+    }
+    mjx-container[display="true"] { overflow-x: auto; overflow-y: hidden; padding: .25rem 0; }
+    table { border-collapse: collapse; margin: 0 0 1.5rem; font-size: .95rem; }
+    th, td { border-bottom: 1px solid var(--rule); padding: .35rem .9rem .35rem 0; text-align: left; }
+    details { margin-top: 3rem; } summary { cursor: pointer; font-weight: 600; font-size: 1.1rem; }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-chtml.js" async></script>
+</head>
+<body>
+<main>
+
+<h1>Project 4</h1>
+
+<h2 class="big">Part A: Image Warping and Mosaicing</h2>
+<p>Welcome to my project. For repetitive content, for example finding all the points and drawing all of them, I kept it in the appendix.</p>
+
+<h2>A.1: Shooting the pictures</h2>
+<p>I decided to pick an indoor scenario, a specific object scenario, and an outdoor scenario. So I picked the kitchen, the gate, and the courtyard.</p>
+<h3>Kitchen</h3>
+<div class="trio">
+  <figure><img src="../project4a/assets/mosaic1_left.jpg" alt="kitchen, left"></figure>
+  <figure><img src="../project4a/assets/mosaic1_center.jpg" alt="kitchen, center"></figure>
+  <figure><img src="../project4a/assets/mosaic1_right.jpg" alt="kitchen, right"></figure>
+</div>
+<h3>Gate</h3>
+<div class="trio">
+  <figure><img src="../project4a/assets/mosaic2_left.jpg" alt="gate, left"></figure>
+  <figure><img src="../project4a/assets/mosaic2_center.jpg" alt="gate, center"></figure>
+  <figure><img src="../project4a/assets/mosaic2_right.jpg" alt="gate, right"></figure>
+</div>
+<h3>Courtyard</h3>
+<div class="trio">
+  <figure><img src="../project4a/assets/mosaic3_left.jpg" alt="courtyard, left"></figure>
+  <figure><img src="../project4a/assets/mosaic3_center.jpg" alt="courtyard, center"></figure>
+  <figure><img src="../project4a/assets/mosaic3_right.jpg" alt="courtyard, right"></figure>
+</div>
+
+<!-- A2 start -->
+<h2>A.2: Recovering homographies</h2>
+<p>One interesting thing I learned when picking points, as shown in the first picture of the appendix, is that you don't need to (in general) pick points all over the image. You can focus on a specific object, and as long as your points are accurate, you achieve the same effect. For instance, in the first appendix image, I tried picking points across the whole image, but it didn't align very well because there isn't much detail there. So I focused on a specific object and got a good result, because there is a lot more detail to align on that object.</p>
+<p>We start from this matrix multiplication equation, which maps \((x, y)\) into \((x', y')\):</p>
+\[ \begin{bmatrix} a & b & c \\ d & e & f \\ g & h & 1 \end{bmatrix} \begin{bmatrix} x \\ y \\ 1 \end{bmatrix} = \begin{bmatrix} wx' \\ wy' \\ w \end{bmatrix} \]
+<p>From the third row, we find \(w\) to be the following:</p>
+\[ gx + hy + 1 = w \]
+<p>Next, we substitute \(w\), and we can not care about the third row, and only the first two. So we get these two equations:</p>
+\[ ax + by + c = (gx + hy + 1)\,x' \qquad dx + ey + f = (gx + hy + 1)\,y' \]
+<p>We're trying to isolate and find \(x'\) and \(y'\), so we moved everything to the left side. So we finally get:</p>
+\[ ax + by + c - gxx' - hyx' = x' \qquad dx + ey + f - gxy' - hyy' = y' \]
+\[ \begin{bmatrix} x & y & 1 & 0 & 0 & 0 & -xx' & -yx' \\ 0 & 0 & 0 & x & y & 1 & -xy' & -yy' \end{bmatrix} \begin{bmatrix} a \\ b \\ c \\ d \\ e \\ f \\ g \\ h \end{bmatrix} = \begin{bmatrix} x' \\ y' \end{bmatrix} \]
+<p>Next, it's just about substituting in the values of the points we found. Each pair of points gives two equations and there are 8 unknowns, so we need at least 4 pairs. With \(n\) pairs, we stack all \(2n\) equations into one system \(Ah = b\):</p>
+\[ \underbrace{\begin{bmatrix} x_1 & y_1 & 1 & 0 & 0 & 0 & -x_1x_1' & -y_1x_1' \\ 0 & 0 & 0 & x_1 & y_1 & 1 & -x_1y_1' & -y_1y_1' \\ & & & & \vdots & & & \\ x_n & y_n & 1 & 0 & 0 & 0 & -x_nx_n' & -y_nx_n' \\ 0 & 0 & 0 & x_n & y_n & 1 & -x_ny_n' & -y_ny_n' \end{bmatrix}}_{A \;(2n \times 8)} \begin{bmatrix} a \\ \vdots \\ h \end{bmatrix} = \underbrace{\begin{bmatrix} x_1' \\ y_1' \\ \vdots \\ x_n' \\ y_n' \end{bmatrix}}_{b} \]
+<figure class="wide"><img src="../project4a/assets/mosaic2_left_center_points.jpg" alt="correspondences between the gate left and center images"></figure>
+<p>Next, for the real numbers, this is the full system \([A \mid b]\) for these 8 pairs:</p>
+\[ \left[\begin{array}{rrrrrrrr|r} 597 & 348 & 1 & 0 & 0 & 0 & -75819 & -44196 & 127 \\ 0 & 0 & 0 & 597 & 348 & 1 & -184473 & -107532 & 309 \\ 597 & 472 & 1 & 0 & 0 & 0 & -71043 & -56168 & 119 \\ 0 & 0 & 0 & 597 & 472 & 1 & -263874 & -208624 & 442 \\ 745 & 487 & 1 & 0 & 0 & 0 & -209345 & -136847 & 281 \\ 0 & 0 & 0 & 745 & 487 & 1 & -356855 & -233273 & 479 \\ 745 & 557 & 1 & 0 & 0 & 0 & -207855 & -155403 & 279 \\ 0 & 0 & 0 & 745 & 557 & 1 & -407515 & -304679 & 547 \\ 538 & 710 & 1 & 0 & 0 & 0 & -31742 & -41890 & 59 \\ 0 & 0 & 0 & 538 & 710 & 1 & -376062 & -496290 & 699 \\ 600 & 1085 & 1 & 0 & 0 & 0 & -57000 & -103075 & 95 \\ 0 & 0 & 0 & 600 & 1085 & 1 & -652200 & -1179395 & 1087 \\ 752 & 930 & 1 & 0 & 0 & 0 & -201536 & -249240 & 268 \\ 0 & 0 & 0 & 752 & 930 & 1 & -679808 & -840720 & 904 \\ 712 & 1083 & 1 & 0 & 0 & 0 & -169456 & -257754 & 238 \\ 0 & 0 & 0 & 712 & 1083 & 1 & -772520 & -1175055 & 1085 \end{array}\right] \]
+<p>We solve this using least squares (<code>np.linalg.lstsq</code>), which finds the best \(h\), the one that makes the total squared error \(\lVert Ah - b \rVert^2\) as small as possible. This gives the homography:</p>
+\[ H = \begin{bmatrix} 1.21876 & -0.04337 & -571.19967 \\ 0.16041 & 1.10860 & -129.22083 \\ 0.00020 & -0.00004 & 1 \end{bmatrix} \]
+
+<!-- A2 end -->
+
+<h2>A.3: Warping the images</h2>
+<p>My warping is done in four steps.</p>
+<ol>
+  <li>Calculate the new image boundary by passing the corners of the old image through our homography matrix.</li>
+  <li>Use an inverse homography mapping of every pixel in the new image boundary to find where it comes from in the old image.</li>
+  <li>The difference between nearest neighbor and bilinear: nearest neighbor locates the closest pixel to take its value, while bilinear takes a weighted average of the surrounding pixels it lands in.</li>
+  <li>Finally, for rectify, I pick the four corners as points and map them to a rectangle with the relevant dimensions: 85.6 × 54 mm for the ID card and roughly 3.7 × 8.5 in for one panel of the folded flyer.</li>
+</ol>
+<h3>Student ID card</h3>
+<div class="trio">
+  <figure><img src="../project4a/assets/rectify1_corners.jpg" alt="ID card on a desk with its corners marked"></figure>
+  <figure><img src="../project4a/assets/rectify1_nn.png" alt="rectified with nearest neighbor"><figcaption>nearest neighbor</figcaption></figure>
+  <figure><img src="../project4a/assets/rectify1_bilinear.jpg" alt="rectified with bilinear"><figcaption>bilinear</figcaption></figure>
+</div>
+<h3>Flyer</h3>
+<div class="trio">
+  <figure><img src="../project4a/assets/rectify2_corners.jpg" alt="flyer on a table with its corners marked"></figure>
+  <figure><img src="../project4a/assets/rectify2_nn.png" alt="rectified with nearest neighbor"><figcaption>nearest neighbor</figcaption></figure>
+  <figure><img src="../project4a/assets/rectify2_bilinear.jpg" alt="rectified with bilinear"><figcaption>bilinear</figcaption></figure>
+</div>
+<h3>Nearest neighbor vs. bilinear</h3>
+<figure class="wide pixel"><img src="../project4a/assets/rectify1_zoom.png" alt="6x zoom, nearest neighbor left, bilinear right"><figcaption>nearest neighbor (left), bilinear (right)</figcaption></figure>
+<p>Honestly, from an overall point of view, there is not a huge difference, especially in time. Both finished quickly, under a second. Bilinear might take a little longer: after timing, I found nearest neighbor takes 0.03 s and 0.07 s on the two images while bilinear takes 0.06 s and 0.14 s, so bilinear actually takes twice as long. The real difference is when zooming in: bilinear generally gives a smoother result, thanks to it smoothing over the surrounding pixels instead of picking one.</p>
+
+<h2>A.4: Blending into a mosaic</h2>
+<p>Since we already have the H for these cases, we're basically doing the same as A.3. We still calculate the boundaries, but we have three images, so we take the maximum boundary out of the 12 calculated corner points together. Next, we apply the same inverse mapping and use bilinear interpolation to find the pixel values.</p>
+<p>For the actual blending, I use the suggested alpha idea, where each image's weight is 1 at its center and falls off linearly to 0 at its edges, and take the weighted average of the overlapping images.</p>
+<h3>Kitchen</h3>
+<figure class="wide"><img src="../project4a/assets/mosaic1.jpg" alt="kitchen mosaic"></figure>
+<h3>Gate</h3>
+<figure class="wide"><img src="../project4a/assets/mosaic2.jpg" alt="gate mosaic"></figure>
+<h3>Courtyard</h3>
+<figure class="wide"><img src="../project4a/assets/mosaic3.jpg" alt="courtyard mosaic"></figure>
+<p>The courtyard was shot with the ultrawide lens, so the three photos cover a very wide angle. Projecting that onto a single plane stretches the left and right images heavily, which gives the bow-tie shape.</p>
+
+<!-- appendix start -->
+<h2>Appendix A: correspondences for every pair</h2>
+<figure class="wide"><img src="../project4a/assets/auto_mosaic1_left_center.jpg" alt="hand-picked correspondences, kitchen left to center"></figure>
+<figure class="wide"><img src="../project4a/assets/auto_mosaic1_right_center.jpg" alt="hand-picked correspondences, kitchen right to center"></figure>
+<figure class="wide"><img src="../project4a/assets/auto_mosaic2_left_center.jpg" alt="hand-picked correspondences, gate left to center"></figure>
+<figure class="wide"><img src="../project4a/assets/auto_mosaic2_right_center.jpg" alt="hand-picked correspondences, gate right to center"></figure>
+<figure class="wide"><img src="../project4a/assets/auto_mosaic3_left_center.jpg" alt="hand-picked correspondences, courtyard left to center"></figure>
+<figure class="wide"><img src="../project4a/assets/auto_mosaic3_right_center.jpg" alt="hand-picked correspondences, courtyard right to center"></figure>
+<h3>Homographies</h3>
+<h3>Kitchen, left → center</h3>
+\[ H = \begin{bmatrix} 1.46621 & -0.11033 & -1117.36687 \\ 0.13781 & 1.37117 & -199.63772 \\ 0.00037 & 0 & 1 \end{bmatrix} \]
+<h3>Kitchen, right → center</h3>
+\[ H = \begin{bmatrix} 0.77596 & 0.02630 & 434.62686 \\ -0.08997 & 0.95476 & 35.74160 \\ -0.00022 & 0.00003 & 1 \end{bmatrix} \]
+<h3>Gate, left → center</h3>
+\[ H = \begin{bmatrix} 1.21876 & -0.04337 & -571.19967 \\ 0.16041 & 1.10860 & -129.22083 \\ 0.00020 & -0.00004 & 1 \end{bmatrix} \]
+<h3>Gate, right → center</h3>
+\[ H = \begin{bmatrix} 0.74529 & 0.03676 & 398.53887 \\ -0.22469 & 0.91456 & 55.88121 \\ -0.00029 & -0.00001 & 1 \end{bmatrix} \]
+<h3>Courtyard, left → center</h3>
+\[ H = \begin{bmatrix} 2.95271 & -0.18054 & -1172.58981 \\ 0.94025 & 2.25182 & -741.99591 \\ 0.00166 & -0.00003 & 1 \end{bmatrix} \]
+<h3>Courtyard, right → center</h3>
+\[ H = \begin{bmatrix} 0.13495 & 0.01950 & 457.88542 \\ -0.38634 & 0.65630 & 195.75122 \\ -0.00070 & -0.00001 & 1 \end{bmatrix} \]
+<h3>Student ID card, rectification</h3>
+\[ H = \begin{bmatrix} -0.07379 & 1.21880 & -108.26483 \\ -0.68991 & 0.23695 & 416.04047 \\ -0.00020 & 0.00118 & 1 \end{bmatrix} \]
+<h3>Flyer, rectification</h3>
+\[ H = \begin{bmatrix} 0.58701 & -0.66798 & 243.26470 \\ 0.39557 & 0.29334 & -118.59121 \\ 0.00029 & -0.00069 & 1 \end{bmatrix} \]
+<!-- appendix end -->
+
+<h2 class="big">Part B: Feature Matching for Autostitching</h2>
+<p>In Part A I clicked every correspondence by hand. In Part B the computer finds them itself, following “Multi-Image Matching using Multi-Scale Oriented Patches” by Brown, Szeliski and Winder, with the simplifications from the spec: one scale, no sub-pixel refinement, no rotation invariance. The pipeline is Harris corners → ANMS → 8×8 descriptors → ratio-test matching → RANSAC, and then the same warping and blending code from Part A.</p>
+
+<h2>B.1: Harris corners and ANMS</h2>
+<p>I used the provided <code>harris.py</code> on the grayscale image (sigma 1, 20-pixel edge discard). It returns every local maximum of the Harris response, which is far too many points: about 26,000 on the gate image. They cover the whole picture, including flat regions where the response is tiny.</p>
+<p>The obvious fix is to keep the strongest few, but the middle panel shows why that's bad: the strongest corners pile up on the high-contrast parts (the trellis and the leaves), and large areas like the pillars and the ground get nothing. Matching needs points spread over the image, so the paper uses Adaptive Non-Maximal Suppression. For every corner \(i\) it computes a suppression radius, the distance to the nearest corner that is clearly stronger:</p>
+\[ r_i = \min_{j} \lVert \mathbf{x}_i - \mathbf{x}_j \rVert \quad \text{such that} \quad f(\mathbf{x}_i) < c_{\text{robust}}\, f(\mathbf{x}_j), \qquad c_{\text{robust}} = 0.9 \]
+<p>Then I keep the 1000 corners with the largest radius. A point survives if it's the strongest thing in a big neighbourhood, so strong points still win, but every region gets its own local champion. To keep this fast I only run it on the 6000 strongest corners: sorted by strength, the stronger candidates for point \(i\) are exactly the points before it in the list, so each radius is one vectorized distance computation.</p>
+<h3>Gate</h3>
+<figure class="wide"><img src="assets/mosaic2_corners.jpg" alt="gate: all Harris corners, 1000 strongest, 1000 after ANMS"></figure>
+<h3>Kitchen</h3>
+<figure class="wide"><img src="assets/mosaic1_corners.jpg" alt="kitchen: all Harris corners, 1000 strongest, 1000 after ANMS"></figure>
+<h3>Courtyard</h3>
+<figure class="wide"><img src="assets/mosaic3_corners.jpg" alt="courtyard: all Harris corners, 1000 strongest, 1000 after ANMS"></figure>
+<p>I started with 500 points and moved to 1000: on the low-texture kitchen it roughly doubled the number of good matches (from 9 to 15 RANSAC inliers on the left pair).</p>
+
+<h2>B.2: Feature descriptors</h2>
+<p>For each corner I take the 40×40 window around it and turn it into an 8×8 patch by sampling every 5 pixels. I blur the image first (Gaussian, sigma 2.5) so each sample summarizes its 5×5 block instead of aliasing a single pixel. That's the point of the big window: a blurry descriptor tolerates a few pixels of error in the corner position. Then I bias/gain-normalize each patch (subtract its mean, divide by its standard deviation), so a brighter or darker exposure of the same spot still gives the same vector. Corners whose window runs off the image are dropped.</p>
+<figure class="wide"><img src="assets/mosaic2_descriptors.jpg" alt="eight random gate features: 40x40 window above, normalized 8x8 descriptor below"></figure>
+<figure class="wide"><img src="assets/mosaic3_descriptors.jpg" alt="eight random courtyard features: 40x40 window above, normalized 8x8 descriptor below"></figure>
+<p>Top row is the 40×40 window in color, bottom row is the normalized 8×8 descriptor that is actually compared. The window edges and grid lines are still clearly visible at 8×8.</p>
+
+<h2>B.3: Feature matching</h2>
+<p>I compute the Euclidean distance between every descriptor in one image and every descriptor in the other (the provided <code>dist2</code>), and find each feature's nearest and second-nearest neighbour. Following Lowe, a match is kept only when the best neighbour is much better than the second best:</p>
+\[ \frac{d_{1\text{-NN}}}{d_{2\text{-NN}}} < 0.6 \]
+<p>The idea is that a true match has one clear partner, while a wrong match on a repeated texture (cabinet doors, windows) looks about as good as several others. Figure 6b in the paper shows correct and incorrect matches separating around \(e_{1\text{-NN}}/e_{2\text{-NN}} \approx 0.4\) in squared error, and my distance ratio of 0.6 is 0.36 in squared terms.</p>
+<p>The ratio test isn't perfect. The red lines below are matches that passed it but were rejected by RANSAC in B.4, many of them on repeated windows and cabinet edges.</p>
+<figure class="wide"><img src="assets/mosaic3_left_matches.jpg" alt="courtyard left to center: ratio-test matches"></figure>
+<figure class="wide"><img src="assets/mosaic1_left_matches.jpg" alt="kitchen left to center: ratio-test matches"></figure>
+
+<h2>B.4: RANSAC and automatic mosaics</h2>
+<p>4-point RANSAC, implemented from scratch:</p>
+<ol>
+  <li>Pick 4 random matches and compute the exact homography through them with <code>computeH</code> from Part A.</li>
+  <li>Map every matched point from image 1 through that \(H\) and count the inliers, the matches that land within 2 pixels of their partner in image 2.</li>
+  <li>Repeat 5000 times and keep the largest inlier set.</li>
+  <li>Refit \(H\) with least squares on all the inliers of the best set.</li>
+</ol>
+<p>Even with half the matches wrong, a random sample of 4 is all-correct about 1 time in 16, so 5000 iterations find a clean sample many times over. The final least-squares fit uses every inlier, not just 4 points, so it is less noisy than any single sample.</p>
+<table>
+  <thead><tr><th>pair</th><th>ratio-test matches</th><th>RANSAC inliers</th></tr></thead>
+  <tbody>
+    <tr><td>Kitchen, left → center</td><td>50</td><td>15</td></tr>
+    <tr><td>Kitchen, right → center</td><td>150</td><td>34</td></tr>
+    <tr><td>Gate, left → center</td><td>77</td><td>25</td></tr>
+    <tr><td>Gate, right → center</td><td>64</td><td>20</td></tr>
+    <tr><td>Courtyard, left → center</td><td>53</td><td>41</td></tr>
+    <tr><td>Courtyard, right → center</td><td>48</td><td>36</td></tr>
+  </tbody>
+</table>
+<figure class="wide"><img src="assets/mosaic2_left_inliers.jpg" alt="gate left to center: RANSAC inliers"></figure>
+<p>The homographies then go straight into my Part A mosaic code (bilinear inverse warping, linear-falloff alpha blending). Manual on the left, automatic on the right:</p>
+<h3>Kitchen</h3>
+<div class="pair">
+  <figure><img src="../project4a/assets/mosaic1.jpg" alt="kitchen, manual"><figcaption>manual (Part A)</figcaption></figure>
+  <figure><img src="assets/mosaic1_auto.jpg" alt="kitchen, automatic"><figcaption>automatic</figcaption></figure>
+</div>
+<h3>Gate</h3>
+<div class="pair">
+  <figure><img src="../project4a/assets/mosaic2.jpg" alt="gate, manual"><figcaption>manual (Part A)</figcaption></figure>
+  <figure><img src="assets/mosaic2_auto.jpg" alt="gate, automatic"><figcaption>automatic</figcaption></figure>
+</div>
+<h3>Courtyard</h3>
+<div class="pair">
+  <figure><img src="../project4a/assets/mosaic3.jpg" alt="courtyard, manual"><figcaption>manual (Part A)</figcaption></figure>
+  <figure><img src="assets/mosaic3_auto.jpg" alt="courtyard, automatic"><figcaption>automatic</figcaption></figure>
+</div>
+<p>TODO (Haoming): write what you notice comparing these. Things I see: the gate and courtyard come out essentially the same as my hand-clicked versions; the courtyard's automatic result uses 41 and 36 inliers against my 8 clicks per pair; the kitchen is the hardest case because the cabinet doors are nearly textureless and repetitive, so its inliers cluster on the rice bag and the counter.</p>
+
+<h2>What I learned</h2>
+<p>TODO (Haoming): the spec asks what the coolest thing you learned was. One sentence in your own words.</p>
+
+<details>
+<summary>Appendix B: all matches and inliers</summary>
+<figure class="wide"><img src="assets/mosaic1_right_matches.jpg" alt="kitchen right to center: matches"></figure>
+<figure class="wide"><img src="assets/mosaic2_left_matches.jpg" alt="gate left to center: matches"></figure>
+<figure class="wide"><img src="assets/mosaic2_right_matches.jpg" alt="gate right to center: matches"></figure>
+<figure class="wide"><img src="assets/mosaic3_right_matches.jpg" alt="courtyard right to center: matches"></figure>
+<figure class="wide"><img src="assets/mosaic1_left_inliers.jpg" alt="kitchen left to center: inliers"></figure>
+<figure class="wide"><img src="assets/mosaic1_right_inliers.jpg" alt="kitchen right to center: inliers"></figure>
+<figure class="wide"><img src="assets/mosaic2_right_inliers.jpg" alt="gate right to center: inliers"></figure>
+<figure class="wide"><img src="assets/mosaic3_left_inliers.jpg" alt="courtyard left to center: inliers"></figure>
+<figure class="wide"><img src="assets/mosaic3_right_inliers.jpg" alt="courtyard right to center: inliers"></figure>
+<figure class="wide"><img src="assets/mosaic1_descriptors.jpg" alt="kitchen descriptors"></figure>
+</details>
+
+
+</main>
+</body>
+</html>

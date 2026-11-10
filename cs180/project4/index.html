@@ -161,20 +161,20 @@
 <!-- appendix end -->
 
 <h2 class="big">Part B: Feature Matching for Autostitching</h2>
-<p>In Part A I clicked every correspondence by hand. In Part B the computer finds them itself, following “Multi-Image Matching using Multi-Scale Oriented Patches” by Brown, Szeliski and Winder, with the simplifications from the spec: one scale, no sub-pixel refinement, no rotation invariance. The pipeline is Harris corners → ANMS → 8×8 descriptors → ratio-test matching → RANSAC, and then the same warping and blending code from Part A.</p>
+<p>In Part A, I clicked and manually chose the corresponding points between images. In Part B, an algorithm finds them automatically.</p>
 
 <h2>B.1: Harris corners and ANMS</h2>
-<p>I used the provided <code>harris.py</code> on the grayscale image (sigma 1, 20-pixel edge discard). It returns every local maximum of the Harris response, which is far too many points: about 26,000 on the gate image. They cover the whole picture, including flat regions where the response is tiny.</p>
-<p>The obvious fix is to keep the strongest few, but the middle panel shows why that's bad: the strongest corners pile up on the high-contrast parts (the trellis and the leaves), and large areas like the pillars and the ground get nothing. Matching needs points spread over the image, so the paper uses Adaptive Non-Maximal Suppression. For every corner \(i\) it computes a suppression radius, the distance to the nearest corner that is clearly stronger:</p>
+<p>I used the provided <code>harris.py</code> function, as instructed. I interpret Harris as a corner-finding algorithm: a corner has strong contrast (gradient) when you slide a window over it in any direction, compared to something like a smooth wall or an edge. The left image shows all the Harris corners found, the middle one shows the 1000 strongest by absolute value, and the right one shows the ANMS result.</p>
+<p>ANMS focuses on the following equation, the suppression radius of each corner \(i\):</p>
 \[ r_i = \min_{j} \lVert \mathbf{x}_i - \mathbf{x}_j \rVert \quad \text{such that} \quad f(\mathbf{x}_i) < c_{\text{robust}}\, f(\mathbf{x}_j), \qquad c_{\text{robust}} = 0.9 \]
-<p>Then I keep the 1000 corners with the largest radius. A point survives if it's the strongest thing in a big neighbourhood, so strong points still win, but every region gets its own local champion. To keep this fast I only run it on the 6000 strongest corners: sorted by strength, the stronger candidates for point \(i\) are exactly the points before it in the list, so each radius is one vectorized distance computation.</p>
+<p>Keeping the 1000 corners with the largest radius gives a more diverse distribution of points. Strong corners tend to cluster together, so instead of looking at absolute strength, ANMS looks at relative maxima by selecting on radius, which spreads the points out much better. Below are the results for all three image sets.</p>
 <h3>Gate</h3>
 <figure class="wide"><img src="assets/mosaic2_corners.jpg" alt="gate: all Harris corners, 1000 strongest, 1000 after ANMS"></figure>
 <h3>Kitchen</h3>
 <figure class="wide"><img src="assets/mosaic1_corners.jpg" alt="kitchen: all Harris corners, 1000 strongest, 1000 after ANMS"></figure>
 <h3>Courtyard</h3>
 <figure class="wide"><img src="assets/mosaic3_corners.jpg" alt="courtyard: all Harris corners, 1000 strongest, 1000 after ANMS"></figure>
-<p>I started with 500 points and moved to 1000: on the low-texture kitchen it roughly doubled the number of good matches (from 9 to 15 RANSAC inliers on the left pair).</p>
+<p>The three sets behave similarly; I don't see anything notably different between them.</p>
 
 <h2>B.2: Feature descriptors</h2>
 <p>For each corner I take the 40×40 window around it and turn it into an 8×8 patch by sampling every 5 pixels. I blur the image first (Gaussian, sigma 2.5) so each sample summarizes its 5×5 block instead of aliasing a single pixel. That's the point of the big window: a blurry descriptor tolerates a few pixels of error in the corner position. Then I bias/gain-normalize each patch (subtract its mean, divide by its standard deviation), so a brighter or darker exposure of the same spot still gives the same vector. Corners whose window runs off the image are dropped.</p>
